@@ -1,0 +1,7 @@
+IM, CAMERA, Fotocamera
+OS, PO3, PO3 - iHealth
+PR, BP550BT, BP550BT - iHealth
+PS, HS4S, HS4S - iHealth
+Q0, Q0, Questionario 0
+Q1, Q1, Questionario 1
+Q2, Q2, Questionario 2

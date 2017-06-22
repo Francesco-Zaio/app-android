@@ -1,0 +1,6 @@
+TC, MANUALE, Manual entry
+IM, CAMERA, Camera
+OS, PO3, PO3 - iHealth
+PR, BP5, BP5 - iHealth
+PS, HS4S, HS4S - iHealth
+PR, BP550BT, BP550BT - iHealth

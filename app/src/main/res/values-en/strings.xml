@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Nuvola It Home Doctor</string>
+	<string name="app_name_demo_version_label">Offline function active</string>
+	<string name="mi_measure">Measures</string>
+    <string name="mi_user">User</string>
+	<string name="mi_devices_man">Device Management</string>
+    <string name="mi_logout">Logout</string>  
+    <string name="mi_exit">Exit</string>    
+    <string name="show_measure">View measurements</string>
+    
+    <string name="update_user">Update</string>
+    <string name="list_users">List</string>
+    <string name="new_user">New</string>
+    <string name="new_device_first_run">Pairing and measure</string>
+    <string name="new_device">New pairing</string>
+    
+    <string name="settings">Settings</string>
+	<string name="shealth_settings">S Health Settings</string>
+    <string name="info">Info</string>    
+    <string name="measure_title">Measures of</string>
+    <string name="measure_detail_title">Measurement of</string>    
+    <string name="users_title">Users</string>
+    <string name="username">User</string>    
+    <string name="password">Password</string> 
+    <string name="passwordCBLabel">Show password</string>
+    <string name="okButton">OK</string> 
+    <string name="cancelButton">Cancel</string>    
+    <string name="authentication">Authentication</string>
+    <string name="newUser">New User</string>
+    <string name="new_user_title">User</string>
+    
+    <!-- Menu principale laterale sinistro  -->
+    <string name="main_menu_drawer_open">Open menu</string>
+    <string name="main_menu_drawer_close">Close menu</string>
+    
+    <!--  Context Menu --> 
+    <string name="pair">Pairing</string>   
+    <string name="config">Configure</string>   
+    
+    <!--  Select Model Dialog --> 
+    <string name="select_model">Select model</string>       
+    
+    <!--  Waiting Activity -->
+    <string name="waiting_creation_activity">Wait&#8230;</string>
+    
+    <!--  DeviceScanActivity -->
+	<string name="scanning">Searching devices...</string>
+    <string name="select_device">Pairing device</string>  
+    <string name="none_paired">No paired device</string>
+    <string name="none_found">No device found</string>
+    <string name="bt_not_enabled">Bluetooth disabled</string>
+
+	<string name="show_settings">User settings</string>
+	<string name="show_settings_tab_title">Settings</string>
+	<string name="show_settings_devices">Devices</string>
+	<string name="show_settings_connections">Connections</string>
+	<string name="host">Server user configuration</string>
+	<string name="host_hint">Platform address:</string>
+	<string name="host_sending">Server sending measures</string>
+	<string name="port">Port</string>
+	<string name="port_hint">Port number</string>
+	<string name="target_hint">Target platform url</string>
+	<string name="protocol">Protocol</string>
+	<string name="reset_settings">Factory settings</string>
+	<string name="show_measures">Manage measurements</string>
+	<string name="delete_all_measure">Delete measurements</string>
+	<string name="retry_send_all_measure">Transfer measurements</string>
+	<string name="delete_measure">Delete measurement</string>
+	<string name="retry_send_measure">Send measurement</string>
+
+	<string name="user_title">User</string>
+	<string name="delete_user">Delete</string>
+
+	<string name="selectPatient">Select patient</string>
+
+	<string name="manageMeasure">view measurements</string>
+
+	<string name="auto_login">Automatic login</string>
+	<string name="auto_send">Automatic measure transfer</string>
+	<string name="arTimeout">AR Timeout [5-90]</string>
+	
+	<string name="connectionSettings">Connection settings</string>
+	<string name="userSettings">User settings</string>
+
+	<string name="noPatient">No patient assigned to nurse</string>
+
+	<string name="searchPatients">Search patients</string>
+	
+	<string name="confirmDelete">Confirm deletion</string>
+	<string name="insertUserPassword">Insert user password</string>
+	<string name="passwordError">User not deleted. Wrong credentials</string>
+	<string name="selectDevice">Choose the device</string>
+	<string name="changePatientQuestion">Change patient</string>
+	<string name="send">Send</string>
+	<string name="sendToPlatform">measurements to the platform</string>	
+	<string name="versionName">3.1.2</string>
+		
+	<string name="calibrate">Modify calibration</string>
+	<string name="calibrateTitle">Calibrate</string>
+	<string name="calibrateLbl">Calibration code [500 - 947]</string>
+	<string name="calibrateOk">OK</string>
+	<string name="calibrateCancel">Cancel</string>
+	
+	<string name="advance_options">Advanced settings</string>
+	<string name="reliability">Signal quality</string>
+	<string name="bgw_pair">Pair</string>
+
+	<string name="quiz">Survey</string>
+	<string name="quiz_loading">Loading survey&#8230;</string>
+	
+	<string name="totalDuration">Total duration</string>
+	<string name="readLoop">Continuous sampling</string>
+
+</resources>

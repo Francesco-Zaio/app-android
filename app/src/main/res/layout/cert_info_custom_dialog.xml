@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    >
+    <ScrollView
+    	android:layout_width="fill_parent"
+    	android:layout_height="fill_parent">
+    	<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+		    android:orientation="vertical"
+		    android:layout_width="fill_parent"
+		    android:layout_height="fill_parent"
+		    >
+		    <TextView
+		    	android:id="@+id/subjectTV"
+		    	android:layout_width="fill_parent"
+		    	android:layout_height="wrap_content"
+		    	android:textStyle="bold"
+		    	android:layout_marginLeft="10dip" 
+		    />
+		    
+		    <TextView
+		    	android:id="@+id/subjectCNTV"
+		    	android:layout_below="@id/subjectTV"
+		    	android:layout_width="fill_parent"
+		    	android:layout_height="wrap_content"
+		    	android:layout_marginLeft="20dip"
+			/>
+			
+			<TextView
+				android:id="@+id/subjectOTV"
+				android:layout_below="@id/subjectCNTV"
+				android:layout_width="fill_parent"
+		    	android:layout_height="wrap_content"
+		    	android:layout_marginLeft="20dip"
+		    />
+		    
+		    <TextView
+		    	android:id="@+id/subjectUOTV"
+		    	android:layout_below="@id/subjectOTV"
+		    	android:layout_width="fill_parent"
+		    	android:layout_height="wrap_content"
+		    	android:layout_marginLeft="20dip"
+		    />
+		    
+		    <TextView
+		    	android:id="@+id/issuerTV"
+		    	android:layout_below="@id/subjectOTV"
+		    	android:layout_width="fill_parent"
+		    	android:layout_height="wrap_content"
+		    	android:textStyle="bold"
+		    	android:layout_marginLeft="10dip"
+		    	android:layout_marginTop="20dip"
+		    />
+		    
+		    <TextView
+		    	android:id="@+id/issuerCNTV"
+		    	android:layout_below="@id/issuerTV"
+		    	android:layout_width="fill_parent"
+		    	android:layout_height="wrap_content"
+		    	android:layout_marginLeft="20dip"
+			/>
+			
+			<TextView
+				android:id="@+id/issuerOTV"
+				android:layout_below="@id/issuerCNTV"
+				android:layout_width="fill_parent"
+		    	android:layout_height="wrap_content"
+		    	android:layout_marginLeft="20dip"
+		    />
+		    
+		    <TextView
+		    	android:id="@+id/issuerUOTV"
+		    	android:layout_below="@id/issuerOTV"
+		    	android:layout_width="fill_parent"
+		    	android:layout_height="wrap_content"
+		    	android:layout_marginLeft="20dip"
+		    />
+		    
+		    <TextView
+		    	android:id="@+id/validityTV"
+		    	android:layout_below="@id/issuerUOTV"
+		    	android:layout_width="fill_parent"
+		    	android:textStyle="bold"
+		    	android:layout_height="wrap_content"
+		    	android:layout_marginLeft="10dip"
+		    	android:layout_marginTop="20dip"
+		    />
+		    
+		    <TextView
+		    	android:id="@+id/startValidityTV"
+		    	android:layout_below="@id/validityTV"
+		    	android:layout_width="fill_parent"
+		    	android:layout_height="wrap_content"
+		    	android:layout_marginLeft="20dip"
+		    />
+		    
+		    <TextView
+		    	android:id="@+id/endValidityTV"
+		    	android:layout_below="@id/startValidityTV"
+		    	android:layout_width="fill_parent"
+		    	android:layout_height="wrap_content"
+		    	android:layout_marginLeft="20dip"
+		    />
+    	</RelativeLayout>
+    </ScrollView>
+</LinearLayout>

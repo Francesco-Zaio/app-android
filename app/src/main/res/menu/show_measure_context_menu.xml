@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">  
+    <group android:id="@+id/manage_measure_1">
+    	<item android:id="@+id/delete_measure"
+    	      android:icon="@drawable/ic_menu_measure_cancel_light"
+    		  android:title="@string/delete_measure"
+    		  android:textSize="15dip">
+    	</item>
+    	<item android:id="@+id/send_measure"
+    	      android:icon="@drawable/ic_menu_measure_send_light"
+    		  android:title="@string/retry_send_measure"
+    		  android:textSize="15dip">
+    	</item>
+    </group>
+    
+    <group android:id="@+id/manage_measure_2">
+    	<item android:id="@+id/delete_measure_2"
+    	      android:icon="@drawable/ic_menu_measure_cancel_light"
+    		  android:title="@string/delete_measure"
+    		  android:textSize="15dip">
+    	</item>
+    </group>
+</menu>

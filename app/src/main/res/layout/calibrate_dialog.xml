@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:orientation="vertical" 
+	android:layout_width="fill_parent" 
+	android:layout_height="fill_parent"
+	android:padding="5dp">
+    	<TextView
+		        android:id="@+id/calibrateLbl"
+		        android:layout_width="fill_parent"
+		        android:layout_height="wrap_content"/>
+		<EditText
+		        android:id="@+id/calibrate"
+		        android:layout_below="@id/calibrateLbl"
+		        android:layout_width="fill_parent"
+		        android:layout_height="wrap_content"  
+		        android:singleLine="true"
+		        
+		        android:numeric="integer"
+		        android:maxLength="4"/>		
+		<TextView
+		        android:id="@+id/calibrateValidationErr"
+		        android:layout_below="@id/calibrate"
+		        android:layout_width="fill_parent"
+		        android:layout_height="wrap_content"/>
+		<LinearLayout 
+			android:layout_width="fill_parent"
+			android:layout_height="wrap_content"
+			android:orientation="horizontal" 
+			android:layout_below="@+id/calibrateValidationErr">
+			<Button
+					android:id="@+id/okButton"
+					android:layout_width="0dp"
+					android:layout_weight="1"
+					android:layout_height="fill_parent"
+					android:text="@string/calibrateOk" />
+			<Button
+					android:id="@+id/cancelButton"
+					android:layout_width="0dp"
+					android:layout_weight="1"
+					android:layout_height="fill_parent"
+					android:text="@string/calibrateCancel"/>		
+		</LinearLayout>
+</RelativeLayout>

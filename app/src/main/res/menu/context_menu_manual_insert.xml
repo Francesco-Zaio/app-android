@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">  
+    <group android:id="@+id/show_measure_group">    	
+        <item android:id="@+id/show_measure"
+          android:icon="@drawable/ic_menu_archive_light"
+          android:title="@string/show_measure" 
+          android:textSize="15sp">
+        </item> 
+    </group>
+    <group android:id="@+id/select_model_group">
+    	<item android:id="@+id/select_model"
+  	      android:icon="@drawable/ic_menu_device_collections_list"
+          android:title="@string/select_model" 
+          android:textSize="15sp">
+        </item>
+    </group>
+</menu>

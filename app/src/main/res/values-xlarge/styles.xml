@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+        <style name="MyButtonStyle" parent="@android:style/Widget.Button">
+            <item name="android:background">@drawable/custom_button</item>
+            <item name="android:textColor">@android:color/white</item>
+            <item name="android:textStyle">bold</item>
+        </style>
+        
+    <style name="gw_action_bar_text_style">
+        <item name="android:layout_centerHorizontal">true</item>
+		<item name="android:layout_centerVertical">true</item>
+		<item name="android:layout_marginLeft">10dp</item>
+		<item name="android:textSize">17sp</item>
+		<item name="android:maxLines">2</item>
+		<item name="android:ellipsize">end</item>		       
+    </style>
+    
+    <style name="gw_footer_patient_name_style">
+        <item name="android:textColor">@drawable/gw_top_label_text_color</item>
+		<item name="android:textSize">20sp</item>
+		<item name="android:padding">7dip</item>		
+    </style>
+    
+    <style name="gw_top_label_list_item_style">
+        <item name="android:textColor">@drawable/gw_top_label_text_color</item>
+		<item name="android:textSize">40sp</item>			
+    </style>
+    
+    <style name="gw_bottom_label_list_item_style">
+        <item name="android:textColor">@drawable/gw_bottom_label_text_color</item>
+		<item name="android:textSize">25sp</item>			
+    </style>
+    
+    <style name="gw_fiscal_label_list_item_style">
+        <item name="android:textColor">@drawable/gw_fiscal_label_text_color</item>
+		<item name="android:textSize">20sp</item>
+		<item name="android:layout_marginLeft">5dip</item>			
+    </style>
+    
+    <style name="gw_measure_label_grid_item_style">
+        <item name="android:textColor">@drawable/gw_bottom_label_text_color</item>
+		<item name="android:textSize">30sp</item>			
+    </style>
+    
+    <style name="gw_measure_model_grid_item_style">
+        <item name="android:textColor">@drawable/gw_bottom_label_text_color</item>
+		<item name="android:textSize">24sp</item>			
+    </style>
+    
+    <style name="gw_name_label_list_item_style">
+        <item name="android:textColor">@drawable/gw_name_label_text_color</item>
+		<item name="android:textSize">25sp</item>
+		<item name="android:layout_marginLeft">5dip</item>
+		<item name="android:layout_marginTop">1dip</item>				
+    </style>    
+     
+    <style name="gw_patient_label_list_item_style">
+        <item name="android:padding">5dip</item>
+		<item name="android:textSize">25sp</item>			
+    </style>
+    
+    <style name="gw_name_label_list_item_style.bold">
+        <item name="android:textStyle">bold</item>
+    </style>
+    
+    <style name="gw_label_style">
+        <item name="android:typeface">sans</item>
+   	    <item name="android:textSize">20sp</item>
+        <item name="android:layout_marginLeft">5dip</item>
+    </style>
+    
+    <style name="gw_label_style.white">
+        <item name="android:textColor">@color/gw_white</item>        
+    </style>
+    
+    <style name="gw_label_style.graydark">
+        <item name="android:textColor">@color/gw_gray_dark</item>        
+    </style>
+</resources>

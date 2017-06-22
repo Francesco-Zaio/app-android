@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<string name="app_name">Nuvola It Home Doctor</string>
+	<string name="app_name_demo_version_label">Função off-line ativo</string>
+	<string name="mi_measure">Medidas</string>
+    <string name="mi_user">Utilizador</string>
+	<string name="mi_devices_man">Gestão de Dispositivos</string>
+    <string name="mi_logout">Logout</string>  
+    <string name="mi_exit">Saída</string>    
+    <string name="show_measure">Mostrar medidas</string>
+    
+    <string name="update_user">Atualização</string>
+    <string name="list_users">Lista</string>
+    <string name="new_user">Novo</string>
+    <string name="new_device_first_run">E associado a medição</string>
+    <string name="new_device">Novo dispositivo</string>
+    
+    <string name="settings">Configurações</string>
+	<string name="shealth_settings">S Health Configurações</string>
+    <string name="info">Info</string>    
+    <string name="measure_title">Medidas de</string>
+    <string name="measure_detail_title">Medida de</string>    
+    <string name="users_title">Lista usuários</string>    
+    <string name="username">Utilizador</string>    
+    <string name="password">Senha</string> 
+    <string name="passwordCBLabel">Mostrar senha</string> 
+    <string name="okButton">OK</string> 
+    <string name="cancelButton">Cancelar</string>    
+    <string name="authentication">Autenticação</string>
+    <string name="newUser">Novo Usuário</string>
+    <string name="new_user_title">Usuário</string>
+    
+    <!-- Menu principale laterale sinistro  -->
+    <string name="main_menu_drawer_open">Aceder o menu</string>
+    <string name="main_menu_drawer_close">Fechando o menu</string>
+    
+    <!--  Context Menu --> 
+    <string name="pair">Associate</string>   
+    <string name="config">Configurar</string>   
+    
+    <!--  Select Model Dialog --> 
+    <string name="select_model">Seleccionar dispositivo</string>       
+    
+    <!--  Waiting Activity -->
+    <string name="waiting_creation_activity">Espera&#8230;</string>
+    
+    <!--  DeviceScanActivity -->
+	<string name="scanning">Pesquisar dispositivos...</string>
+    <string name="select_device">Emparelhar com este dispositivo</string>  
+    <string name="none_paired">Nessun dispositivo emparelhado</string>
+    <string name="none_found">Não dispositivo trovato</string>
+    <string name="bt_not_enabled">Bluetooth não activado</string>
+
+	<string name="show_settings">Configurações do Usuário</string>
+	<string name="show_settings_tab_title">Configurações</string>
+	<string name="show_settings_devices">Dispositivos</string>
+	<string name="show_settings_connections">Conexões</string>
+	<string name="host">Servidores do configuração do Usuário</string>
+	<string name="host_hint">Endereço plataforma</string>
+	<string name="host_sending">Servidores de envio medidas</string>
+	<string name="port">Porta</string>
+	<string name="port_hint">Número porta</string>
+	<string name="target_hint">Url plataforma target</string>
+	<string name="protocol">Protocolo</string>
+	<string name="reset_settings">Configurações inicial</string>
+	<string name="show_measures">Gerir medidas</string>
+	<string name="delete_all_measure">Excluir medidas</string>
+	<string name="retry_send_all_measure">Enviar medidas</string>
+	<string name="delete_measure">Excluir medida</string>
+	<string name="retry_send_measure">Enviar medida</string>
+
+	<string name="user_title">Utilizador</string>
+	<string name="delete_user">Excluir</string>
+
+	<string name="selectPatient">Selecione paciente</string>
+
+	<string name="manageMeasure">Visualizar medidas</string>
+
+	<string name="auto_login">Login automático</string>
+	<string name="auto_send">Medidas de transmissão automática</string>
+	<string name="arTimeout">AR Timeout  [5-90]</string>
+	
+	<string name="connectionSettings">Configurações de conexão</string>
+	<string name="userSettings">Configurações do Usuário</string>
+
+	<string name="noPatient">Nenhum dos pacientes associada com a enfermeira</string>
+
+	<string name="searchPatients">Pesquisa entre os pacientes</string>
+	
+	<string name="confirmDelete">Confirmar Exclusão</string>
+	<string name="insertUserPassword">Digite a senha para o usuário</string>
+	<string name="passwordError">Usuário que foi excluído. Incorreta credenciais</string>
+	<string name="selectDevice">Escolha o seu dispositivo</string>
+	<string name="changePatientQuestion">Alterar paciente</string>
+	<string name="send">Enviar</string>
+	<string name="sendToPlatform">medidas para a plataforma</string>
+	<string name="versionName">3.1.2</string>
+	
+	<string name="calibrate">Modificar calibração</string>
+	<string name="calibrateTitle">Calibra</string>
+	<string name="calibrateLbl">Código de calibração [500 - 947]</string>
+	<string name="calibrateOk">OK</string>
+	<string name="calibrateCancel">Cancelar</string>
+	
+	<string name="advance_options">Configurações avançadas</string>
+	<string name="reliability">Qualidade do sinal</string>
+	<string name="bgw_pair">Associar</string>
+
+	<string name="quiz">Pesquisa</string>
+	<string name="quiz_loading">Carregamento pesquisa&#8230;</string>
+	
+	<string name="totalDuration">Duração total</string>
+	<string name="readLoop">Amostragem contínua</string>
+	
+</resources>

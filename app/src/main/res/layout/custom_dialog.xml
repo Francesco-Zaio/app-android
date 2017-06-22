@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    >
+    <TextView
+    	android:id="@+id/upper_dialog_tv"
+    	android:layout_width="fill_parent"
+    	android:layout_height="wrap_content"
+    	android:textSize="18dip"
+    	android:layout_marginLeft="10dip" />
+    <TextView
+    	android:layout_below="@id/upper_dialog_tv"
+    	android:id="@+id/lower_dialog_tv"
+    	android:layout_width="fill_parent"
+    	android:layout_height="wrap_content"
+    	android:textSize="18dip"
+    	android:gravity="center_horizontal" />    
+</RelativeLayout>

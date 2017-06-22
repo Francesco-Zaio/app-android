@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:android="http://schemas.android.com/apk/res/android">
+	<style name="CustomTheme" parent="android:Theme">
+		<item name="android:windowTitleSize">50dp</item>
+		<item name="android:buttonStyle">@style/MyButtonStyle</item>
+	</style>
+	
+	<!-- <style name="Theme.MyDoctorAtHome.Light" parent="Theme.Sherlock.Light">
+         <item name="textColorPrimary">@color/gw_black</item>
+        <item name="textColorPrimaryDisableOnly">@color/gw_black</item> 
+        <item name="android:alertDialogStyle">@style/GwCustomAlertDialogTheme</item>
+    </style> -->
+    
+	<!-- <style name="Theme.MyDoctorAtHome.Light" parent="Theme.Sherlock.Light">
+        <item name="textColorPrimary">@color/gw_black</item>
+        <item name="textColorPrimaryDisableOnly">@color/gw_black</item>        
+    </style> -->
+    
+	<style name="Theme.MyDoctorAtHome.Light" parent="Theme.AppCompat.Light">                
+    </style>
+    
+    <style name="GwMenuOverflowTheme" parent="android:Theme.Holo.Dialog">
+        <item name="android:windowBackground">@drawable/panel_background</item>        
+    </style>
+    
+    <style name="GwDialogAnimation">
+        <item name="android:windowEnterAnimation">@anim/slide_in_right</item>
+        <item name="android:windowExitAnimation">@anim/slide_out_right</item>        
+	</style>
+    
+    <style name="GwMeasureDetailsDialogTheme" parent="android:Theme.Dialog">
+        <item name="android:windowAnimationStyle">@style/GwDialogAnimation</item>      
+    </style>
+    
+    <style name="GwBluetoothConnectionProgressDialogTheme" parent="android:Theme.Holo.Dialog">
+        <item name="android:background">@color/gw_white</item>
+    	<item name="android:textColor">@color/gw_black_dark</item>    	   
+    </style>   
+    
+    <style name="GwCustomAlertDialogTheme" parent="@android:style/Theme.Dialog">
+        <!-- <item name="android:windowFrame">@null</item>
+		<item name="android:windowIsFloating">true</item>
+		<item name="android:windowContentOverlay">@null</item>
+		<item name="android:windowAnimationStyle">@android:style/Animation.Dialog</item>
+		<item name="android:windowBackground">@drawable/panel_background</item>
+		<item name="android:background">@drawable/panel_background</item>
+      	<item name="android:colorBackground">@drawable/panel_background</item>
+		<item name="android:colorBackgroundCacheHint">@null</item> -->
+		
+		<item name="android:bottomBright">@color/white</item>
+	    <item name="android:bottomDark">@color/white</item>
+	    <item name="android:bottomMedium">@color/white</item>
+	    <item name="android:centerBright">@color/white</item>
+	    <item name="android:centerDark">@color/white</item>
+	    <item name="android:centerMedium">@color/white</item>
+	    <!-- <item name="android:fullBright">@color/red</item>
+	    <item name="android:fullDark">@color/red</item> -->
+	    <item name="android:topBright">@color/gw_top_dialog_color</item>
+	    <item name="android:topDark">@color/gw_top_dialog_color</item>	    
+	</style>
+
+</resources>

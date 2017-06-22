@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:mydoctorapp="http://schemas.android.com/apk/res-auto">          
+        
+	    <item android:id="@+id/action_bar_menu"
+	        android:icon="@drawable/collections_view_as_grid"
+	        mydoctorapp:showAsAction="always"
+	        android:visible="false"
+	        >        
+	    </item>
+	    
+       <!-- <item android:id="@+id/mi_measure" 
+           android:title="@string/mi_measure"
+           android:icon="@drawable/ic_menu_archive_light" >                
+       </item>
+       
+       <item android:id="@+id/mi_quiz"
+           android:title="@string/quiz"
+           android:icon="@drawable/ic_menu_user_quiz_light">           
+       </item>           
+       
+       <item android:id="@+id/mi_user" 
+           android:title="@string/mi_user"
+           android:icon="@drawable/ic_menu_view_profile">   
+           "user" submenu 
+		     <menu>
+		         <item android:id="@+id/update_user"
+		               android:title="@string/update_user"
+		               android:icon="@drawable/ic_menu_user_update" />
+		         <item android:id="@+id/list_users"
+		               android:title="@string/list_users"
+		               android:icon="@drawable/ic_menu_user_list" />
+		         <item android:id="@+id/new_user"
+		               android:title="@string/new_user"
+		               android:icon="@drawable/ic_menu_user_add" />
+		         <item android:id="@+id/quiz"
+		               android:title="@string/quiz"
+		               android:icon="@drawable/ic_menu_user_quiz" />
+		         <item android:id="@+id/settings_user"
+			           android:title="@string/settings"
+			           android:icon="@drawable/ic_menu_preferences" />
+		     </menu>            
+       </item>       
+       
+       <item android:id="@+id/info"
+	       android:title="@string/info"
+	       android:icon="@drawable/ic_menu_about_light"> 
+       </item>
+       
+       <item android:id="@+id/mi_exit" 
+           android:title="@string/mi_exit"
+           android:icon="@drawable/ic_menu_power_off">                
+       </item>   -->         
+    
+</menu>

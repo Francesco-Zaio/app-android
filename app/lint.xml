@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<lint>
+    <issue id="ContentDescription">
+        <ignore path="res/layout/device_list.xml" />
+    </issue>
+    <issue id="NewApi">
+        <ignore path="src/com/ti/app/mydoctor/gui/AlertSettingsFragment.java" />
+    </issue>
+</lint>

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/listselector"
+    android:orientation="vertical"
+    android:padding="5dip"
+    android:gravity="center">
+	
+    <LinearLayout
+        android:id="@+id/thumbnail"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:orientation="horizontal"
+        android:padding="5dip" >
+ 		
+ 		<ImageView
+ 		    android:id="@+id/grid_item_image"
+ 		    android:layout_width="100dp"
+ 		    android:layout_height="100dp"
+ 		    android:layout_gravity="center"
+ 		    android:src="@drawable/aritmia_icon" />
+ 
+    </LinearLayout>
+    
+    <!-- Measure type label -->
+    <com.ti.app.mydoctor.gui.customview.GWTextView
+        android:id="@+id/grid_item_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/thumbnail"
+        android:layout_marginTop="10dp"
+        android:layout_marginLeft="5dp"
+        style="@style/gw_measure_label_grid_item_style"
+        app:typeface="roboto_condensed"
+        android:layout_centerInParent="true"
+        android:text="ARITMIA" />
+ 
+    <!-- Model Name  
+    <com.ti.app.mydoctor.gui.customview.GWTextView
+        android:id="@+id/grid_item_model"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/grid_item_label"
+        android:layout_marginTop="1dip"
+        android:layout_marginLeft="5dp"
+        style="@style/gw_measure_model_grid_item_style"
+        app:typeface="roboto_light"
+        android:layout_centerInParent="true"
+        android:text="Scegliere dispositivo" /> -->
+    
+
+</LinearLayout>

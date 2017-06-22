@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- <item android:id="@+id/mi_action_bar_menu_overflow"
+          android:icon="@drawable/ic_menu_moreoverflow"
+          android:title="@string/mi_menu_overflow"
+          android:showAsAction="always">
+          
+        <menu >
+    		<item android:id="@+id/delete_all_measure"
+		    	  android:title="@string/delete_all_measure"
+		    	  android:icon="@drawable/ic_menu_measure_cancel" />
+		    
+		    <item android:id="@+id/retry_send_all_measure"
+		    	  android:title="@string/retry_send_all_measure"
+		    	  android:icon="@drawable/ic_menu_measure_send" />        
+        </menu>
+
+    </item> -->
+    
+    <item android:id="@+id/delete_all_measure"
+    	  android:title="@string/delete_all_measure"
+    	  android:icon="@drawable/ic_menu_measure_cancel_light" />
+		    
+    <item android:id="@+id/retry_send_all_measure"
+    	  android:title="@string/retry_send_all_measure"
+    	  android:icon="@drawable/ic_menu_measure_send_light" />  
+    	  
+</menu>

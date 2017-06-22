@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="white">#ffff</color>
+    
+    <color name="gw_white">#ffffff</color>
+    <color name="gw_black_dark">#040404</color>
+    <color name="gw_black">#000000</color>
+    <!-- <color name="gw_blue_light">#33b5e5</color> -->
+    <color name="gw_blue_dark">#2D5A8C</color>
+    <color name="gw_blue_gray">#59666F</color>
+    <color name="gw_gray_dialog">#f5f5f5</color>
+    <color name="gw_gray_light">#ececec</color>
+    <color name="gw_gray_dark">#343434</color>
+    
+    <color name="gw_top_dialog_color">#101925</color>
+
+    <drawable name="gw_top_label_text_color">@color/gw_black_dark</drawable>
+    <drawable name="gw_bottom_label_text_color">@color/gw_black</drawable>
+    <drawable name="gw_fiscal_label_text_color">@color/gw_gray_dark</drawable>
+    <drawable name="gw_name_label_text_color">@color/gw_black_dark</drawable>        
+    <drawable name="gw_listview_background_color">@color/gw_gray_light</drawable>
+    <drawable name="gw_patient_name_footer_label_background_normal_color">@color/gw_gray_light</drawable>
+    <drawable name="gw_patient_name_footer_label_background_pressed_color">@color/gw_blue_dark</drawable>
+	<drawable name="gw_utility_bottom_label_background_color">@color/gw_gray_light</drawable>
+</resources>

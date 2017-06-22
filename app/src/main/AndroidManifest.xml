@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+	android:versionCode="330"
+	package="com.ti.app.mydoctor">
+
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+    <uses-permission android:name="android.permission.BLUETOOTH" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+
+    <uses-permission android:name="android.permission.BIND_ACCESSIBILITY_SERVICE" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.GET_TASKS" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+    <application
+		android:label="@string/app_name"
+		android:allowBackup="false"
+		android:icon="@drawable/logo_icon"
+		android:name="com.ti.app.mydoctor.core.MyDoctorApp"
+		android:theme="@style/Theme.MyDoctorAtHome.Light" >
+    	       
+        <activity
+			android:name=".gui.AboutScreen">
+			android:configChanges="orientation|screenSize|keyboardHidden"
+        </activity>
+        
+        <activity
+			android:name=".gui.DeviceList"
+			android:configChanges="orientation|screenSize|keyboardHidden"
+			android:theme="@style/Theme.AppCompat.Light">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        
+        <activity
+			android:label="@string/show_settings"
+			android:name=".gui.ShowSettings">
+            <intent-filter>
+        		<action android:name=".DeviceList" />
+        	</intent-filter>		  
+       	</activity>
+       	
+        <activity
+            android:label="@string/show_settings"
+            android:name=".gui.ShowUtilitySettings"
+            android:windowSoftInputMode="stateHidden">            
+        </activity>
+        
+        <activity
+            android:label="@string/show_settings_tab_title"
+            android:name=".gui.ShowUtilitySettingsTabs"
+            android:windowSoftInputMode="stateHidden">            
+        </activity>
+       	
+       	<activity
+			android:name=".gui.SelectPatient">
+       	</activity>
+
+		<activity
+            android:label="@string/show_measures"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:name=".gui.ShowMeasure">
+		    <intent-filter>
+				<action android:name=".DeviceList" />
+			</intent-filter>		  
+		</activity>
+		
+		<activity
+            android:name=".gui.MeasureDetails">
+		</activity>
+		
+		<activity
+            android:name=".gui.DeviceSettingsActivity">
+		</activity>
+	    
+	    <activity
+            android:label="@string/measure_title"
+            android:name=".gui.MeasureData">
+        </activity>
+	    
+	    <activity
+            android:label="@string/users_title"
+            android:name=".gui.UsersList">
+        </activity>
+	    
+	    <activity
+            android:label="@string/select_device"
+            android:theme="@android:style/Theme.Dialog"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:name=".gui.DeviceScanActivity">
+	    </activity>
+
+        <activity
+            android:name=".gui.ManualTemperatureActivity"
+            android:windowSoftInputMode="stateAlwaysVisible" >
+	    </activity>
+	    
+	    <activity
+            android:name=".gui.CalibrateActivity"
+            android:windowSoftInputMode="stateAlwaysVisible" >
+	    </activity>
+    </application>
+
+
+</manifest> 

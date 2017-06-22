@@ -1,0 +1,79 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="fill_parent"
+	android:layout_height="fill_parent">
+	
+	<LinearLayout
+		android:id="@+id/below_linear_layout"
+		android:layout_alignParentBottom="true"
+		android:layout_width="fill_parent"
+		android:background="#276BAE"
+		android:gravity="center_vertical"	
+		android:layout_height="55dip" >
+	
+		<Button
+			android:id="@+id/confirm_button"
+			android:layout_width="0dp"
+			android:layout_height="fill_parent"
+			android:layout_weight="1"
+			android:layout_margin="5dp"
+			android:text="@string/okButton"
+			android:background="@drawable/custom_button" />
+		
+		<Button
+			android:id="@+id/cancel_button"
+			android:layout_width="0dp"
+			android:layout_weight="1"
+			android:layout_height="fill_parent"
+			android:layout_margin="5dp"
+			android:text="@string/cancelButton"
+			android:background="@drawable/custom_button" />
+	</LinearLayout>
+	
+	<RelativeLayout
+		android:layout_width="fill_parent"
+		android:layout_height="wrap_content"
+		android:layout_above="@id/below_linear_layout" 
+		android:layout_alignParentTop="true" >
+		<ScrollView
+			android:layout_width="fill_parent"
+			android:layout_height="wrap_content" >
+			<RelativeLayout 
+				android:layout_width="fill_parent"
+				android:layout_height="fill_parent" >
+								 
+				<RelativeLayout
+					android:id="@+id/ARtimeoutRL"
+					android:layout_width="fill_parent"
+					android:layout_height="wrap_content"
+					android:minHeight="70dip">
+					<TextView
+						android:id="@+id/ARtimeoutTV"
+						android:layout_width="wrap_content"
+						android:layout_height="wrap_content"
+						android:textSize="22dip"
+						android:textColor="@android:color/white"
+						android:layout_centerVertical="true"
+						android:layout_marginLeft="10dip"
+						android:layout_marginRight="20dip"
+						android:text="@string/totalDuration" />											
+						
+					<EditText
+						android:id="@+id/ARtimeoutEV"
+						android:layout_toRightOf="@+id/ARtimeoutTV"
+						android:layout_width="wrap_content"
+						android:layout_height="wrap_content"
+						android:layout_marginTop="10dip"
+						android:layout_alignParentRight="true"
+						android:maxLength="2"						
+						android:inputType="number"/>
+					
+					
+						
+				</RelativeLayout>
+				
+				<CheckBox android:id="@+id/ARtimeoutCB" android:textSize="22dip" android:layout_below="@id/ARtimeoutRL" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/readLoop" android:checked="false" />
+				
+			</RelativeLayout>
+		</ScrollView>
+	</RelativeLayout>
+</RelativeLayout>

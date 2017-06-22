@@ -1,0 +1,31 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion 25
+    buildToolsVersion "25.0.3"
+    useLibrary 'org.apache.http.legacy'
+    defaultConfig {
+        applicationId "com.ti.app.mydoctor"
+        minSdkVersion 14
+        targetSdkVersion 25
+        versionName "3.3.0.b"
+        setProperty("archivesBaseName", "Nuvola It Home Doctor-$versionName")
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
+        }
+    }
+    productFlavors {
+    }
+}
+
+dependencies {
+    compile 'com.android.support:appcompat-v7:25.3.1'
+    compile files('libs/d2xx.jar')
+    compile files('libs/iHealthLibrary_2.3.2.jar')
+    compile files('libs/pl2303driver.jar')
+    compile files('libs/smartlinklib3.6.4_product.jar')
+    compile project(':core')
+}

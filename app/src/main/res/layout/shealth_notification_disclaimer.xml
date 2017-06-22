@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content" >
+
+    <ImageView
+        android:id="@+id/image"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="25dp"
+        android:layout_centerHorizontal="true"
+        android:src="@drawable/logo_icon" />
+
+    <TextView
+        android:id="@+id/text"
+        android:layout_below="@+id/image"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="15dp"
+        android:gravity="center"
+        android:textColor="#000"
+        android:text="Nuvola It Home Doctor is an application that gets the measure of Count Steps through connection with S Health. Connect to S Health and enjoy it!" />
+
+    <Button
+        android:id="@+id/shealthConnectionButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="10dp"
+        android:layout_marginBottom="10dp"
+        android:background="#93dc13"
+        android:text="@string/okButton"
+        android:textColor="#fff"
+        android:paddingRight="5dp"
+        android:paddingLeft="5dp"
+        android:layout_centerHorizontal="true"
+        android:layout_below="@+id/text"
+        />
+
+    <TextView
+        android:id="@+id/emptyText"
+        android:layout_below="@+id/shealthConnectionButton"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="15dp"
+        android:gravity="center"
+        android:textColor="#000" />
+
+
+
+</RelativeLayout>

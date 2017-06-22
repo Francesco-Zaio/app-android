@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+	  
+	<group android:id="@+id/pair_group">
+        <item android:id="@+id/pair"
+            android:icon="@drawable/ic_menu_bluetooth_pairing"
+          	android:title="@string/new_device" 
+          	android:textSize="15sp">          
+    	</item> 
+    </group>
+    
+    <group android:id="@+id/select_model_group">
+    	<item android:id="@+id/select_model"
+    	    android:icon="@drawable/ic_menu_device_collections_list"
+          	android:title="@string/select_model" 
+          	android:textSize="15sp">
+        </item>
+    </group>  
+     
+</menu>

@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:orientation="vertical" 
+	android:layout_width="fill_parent" 
+	android:layout_height="fill_parent"
+	android:background="@color/gw_gray_dialog"
+	android:padding="5dp" >
+    	<!-- <TextView
+		        android:id="@+id/loginLbl"
+		        android:layout_width="fill_parent"
+		        android:layout_height="wrap_content" 		    
+		    	android:text="@string/username"/>
+		<EditText
+		        android:id="@+id/login"
+		        android:layout_below="@id/loginLbl"
+		        android:layout_width="fill_parent"
+		        android:layout_height="wrap_content"  
+		        android:singleLine="true" 
+		        android:inputType="textVisiblePassword"/>
+		<TextView
+		        android:id="@+id/passwordLbl"
+		        android:layout_below="@id/login"
+		        android:layout_width="fill_parent"
+		        android:layout_height="wrap_content"	    	
+		    	android:text="@string/password"  />
+		<EditText
+		        android:id="@+id/password"
+		        android:layout_below="@id/passwordLbl"
+		        android:layout_width="fill_parent"
+		        android:layout_height="wrap_content"  
+		        android:singleLine="true"
+		        android:password="true" /> -->
+		        
+        <LinearLayout
+            android:id="@+id/login_layout"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal" >
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical" >
+
+                <TextView
+                    android:id="@+id/loginLbl"
+                    android:layout_width="fill_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/username"
+                    android:textSize="20sp" />
+
+                <EditText
+                    android:id="@+id/login"
+                    android:layout_width="fill_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textVisiblePassword"
+                    android:singleLine="true" />
+            </LinearLayout>
+
+            <!-- <ImageButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"     
+                android:layout_gravity="bottom"     
+                android:src="@drawable/ic_menu_device_collections_list" /> -->
+
+            <ImageButton
+                android:id="@+id/user_list_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:background="@android:color/transparent"
+                android:visibility="gone"
+                android:src="@drawable/ic_menu_moreoverflow_normal_holo_light" />
+
+        </LinearLayout>
+        
+        <TextView
+		        android:id="@+id/passwordLbl"
+		        android:layout_below="@id/login_layout"
+		        android:layout_width="fill_parent"
+		        android:layout_height="wrap_content"	    	
+		    	android:text="@string/password"
+		    	android:textSize="20sp" />
+		<EditText
+		        android:id="@+id/password"
+		        android:layout_below="@id/passwordLbl"
+		        android:layout_width="fill_parent"
+		        android:layout_height="wrap_content"  
+		        android:singleLine="true"
+		        android:password="true" />
+		
+		<CheckBox 
+		    android:id="@+id/passwordCheckBox"
+		    android:layout_below="@id/password"
+		    android:layout_width="wrap_content"
+		    android:layout_height="wrap_content"
+		    android:text="@string/passwordCBLabel"
+		    android:checked="false"/>
+		        
+</RelativeLayout>

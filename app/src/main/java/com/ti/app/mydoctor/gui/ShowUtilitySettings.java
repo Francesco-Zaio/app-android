@@ -17,28 +17,20 @@ import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.Spinner;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.ti.app.mydoctor.R;
-import com.ti.app.mydoctor.core.MyDoctorApp;
-import com.ti.app.telemed.core.ResourceManager;
+import com.ti.app.mydoctor.MyDoctorApp;
+import com.ti.app.mydoctor.AppResourceManager;
 import com.ti.app.telemed.core.common.ServerConf;
-import com.ti.app.telemed.core.common.User;
 import com.ti.app.telemed.core.dbmodule.DbManager;
 import com.ti.app.telemed.core.scmodule.ServerCertificateManager;
-import com.ti.app.telemed.core.usermodule.UserManager;
 import com.ti.app.telemed.core.exceptions.DbException;
 import com.ti.app.mydoctor.gui.customview.GWTextView;
-import com.ti.app.mydoctor.util.GWConst;
 import com.ti.app.mydoctor.util.Util;
 
 public class ShowUtilitySettings extends ActionBarActivity {
@@ -50,18 +42,12 @@ public class ShowUtilitySettings extends ActionBarActivity {
 	
 	//Elementi che compongono la GUI
 	private EditText hostEt;
-	private TextView hostSendTitle;
-	private EditText hostSendValue;
 	private EditText portEt;
-	private Spinner protocolSpinner;
 	private EditText quizEt;
 	private Button okButton;
 	private Button cancelButton;
 			
 	private String[] portDefaultArray = new String[] {"443", "80"};
-	
-	private ArrayAdapter<String> protocolSpinnerAdapter;
-	private String[] protocolArray = new String[] {"https", "http"};
 	
 	//Dialog
 	public static final int ERROR_DIALOG = 0;
@@ -74,14 +60,7 @@ public class ShowUtilitySettings extends ActionBarActivity {
 	private static final String TITLE = "TITLE";
 	private static final String MESSAGE = "MESSAGE";
 	
-	private ResourceManager rManager;
-	private ServerCertificateManager scManager;
-	
-	//Serve per controllare il listener su protocolSpinner
-	//in modo che non venga eseguito sulla onCreate
-	private boolean isProtocolSpinnerTouched = false;
-	
-	private User activeUser;
+	private AppResourceManager rManager;
 		
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -124,25 +103,10 @@ public class ShowUtilitySettings extends ActionBarActivity {
 		
 		//Ottengo il riferimento degli elementi che compongono la GUI
 		hostEt = (EditText) findViewById(R.id.host_et);
-		hostSendTitle = (TextView) findViewById(R.id.host_send_title_tv);
-		hostSendValue = (EditText) findViewById(R.id.host_send_value_tv);
-		hostSendValue.setEnabled(false);
 		portEt = (EditText) findViewById(R.id.port_et);
-		
-		protocolSpinner = (Spinner) findViewById(R.id.protocol_spinner);
-		protocolSpinnerAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, protocolArray);
-		protocolSpinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-		protocolSpinner.setAdapter(protocolSpinnerAdapter);
 				
 		quizEt = (EditText) findViewById(R.id.quiz_et);
-		
-		
-		activeUser = DbManager.getDbManager().getActiveUser();
-		if( activeUser==null || activeUser.getId().equalsIgnoreCase( GWConst.DEFAULT_USER_ID )) {
-			hostSendTitle.setVisibility(View.GONE);
-			hostSendValue.setVisibility(View.GONE);
-		}
-		
+
 		okButton = (Button) findViewById(R.id.confirm_button);
 		cancelButton = (Button) findViewById(R.id.cancel_button);
 		//Imposto il listener per i click sui button
@@ -151,10 +115,7 @@ public class ShowUtilitySettings extends ActionBarActivity {
 		
 		populateActivity();
 				
-		rManager = ResourceManager.getResource();
-		
-		scManager = ServerCertificateManager.getScMananger();
-		scManager.setHandler(scManagerHandler);		
+		rManager = AppResourceManager.getResource();
 	}
 	
 	@Override
@@ -198,45 +159,9 @@ public class ShowUtilitySettings extends ActionBarActivity {
 		DbManager dbManager = DbManager.getDbManager();
 		try {
 			ServerConf sc = dbManager.getServerConf();
-						
 			hostEt.setText(sc.getIp());
-			if( activeUser!=null && !activeUser.getId().equalsIgnoreCase( GWConst.DEFAULT_USER_ID )) {
-				hostSendValue.setText( activeUser.getIp() );
-			}
 			portEt.setText(sc.getPort());
-					
-			String protocol = sc.getProtocol();
-			for(int i = 0; i < protocolArray.length; i++) {
-				if(protocolArray[i].equals(protocol))
-					protocolSpinner.setSelection(i);
-			}		
-			
-			protocolSpinner.setOnTouchListener(new View.OnTouchListener() {			
-				@Override
-				public boolean onTouch(View v, MotionEvent event) {
-					isProtocolSpinnerTouched = true;
-					return false;
-				}
-			});
-			
-			protocolSpinner.setOnItemSelectedListener( new AdapterView.OnItemSelectedListener() {
-
-				@Override
-				public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
-							
-					if(isProtocolSpinnerTouched) {
-						portEt.setText(portDefaultArray[pos]);
-					}
-				}
-
-				@Override
-				public void onNothingSelected(AdapterView<?> arg0) {
-					// Do nothing				
-				}
-			});	
-			
 			quizEt.setText(Util.getRegistryValue(Util.KEY_URL_QUIZ, Util.URL_QUIZ_DEFAULT));
-			
 		} catch (DbException e) {
 			showDialog(ShowUtilitySettings.ERROR_DIALOG);
 		}
@@ -286,8 +211,8 @@ public class ShowUtilitySettings extends ActionBarActivity {
 		//Identifico la dialog che deve essere visualizzata
 		switch(id) {
 		case ERROR_DIALOG:
-			builder.setTitle(ResourceManager.getResource().getString("warningTitle"));
-			builder.setMessage(ResourceManager.getResource().getString("errorDb"));
+			builder.setTitle(AppResourceManager.getResource().getString("warningTitle"));
+			builder.setMessage(AppResourceManager.getResource().getString("errorDb"));
 			builder.setNeutralButton(R.string.okButton, error_dialog_click_listener);
 			break;
 		case CONNECTING_CONFIRM_DIALOG:
@@ -339,19 +264,18 @@ public class ShowUtilitySettings extends ActionBarActivity {
 			//Identifico quale button è stato selezionato
 			switch(v.getId()) {
 			case R.id.confirm_button:
-				//Aggiorno il contenuto del db in base agli input dell'utente
+				Util.setRegistryValue(Util.KEY_URL_QUIZ, quizEt.getText().toString());
 				DbManager dbManager = DbManager.getDbManager();
 				try {
-										
+                    //Aggiorno il contenuto del db in base agli input dell'utente
 					ServerConf sc = new ServerConf();
+					ServerConf defaultSC = dbManager.getDefaultServerConf();
 					sc.setIp(hostEt.getText().toString());
 					sc.setPort(portEt.getText().toString());
-					sc.setTarget(dbManager.getDefaultServerConf().getTargetDef());
-					sc.setProtocol(protocolArray[protocolSpinner.getSelectedItemPosition()]);
-					Util.setRegistryValue(Util.KEY_URL_QUIZ, quizEt.getText().toString());
-
+					sc.setProtocol(defaultSC.getProtocolDef());
+					sc.setTargetCfg(defaultSC.getTargetCfgDef());
+					sc.setTargetSend(defaultSC.getTargetSendDef());
 					MyDoctorApp.getConfigurationManager().updateConfiguration(sc);
-					
 					finish();
 				} catch (DbException e) {
 					e.printStackTrace();
@@ -385,21 +309,19 @@ public class ShowUtilitySettings extends ActionBarActivity {
 						defaultSC.setIp(defaultSC.getIpDef());
 						defaultSC.setPort(defaultSC.getPortDef());
 						defaultSC.setProtocol(defaultSC.getProtocolDef());
-						defaultSC.setTarget(defaultSC.getTargetDef());
-						
+						defaultSC.setTargetCfg(defaultSC.getTargetCfgDef());
+						defaultSC.setTargetSend(defaultSC.getTargetSendDef());
+
 						MyDoctorApp.getConfigurationManager().updateConfiguration(defaultSC);
 						finish();
-						Toast.makeText(getApplicationContext(), ResourceManager.getResource().getString("showSettingsOperationSuccessfull"), Toast.LENGTH_LONG).show();
+						Toast.makeText(getApplicationContext(), AppResourceManager.getResource().getString("showSettingsOperationSuccessfull"), Toast.LENGTH_LONG).show();
 					} catch(DbException e) {
 						showDialog(ERROR_DIALOG);
 					}
 				}
-				else {
-					scManager.deleteAllServerCerts(UserManager.getUserManager().getCurrentUser().getId());
-				}
 				break;
 			case DialogInterface.BUTTON_NEGATIVE:
-				Toast.makeText(getApplicationContext(), ResourceManager.getResource().getString("showSettingsOperationCancelled"), Toast.LENGTH_LONG).show();
+				Toast.makeText(getApplicationContext(), AppResourceManager.getResource().getString("showSettingsOperationCancelled"), Toast.LENGTH_LONG).show();
 				break;
 			}
 			removeDialog(CONNECTING_CONFIRM_DIALOG);

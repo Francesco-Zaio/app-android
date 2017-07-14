@@ -1,4 +1,4 @@
-package com.ti.app.mydoctor.core;
+package com.ti.app.mydoctor;
 
 import com.ti.app.mydoctor.devicemodule.DeviceManager;
 import com.ti.app.telemed.core.MyApp;

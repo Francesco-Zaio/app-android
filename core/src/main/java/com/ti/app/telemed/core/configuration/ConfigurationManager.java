@@ -104,10 +104,12 @@ public class ConfigurationManager {
 	            	String measure = st.nextToken().trim();
 	            	String model = st.nextToken().trim();
 	            	String description = st.nextToken().trim();
+					int needCfg = Integer.parseInt(st.nextToken().trim());
 	            	Device tmpDev = new Device();
 	            	tmpDev.setMeasure(measure);
 	            	tmpDev.setModel(model);
 	            	tmpDev.setDescription(description);
+					tmpDev.setNeedCfg(needCfg == 1);
 	            	currentDev.add(tmpDev);
 	            	
 	            	Device d = DbManager.getDbManager().getDeviceWhereMeasureModel(measure, model);

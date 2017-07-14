@@ -32,7 +32,6 @@ public interface GWConst {
 	String KCcxsRoche = "CCXS";
 	String KIEMWS = "IEMWS";
 	String KIEMBP = "IEMBP";
-	String KIEMECG = "IEMECG";
 	String KFORATherm = "FORAIR21B";
 	String KForaWS = "FORAW310";
     String KManualMeasure = "MANUALE";
@@ -43,7 +42,6 @@ public interface GWConst {
     String KANDPS = "ANDPS";
     String KANDPR = "ANDPR";
     String KCAMERA = "CAMERA";
-    String KZEPHYR = "ZEPHYR";
     String KAEROTEL = "AEROTEL";
     String KMYGLUCOHEALTH = "MYGLUCOHEALTH";
 
@@ -139,4 +137,7 @@ public interface GWConst {
 
 	//Constants for Message Bundles
 	String MESSAGE = "MESSAGE";
+
+	//ID for default user
+	String DEFAULT_USER_ID = "-1";
 }

@@ -27,7 +27,8 @@ import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 
 import com.ti.app.mydoctor.R;
-import com.ti.app.telemed.core.ResourceManager;
+import com.ti.app.mydoctor.util.AppConst;
+import com.ti.app.mydoctor.AppResourceManager;
 import com.ti.app.telemed.core.common.Patient;
 import com.ti.app.telemed.core.common.UserPatient;
 import com.ti.app.telemed.core.dbmodule.DbManager;
@@ -36,9 +37,12 @@ import com.ti.app.mydoctor.gui.alphabeticalindex.IndexableListView;
 import com.ti.app.mydoctor.gui.customview.ActionBarListActivity;
 import com.ti.app.mydoctor.gui.customview.GWTextView;
 import com.ti.app.mydoctor.gui.listadapter.PatientListAdapter;
-import com.ti.app.mydoctor.util.GWConst;
 
 public class SelectPatient extends ActionBarListActivity implements SearchView.OnQueryTextListener {
+
+	public static final String USER_ID = "USER_ID";
+	public static final String PATIENT = "PATIENT";
+	public static final String PATIENT_ID = "PATIENT_ID";
 	
 	private static final String TAG = "SelectPatient";
 	
@@ -107,9 +111,9 @@ public class SelectPatient extends ActionBarListActivity implements SearchView.O
 		String[] from = new String[] { KEY_CF, KEY_PATIENT_SURNAME, KEY_PATIENT_NAME };
 		int[] to = new int[] { R.id.cf, R.id.patient_surname, R.id.patient_name };
 
-		fillMaps = new ArrayList<HashMap<String, String>>();
+		fillMaps = new ArrayList<>();
 
-		String userId = getIntent().getExtras().getString(GWConst.USER_ID);
+		String userId = getIntent().getExtras().getString(USER_ID);
 		patientList = DbManager.getDbManager().getUserPatients(userId);
 		
 		//ricava il nome dell'utente attivo per la title dell'ActionBar
@@ -181,8 +185,8 @@ public class SelectPatient extends ActionBarListActivity implements SearchView.O
 					String idPatient = map.get(KEY_ID);
 					idPatient = idPatient.replace("[", "");
 					idPatient = idPatient.replace("]", "");
-					result.putExtra(GWConst.PATIENT_ID, idPatient);
-					result.putExtra(GWConst.PATIENT, map.get(KEY_PATIENT));
+					result.putExtra(PATIENT_ID, idPatient);
+					result.putExtra(PATIENT, map.get(KEY_PATIENT));
 					setResult(RESULT_OK, result);
 					finish();
 				}
@@ -242,8 +246,8 @@ public class SelectPatient extends ActionBarListActivity implements SearchView.O
 		//Identifico la dialog che deve essere visualizzata
 		switch(id) {
 		case ERROR_DIALOG:
-			builder.setTitle(ResourceManager.getResource().getString("warningTitle"));
-			builder.setMessage(ResourceManager.getResource().getString("errorDb"));
+			builder.setTitle(AppResourceManager.getResource().getString("warningTitle"));
+			builder.setMessage(AppResourceManager.getResource().getString("errorDb"));
 			builder.setNeutralButton(R.string.okButton, error_dialog_click_listener);
 			break;
 		}

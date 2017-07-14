@@ -14,11 +14,10 @@ import android.view.WindowManager;
 import android.widget.EditText;
 
 import com.ti.app.mydoctor.R;
-import com.ti.app.telemed.core.dbmodule.DbManager;
+import com.ti.app.mydoctor.util.AppConst;
 import com.ti.app.mydoctor.gui.customview.CustomKeyboard;
 import com.ti.app.mydoctor.gui.customview.CustomKeyboardListener;
 import com.ti.app.mydoctor.gui.customview.GWTextView;
-import com.ti.app.mydoctor.util.GWConst;
 import com.ti.app.mydoctor.util.Util;
 
 public class CalibrateActivity extends ActionBarActivity implements CustomKeyboardListener {
@@ -133,7 +132,7 @@ public class CalibrateActivity extends ActionBarActivity implements CustomKeyboa
 		boolean ret = false;
 		if(!Util.isEmptyString(calValue)){
 			int cal = Integer.valueOf(calValue);
-			ret = (GWConst.MIN_STRIP_CODE <= cal) && (cal <= GWConst.MAX_STRIP_CODE);
+			ret = (AppConst.MIN_STRIP_CODE <= cal) && (cal <= AppConst.MAX_STRIP_CODE);
 		}
 		return ret;
 	}

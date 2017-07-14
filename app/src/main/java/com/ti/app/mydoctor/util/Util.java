@@ -6,9 +6,10 @@ import android.os.Environment;
 import android.util.Log;
 
 import com.ti.app.mydoctor.R;
-import com.ti.app.mydoctor.core.MyDoctorApp;
-import com.ti.app.telemed.core.ResourceManager;
+import com.ti.app.mydoctor.MyDoctorApp;
 import com.ti.app.telemed.core.common.Device;
+import com.ti.app.telemed.core.util.GWConst;
+
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -17,11 +18,7 @@ public class Util {
 	
 	public static final String KEY_SHARED_PREFS = "TELEMONITORING_SP";
 	public static final String KEY_BTGT_CALIBRATE_VALUE = "BTGT_CALIBRATE_VALUE";
-	public static final String KEY_AR_TIMEOUT_VALUE = "AR_TIMEOUT_VALUE";
-	public static final String KEY_ZEPHYR_TIMEOUT_VALUE = "ZEPHYR_TIMEOUT_VALUE";
-	public static final String KEY_ZEPHYR_LOOP_VALUE = "ZEPHYR_LOOP_VALUE";
 	private static final String TAG = "Util";
-	public static final String APN_RESET_KEY = "apn_reset_key";
 	public static final String KEY_AUTO_UPDATE = "KEY_AUTO_UPDATE";
 	public static final String KEY_AUTO_UPDATE_DATE = "KEY_AUTO_UPDATE_DATE";
 	public static final String KEY_WARNING_TIMESTAMP = "KEY_WARNING_TIMESTAMP";
@@ -29,10 +26,10 @@ public class Util {
 	public static final String KEY_LAST_USER = "KEY_LAST_USER";
 	public static final String KEY_URL_QUIZ = "KEY_URL_QUIZ";
 	public static final String URL_QUIZ_DEFAULT = "group/pazienti/lista-attestati";
+	public static final String KEY_MEASURE_TYPE = "measureType.";
 
 	public static final String KEY_GRID_LAYOUT = "KEY_GRID_LAYOUT";
 
-	public static final String KEY_DEMO_VERSION_SETTING = "KEY_DEMO_VERSION_SETTING";
 	
 	@SuppressLint("NewApi")
 	public static File getDir() {
@@ -74,8 +71,8 @@ public class Util {
 	
 	public static String getString(int id){
 		return MyDoctorApp.getContext().getResources().getString(id);
-	}		
-	
+	}
+
 	public static boolean isGlucoTelDevice(Device device) {
 		return (device.getModel() != null && device.getModel().equalsIgnoreCase(GWConst.KBTGT));
 	}
@@ -113,61 +110,10 @@ public class Util {
 				|| device.getModel().equalsIgnoreCase(GWConst.KPO3IHealth)
 				|| device.getModel().equalsIgnoreCase(GWConst.KBP5IHealth)
 				|| device.getModel().equalsIgnoreCase(GWConst.KHS4SIHealth)
-				|| device.getModel().equalsIgnoreCase(GWConst.KBP550BTIHealth)
+				|| device.getModel().equalsIgnoreCase(GWConst.KBP550BTHealth)
 				|| isManualMeasure(device);
 	}
-	
-	public static String getMeasureUnit(String measureName){
-		String unit = "";
-		if(ResourceManager.getResource().getString("EGwnurseMeasureWeight").equalsIgnoreCase(measureName)){
-			unit = ResourceManager.getResource().getString("EGwnurseUnitWeight");
-		} else if(ResourceManager.getResource().getString("EGwnurseMeasureBodyFat").equalsIgnoreCase(measureName)){
-			unit = ResourceManager.getResource().getString("EGwnurseUnitPerc");
-		} else if(ResourceManager.getResource().getString("EGwnurseMeasureBodyWater").equalsIgnoreCase(measureName)){
-			unit = ResourceManager.getResource().getString("EGwnurseUnitPerc");
-		} else if(ResourceManager.getResource().getString("EGwnurseMeasureDiastolic").equalsIgnoreCase(measureName)){
-			unit = ResourceManager.getResource().getString("EGwnurseUnitPressure");
-		} else if(ResourceManager.getResource().getString("EGwnurseMeasureSystolic").equalsIgnoreCase(measureName)){
-			unit = ResourceManager.getResource().getString("EGwnurseUnitPressure");
-		} else if(ResourceManager.getResource().getString("EGwnurseMeasureHeartRate").equalsIgnoreCase(measureName)){
-			unit = ResourceManager.getResource().getString("EGwnurseUnitHeartRate");
-		} else if(ResourceManager.getResource().getString("EGwnurseMeasureGlycaemiaPre").equalsIgnoreCase(measureName)){
-			unit = ResourceManager.getResource().getString("EGwnurseUnitGlycaemia");
-		} else if(ResourceManager.getResource().getString("EGwnurseMeasureGlycaemiaPost").equalsIgnoreCase(measureName)){
-			unit = ResourceManager.getResource().getString("EGwnurseUnitGlycaemia");
-		} else if(ResourceManager.getResource().getString("EGwnurseMeasureProtTime").equalsIgnoreCase(measureName)){
-			unit = ResourceManager.getResource().getString("EGwnurseUnitSecond");
-		} else if(ResourceManager.getResource().getString("EGwnurseMeasurePerQ").equalsIgnoreCase(measureName)){
-			unit = ResourceManager.getResource().getString("EGwnurseUnitQuick");
-		} else if(ResourceManager.getResource().getString("EGwnurseMeasureSpiroFEV1").equalsIgnoreCase(measureName)){
-			unit = ResourceManager.getResource().getString("EGwnurseUnitSpiroL");
-		} else if(ResourceManager.getResource().getString("EGwnurseMeasureSpiroFVC").equalsIgnoreCase(measureName)){
-			unit = ResourceManager.getResource().getString("EGwnurseUnitSpiroL");
-		} else if(ResourceManager.getResource().getString("EGwnurseMeasureSpiroFEV1perc").equalsIgnoreCase(measureName)){
-			unit = ResourceManager.getResource().getString("EGwnurseUnitSpiroPerc");
-		} else if(ResourceManager.getResource().getString("EGwnurseMeasureSpiroPEF").equalsIgnoreCase(measureName)){
-			unit = ResourceManager.getResource().getString("EGwnurseUnitSpiroLtoS");
-		} else if(ResourceManager.getResource().getString("EGwnurseMeasureSpiroFET").equalsIgnoreCase(measureName)){
-			unit = ResourceManager.getResource().getString("EGwnurseUnitSpiroSec");
-		} else if(ResourceManager.getResource().getString("EGwnurseMeasureOxyMed").equalsIgnoreCase(measureName)){
-			unit = ResourceManager.getResource().getString("EGwnurseUnitOxy");
-		} else if(ResourceManager.getResource().getString("EGwnurseMeasureOxyFreqMed").equalsIgnoreCase(measureName)){
-			unit = ResourceManager.getResource().getString("EGwnurseUnitOxyFreq");
-		} else if(ResourceManager.getResource().getString("EGwMeasureTemperature").equalsIgnoreCase(measureName)){
-			unit = ResourceManager.getResource().getString("EGwUnitTemperature");
-		} else if(ResourceManager.getResource().getString("EGwnurseMeasurePedometerSteps").equalsIgnoreCase(measureName)){
-			unit = ResourceManager.getResource().getString("EGwnurseUnitSteps");
-		} else if(ResourceManager.getResource().getString("EGwnurseMeasurePedometerDistance").equalsIgnoreCase(measureName)){
-			unit = ResourceManager.getResource().getString("EGwnurseUnitDistance");
-		} else if(ResourceManager.getResource().getString("EGwnurseMeasurePedometerDuration").equalsIgnoreCase(measureName)){
-			unit = ResourceManager.getResource().getString("EGwnurseUnitSecond");
-		} else if(ResourceManager.getResource().getString("EGwnurseMeasurePedometerCalorie").equalsIgnoreCase(measureName)){
-			unit = ResourceManager.getResource().getString("EGwnurseUnitCalorie");
-		}
-		
-		return unit;
-	}
-	
+
 	public static int getIconId(String measure) {
 		if(measure.equalsIgnoreCase(GWConst.KMsrEcg))
 			return R.drawable.ecg_icon;
@@ -189,8 +135,6 @@ public class Util {
 			return R.drawable.aritmia_icon;
 		else if(measure.equalsIgnoreCase(GWConst.KMsrImg))
 			return R.drawable.immagini_icon;
-		else if(measure.equalsIgnoreCase(GWConst.KMsrAttMot))
-			return R.drawable.attmotoria_icon;
 		else
 			return R.drawable.icon;
 	}	
@@ -216,8 +160,6 @@ public class Util {
 			return R.drawable.small_aritmia_icon;
 		else if(measure.equalsIgnoreCase(GWConst.KMsrImg))
 			return R.drawable.small_immagini_icon;
-		else if(measure.equalsIgnoreCase(GWConst.KMsrAttMot))
-			return R.drawable.small_attmotoria_icon;
 		else
 			return R.drawable.icon;
 	}	

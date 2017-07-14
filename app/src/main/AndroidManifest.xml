@@ -22,7 +22,7 @@
 		android:label="@string/app_name"
 		android:allowBackup="false"
 		android:icon="@drawable/logo_icon"
-		android:name="com.ti.app.mydoctor.core.MyDoctorApp"
+		android:name="com.ti.app.mydoctor.MyDoctorApp"
 		android:theme="@style/Theme.MyDoctorAtHome.Light" >
     	       
         <activity
@@ -80,13 +80,8 @@
 		<activity
             android:name=".gui.DeviceSettingsActivity">
 		</activity>
-	    
-	    <activity
-            android:label="@string/measure_title"
-            android:name=".gui.MeasureData">
-        </activity>
-	    
-	    <activity
+
+        <activity
             android:label="@string/users_title"
             android:name=".gui.UsersList">
         </activity>

@@ -6,7 +6,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
 
-import com.ti.app.telemed.core.ResourceManager;
+import com.ti.app.mydoctor.AppResourceManager;
 import com.ti.app.telemed.core.btdevices.IHealth;
 import com.ti.app.telemed.core.btmodule.BTSearcherEventListener;
 import com.ti.app.telemed.core.btmodule.DeviceHandler;
@@ -15,8 +15,9 @@ import com.ti.app.telemed.core.common.Measure;
 import com.ti.app.telemed.core.common.User;
 import com.ti.app.telemed.core.common.UserDevice;
 import com.ti.app.telemed.core.dbmodule.DbManager;
+import com.ti.app.telemed.core.util.GWConst;
 import com.ti.app.mydoctor.gui.DeviceScanActivity;
-import com.ti.app.mydoctor.util.GWConst;
+import com.ti.app.mydoctor.util.AppConst;
 import com.ti.app.mydoctor.util.Util;
 import com.ti.app.telemed.core.usermodule.UserManager;
 import com.ti.app.telemed.core.xmlmodule.XmlManager;
@@ -41,13 +42,11 @@ public class DeviceManager implements DeviceListener {
 	public static final int MESSAGE_STATE_WAIT = 2;
 	public static final int ERROR_STATE = 3;
 	public static final int MEASURE_RESULT = 4;
+	public static final int CONFIG_READY = 5;
 
 	public static final int ASK_SOMETHING = 7;
-	public static final int SEND_ALL = 8;
-	public static final int STOP_BACKGROUND = 9;
+    public static final int REFRESH_LIST = 10;
 
-	
-	public static final String RESULT_TYPE = "RESULT_TYPE";
     public static final String MEASURE = "MEASURE";
 	
 	private boolean operationRunning;
@@ -113,16 +112,16 @@ public class DeviceManager implements DeviceListener {
 						operationRunning = true;
 						executeOp();
 					} catch (Exception e) {
-						showError(ResourceManager.getResource().getString("EGWNursePairingError"));
+						showError(AppResourceManager.getResource().getString("EGWNursePairingError"));
 					}
 				} else {
-					showError(ResourceManager.getResource().getString("KNoPatientSelected"));
+					showError(AppResourceManager.getResource().getString("KNoPatientSelected"));
 				}
 			} else {
-				showError(ResourceManager.getResource().getString("KNoCurrentDevice"));
+				showError(AppResourceManager.getResource().getString("KNoCurrentDevice"));
 			}
 		} else {
-			showError(ResourceManager.getResource().getString("KNoBluetooth"));
+			showError(AppResourceManager.getResource().getString("KNoBluetooth"));
 		}
 	}
 	
@@ -131,24 +130,35 @@ public class DeviceManager implements DeviceListener {
 	}
 
 	private void executeOp() throws Exception {
+
+        User u = UserManager.getUserManager().getCurrentUser();
+        m = new Measure();
+        m.setMeasureType(currentDevice.getDevice().getMeasure());
+        m.setStandardProtocol(true);
+        m.setDeviceDesc(currentDevice.getDevice().getDescription());
+        m.setTimestamp(XmlManager.getXmlManager().getTimestamp(null));
+        m.setFile(null);
+        m.setFileType(null);
+        m.setIdUser(u.getId());
+        if (u.getIsPatient())
+            m.setIdPatient(u.getId());
+
 		switch (currentDevice.getDevice().getModel()) {
 			case GWConst.KPO3IHealth:
+				m.setDeviceType(XmlManager.TDeviceType.MIR_OXIMETER_DT);
+				currentDeviceHandler = new IHealth(this, m, currentDevice.getDevice().getModel());
+				startMeasure(AppResourceManager.getResource().getString("KInitMsgOS"));
+				break;
             case GWConst.KBP5IHealth:
-            case GWConst.KHS4SIHealth:
-            case GWConst.KBP550BTIHealth:
-
-
-                m = new Measure();
-                m.setMeasureType(currentDevice.getDevice().getMeasure());
-                m.setStandardProtocol(true);
-                m.setDeviceDesc(currentDevice.getDevice().getDescription());
-                m.setTimestamp(XmlManager.getXmlManager().getTimestamp(null));
-                m.setFile(null);
-                m.setFileType(null);
-                m.setIdUser(UserManager.getUserManager().getCurrentUser().getId());
-                m.setIdPatient(UserManager.getUserManager().getCurrentUser().getId());
-                currentDeviceHandler = new IHealth(this, m, currentDevice.getDevice().getMeasure());
-				startMeasure(ResourceManager.getResource().getString("KInitMsgOxiNonin"));
+            case GWConst.KBP550BTHealth:
+				m.setDeviceType(XmlManager.TDeviceType.BLOODPRESSURE_DT);
+                currentDeviceHandler = new IHealth(this, m, currentDevice.getDevice().getModel());
+				startMeasure(AppResourceManager.getResource().getString("KInitMsgPR"));
+				break;
+			case GWConst.KHS4SIHealth:
+				m.setDeviceType(XmlManager.TDeviceType.WEIGHTSCALE_DT);
+				currentDeviceHandler = new IHealth(this, m, currentDevice.getDevice().getModel());
+				startMeasure(AppResourceManager.getResource().getString("KInitMsgPS"));
 				break;
 		}
 	}
@@ -194,7 +204,7 @@ public class DeviceManager implements DeviceListener {
         	}
 			currentDeviceHandler.stopDeviceOperation(selected);
 		} catch (Exception e) {
-			showError(ResourceManager.getResource().getString("EGWNurseBtSearchError"));
+			showError(AppResourceManager.getResource().getString("EGWNurseBtSearchError"));
 		}
     }
 
@@ -326,7 +336,7 @@ public class DeviceManager implements DeviceListener {
     public void notifyError(String errorCode, String errorMessage) {
         Log.e(TAG, "notifyError: " + errorCode + " - " + errorMessage);
         operationRunning = false;
-        sendMessageToHandler(errorCode + " - " + errorMessage, ERROR_STATE, GWConst.MESSAGE);
+        sendMessageToHandler(errorCode + " - " + errorMessage, ERROR_STATE, AppConst.MESSAGE);
     }
 
     @Override
@@ -338,13 +348,13 @@ public class DeviceManager implements DeviceListener {
     @Override
 	public void notifyToUi(String msg) {
 		Log.i(TAG, "notifyToUi: " +msg);
-		sendMessageToHandler(msg, MESSAGE_STATE, GWConst.MESSAGE);
+		sendMessageToHandler(msg, MESSAGE_STATE, AppConst.MESSAGE);
     }
 
     @Override
 	public void notifyWaitToUi(String msg) {
 		Log.i(TAG, "notifyWaitToUi: "+msg);
-		sendMessageToHandler(msg, MESSAGE_STATE_WAIT, GWConst.MESSAGE);
+		sendMessageToHandler(msg, MESSAGE_STATE_WAIT, AppConst.MESSAGE);
     }
 
 
@@ -352,7 +362,7 @@ public class DeviceManager implements DeviceListener {
     public void showError(String msg) {
         Log.e(TAG, "showError: " +msg);
         operationRunning = false;
-        sendMessageToHandler(msg, ERROR_STATE, GWConst.MESSAGE);
+        sendMessageToHandler(msg, ERROR_STATE, AppConst.MESSAGE);
     }
 
 	public void sendMessageToHandler(String msgText, int messageType, String messageKey) {
@@ -360,9 +370,9 @@ public class DeviceManager implements DeviceListener {
         Bundle bundle = new Bundle();
         bundle.putString(messageKey, msgText);
         if(messageType == MESSAGE_STATE_WAIT){
-        	bundle.putBoolean(GWConst.MESSAGE_CANCELLABLE, false);
+        	bundle.putBoolean(AppConst.MESSAGE_CANCELLABLE, false);
         } else {
-        	bundle.putBoolean(GWConst.MESSAGE_CANCELLABLE, true);
+        	bundle.putBoolean(AppConst.MESSAGE_CANCELLABLE, true);
         }
         message.setData(bundle);
         handler.sendMessage(message);
@@ -387,7 +397,7 @@ public class DeviceManager implements DeviceListener {
 		try {
 			currentDeviceHandler.stop();
 		} catch (Exception e) {
-			showError(ResourceManager.getResource().getString(
+			showError(AppResourceManager.getResource().getString(
 			"EGWNurseBtDeviceDisconnError"));
 		}
 	}
@@ -408,10 +418,10 @@ public class DeviceManager implements DeviceListener {
 
 		Message message = handler.obtainMessage(ASK_SOMETHING);
         Bundle bundle = new Bundle();
-        bundle.putBoolean(GWConst.MESSAGE_CANCELLABLE, false);
-        bundle.putString(GWConst.ASK_MESSAGE, messageText);
-        bundle.putString(GWConst.ASK_POSITIVE, positiveText);
-        bundle.putString(GWConst.ASK_NEGATIVE, negativeText);
+        bundle.putBoolean(AppConst.MESSAGE_CANCELLABLE, false);
+        bundle.putString(AppConst.ASK_MESSAGE, messageText);
+        bundle.putString(AppConst.ASK_POSITIVE, positiveText);
+        bundle.putString(AppConst.ASK_NEGATIVE, negativeText);
 
         message.setData(bundle);
         handler.sendMessage(message);
@@ -423,35 +433,5 @@ public class DeviceManager implements DeviceListener {
 		} catch (Exception e) {
 			Log.w(TAG, "cancelDialog=" + e);
 		}
-		//showError(ResourceManager.getResource().getString("showSettingsOperationCancelled"));
 	}
-
-	public void askSendAllMeasures(String measureType, String resultType) {
-		Message message = handler.obtainMessage(SEND_ALL);
-        Bundle bundle = new Bundle();
-        bundle.putBoolean(GWConst.MESSAGE_CANCELLABLE, false);
-        bundle.putString(GWConst.SEND_MEASURE_TYPE, measureType);
-
-        bundle.putString(RESULT_TYPE, resultType);
-        //bundle.putStringArrayList(LABELS, tmpLab);
-        //bundle.putStringArrayList(VALUES, tmpVal);
-
-        message.setData(bundle);
-        handler.sendMessage(message);
-	}
-
-	public void saveAllMeasure() {
-
-		Log.d(TAG, "saveAllMeasure()");
-	}
-
-	public void stopBackgroundOperation() {
-
-		Message message = handler.obtainMessage(STOP_BACKGROUND);
-        Bundle bundle = new Bundle();
-
-        message.setData(bundle);
-        handler.sendMessage(message);
-	}
-
 }

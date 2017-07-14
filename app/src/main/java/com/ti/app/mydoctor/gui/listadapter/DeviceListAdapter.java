@@ -4,14 +4,12 @@ import java.util.List;
 import java.util.Map;
 
 import com.ti.app.mydoctor.gui.customview.GWTextView;
-import com.ti.app.mydoctor.util.GWConst;
 
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.Point;
 import android.os.Build;
 import android.util.DisplayMetrics;
-import android.util.Log;
 import android.util.TypedValue;
 import android.view.Display;
 import android.view.LayoutInflater;
@@ -20,9 +18,7 @@ import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.RelativeLayout;
 import android.widget.SimpleAdapter;
-import android.widget.TextView;
 
 /*public class DeviceListAdapter extends SimpleAdapter {
 

@@ -17,11 +17,12 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 import com.ti.app.mydoctor.R;
-import com.ti.app.telemed.core.ResourceManager;
+import com.ti.app.mydoctor.util.AppConst;
+import com.ti.app.mydoctor.AppResourceManager;
 import com.ti.app.mydoctor.gui.customview.CustomKeyboardListener;
 import com.ti.app.mydoctor.gui.customview.GWTextView;
 import com.ti.app.mydoctor.gui.customview.CustomKeyboard;
-import com.ti.app.mydoctor.util.GWConst;
+import com.ti.app.telemed.core.util.GWConst;
 
 public class ManualTemperatureActivity extends ActionBarActivity implements CustomKeyboardListener {
 
@@ -58,7 +59,7 @@ public class ManualTemperatureActivity extends ActionBarActivity implements Cust
 		LayoutInflater inflator = (LayoutInflater)this.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 		View titleView = inflator.inflate(R.layout.actionbar_title, null);
 		titleTV = (GWTextView)titleView.findViewById(R.id.actionbar_title_label);
-		titleTV.setText(ResourceManager.getResource().getString("ManualTemperatureDialog.title"));
+		titleTV.setText(AppResourceManager.getResource().getString("ManualTemperatureDialog.title"));
 		actionBar.setCustomView(titleView);
 		
 		//L'icona dell'App diventa tasto per tornare nella Home
@@ -67,14 +68,14 @@ public class ManualTemperatureActivity extends ActionBarActivity implements Cust
 		/*************************************************/
 				
 		TextView tempInfoLbl = (TextView) findViewById(R.id.manual_temperature_info_label);
-		tempInfoLbl.setText(ResourceManager.getResource().getString("ManualTemperatureDialog.temperatureLabel"));
+		tempInfoLbl.setText(AppResourceManager.getResource().getString("ManualTemperatureDialog.temperatureLabel"));
 		
 		etTemperature =(EditText)findViewById(R.id.temperature_edit_text);
 		Typeface type = Typeface.createFromAsset(getAssets(),"fonts/dsdigi.ttf"); 
 		etTemperature.setTypeface(type);		
 		
 		TextView degreesLabel = (TextView) findViewById(R.id.temperature_degrees_label);
-		degreesLabel.setText(ResourceManager.getResource().getString("EGwUnitTemperature"));
+		degreesLabel.setText(AppResourceManager.getResource().getString("EGwUnitTemperature"));
 		degreesLabel.setTypeface(type);	
 		
 		//KEYBOARD
@@ -122,7 +123,6 @@ public class ManualTemperatureActivity extends ActionBarActivity implements Cust
 			String pkg = getPackageName();
 			intent.putExtra(pkg + ".measure", GWConst.KMsrTemp);
 			intent.putStringArrayListExtra(pkg + ".values", values);
-			intent.putExtra(pkg + ".battery", -1);
 			setResult(RESULT_OK, intent);
 			
 			finish();
@@ -152,11 +152,11 @@ public class ManualTemperatureActivity extends ActionBarActivity implements Cust
         } else {
         	try{        		
         		String tmp = value;
-				if(tmp.indexOf(GWConst.COMMA)!= -1){
-					tmp = tmp.replace(GWConst.COMMA, GWConst.DOT);
+				if(tmp.indexOf(AppConst.COMMA)!= -1){
+					tmp = tmp.replace(AppConst.COMMA, AppConst.DOT);
 				}				
 				float fvalue = Float.parseFloat(tmp);
-        		if(fvalue < GWConst.MIN_TEMPERATURE || fvalue > GWConst.MAX_TEMPERATURE){
+        		if(fvalue < AppConst.MIN_TEMPERATURE || fvalue > AppConst.MAX_TEMPERATURE){
         			ret = false;        			
         		}
         	} catch(NumberFormatException e){

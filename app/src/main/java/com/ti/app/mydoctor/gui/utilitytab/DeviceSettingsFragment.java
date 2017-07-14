@@ -7,8 +7,9 @@ import java.util.HashMap;
 import java.util.List;
 
 import com.ti.app.mydoctor.R;
-import com.ti.app.mydoctor.core.MyDoctorApp;
-import com.ti.app.telemed.core.ResourceManager;
+import com.ti.app.mydoctor.MyDoctorApp;
+import com.ti.app.mydoctor.util.AppConst;
+import com.ti.app.mydoctor.AppResourceManager;
 import com.ti.app.telemed.core.common.Patient;
 import com.ti.app.telemed.core.common.User;
 import com.ti.app.telemed.core.common.UserDevice;
@@ -19,8 +20,8 @@ import com.ti.app.telemed.core.usermodule.UserManager;
 import com.ti.app.telemed.core.exceptions.DbException;
 import com.ti.app.mydoctor.gui.DeviceScanActivity;
 import com.ti.app.mydoctor.gui.listadapter.DeviceListAdapter;
-import com.ti.app.mydoctor.util.GWConst;
 import com.ti.app.mydoctor.util.Util;
+import com.ti.app.telemed.core.util.GWConst;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -143,7 +144,7 @@ public class DeviceSettingsFragment extends ListFragment {
 			MenuInflater inflater = getActivity().getMenuInflater();
 			
 			inflater.inflate(R.menu.context_menu_device_settings_advanced, menu);
-			menu.setHeaderTitle(ResourceManager.getResource().getString("measureType." + selectedMeasureType));
+			menu.setHeaderTitle(AppResourceManager.getResource().getString("measureType." + selectedMeasureType));
 			menu.setHeaderIcon(Util.getSmallIconId(selectedMeasureType));
 			
 			if (pd.getBtAddress() == null){
@@ -156,7 +157,7 @@ public class DeviceSettingsFragment extends ListFragment {
 			}
 		} catch (DbException e) {
 			e.printStackTrace();
-			//showErrorDialog(ResourceManager.getResource().getString("errorDb"));
+			//showErrorDialog(AppResourceManager.getResource().getString("errorDb"));
 		}
 	}
 	
@@ -196,9 +197,9 @@ public class DeviceSettingsFragment extends ListFragment {
 		measureList = DbManager.getDbManager().getMeasureTypesForUser();
 		Collections.sort(measureList, new Comparator<String>(){
 			public int compare(String s1, String s2) {
-				String measureText1 = ResourceManager.getResource().getString(
+				String measureText1 = AppResourceManager.getResource().getString(
 						"measureType." + s1);
-				String measureText2 = ResourceManager.getResource().getString(
+				String measureText2 = AppResourceManager.getResource().getString(
 						"measureType." + s2);				
 				return measureText1.compareTo(measureText2);
 			}				
@@ -221,7 +222,7 @@ public class DeviceSettingsFragment extends ListFragment {
 	private void initMeasureModelsMap() throws DbException {	
 		measureModelsMap = new HashMap<String, List<UserDevice>>();
 		for (String measure : measureList) {
-			List<UserDevice> modelList = DbManager.getDbManager().getModelsForMeasure(measure);
+			List<UserDevice> modelList = DbManager.getDbManager().getModelsForMeasure(measure, UserManager.getUserManager().getCurrentUser().getId());
 			measureModelsMap.put(measure, modelList);			
 		}		
 	}
@@ -230,8 +231,8 @@ public class DeviceSettingsFragment extends ListFragment {
 	private HashMap<String, String> setFieldsMap(String measureType) {
 		HashMap<String, String> map = new HashMap<String, String>();
 		map.put(KEY_ICON, "" + Util.getIconId(measureType));		
-		//map.put(KEY_LABEL, setupFeedback(ResourceManager.getResource().getString("measureType." + measureType)));
-		map.put(KEY_LABEL, ResourceManager.getResource().getString("measureType." + measureType));
+		//map.put(KEY_LABEL, setupFeedback(AppResourceManager.getResource().getString("measureType." + measureType)));
+		map.put(KEY_LABEL, AppResourceManager.getResource().getString("measureType." + measureType));
 		UserDevice pd = deviceMap.get(measureType);
 		if(pd.isActive()){
 			map.put(KEY_MODEL, pd.getDevice().getDescription());
@@ -298,7 +299,7 @@ public class DeviceSettingsFragment extends ListFragment {
 				} catch (DbException e) {						
 				}
 				
-				if(!deviceManager.isOperationRunning() || measureList.get(position).equalsIgnoreCase(GWConst.KMsrAritm)){							
+				if(!deviceManager.isOperationRunning() || measureList.get(position).equalsIgnoreCase(GWConst.KMsrAritm)){
 					selectedMeasureType = measureList.get(position);
 					selectedMeasurePosition = position;		
 					
@@ -317,7 +318,7 @@ public class DeviceSettingsFragment extends ListFragment {
 								
 				} else {
 					Log.i(TAG, "operation running: click ignored");	
-					Toast.makeText(getActivity().getApplicationContext(), ResourceManager.getResource().getString("KOperationRunning"), 500).show();
+					Toast.makeText(getActivity().getApplicationContext(), AppResourceManager.getResource().getString("KOperationRunning"), Toast.LENGTH_SHORT).show();
 				}
 			}
 		});
@@ -446,13 +447,7 @@ public class DeviceSettingsFragment extends ListFragment {
 				&&
 				!Util.isC40(deviceManager.getCurrentDevice().getDevice())	
 				&&
-				!Util.isCamera(deviceManager.getCurrentDevice().getDevice())	
-				&&
-				!Util.isGearFitDevice(deviceManager.getCurrentDevice().getDevice())
-				&&
-				!Util.isGoogleFitDevice(deviceManager.getCurrentDevice().getDevice())
-				&&
-				!Util.isSHealthDevice(deviceManager.getCurrentDevice().getDevice())
+				!Util.isCamera(deviceManager.getCurrentDevice().getDevice())
 				) {
 			// Launch the DeviceScanActivity to see devices and do scan
 			Intent serverIntent = new Intent(getActivity(), DeviceScanActivity.class);
@@ -514,13 +509,13 @@ public class DeviceSettingsFragment extends ListFragment {
         	
             switch (msg.what) {
             case DeviceManager.MESSAGE_STATE:   
-            	dataBundle.putBoolean(GWConst.IS_MEASURE, true);
+            	dataBundle.putBoolean(AppConst.IS_MEASURE, true);
             	if( progressDialog == null )
             		createProgressDialog(dataBundle);
                 //getActivity().showDialog(PROGRESS_DIALOG);
                 break;
             case DeviceManager.MESSAGE_STATE_WAIT:
-            	dataBundle.putBoolean(GWConst.IS_MEASURE, true);
+            	dataBundle.putBoolean(AppConst.IS_MEASURE, true);
             	if( progressDialog == null )
             		createProgressDialog(dataBundle);
             	//getActivity().showDialog(PROGRESS_DIALOG);
@@ -538,9 +533,9 @@ public class DeviceSettingsFragment extends ListFragment {
             	
             case DeviceManager.ASK_SOMETHING:
             	askSomething(
-            			dataBundle.getString(GWConst.ASK_MESSAGE), 
-            			dataBundle.getString(GWConst.ASK_POSITIVE), 
-            			dataBundle.getString(GWConst.ASK_NEGATIVE));
+            			dataBundle.getString(AppConst.ASK_MESSAGE),
+            			dataBundle.getString(AppConst.ASK_POSITIVE),
+            			dataBundle.getString(AppConst.ASK_NEGATIVE));
             	break;
             	
             case DeviceManager.REFRESH_LIST:
@@ -574,13 +569,13 @@ public class DeviceSettingsFragment extends ListFragment {
     private void createProgressDialog(Bundle data) {
 		progressDialog = new ProgressDialog( getActivity() );
 		
-		String msg = data.getString( GWConst.MESSAGE );
+		String msg = data.getString( AppConst.MESSAGE );
 		Log.d(TAG, "createProgressDialog msg=" + msg);
 		
 		progressDialog.setIndeterminate(true);
 		progressDialog.setCancelable(false);
-		progressDialog.setMessage(data.getString(GWConst.MESSAGE));
-		progressDialog.setButton(DialogInterface.BUTTON_NEGATIVE, ResourceManager.getResource().getString("EGwnurseCancel"),  new ProgressDialogClickListener());
+		progressDialog.setMessage(data.getString(AppConst.MESSAGE));
+		progressDialog.setButton(DialogInterface.BUTTON_NEGATIVE, AppResourceManager.getResource().getString("EGwnurseCancel"),  new ProgressDialogClickListener());
 		
 		progressDialog.setOnKeyListener(new DialogInterface.OnKeyListener() {			
 			@Override
@@ -614,7 +609,7 @@ public class DeviceSettingsFragment extends ListFragment {
      * ALERT DIALOG
      */
     private void createAlertDialog(Bundle data) {
-    	String msg = data.getString(GWConst.MESSAGE);
+    	String msg = data.getString(AppConst.MESSAGE);
     	alertDialog = createAlert(msg, null);
     	alertDialog.show();
 	}	

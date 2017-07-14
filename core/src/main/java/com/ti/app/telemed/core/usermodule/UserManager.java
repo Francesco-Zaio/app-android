@@ -111,7 +111,7 @@ public class UserManager implements Runnable, WebManagerResultEventListener {
 	}
 
 	// this is a trigger to the process of logging in a user (when login and password are already set)
-	public void logInUser() throws Exception {
+	public void logInUser() {
         synchronized (currT) {
             if (currentOpOn == Op.IDLE) {
                 if (currentUser != null) {
@@ -119,7 +119,7 @@ public class UserManager implements Runnable, WebManagerResultEventListener {
                     password = currentUser.getPassword();
                     currentOpOn = Op.TALK_TO_WEB;
                 } else {
-                    throw new Exception();
+					Log.e(TAG, "CurrentUser is NULL");
                 }
             }
             currT.notifyAll();
@@ -224,24 +224,24 @@ public class UserManager implements Runnable, WebManagerResultEventListener {
         }
     }
 
-    public void setUserBlocked(String userId) {
-        synchronized (currT) {
-            if (userId != null) {
-                DbManager.getDbManager().updateUserBlocked(userId, true);
-                if (currentUser != null && currentUser.getId().equals(userId)) {
-                    try {
-                        User user = (DbManager.getDbManager()).getUser(userId);
+	public void setUserBlocked(String login) {
+		synchronized (currT) {
+			if (login != null) {
+				DbManager.getDbManager().updateUserBlocked(login, true);
+				if (currentUser != null && currentUser.getLogin().equals(login)) {
+					try {
+						User user = (DbManager.getDbManager()).getUser(currentUser.getId());
 						if (user != null)
 							selectUser(user, true);
 						else
 							reset();
-                    } catch (DbException e) {
-                        logger.log(Level.SEVERE, "Failed to load current user from login and password");
-                    }
-                }
-            }
-        }
-    }
+					} catch (DbException e) {
+						logger.log(Level.SEVERE, "Failed to load current user from login and password");
+					}
+				}
+			}
+		}
+	}
 	
 	// methods of WebManagerResultEventListener interface
 	@Override

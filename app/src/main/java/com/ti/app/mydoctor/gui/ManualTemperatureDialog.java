@@ -12,8 +12,9 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 import com.ti.app.mydoctor.R;
-import com.ti.app.telemed.core.ResourceManager;
-import com.ti.app.mydoctor.util.GWConst;
+import com.ti.app.mydoctor.util.AppConst;
+import com.ti.app.mydoctor.AppResourceManager;
+import com.ti.app.telemed.core.util.GWConst;
 
 public class ManualTemperatureDialog extends Dialog implements OnClickListener {
 
@@ -27,9 +28,9 @@ public class ManualTemperatureDialog extends Dialog implements OnClickListener {
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
-		setTitle(ResourceManager.getResource().getString("ManualTemperatureDialog.title"));		
+		setTitle(AppResourceManager.getResource().getString("ManualTemperatureDialog.title"));
 		TextView tempLbl = (TextView) findViewById(R.id.temperatureLbl);
-		tempLbl.setText(ResourceManager.getResource().getString("ManualTemperatureDialog.temperatureLabel"));
+		tempLbl.setText(AppResourceManager.getResource().getString("ManualTemperatureDialog.temperatureLabel"));
 		
 		Button okButton = (Button) findViewById(R.id.okButton);
 		Button cancelButton = (Button) findViewById(R.id.cancelButton);
@@ -69,17 +70,17 @@ public class ManualTemperatureDialog extends Dialog implements OnClickListener {
         } else {
         	try{        		
         		String tmp = value;
-				if(tmp.indexOf(GWConst.COMMA)!= -1){
-					tmp = tmp.replace(GWConst.COMMA, GWConst.DOT);
+				if(tmp.indexOf(AppConst.COMMA)!= -1){
+					tmp = tmp.replace(AppConst.COMMA, AppConst.DOT);
 				}				
 				float fvalue = Float.parseFloat(tmp);
-        		if(fvalue < GWConst.MIN_TEMPERATURE || fvalue > GWConst.MAX_TEMPERATURE){
+        		if(fvalue < AppConst.MIN_TEMPERATURE || fvalue > AppConst.MAX_TEMPERATURE){
         			ret = false;
-        			validationView.setText(ResourceManager.getResource().getString("ManualTemperatureDialog.validationMsg"));
+        			validationView.setText(AppResourceManager.getResource().getString("ManualTemperatureDialog.validationMsg"));
         		}
         	} catch(NumberFormatException e){
         		ret = false;
-        		validationView.setText(ResourceManager.getResource().getString("ManualTemperatureDialog.validationFormatMsg"));
+        		validationView.setText(AppResourceManager.getResource().getString("ManualTemperatureDialog.validationFormatMsg"));
         	}
         }
         return ret;

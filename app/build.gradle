@@ -9,7 +9,7 @@ android {
         minSdkVersion 14
         targetSdkVersion 25
         versionName "3.3.0.b"
-        setProperty("archivesBaseName", "Nuvola It Home Doctor-$versionName")
+        setProperty("archivesBaseName", "NuvolaItHomeDoctor-$versionName")
     }
     buildTypes {
         release {

@@ -18,20 +18,14 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
-import android.widget.CompoundButton;
-import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.EditText;
-import android.widget.LinearLayout;
-import android.widget.Spinner;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.ti.app.mydoctor.R;
-import com.ti.app.mydoctor.core.MyDoctorApp;
-import com.ti.app.telemed.core.ResourceManager;
+import com.ti.app.mydoctor.MyDoctorApp;
+import com.ti.app.mydoctor.AppResourceManager;
 import com.ti.app.telemed.core.common.ServerConf;
 import com.ti.app.telemed.core.common.User;
 import com.ti.app.telemed.core.dbmodule.DbManager;
@@ -39,7 +33,6 @@ import com.ti.app.telemed.core.scmodule.ServerCertificateManager;
 import com.ti.app.telemed.core.usermodule.UserManager;
 import com.ti.app.telemed.core.exceptions.DbException;
 import com.ti.app.mydoctor.gui.customview.GWTextView;
-import com.ti.app.mydoctor.util.GWConst;
 import com.ti.app.mydoctor.util.Util;
 
 public class ShowSettings extends ActionBarActivity {
@@ -58,35 +51,24 @@ public class ShowSettings extends ActionBarActivity {
 	//Elementi che compongono la GUI
 	private EditText hostEt;
 	private EditText portEt;
-	private Spinner protocolSpinner;
 	private Button okButton;
 	private Button cancelButton;
-	
-	private ArrayAdapter<String> protocolSpinnerAdapter;
-	private ArrayAdapter<String> apnSpinnerAdapter;
 
 	private String[] protocolArray = new String[] {"https", "http"};
-	private String[] apnArray = new String[] {};
 	
-	private ResourceManager rManager;
+	private AppResourceManager rManager;
 	private ServerCertificateManager scManager;
 	
 	private Bundle dataBundle;
 	private static final String ID = "ID";
 	private static final String TITLE = "TITLE";
 	private static final String MESSAGE = "MESSAGE";
-	
-	private LinearLayout autoSendRL;
-	
+
 	private CheckBox autoLoginCB;
-	private CheckBox autoUpdateCB;
-	private CheckBox autoSendCB;
 	private EditText arTimeoutET;
 	
 	//Indica quali impostazioni devono essere visualizzate
 	private String type;
-
-	private TextView autoUpdateTV;
 
 	private CheckBox arTimeoutCB;
 
@@ -128,154 +110,51 @@ public class ShowSettings extends ActionBarActivity {
 		//L'icona dell'App diventa tasto per tornare nella Home
 		customActionBar.setHomeButtonEnabled(true);
 		customActionBar.setDisplayHomeAsUpEnabled(true);
-		/*************************************************/
-		
 		
 		Bundle data = getIntent().getExtras();
 		type = data.getString("TYPE_SETTINGS");
 		Log.i(TAG, "Impostazioni da visualizzare: " + type);
 		
-		if(type.equals("ZEPHYR")) {
-			setContentView(R.layout.show_zephyr_settings_layout);
-			setTitle(titleView, getString(R.string.config));
+
+		if(type.equals("USER")) {
+			setContentView(R.layout.show_user_settings_layout);
+			setTitle(titleView, getString(R.string.userSettings));
 		}
 		else {
-			if(type.equals("STM")) {
-				setContentView(R.layout.show_stm_settings_layout);
-				setTitle(titleView, getString(R.string.advance_options));
-			}
-			else {
-				if(type.equals("USER")) {
-					setContentView(R.layout.show_user_settings_layout);
-					setTitle(titleView, getString(R.string.userSettings));
-				}
-				else {
-					setContentView(R.layout.show_connection_settings_layout);
-					setTitle(titleView, getString(R.string.connectionSettings));
-				}
-			}
+			setContentView(R.layout.show_connection_settings_layout);
+			setTitle(titleView, getString(R.string.connectionSettings));
 		}
-		
-		if(type.equals("ZEPHYR")) {	
-			arTimeoutET = (EditText) findViewById(R.id.ARtimeoutEV);
-			
-			String arTimeout = Util.getRegistryValue(Util.KEY_ZEPHYR_TIMEOUT_VALUE);
-			if(Util.isEmptyString(arTimeout)){
-				arTimeout = String.valueOf(GWConst.ZEPHYR_TIMEOUT_DEFAULT);
-			}
-			arTimeoutET.setText(arTimeout);
-			
-			String loop = Util.getRegistryValue(Util.KEY_ZEPHYR_LOOP_VALUE);
-			arTimeoutCB = (CheckBox) findViewById(R.id.ARtimeoutCB);
-			
-			if (loop.length() == 0) {
-				arTimeoutCB.setChecked(false);
-				arTimeoutET.setEnabled(true);
-			} 
-			else {
-				arTimeoutCB.setChecked(true);
-				arTimeoutET.setEnabled(false);
-			}
-			
-			arTimeoutCB.setOnCheckedChangeListener(new OnCheckedChangeListener() {
-				
-				@Override
-				public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-					if (isChecked) {
-						arTimeoutET.setEnabled(false);
-					} 
-					else {
-						arTimeoutET.setEnabled(true);
-					}
-				}
-			});
-				
+
+
+		if(type.equals("USER")) {
+			autoLoginCB = (CheckBox) findViewById(R.id.autoLoginCB);
+
+			User currentUser = UserManager.getUserManager().getCurrentUser();
+
+			autoLoginCB.setChecked(DbManager.getDbManager().getAutoLoginStatus(currentUser.getId()));
+
 			okButton = (Button) findViewById(R.id.confirm_button);
 			cancelButton = (Button) findViewById(R.id.cancel_button);
 			//Imposto il listener per i click sui button
-			okButton.setOnClickListener(zephyr_button_click_listener);
-			cancelButton.setOnClickListener(zephyr_button_click_listener);
+			okButton.setOnClickListener(user_button_click_listener);
+			cancelButton.setOnClickListener(user_button_click_listener);
 		}
 		else {
-			if(type.equals("STM")) {	
-				arTimeoutET = (EditText) findViewById(R.id.ARtimeoutEV);
-				
-				String arTimeout = Util.getRegistryValue(Util.KEY_AR_TIMEOUT_VALUE);
-				if(Util.isEmptyString(arTimeout)){
-					arTimeout = String.valueOf(GWConst.AR_TIMEOUT_DEFAULT);
-				}
-				arTimeoutET.setText(arTimeout);
-				
-				okButton = (Button) findViewById(R.id.confirm_button);
-				cancelButton = (Button) findViewById(R.id.cancel_button);
-				//Imposto il listener per i click sui button
-				okButton.setOnClickListener(stm_button_click_listener);
-				cancelButton.setOnClickListener(stm_button_click_listener);
-			}
-			else {
-				if(type.equals("USER")) {			
-					autoSendRL = (LinearLayout) findViewById(R.id.autoSendRL);
-					autoLoginCB = (CheckBox) findViewById(R.id.autoLoginCB);
-					autoSendCB = (CheckBox) findViewById(R.id.autoSendCB);
-					autoUpdateCB = (CheckBox) findViewById(R.id.autoUpdateCB);
-					autoUpdateTV = (TextView) findViewById(R.id.autoUpdateTV);
-					
-					User currentUser = UserManager.getUserManager().getCurrentUser();
-					if(!currentUser.getIsPatient())
-						autoSendRL.setVisibility(View.GONE);
-					
-					autoLoginCB.setChecked(DbManager.getDbManager().getAutoLoginStatus(currentUser.getId()));
-					autoSendCB.setChecked(DbManager.getDbManager().getAutoSendStatus(currentUser.getId()));
-									
-					autoUpdateTV.setText(ResourceManager.getResource().getString("autoUpdateSetting"));
-					boolean autoUpdateValue = Util.getRegistryValue(Util.KEY_AUTO_UPDATE + "_" + UserManager.getUserManager().getCurrentUser().getId(), true);
-					autoUpdateCB.setChecked(autoUpdateValue);
-					autoUpdateCB.setEnabled(autoLoginCB.isChecked());
-					autoUpdateTV.setEnabled(autoLoginCB.isChecked());
-					
-					autoLoginCB.setOnCheckedChangeListener(new OnCheckedChangeListener() {
-						
-						@Override
-						public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-							autoUpdateCB.setEnabled(isChecked);
-							autoUpdateTV.setEnabled(isChecked);
-						}
-					});
-					
-					
-					okButton = (Button) findViewById(R.id.confirm_button);
-					cancelButton = (Button) findViewById(R.id.cancel_button);
-					//Imposto il listener per i click sui button
-					okButton.setOnClickListener(user_button_click_listener);
-					cancelButton.setOnClickListener(user_button_click_listener);
-				}
-				else {			
-					//Ottengo il riferimento degli elementi che compongono la GUI
-					hostEt = (EditText) findViewById(R.id.host_et);
-					portEt = (EditText) findViewById(R.id.port_et);
-					protocolSpinner = (Spinner) findViewById(R.id.protocol_spinner);
-					quizEt = (EditText) findViewById(R.id.quiz_et);
-					
-					protocolSpinnerAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, protocolArray);
-					protocolSpinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-					protocolSpinner.setAdapter(protocolSpinnerAdapter);
-					apnArray = ApnManager.getApnMananger().getApnArray();
+			//Ottengo il riferimento degli elementi che compongono la GUI
+			hostEt = (EditText) findViewById(R.id.host_et);
+			portEt = (EditText) findViewById(R.id.port_et);
+			quizEt = (EditText) findViewById(R.id.quiz_et);
 
-					apnSpinnerAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, apnArray);
-					apnSpinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-					
-					okButton = (Button) findViewById(R.id.confirm_button);
-					cancelButton = (Button) findViewById(R.id.cancel_button);
-					//Imposto il listener per i click sui button
-					okButton.setOnClickListener(connection_button_click_listener);
-					cancelButton.setOnClickListener(connection_button_click_listener);
-					
-					populateActivity();
-				}
-			}
+			okButton = (Button) findViewById(R.id.confirm_button);
+			cancelButton = (Button) findViewById(R.id.cancel_button);
+			//Imposto il listener per i click sui button
+			okButton.setOnClickListener(connection_button_click_listener);
+			cancelButton.setOnClickListener(connection_button_click_listener);
+
+			populateActivity();
 		}
 		
-		rManager = ResourceManager.getResource();
+		rManager = AppResourceManager.getResource();
 		
 		scManager = ServerCertificateManager.getScMananger();
 		scManager.setHandler(scManagerHandler);
@@ -335,8 +214,8 @@ public class ShowSettings extends ActionBarActivity {
 		//Identifico la dialog che deve essere visualizzata
 		switch(id) {
 		case ERROR_DIALOG:
-			builder.setTitle(ResourceManager.getResource().getString("warningTitle"));
-			builder.setMessage(ResourceManager.getResource().getString("errorDb"));
+			builder.setTitle(AppResourceManager.getResource().getString("warningTitle"));
+			builder.setMessage(AppResourceManager.getResource().getString("errorDb"));
 			builder.setNeutralButton(R.string.okButton, error_dialog_click_listener);
 			break;
 		case CONFIRM_DIALOG:
@@ -367,22 +246,6 @@ public class ShowSettings extends ActionBarActivity {
 			prepareBundle(R.id.reset_settings, rManager.getString("showSettingsRevertToDefaultTitle"), rManager.getString("showConnectingSettingsRevertToDefaultMessage"));
 			showDialog(CONFIRM_DIALOG);
 			break;
-		/*case R.id.advance_options_settings:
-			//TODO
-			AlertDialog.Builder builder = new AlertDialog.Builder(this);
-	    	builder.setTitle(ResourceManager.getResource().getString("MainGUI.configWarningTitle"));
-			builder.setMessage(ResourceManager.getResource().getString("MainGUI.configWarningMsg"));
-			builder.setPositiveButton(ResourceManager.getResource().getString("EGwnurseOk"), 
-					new DialogInterface.OnClickListener(){
-						public void onClick(DialogInterface arg0,
-								int arg1) {		
-							Intent intent = new Intent(ShowSettings.this, ShowUtilitySettings.class);
-							intent.putExtra("TYPE_SETTINGS", "USER");
-					    	startActivity(intent);
-						}
-			});
-			builder.show();	
-			break;*/
 		}
 		
 		return true;
@@ -426,13 +289,6 @@ public class ShowSettings extends ActionBarActivity {
 			hostEt.setText(sc.getIp());
 			portEt.setText(sc.getPort());
 			quizEt.setText(Util.getRegistryValue(Util.KEY_URL_QUIZ, Util.URL_QUIZ_DEFAULT));
-			
-			String protocol = sc.getProtocol();
-			for(int i = 0; i < protocolArray.length; i++) {
-				if(protocolArray[i].equals(protocol))
-					protocolSpinner.setSelection(i);
-			}
-			
 		} catch (DbException e) {
 			showDialog(ERROR_DIALOG);
 		}
@@ -488,11 +344,12 @@ public class ShowSettings extends ActionBarActivity {
 						defaultSC.setIp(defaultSC.getIpDef());
 						defaultSC.setPort(defaultSC.getPortDef());
 						defaultSC.setProtocol(defaultSC.getProtocolDef());
-						defaultSC.setTarget(defaultSC.getTargetDef());
-						
+						defaultSC.setTargetCfg(defaultSC.getTargetCfgDef());
+						defaultSC.setTargetSend(defaultSC.getTargetSendDef());
+
 						MyDoctorApp.getConfigurationManager().updateConfiguration(defaultSC);
 						finish();
-						Toast.makeText(getApplicationContext(), ResourceManager.getResource().getString("showSettingsOperationSuccessfull"), Toast.LENGTH_LONG).show();
+						Toast.makeText(getApplicationContext(), AppResourceManager.getResource().getString("showSettingsOperationSuccessfull"), Toast.LENGTH_LONG).show();
 					} catch(DbException e) {
 						showDialog(ERROR_DIALOG);
 					}
@@ -502,7 +359,7 @@ public class ShowSettings extends ActionBarActivity {
 				}
 				break;
 			case DialogInterface.BUTTON_NEGATIVE:
-				Toast.makeText(getApplicationContext(), ResourceManager.getResource().getString("showSettingsOperationCancelled"), Toast.LENGTH_LONG).show();
+				Toast.makeText(getApplicationContext(), AppResourceManager.getResource().getString("showSettingsOperationCancelled"), Toast.LENGTH_LONG).show();
 				break;
 			}
 			removeDialog(CONFIRM_DIALOG);
@@ -518,16 +375,17 @@ public class ShowSettings extends ActionBarActivity {
 			//Identifico quale button è stato selezionato
 			switch(v.getId()) {
 			case R.id.confirm_button:
-				
 				Util.setRegistryValue(Util.KEY_URL_QUIZ, quizEt.getText().toString());
-				
-				//Aggiorno il contenuto del db in base agli input dell'utente
-				DbManager dbManager = DbManager.getDbManager();
-				ServerConf sc = new ServerConf();
-				sc.setIp(hostEt.getText().toString());
-				sc.setPort(portEt.getText().toString());
-				sc.setProtocol(protocolArray[protocolSpinner.getSelectedItemPosition()]);
-				try {
+                DbManager dbManager = DbManager.getDbManager();
+                try {
+                    //Aggiorno il contenuto del db in base agli input dell'utente
+                    ServerConf sc = new ServerConf();
+                    ServerConf defaultSC = dbManager.getDefaultServerConf();
+                    sc.setIp(hostEt.getText().toString());
+                    sc.setPort(portEt.getText().toString());
+                    sc.setProtocol(defaultSC.getProtocolDef());
+                    sc.setTargetCfg(defaultSC.getTargetCfgDef());
+                    sc.setTargetSend(defaultSC.getTargetSendDef());
 					MyDoctorApp.getConfigurationManager().updateConfiguration(sc);
 					finish();
 				} catch (DbException e) {
@@ -553,73 +411,10 @@ public class ShowSettings extends ActionBarActivity {
 			//Identifico quale button è stato selezionato
 			switch(v.getId()) {
 			case R.id.confirm_button:
-				try {					
+				try {
 					DbManager.getDbManager().saveAutoLoginStatus(UserManager.getUserManager().getCurrentUser().getId(), autoLoginCB.isChecked());
-					DbManager.getDbManager().saveAutoSendStatus(UserManager.getUserManager().getCurrentUser().getId(), autoSendCB.isChecked());
-					
-					Util.setRegistryValue(Util.KEY_AUTO_UPDATE + "_" + UserManager.getUserManager().getCurrentUser().getId(), autoUpdateCB.isChecked());
-					
 					finish();
-				} catch (NumberFormatException e) {
-					showError();
-				}
-				break;
-			case R.id.cancel_button:
-				finish();
-				break;
-			}
-		}
-	};
-	
-	/**
-	 * Listener per i click sui button che compongono l'activity
-	 */
-	private View.OnClickListener zephyr_button_click_listener = new View.OnClickListener() {
-		@Override
-		public void onClick(View v) {
-			//Identifico quale button è stato selezionato
-			switch(v.getId()) {
-			case R.id.confirm_button:
-				try {
-					byte arTimeout = Byte.valueOf(arTimeoutET.getText().toString());
-					if(arTimeout >= GWConst.ZEPHYR_TIMEOUT_MIN && arTimeout <= GWConst.ZEPHYR_TIMEOUT_MAX){						
-						Util.setRegistryValue(Util.KEY_ZEPHYR_TIMEOUT_VALUE, String.valueOf(arTimeout));
-						
-						if (arTimeoutCB.isChecked())
-							Util.setRegistryValue(Util.KEY_ZEPHYR_LOOP_VALUE, Util.KEY_ZEPHYR_LOOP_VALUE);
-						else
-							Util.setRegistryValue(Util.KEY_ZEPHYR_LOOP_VALUE, "");
-						
-						finish();				
-					} else {
-						showError();
-					}
-				} catch (NumberFormatException e) {
-					showError();
-				}
-				break;
-			case R.id.cancel_button:
-				finish();
-				break;
-			}
-		}
-	};
-	
-	private View.OnClickListener stm_button_click_listener = new View.OnClickListener() {
-		@Override
-		public void onClick(View v) {
-			//Identifico quale button è stato selezionato
-			switch(v.getId()) {
-			case R.id.confirm_button:
-				try {
-					byte arTimeout = Byte.valueOf(arTimeoutET.getText().toString());
-					if(arTimeout >= GWConst.AR_TIMEOUT_MIN && arTimeout <= GWConst.AR_TIMEOUT_MAX){						
-						Util.setRegistryValue(Util.KEY_AR_TIMEOUT_VALUE, String.valueOf(arTimeout));				
-						finish();				
-					} else {
-						showError();
-					}
-				} catch (NumberFormatException e) {
+				} catch (Exception e) {
 					showError();
 				}
 				break;
@@ -632,9 +427,9 @@ public class ShowSettings extends ActionBarActivity {
 	
 	private void showError(){
 		AlertDialog.Builder builder = new AlertDialog.Builder(this);
-    	builder.setTitle(ResourceManager.getResource().getString("ShowSettings.userSettings.errTitle"));
-		builder.setMessage(ResourceManager.getResource().getString("ShowSettings.userSettings.errMsg"));
-		builder.setPositiveButton(ResourceManager.getResource().getString("EGwnurseOk"), null);
+    	builder.setTitle(AppResourceManager.getResource().getString("ShowSettings.userSettings.errTitle"));
+		builder.setMessage(AppResourceManager.getResource().getString("ShowSettings.userSettings.errMsg"));
+		builder.setPositiveButton(AppResourceManager.getResource().getString("EGwnurseOk"), null);
 		builder.show();	
 	}
 }

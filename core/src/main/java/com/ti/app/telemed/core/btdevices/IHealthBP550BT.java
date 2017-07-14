@@ -132,7 +132,7 @@ class IHealthBP550BT extends Handler implements IHealtDevice{
 
     @Override
     public String getStartMeasureMessage() {
-        return ResourceManager.getResource().getString("KMeasReadMsg");
+        return ResourceManager.getResource().getString("KMeasuring");
     }
 
     @Override

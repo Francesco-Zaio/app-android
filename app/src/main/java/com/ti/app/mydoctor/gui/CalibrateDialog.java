@@ -10,8 +10,7 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 import com.ti.app.mydoctor.R;
-import com.ti.app.telemed.core.dbmodule.DbManager;
-import com.ti.app.mydoctor.util.GWConst;
+import com.ti.app.mydoctor.util.AppConst;
 import com.ti.app.mydoctor.util.Util;
 
 public class CalibrateDialog extends Dialog implements OnClickListener {
@@ -67,7 +66,7 @@ public class CalibrateDialog extends Dialog implements OnClickListener {
 		boolean ret = false;
 		if(!Util.isEmptyString(calValue)){
 			int cal = Integer.valueOf(calValue);
-			ret = (GWConst.MIN_STRIP_CODE <= cal) && (cal <= GWConst.MAX_STRIP_CODE);
+			ret = (AppConst.MIN_STRIP_CODE <= cal) && (cal <= AppConst.MAX_STRIP_CODE);
 		}
 		return ret;
 	}

@@ -24,8 +24,8 @@ import android.view.View;
 import android.widget.Toast;
 
 import com.ti.app.mydoctor.R;
-import com.ti.app.mydoctor.core.MyDoctorApp;
-import com.ti.app.telemed.core.ResourceManager;
+import com.ti.app.mydoctor.MyDoctorApp;
+import com.ti.app.mydoctor.AppResourceManager;
 import com.ti.app.telemed.core.common.ServerConf;
 import com.ti.app.telemed.core.dbmodule.DbManager;
 import com.ti.app.telemed.core.scmodule.ServerCertificateManager;
@@ -58,7 +58,7 @@ public class ShowUtilitySettingsTabs extends ActionBarActivity {
 	//Indica quali impostazioni devono essere visualizzate
 	private String mTabSelectedIndex;
 	
-	private ResourceManager rManager;
+	private AppResourceManager rManager;
 	private ServerCertificateManager scManager;
 	
 	@Override
@@ -165,7 +165,7 @@ public class ShowUtilitySettingsTabs extends ActionBarActivity {
         	mActionBar.addTab(tab, false);
         }
 	    
-		rManager = ResourceManager.getResource();
+		rManager = AppResourceManager.getResource();
 		
 		scManager = ServerCertificateManager.getScMananger();
 		scManager.setHandler(scManagerHandler);	
@@ -216,8 +216,8 @@ public class ShowUtilitySettingsTabs extends ActionBarActivity {
 		//Identifico la dialog che deve essere visualizzata
 		switch(id) {
 		case ERROR_DIALOG:
-			builder.setTitle(ResourceManager.getResource().getString("warningTitle"));
-			builder.setMessage(ResourceManager.getResource().getString("errorDb"));
+			builder.setTitle(AppResourceManager.getResource().getString("warningTitle"));
+			builder.setMessage(AppResourceManager.getResource().getString("errorDb"));
 			builder.setNeutralButton(R.string.okButton, error_dialog_click_listener);
 			break;
 		case CONNECTING_CONFIRM_DIALOG:
@@ -271,11 +271,12 @@ public class ShowUtilitySettingsTabs extends ActionBarActivity {
 						defaultSC.setIp(defaultSC.getIpDef());
 						defaultSC.setPort(defaultSC.getPortDef());
 						defaultSC.setProtocol(defaultSC.getProtocolDef());
-						defaultSC.setTarget(defaultSC.getTargetDef());
-						
+						defaultSC.setTargetCfg(defaultSC.getTargetCfgDef());
+						defaultSC.setTargetSend(defaultSC.getTargetSendDef());
+
 						MyDoctorApp.getConfigurationManager().updateConfiguration(defaultSC);
 						finish();
-						Toast.makeText(getApplicationContext(), ResourceManager.getResource().getString("showSettingsOperationSuccessfull"), Toast.LENGTH_LONG).show();
+						Toast.makeText(getApplicationContext(), AppResourceManager.getResource().getString("showSettingsOperationSuccessfull"), Toast.LENGTH_LONG).show();
 					} catch(DbException e) {
 						showDialog(ERROR_DIALOG);
 					}
@@ -285,7 +286,7 @@ public class ShowUtilitySettingsTabs extends ActionBarActivity {
 				}
 				break;
 			case DialogInterface.BUTTON_NEGATIVE:
-				Toast.makeText(getApplicationContext(), ResourceManager.getResource().getString("showSettingsOperationCancelled"), Toast.LENGTH_LONG).show();
+				Toast.makeText(getApplicationContext(), AppResourceManager.getResource().getString("showSettingsOperationCancelled"), Toast.LENGTH_LONG).show();
 				break;
 			}
 			removeDialog(CONNECTING_CONFIRM_DIALOG);

@@ -8,6 +8,7 @@
           	android:textSize="15sp">          
     	</item> 
     </group>
+
     <group android:id="@+id/new_device_group">
         <item android:id="@+id/new_device"
             android:icon="@drawable/ic_menu_bluetooth_pairing"
@@ -15,6 +16,7 @@
           	android:textSize="15sp">          
     	</item>     	
     </group>
+
     <group android:id="@+id/select_model_group">
     	<item android:id="@+id/select_model"
     	    android:icon="@drawable/ic_menu_device_collections_list"
@@ -22,21 +24,6 @@
           	android:textSize="15sp">
         </item>
     </group>
-    
-    <group android:id="@+id/config_group1" android:visible="false">
-		<item android:id="@+id/reliability_menu" 
-		    android:icon="@drawable/ic_menu_signal_quality"
-		    android:title="@string/reliability"
-			android:textSize="15sp" android:visible="false">
-		</item>
-
-		<item android:id="@+id/config" 
-		    android:icon="@drawable/ic_menu_configure"
-		    android:title="@string/config"
-			android:textSize="15sp" 
-			android:visible="false">
-		</item>			
-	</group>
 	
 	 <group android:id="@+id/show_measure_group">    	
         <item android:id="@+id/show_measure"
@@ -45,30 +32,5 @@
           	android:textSize="15sp">
         </item> 
     </group>
-	
-	<group android:id="@+id/config_group2" android:visible="false">
-		<item android:id="@+id/new_device_adv"
-		    android:icon="@drawable/ic_menu_bluetooth_pairing"
-          	android:title="@string/bgw_pair" 
-          	android:textSize="15sp">          
-    	</item> 
-	
-		<item android:id="@+id/advance_options"
-		    android:icon="@drawable/ic_menu_settings_light"
-          	android:title="@string/advance_options" 
-          	android:textSize="15sp">
-        </item> 
-     </group>
-     
-	<group android:id="@+id/config_group3" android:visible="false">
-		
-		<item android:id="@+id/zephyr_config"
-		  android:icon="@drawable/ic_menu_configure"
-          android:title="@string/config" 
-          android:textSize="15sp">
-        </item> 
-     </group>
-     
-    
      
 </menu>

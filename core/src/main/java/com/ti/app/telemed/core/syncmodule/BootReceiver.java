@@ -25,7 +25,7 @@ public class BootReceiver extends BroadcastReceiver implements  WebManagerResult
     private static final String WLTAG = "com.ti.app.telemed.core.syncmodule.BootReceiver";
     private static volatile PowerManager.WakeLock wakeLock = null;
     private static final String ALARM_ACTION = "com.ti.app.telemed.core.syncmodule.ALARM_ACTION";
-    private String userId;
+    private String userId, login;
 
     synchronized private static PowerManager.WakeLock getLock(Context context) {
         if (wakeLock == null) {
@@ -46,7 +46,7 @@ public class BootReceiver extends BroadcastReceiver implements  WebManagerResult
             Log.d(TAG, "BOOT COMPLETED");
             registerAlarm(context);
         } else if (intent.getAction().equalsIgnoreCase(ALARM_ACTION)) {
-            // ogni ora sveglia il servizio di invo misure e richiede l'aggiornamento della confifurazione dell'utente
+            // ogni ora sveglia il servizio di invo misure e richiede l'aggiornamento della configurazione dell'utente
             Log.d(TAG, "Alarm fired!");
             User u = UserManager.getUserManager().getCurrentUser();
             if (u == null)
@@ -54,6 +54,7 @@ public class BootReceiver extends BroadcastReceiver implements  WebManagerResult
             if (u != null && !u.isBlocked()) {
                 try {
                     userId = u.getId();
+                    login = u.getLogin();
                     PowerManager.WakeLock lock=getLock(context);
                     if (!lock.isHeld()) {
                         lock.acquire(GWConst.CONNECTION_TIMEOUT+GWConst.READ_TIMEOUT+5000);
@@ -119,7 +120,7 @@ public class BootReceiver extends BroadcastReceiver implements  WebManagerResult
     public void webOperationFailed(WebManagerResultEvent evt, XmlManager.XmlErrorCode code) {
         // l'utente corrente è stato disattivato
         if(code != null && code.equals(XmlManager.XmlErrorCode.USER_BLOCKED)) {
-            UserManager.getUserManager().setUserBlocked(userId);
+            UserManager.getUserManager().setUserBlocked(login);
         }
         PowerManager.WakeLock lock=getLock(MyApp.getContext());
         if (lock.isHeld()) {

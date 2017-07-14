@@ -2,10 +2,10 @@ package com.ti.app.mydoctor.core.btmodule;
 
 import java.util.Vector;
 
-import com.ti.app.mydoctor.core.MyDoctorApp;
+import com.ti.app.mydoctor.MyDoctorApp;
 import com.ti.app.mydoctor.core.btmodule.events.BTSearcherEvent;
 import com.ti.app.mydoctor.core.btmodule.events.BTSearcherEventListener;
-import com.ti.app.mydoctor.util.GWConst;
+import com.ti.app.mydoctor.util.AppConst;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -19,13 +19,13 @@ public class BTSearcher {
 	
 	private static final String TAG = "BTSearcher";
     
-    private Vector<BTSearcherEventListener> btSearcherEventListeners = new Vector<BTSearcherEventListener>();
+    private Vector<BTSearcherEventListener> btSearcherEventListeners = new Vector<>();
 
 //    private Vector<BTSearcherManualEventListener> btSearcherManualEventListeners = new Vector<BTSearcherManualEventListener>();
 //    private Vector<BTSearcherAutomaticEventListener> btSearcherAutomaticEventListeners = new Vector<BTSearcherAutomaticEventListener>();
 
     // Type of search the scheduler requires    
-    private GWConst.TCmd searchType;
+    private AppConst.TCmd searchType;
     
     private int selectedDevice;
     
@@ -63,7 +63,7 @@ public class BTSearcher {
 		mReceiver = null;
 	}
 	
-    public void setSearchType(GWConst.TCmd sType) {
+    public void setSearchType(AppConst.TCmd sType) {
         searchType = sType;
     }
     
@@ -119,7 +119,7 @@ public class BTSearcher {
     	if (selected >= 0) {
             selectedDevice = selected;
             
-//            if (searchType == GWConst.TCmd.ECmdConnByUser) {
+//            if (searchType == AppConst.TCmd.ECmdConnByUser) {
 //                // in case of ECmdConnByUser, the user can stop the search
 //                // or stop the search because he have found what we need:
 //                // when he find the device he wants and select it, we
@@ -139,7 +139,7 @@ public class BTSearcher {
     public void deviceSearchCompleted() {
     	fireDeviceSearchCompleted();
     	unregisterReceiver();
-    	if (searchType == GWConst.TCmd.ECmdConnByAddr) {
+    	if (searchType == AppConst.TCmd.ECmdConnByAddr) {
     		if (selectedDevice == -1) {
     			startSearchDevices();
             }

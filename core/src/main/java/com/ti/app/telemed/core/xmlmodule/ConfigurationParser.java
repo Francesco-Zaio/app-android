@@ -206,15 +206,18 @@ public class ConfigurationParser {
             	if(patList.get(0).getId().equals(user.getId())) {
             		//Lo user è un paziente
             		user.setIsPatient(true);
+					user.setHasAutoLogin(true);
             	}
             	else {
             		//Lo user è un nurse
             		user.setIsPatient(false);
+					user.setHasAutoLogin(false);
             	}
             }
             else {
             	//Siccome lo user ha associati dei pazienti è sicuramente un nurse
             	user.setIsPatient(false);
+				user.setHasAutoLogin(false);
             }
             dataContainer.add(user);
 			dataContainer.add(mpcfg);

@@ -1,25 +1,27 @@
-package com.ti.app.telemed.core;
+package com.ti.app.mydoctor;
+
+import android.content.res.AssetManager;
+import android.content.res.Resources;
+import android.util.Log;
+
+import com.ti.app.telemed.core.MyApp;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Locale;
 import java.util.Properties;
 
-import android.content.res.AssetManager;
-import android.content.res.Resources;
-import android.util.Log;
+public class AppResourceManager {
 
-public class ResourceManager {
-
-	private static ResourceManager rm;
+	private static AppResourceManager rm;
 	private Properties properties;
 
 	private static final String PROPS_it_IT = "appresource_it_IT.properties";
 	private static final String PROPS_en_GB = "appresource_en_GB.properties";
-	
-	private static final String TAG = "ResourceManager";
-	
-	private ResourceManager(String language, String country) {
+
+	private static final String TAG = "AppResourceManager";
+
+	private AppResourceManager(String language, String country) {
 		// Read from the /assets directory
 		try {
 			Resources resources = MyApp.getContext().getResources();
@@ -45,10 +47,10 @@ public class ResourceManager {
 		return filename;
 	}
 
-	public static ResourceManager getResource() {
+	public static AppResourceManager getResource() {
 		if (rm == null) {
 			Locale locale = Locale.getDefault();			
-			rm = new ResourceManager(locale.getLanguage(), locale.getCountry());
+			rm = new AppResourceManager(locale.getLanguage(), locale.getCountry());
 		}
 		return rm;
 	}
@@ -63,7 +65,7 @@ public class ResourceManager {
 			
 			if (value == null) {
 				value = "??" + key + "??";
-				Log.w(TAG, "ResourceManager Value not found: " + key);
+				Log.w(TAG, "AppResourceManager Value not found: " + key);
 			}
 			 
 			return value; 

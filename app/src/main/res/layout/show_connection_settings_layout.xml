@@ -53,29 +53,10 @@
 					android:layout_width="fill_parent"
 					android:layout_height="wrap_content"
 					android:hint="@string/host_hint" />
-					
-				<TextView
-					android:id="@+id/host_send_title_tv"
-					android:layout_below="@id/host_et"
-					android:layout_width="fill_parent"
-					android:layout_height="wrap_content"
-					android:text="@string/host_sending" />
 
-				
-				<EditText
-					android:id="@+id/host_send_value_tv"
-					android:layout_below="@id/host_send_title_tv"
-					android:layout_width="fill_parent"
-					android:layout_height="wrap_content"
-					android:text="TTTTTTTTTTTTT"
-					android:clickable="false" 
-			        android:cursorVisible="false" 
-			        android:focusable="false" 
-			        android:focusableInTouchMode="false" />
-				
 				<TextView
 					android:id="@+id/port_tv"
-					android:layout_below="@id/host_send_value_tv"
+					android:layout_below="@id/host_et"
 					android:layout_width="fill_parent"
 					android:layout_height="wrap_content"
 					android:text="@string/port" />
@@ -86,24 +67,11 @@
 					android:layout_width="fill_parent"
 					android:layout_height="wrap_content"
 					android:hint="@string/port_hint" 
-					android:inputType="number"/>			
-					
-				<TextView
-					android:id="@+id/protocol_tv"
-					android:layout_below="@id/port_et"
-					android:layout_width="fill_parent"
-					android:layout_height="wrap_content"
-					android:text="@string/protocol" />
-					
-				<Spinner
-					android:id="@+id/protocol_spinner"
-					android:layout_below="@id/protocol_tv"
-					android:layout_width="fill_parent"
-					android:layout_height="wrap_content" />	
-					
+					android:inputType="number"/>
+
 				<TextView
 					android:id="@+id/quiz_tv"
-					android:layout_below="@id/protocol_spinner"
+					android:layout_below="@id/port_et"
 					android:layout_width="fill_parent"
 					android:layout_height="wrap_content"
 					android:text="@string/quiz" />

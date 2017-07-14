@@ -46,7 +46,7 @@ public class DbManager {
 
     // Versione del DB: incrementare il nr se vi sono modifiche allo schema ed inserire le modifice
     // nel metoto onUpgrade
-    private static final int DATABASE_VERSION = 12;
+    private static final int DATABASE_VERSION = 14;
     // versione DB minima richiesta per cui è possibile effettuare un upgrade del DB senza
     // dover droppare e ricreare tutte le tabelle (vedi metodo onUpgrade)
     private static final int MIN_OLD_VERSION = 10;
@@ -89,6 +89,7 @@ public class DbManager {
 		+ "PASSWORD text, "
         + "TIMESTAMP integer, "
 		+ "ACTIVE integer DEFAULT 0, "
+        + "AUTO_LOGIN integer DEFAULT 0, "
         + "BLOCKED integer DEFAULT 0)";
     
     private static final String CREATE_PATIENT_TBL = "CREATE table PATIENT ("
@@ -116,7 +117,8 @@ public class DbManager {
 		+ "ID integer primary key autoincrement,"
 		+ "MEASURE text, " 
 		+ "MODEL text, "
-		+ "DESCRIPTION text )";
+		+ "DESCRIPTION text )"
+        + "NEED_CFG integer)";
     
     private static final String CREATE_USER_DEVICE_TBL = "CREATE table USER_DEVICE ("
             + "ID integer primary key autoincrement, "
@@ -179,7 +181,7 @@ public class DbManager {
     private final String selectDeviceWhereModelMeasure = "select * from DEVICE where MEASURE = ? and MODEL = ? ";
     private final String selectDeviceBtAddressWhereIdUserIdDevice = "select * from USER_DEVICE where ID_USER = ? and ID_DEVICE = ?";
     private final String selectUserDeviceData = "SELECT ud.* FROM USER_DEVICE ud, DEVICE d WHERE ud.ID_USER = ? AND ud.ID_DEVICE = d.ID AND d.MEASURE = ? AND d.MODEL = ? ";
-	private final String selectDistinctMeasures = "SELECT DISTINCT MEASURE FROM USER_DEVICE WHERE ID_USER = ?";
+	private final String selectDistinctMeasures = "SELECT DISTINCT MEASURE FROM USER_DEVICE WHERE ID_USER = ? ORDER BY MEASURE ASC";
     private final String selectCurrentDeviceWhereMeasure = "select * from CURRENT_DEVICE where MEASURE = ? ";
 
 	private User currentUser;      
@@ -231,6 +233,10 @@ public class DbManager {
                     case 11:
                         db.execSQL("DROP TABLE IF EXISTS CURRENT_DEVICE");
                         db.execSQL(CREATE_CURRENT_DEVICE_TBL);
+                    case 12:
+                        db.execSQL("ALTER TABLE USER ADD COLUMN AUTO_LOGIN integer DEFAULT 0");
+                    case 13:
+                        db.execSQL("ALTER TABLE DEVICE ADD COLUMN NEED_CFG integer");
                 }
             }
         }
@@ -317,6 +323,7 @@ public class DbManager {
                 initialValues.put("MEASURE", d.getMeasure());
                 initialValues.put("MODEL", d.getModel());
                 initialValues.put("DESCRIPTION", d.getDescription());
+                initialValues.put("NEED_CFG", d.needCfg()? 1:0);
                 mDb.insert("DEVICE", null, initialValues);
                 logger.log(Level.INFO, "Device inserted: "+ d.toString());
             } catch (Exception sqle) {
@@ -332,6 +339,7 @@ public class DbManager {
             try{
                 ContentValues values = new ContentValues();
                 values.put("DESCRIPTION", d.getDescription());
+                values.put("NEED_CFG", d.needCfg()? 1:0);
                 String[] args = new String[]{d.getMeasure(), d.getModel()};
                 mDb.update("DEVICE", values, "MEASURE = ? AND MODEL =  ? ", args);
                 logger.log(Level.INFO, "Device updated: "+ d.toString());
@@ -394,6 +402,7 @@ public class DbManager {
             ret.setMeasure(c.getString(c.getColumnIndex("MEASURE")));
             ret.setModel(c.getString(c.getColumnIndex("MODEL")));
             ret.setDescription(c.getString(c.getColumnIndex("DESCRIPTION")));
+            ret.setNeedCfg(c.getInt(c.getColumnIndex("NEED_CFG")) == 1);
             return ret;
         }
     }
@@ -887,7 +896,8 @@ public class DbManager {
 	public void setCurrentUser(User currentUser) throws DbException {
         synchronized (this) {
             this.currentUser = currentUser;
-            updateActiveUser(currentUser);
+            if (currentUser != null)
+                updateActiveUser(currentUser);
         }
 	}
     
@@ -902,6 +912,44 @@ public class DbManager {
 	}
 
     // USER methods
+
+    public User createDefaultUser() throws DbException {
+        //TODO
+        Vector<Object> dataContainer = new Vector<Object>();
+
+        User defaultUser = new User();
+        defaultUser.setId( GWConst.DEFAULT_USER_ID );
+        defaultUser.setCf( "0000000000000000" );
+        defaultUser.setName( "default" );
+        defaultUser.setSurname( "default" );
+        defaultUser.setLogin( "default" );
+        defaultUser.setPassword( "default" );
+        defaultUser.setHasAutoLogin( false );
+        defaultUser.setIsPatient( true );
+        defaultUser.setActive( true );
+        defaultUser.setBlocked(false);
+        dataContainer.add( defaultUser );
+
+        Patient defaultPatient = new Patient();
+        defaultPatient.setId( defaultUser.getId() );
+        defaultPatient.setCf( defaultUser.getCf() );
+        defaultPatient.setName( defaultUser.getName() );
+        defaultPatient.setSurname( defaultUser.getSurname() );
+        dataContainer.add( defaultPatient );
+
+        List<String> measureTypes = getCfgMeasureTypes();
+        for (String mt:measureTypes) {
+            UserMeasure um = new UserMeasure();
+            um.setIdUser(GWConst.DEFAULT_USER_ID);
+            um.setMeasure(mt);
+            um.setFamily(UserMeasure.MeasureFamily.BIOMETRICA);
+            dataContainer.add( um );
+        }
+
+        updateConfiguration(dataContainer);
+
+        return getUser( GWConst.DEFAULT_USER_ID );
+    }
 
     public User getActiveUser() {
         synchronized (this) {
@@ -986,53 +1034,81 @@ public class DbManager {
         }
     }
 
-    public void updateUserBlocked(String userId, boolean blocked) {
+    public void updateUserBlocked(String login, boolean blocked) {
         synchronized (this) {
             ContentValues values = new ContentValues();
             values.put("BLOCKED", blocked ?  1 : 0);
-            mDb.update("USER", values, "ID = ? ", new String[]{userId});
+            mDb.update("USER", values, "LOGIN = ? ", new String[]{login});
         }
     }
 
-    public List<User> getNotActiveUsers() {
-        synchronized (this) {
-            List<User> ret = new ArrayList<>();
-            Cursor c;
-            c = mDb.query("USER", null, "ACTIVE = ?", new String[]{String.valueOf(0)}, null, null, null);
-
-            if (c != null) {
-                while (c.moveToNext()) {
-                    User u = getUserObject(c);
-                    ret.add(u);
-                }
-                c.close();
-            }
-            return ret;
-        }
-    }
-
-    public List<User> getAllUsers() throws DbException{
+    public List<User> getNotLoggedUsers() {
         synchronized (this) {
             List<User> ret = new ArrayList<>();
             Cursor c = null;
             try {
                 c = mDb.query("USER", null, null, null, null, null, null);
-
                 if (c != null) {
                     while (c.moveToNext()) {
                         User u = getUserObject(c);
+                        if ((u.getId().equalsIgnoreCase( GWConst.DEFAULT_USER_ID ))
+                                || (currentUser!=null && currentUser.getId().equalsIgnoreCase(u.getId())))
+                            continue;
                         ret.add(u);
                     }
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
-                throw new DbException();
             } finally {
                 if (c != null)
                     c.close();
             }
             return ret;
         }
+    }
+
+    public List<User> getAllUsers() {
+        synchronized (this) {
+            List<User> ret = new ArrayList<>();
+            Cursor c = null;
+            try {
+                c = mDb.query("USER", null, null, null, null, null, null);
+                if (c != null) {
+                    while (c.moveToNext()) {
+                        User u = getUserObject(c);
+                        if ( !u.getId().equalsIgnoreCase( GWConst.DEFAULT_USER_ID ) )
+                            ret.add(u);
+                    }
+                }
+            } finally {
+                if (c != null)
+                    c.close();
+            }
+            return ret;
+        }
+    }
+
+    public List<User> getUsers() throws DbException{
+        List<User> ret = new ArrayList<User>();
+        Cursor c = null;
+        try {
+            if(currentUser != null){
+                c = mDb.query("USER", null, "ID  <> ? ", new String[]{""+currentUser.getId()}, null, null, null);
+            } else {
+                c = mDb.query("USER", null, null, null, null, null, null);
+            }
+            if (c != null) {
+                while(c.moveToNext()){
+                    User u = (User)getUserObject(c);
+                    if ( !u.getId().equalsIgnoreCase( GWConst.DEFAULT_USER_ID ) )
+                        ret.add(u);
+                }
+            }
+        } catch(Exception e){
+            e.printStackTrace();
+            throw new DbException();
+        } finally {
+            c.close();
+        }
+        return ret;
     }
 
     public void deleteUser(String idUser) throws DbException {
@@ -1079,6 +1155,7 @@ public class DbManager {
             values.put("NAME", u.getName());
             values.put("SURNAME", u.getSurname());
             values.put("TIMESTAMP", System.currentTimeMillis());
+            values.put("AUTO_LOGIN",u.getHasAutoLogin()? 1:0);
             values.put("IS_PATIENT",u.getIsPatient()? 1:0);
             mDb.insert("USER", null, values);
             logger.log(Level.INFO, "User inserted");
@@ -1109,14 +1186,43 @@ public class DbManager {
             ret.setLogin(c.getString(c.getColumnIndex("LOGIN")));
             ret.setPassword(c.getString(c.getColumnIndex("PASSWORD")));
             ret.setActive(c.getInt(c.getColumnIndex("ACTIVE")) == 1);
+            ret.setHasAutoLogin(c.getInt(c.getColumnIndex("AUTO_LOGIN")) == 1);
             ret.setBlocked(c.getInt(c.getColumnIndex("BLOCKED")) == 1);
             ret.setIsPatient(c.getInt(c.getColumnIndex("IS_PATIENT")) == 1);
-
             return ret;
         }
 	}
-	
-	private void setPatient(Patient pa) throws DbException {
+
+    /**
+     * Metodo che permette di ricavare le impostazioni di auto-login dell'utente
+     * @param idUser variabile di tipo {@code String} che contiene l'identificatore dell'utente
+     * @return variabile di tipo {@code boolean} che indica se l'utente ha abilitato o meno l'auto-login
+     */
+    public boolean getAutoLoginStatus(String idUser) {
+        boolean status;
+        Cursor c = mDb.query("USER", new String[] {"AUTO_LOGIN"}, "ID = ?", new String[] {idUser}, null, null, null);
+        c.moveToFirst();
+        status = c.getString(c.getColumnIndex("AUTO_LOGIN")).equalsIgnoreCase("N") ? false:true;
+        c.close();
+        return status;
+    }
+
+    /**
+     * Metodo che permette di salvare le impostazioni di auto-login dell'utente
+     * @param idUser variabile di tipo {@code String} che contiene l'identificatore dell'utente
+     * @param checked variabile di tipo {@code boolean} che indica se l'utente ha abilitato o meno l'auto-login
+     */
+    public void saveAutoLoginStatus(String idUser, boolean checked) {
+        ContentValues values = new ContentValues();
+        if(checked)
+            values.put("AUTO_LOGIN", 1);
+        else
+            values.put("AUTO_LOGIN", 0);
+        mDb.update("USER", values, "ID = ?", new String[] {idUser});
+    }
+
+
+    private void setPatient(Patient pa) throws DbException {
         synchronized (this) {
             if (getPatient(pa.getId()) == null) {
                 insertPatient(pa);
@@ -1694,7 +1800,24 @@ public class DbManager {
             }
         }
 	}
-	
+
+	public List<String> getCfgMeasureTypes() throws DbException {
+        List<String> ret = new ArrayList<>();
+        Cursor c = null;
+        try {
+            c = mDb.rawQuery("SELECT DISTINCT MEASURE FROM DEVICE WHERE NEED_CFG = 1 ORDER BY MEASURE ASC", null);
+            if (c != null) {
+                while (c.moveToNext()) {
+                    ret.add(c.getString(c.getColumnIndex("MEASURE")));
+                }
+            }
+        } finally {
+            if (c != null)
+                c.close();
+        }
+        return ret;
+    }
+
 	public List<String> getMeasureTypesForUser() throws DbException {
         synchronized (this) {
             //select distinct measure from user_device where id_user= ?
@@ -1979,6 +2102,32 @@ public class DbManager {
             }
         }
 	}
+
+    /**
+     * Metodo che permette di il numero di misure che non sono ancora state inviate alla piattaforma
+     * @param idUser variabile di tipo {@code String} che contiene l'identificatore dell'utente che ha acquisito le misure
+     * @return int
+     */
+    public int getNumNotSentMeasures(String idUser) {
+        final String SQL_STATEMENT = "SELECT COUNT(*) FROM MEASURE WHERE ID_USER = ? AND SENT = 0 AND SEND_FAIL_COUNT < ? AND SEND_FAIL_TIMESTAMP < ?";
+        Cursor c = null;
+        int count = 0;
+        try {
+            c = mDb.rawQuery(SQL_STATEMENT, new String[]{idUser,
+                    String.valueOf(GWConst.MAX_SEND_RETRY),
+                    String.valueOf(System.currentTimeMillis() / 1000 - GWConst.SEND_RETRY_TIMEOUT)
+            });
+            c.moveToFirst();
+            count = c.getInt(0);
+        } catch (Exception e) {
+            e.printStackTrace();
+            logger.log(Level.SEVERE, e.getMessage());
+        } finally {
+            if (c != null)
+                c.close();
+        }
+        return count;
+    }
 
 	/**
 	 * Metodo che permette di ottenere le misure che non sono ancora state inviate alla piattaforma

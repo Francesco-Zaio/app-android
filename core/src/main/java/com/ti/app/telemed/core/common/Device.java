@@ -5,7 +5,7 @@ public class Device implements Cloneable {
 	private String measure;
 	private String model;
 	private String description;
-	private String schedule;
+    private boolean needCfg;
 
 	public Integer getId() {
 		return id;
@@ -39,13 +39,13 @@ public class Device implements Cloneable {
 		this.description = description;
 	}
 
-	public String getSchedule() {
-		return schedule;
-	}
+	public void setNeedCfg(boolean needCfg) {
+        this.needCfg = needCfg;
+    }
 
-	public void setSchedule(String schedule) {
-		this.schedule = schedule;
-	}
+    public boolean needCfg() {
+        return needCfg;
+    }
 
 	@Override
 	public Object clone() {
@@ -56,7 +56,7 @@ public class Device implements Cloneable {
 			newDevice.setModel(this.model);
 			newDevice.setDescription(this.description);
 			newDevice.setMeasure(this.measure);
-			newDevice.setSchedule(this.schedule);
+            newDevice.setNeedCfg(this.needCfg);
 			return newDevice;
 		} catch (CloneNotSupportedException e) {
 			e.printStackTrace();
@@ -71,20 +71,12 @@ public class Device implements Cloneable {
 
 	@Override
 	public boolean equals(Object obj) {
-		return equalsMeasureModel(obj);
+		return obj instanceof Device && equalsMeasureModel((Device)obj);
 	}
 
-	public boolean equalsMeasureModel(Object obj){
-		if(obj instanceof Device && obj != null){
-			Device d = (Device)obj;
-			if(d.getMeasure() != null && d.getModel() != null){
-				return d.getMeasure().equalsIgnoreCase(measure)
-						&& d.getModel().equalsIgnoreCase(model);
-			} else {
-				return false;
-			}
-		} else {
-			return false;
-		}
+	private boolean equalsMeasureModel(Device d){
+		return d.getMeasure() != null && d.getModel() != null &&
+                d.getMeasure().equalsIgnoreCase(measure)
+                && d.getModel().equalsIgnoreCase(model);
 	}
 }

@@ -14,6 +14,7 @@ public class User implements Serializable {
 	private long timestamp;
 	private String login;
 	private String password;
+	private boolean hasAutoLogin;
 	private boolean isPatient; // Indica se l'utente è anche un paziente
 	
 	private boolean active;
@@ -75,6 +76,13 @@ public class User implements Serializable {
 		this.active = active;
 	}
 
+	public boolean getHasAutoLogin() {
+		return this.hasAutoLogin;
+	}
+
+	public void setHasAutoLogin(boolean hasAutoLogin) {
+		this.hasAutoLogin = hasAutoLogin;
+	}
 	public boolean isBlocked() {
 		return blocked;
 	}

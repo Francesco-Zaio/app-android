@@ -14,18 +14,18 @@ public class ResourceManager {
 	private static ResourceManager rm;
 	private Properties properties;
 
-	private static final String PROPS_it_IT = "appresource_it_IT.properties";
-	private static final String PROPS_en_GB = "appresource_en_GB.properties";
+	private static final String PROPS_it_IT = "resource_it_IT.properties";
+	private static final String PROPS_en_GB = "resource_en_GB.properties";
 	
 	private static final String TAG = "ResourceManager";
 	
-	private ResourceManager(String language, String country) {
+	private ResourceManager(String language) {
 		// Read from the /assets directory
 		try {
 			Resources resources = MyApp.getContext().getResources();
 			AssetManager assetManager = resources.getAssets();
 
-		    InputStream inputStream = assetManager.open(getFilename(language, country));
+		    InputStream inputStream = assetManager.open(getFilename(language));
 		    properties = new Properties();
 		    properties.load(inputStream);
 		    Log.i(TAG, "The properties are now loaded");
@@ -35,7 +35,7 @@ public class ResourceManager {
 		}
 	}
 
-	private String getFilename(String language, String country) {
+	private String getFilename(String language) {
 		String filename = PROPS_en_GB;
 		if("it".equals(language)){ //&& "IT".equals(country)){
 			filename = PROPS_it_IT;
@@ -48,13 +48,9 @@ public class ResourceManager {
 	public static ResourceManager getResource() {
 		if (rm == null) {
 			Locale locale = Locale.getDefault();			
-			rm = new ResourceManager(locale.getLanguage(), locale.getCountry());
+			rm = new ResourceManager(locale.getLanguage());
 		}
 		return rm;
-	}
-	
-	public void closeResource(){
-		rm = null;
 	}
 
 	public String getString(String key) {

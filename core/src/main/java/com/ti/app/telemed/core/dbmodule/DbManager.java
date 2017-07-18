@@ -24,7 +24,6 @@ import com.ti.app.telemed.core.common.UserPatient;
 import com.ti.app.telemed.core.exceptions.DbException;
 import com.ti.app.telemed.core.util.GWConst;
 import com.ti.app.telemed.core.util.Util;
-import com.ti.app.telemed.core.xmlmodule.XmlManager;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -46,15 +45,13 @@ public class DbManager {
 
     // Versione del DB: incrementare il nr se vi sono modifiche allo schema ed inserire le modifice
     // nel metoto onUpgrade
-    private static final int DATABASE_VERSION = 14;
+    private static final int DATABASE_VERSION = 15;
     // versione DB minima richiesta per cui è possibile effettuare un upgrade del DB senza
     // dover droppare e ricreare tutte le tabelle (vedi metodo onUpgrade)
     private static final int MIN_OLD_VERSION = 10;
 
     private DatabaseHelper mDbHelper;
     private SQLiteDatabase mDb;
-
-    private Context mCtx;
 
 	private static DbManager dbManager;
 
@@ -151,7 +148,6 @@ public class DbManager {
 		+ "TIMESTAMP text NOT NULL, "
 		+ "MEASURE_TYPE text, "
         + "STANDARD integer, "
-        + "DEVICE_TYPE integer, "
         + "DEVICE_DESC text, "
         + "BTADDRESS text, "
         + "MEASURES text, "
@@ -177,12 +173,6 @@ public class DbManager {
     	+ "HOSTNAME text, "
     	+ "PUBLIC_KEY BLOB, "
     	+ "FOREIGN KEY (ID_USER) REFERENCES USER (ID) ON DELETE CASCADE )";
-    
-    private final String selectDeviceWhereModelMeasure = "select * from DEVICE where MEASURE = ? and MODEL = ? ";
-    private final String selectDeviceBtAddressWhereIdUserIdDevice = "select * from USER_DEVICE where ID_USER = ? and ID_DEVICE = ?";
-    private final String selectUserDeviceData = "SELECT ud.* FROM USER_DEVICE ud, DEVICE d WHERE ud.ID_USER = ? AND ud.ID_DEVICE = d.ID AND d.MEASURE = ? AND d.MODEL = ? ";
-	private final String selectDistinctMeasures = "SELECT DISTINCT MEASURE FROM USER_DEVICE WHERE ID_USER = ? ORDER BY MEASURE ASC";
-    private final String selectCurrentDeviceWhereMeasure = "select * from CURRENT_DEVICE where MEASURE = ? ";
 
 	private User currentUser;      
     
@@ -237,6 +227,8 @@ public class DbManager {
                         db.execSQL("ALTER TABLE USER ADD COLUMN AUTO_LOGIN integer DEFAULT 0");
                     case 13:
                         db.execSQL("ALTER TABLE DEVICE ADD COLUMN NEED_CFG integer");
+                    case 14:
+                        // rimossa colonna DEVICE_TYPE da MEASURE non serve fare nulla
                 }
             }
         }
@@ -245,11 +237,8 @@ public class DbManager {
     /**
      * Constructor - takes the context to allow the database to be
      * opened/created
-     * 
-     * @param ctx the Context within which to work
      */
-    private DbManager(Context ctx) {
-        this.mCtx = ctx;
+    private DbManager() {
     }
 	
     /**
@@ -262,7 +251,7 @@ public class DbManager {
      * @throws SQLException if the database could be neither opened or created
      */
     private DbManager open() throws SQLException {
-        mDbHelper = new DatabaseHelper(mCtx);
+        mDbHelper = new DatabaseHelper(MyApp.getContext());
         mDb = mDbHelper.getWritableDatabase();
 
         if (!mDb.isReadOnly()){
@@ -287,7 +276,7 @@ public class DbManager {
 
     public static DbManager getDbManager(){
         if(dbManager == null){
-            dbManager = new  DbManager(MyApp.getContext());
+            dbManager = new  DbManager();
             dbManager.open();
         }
         return dbManager;
@@ -299,7 +288,7 @@ public class DbManager {
             Device ret = null;
             Cursor c = null;
             try {
-                c = mDb.rawQuery(selectDeviceWhereModelMeasure, new String[]{measure, model});
+                c = mDb.rawQuery("select * from DEVICE where MEASURE = ? and MODEL = ? ", new String[]{measure, model});
                 if (c != null) {
                     if (c.moveToFirst()) {
                         ret = getDeviceObject(c);
@@ -449,7 +438,7 @@ public class DbManager {
             Cursor c = null;
 
             try {
-                c = mDb.rawQuery(selectDeviceBtAddressWhereIdUserIdDevice, new String[]{idUser, idDevice});
+                c = mDb.rawQuery("select * from USER_DEVICE where ID_USER = ? and ID_DEVICE = ?", new String[]{idUser, idDevice});
                 if (c != null) {
                     if (c.moveToFirst()) {
                         int nameColumnIndex = c.getColumnIndexOrThrow("BTADDRESS");
@@ -468,12 +457,12 @@ public class DbManager {
         }
     }
 
-    public void storeCurrentDeviceData(String measure, String idDevice, String btAddress) throws DbException {
+    private void storeCurrentDeviceData(String measure, String idDevice, String btAddress) throws DbException {
         synchronized (this) {
             Cursor c = null;
 
             try {
-                c = mDb.rawQuery(selectCurrentDeviceWhereMeasure, new String[]{measure});
+                c = mDb.rawQuery("select * from CURRENT_DEVICE where MEASURE = ? ", new String[]{measure});
                 if (c != null) {
                     if (c.moveToFirst()) {
                         // the query returns something --> update
@@ -619,7 +608,6 @@ public class DbManager {
 	/**
 	 * Metodo che permette di ottenere le impostazioni di default della configurazione del server
 	 * @return ServerConf
-	 * @throws DbException
 	 */
 	public ServerConf getDefaultServerConf() throws DbException {
         synchronized (this) {
@@ -693,7 +681,6 @@ public class DbManager {
             return ret;
         }
     }
-
 
     // public MeasureProtocolCfg methods
     public MeasureProtocolCfg getMeasureProtocolCfg() throws DbException {
@@ -778,7 +765,6 @@ public class DbManager {
 	 * Ottengo i certificato di sicurezza del server dalla tabella CERTIFICATES
 	 * @param idUser variabile di tipo {@code String} che contiene l'identificatore dell'utente
 	 * @return array di oggetti di tipo {@code ServerCertificate} che contengono la chiave pubblica associata al certificato accettato
-	 * @throws DbException
 	 */
 	public ArrayList<ServerCertificate> getServerCertificate(String idUser) throws DbException {
         synchronized (this) {
@@ -812,7 +798,6 @@ public class DbManager {
 	
 	/**
 	 * Metodo che rimuove il certificato memorizzato all'interno della tabella {@code CERTIFICATES}
-	 * @throws DbException
 	 */
 	public void removeServerCertificates() throws DbException {
 		//Rimuovo tutte le entry dalla tabella dei certificati del server
@@ -914,8 +899,7 @@ public class DbManager {
     // USER methods
 
     public User createDefaultUser() throws DbException {
-        //TODO
-        Vector<Object> dataContainer = new Vector<Object>();
+        Vector<Object> dataContainer = new Vector<>();
 
         User defaultUser = new User();
         defaultUser.setId( GWConst.DEFAULT_USER_ID );
@@ -1087,7 +1071,7 @@ public class DbManager {
     }
 
     public List<User> getUsers() throws DbException{
-        List<User> ret = new ArrayList<User>();
+        List<User> ret = new ArrayList<>();
         Cursor c = null;
         try {
             if(currentUser != null){
@@ -1097,7 +1081,7 @@ public class DbManager {
             }
             if (c != null) {
                 while(c.moveToNext()){
-                    User u = (User)getUserObject(c);
+                    User u = getUserObject(c);
                     if ( !u.getId().equalsIgnoreCase( GWConst.DEFAULT_USER_ID ) )
                         ret.add(u);
                 }
@@ -1202,7 +1186,7 @@ public class DbManager {
         boolean status;
         Cursor c = mDb.query("USER", new String[] {"AUTO_LOGIN"}, "ID = ?", new String[] {idUser}, null, null, null);
         c.moveToFirst();
-        status = c.getString(c.getColumnIndex("AUTO_LOGIN")).equalsIgnoreCase("N") ? false:true;
+        status = (c.getInt(c.getColumnIndex("AUTO_LOGIN")) == 1);
         c.close();
         return status;
     }
@@ -1611,7 +1595,7 @@ public class DbManager {
             UserDevice ret = null;
             Cursor c = null;
             try {
-                c = mDb.rawQuery(selectUserDeviceData, new String[]{idUser, measure, model});
+                c = mDb.rawQuery("SELECT ud.* FROM USER_DEVICE ud, DEVICE d WHERE ud.ID_USER = ? AND ud.ID_DEVICE = d.ID AND d.MEASURE = ? AND d.MODEL = ? ", new String[]{idUser, measure, model});
                 if (c != null) {
                     if (c.moveToFirst()) {
                         ret = getUserDeviceObject(c);
@@ -1824,7 +1808,7 @@ public class DbManager {
             List<String> ret = new ArrayList<>();
             Cursor c = null;
             try {
-                c = mDb.rawQuery(selectDistinctMeasures, new String[]{"" + currentUser.getId()});
+                c = mDb.rawQuery("SELECT DISTINCT MEASURE FROM USER_DEVICE WHERE ID_USER = ? ORDER BY MEASURE ASC", new String[]{"" + currentUser.getId()});
                 if (c != null) {
                     while (c.moveToNext()) {
                         ret.add(c.getString(c.getColumnIndex("MEASURE")));
@@ -1884,7 +1868,6 @@ public class DbManager {
             m.setStandardProtocol(c.getInt(c.getColumnIndex("STANDARD")) == 1);
             m.setIdUser(c.getString(c.getColumnIndex("ID_USER")));
             m.setIdPatient(c.getString(c.getColumnIndex("ID_PATIENT")));
-            m.setDeviceType(XmlManager.TDeviceType.convertTo(c.getInt(c.getColumnIndex("DEVICE_TYPE"))));
             m.setDeviceDesc(c.getString(c.getColumnIndex("DEVICE_DESC")));
             m.setBtAddress(c.getString(c.getColumnIndex("BTADDRESS")));
             m.setMeasures(Util.jsonToStringMap(c.getString(c.getColumnIndex("MEASURES"))));
@@ -1910,7 +1893,6 @@ public class DbManager {
 	 * @param idPatient {@code String} che contiene l'id del paziente da ricercare. Null o '' se non utilizzata
      * @param failed {@code int} 0 solo misure valide, 1 solo misure fallite, qualsiasi altro valore per non filtrare
 	 * @return oggetto di tipo {@code List<Measure>} che contiene la lista delle misure associate all'utente
-	 * @throws DbException
 	 */
 	public List<Measure> getMeasureData(String idUser, String dateFrom, String dateTo, String measureType, String idPatient, int failed) throws DbException {
         synchronized (this) {
@@ -1977,7 +1959,6 @@ public class DbManager {
                 values.put("TIMESTAMP", measure.getTimestamp());
                 values.put("MEASURE_TYPE", measure.getMeasureType());
                 values.put("STANDARD", measure.getStandardProtocol()? 1:0);
-                values.put("DEVICE_TYPE", XmlManager.TDeviceType.convertFrom(measure.getDeviceType()));
                 values.put("DEVICE_DESC", measure.getDeviceDesc());
                 values.put("BTADDRESS", measure.getBtAddress());
                 values.put("SENT", measure.getSent()? 1:0);

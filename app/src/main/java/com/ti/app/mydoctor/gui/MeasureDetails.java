@@ -94,7 +94,7 @@ public class MeasureDetails extends ListActivity {
 				}
 			});
 
-            Vector<MeasureDetail> measureList = MeasureDetail.getMeasureDetails(currentMeasure);
+            Vector<MeasureDetail> measureList = MeasureDetail.getMeasureDetails(currentMeasure, true);
 
             String[] separator;
             String[] item;

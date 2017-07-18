@@ -25,52 +25,7 @@ import javax.xml.parsers.SAXParserFactory;
 public class XmlManager extends DefaultHandler {
 	
 	private static final String TAG = "XmlManager";
-	
-	public enum TDeviceType {
-        WEIGHTSCALE_DT (0),
-		BLOODPRESSURE_DT (1),
-		MIR_OXIMETER_DT (2),
-		TEMPERATURE_DT (3),
-		CAMERA_DT (4),
-		Q0_DT (5),
-		Q1_DT (6),
-		Q2_DT (7),
-        NODEV_DT (999);
 
-        private final int val;
-
-        TDeviceType(int val) {
-            this.val = val;
-        }
-
-        public static TDeviceType convertTo(int valToConvert) {
-            switch (valToConvert) {
-                case 0:
-                    return WEIGHTSCALE_DT;
-                case 1:
-                    return BLOODPRESSURE_DT;
-                case 2:
-                    return MIR_OXIMETER_DT;
-                case 3:
-                    return TEMPERATURE_DT;
-                case 4:
-                    return CAMERA_DT;
-                case 5:
-                    return Q0_DT;
-                case 6:
-                    return Q1_DT;
-                case 7:
-                    return Q2_DT;
-                default:
-                    return NODEV_DT;
-            }
-        }
-
-        public static int convertFrom(TDeviceType valToConvert) {
-            return valToConvert.val;
-        }
-    }
-    
     public enum XmlErrorCode {
         COMMAND_SUCCESSFULLY_EXEC (0),
 		MESSAGE_RECEIVED (1),

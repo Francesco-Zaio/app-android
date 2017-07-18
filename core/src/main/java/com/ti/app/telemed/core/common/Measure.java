@@ -19,7 +19,6 @@ public class Measure implements Serializable{
 
     private static final String TAG = "Measure";
 
-    private XmlManager.TDeviceType deviceType;
     private String deviceDesc = "";
     private String btAddress = "N.A.";
     private String timestamp;
@@ -45,14 +44,6 @@ public class Measure implements Serializable{
         RED,
         ORANGE,
         GREEN
-    }
-
-    public XmlManager.TDeviceType getDeviceType() {
-        return deviceType;
-    }
-
-    public void setDeviceType(XmlManager.TDeviceType deviceType) {
-        this.deviceType = deviceType;
     }
 
     public String getDeviceDesc() {

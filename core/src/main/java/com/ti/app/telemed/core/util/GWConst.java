@@ -13,10 +13,7 @@ public interface GWConst {
 
 	String KBalanceMD = "UC321PBT";
 	String KPressureMD = "UA767PBT";
-	String KEcgAR = "AR4100VIEW";
-	String KEcgAR1200 = "AR1200VIEWBT";
 	String KEcgMicro = "MICROTELBT";
-	String KEcgAR1200ADVRS = "AR1200ADVRS";
 	String KOximeterNon = "NONIN4100";
 	String KPO3IHealth = "PO3";
 	String KBP5IHealth = "BP5";

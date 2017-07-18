@@ -46,7 +46,6 @@ class IHealthBP5 extends Handler implements IHealtDevice{
 
     IHealthBP5(IHealth iHealth, Measure m) {
         this.measure = m;
-        this.measure.setDeviceType(XmlManager.TDeviceType.BLOODPRESSURE_DT);
         this.iHealth = iHealth;
     }
 
@@ -122,6 +121,8 @@ class IHealthBP5 extends Handler implements IHealtDevice{
             Log.e(TAG, "startMeasure: iHealth is NULL!");
             return;
         }
+
+        measure.setBtAddress(mac);
 
         firstRead = true;
         endOperation = false;

@@ -69,7 +69,6 @@ class IHealthPO3 extends Handler implements IHealtDevice{
 
     IHealthPO3(IHealth iHealth, Measure m) {
         this.measure = m;
-        this.measure.setDeviceType(XmlManager.TDeviceType.MIR_OXIMETER_DT);
         this.iHealth = iHealth;
     }
 
@@ -107,6 +106,8 @@ class IHealthPO3 extends Handler implements IHealtDevice{
             Log.e(TAG, "startMeasure: iHealth is NULL!");
             return;
         }
+
+        measure.setBtAddress(mac);
 
         firstRead = true;
 
@@ -364,7 +365,8 @@ class IHealthPO3 extends Handler implements IHealtDevice{
 
         // DURATA
         Time tDurata = calcTime(iAnalysisTime);
-        String durata = String.format(Locale.ENGLISH, "%02d%02d%02d", tDurata.getHh(), tDurata.getMm(), tDurata.getSs());
+        String durata = Integer.toString(iAnalysisTime);
+//        String durata = String.format(Locale.ENGLISH, "%02d:%02d:%02d", tDurata.getHh(), tDurata.getMm(), tDurata.getSs());
 
         //Recording Time & Analysis Time
         oxyStream[84] = (byte)tDurata.getHh();

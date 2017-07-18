@@ -111,7 +111,6 @@ public class MeasureManager {
 			String [] tokens  = outputFile.split(File.separator);
 			map.put(code, tokens[tokens.length-1]);  //nome file
 			try {
-				m.setDeviceType(XmlManager.TDeviceType.NODEV_DT);
 				m.setDeviceDesc("Document-" + code);
 				m.setTimestamp(XmlManager.getXmlManager().getTimestamp(null));
 				m.setMeasureType(code);
@@ -158,7 +157,6 @@ public class MeasureManager {
 			HashMap<String, String> map = new HashMap<>();
 			map.put(code, Integer.toString(level));
 			try {
-				m.setDeviceType(XmlManager.TDeviceType.NODEV_DT);
 				m.setDeviceDesc(code);
 				m.setTimestamp(XmlManager.getXmlManager().getTimestamp(null));
 				m.setMeasureType(code);

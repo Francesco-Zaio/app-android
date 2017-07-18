@@ -1,4 +1,4 @@
-package com.ti.app.telemed.core.btmodule;
+package com.ti.app.telemed.core.btmodule.events;
 
 import java.util.EventObject;
 

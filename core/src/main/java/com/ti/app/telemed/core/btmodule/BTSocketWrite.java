@@ -1,11 +1,11 @@
-package com.ti.app.mydoctor.core.btmodule;
+package com.ti.app.telemed.core.btmodule;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Vector;
 
-import com.ti.app.mydoctor.core.btmodule.events.BTSocketWriteEvent;
-import com.ti.app.mydoctor.core.btmodule.events.BTSocketWriteEventListener;
+import com.ti.app.telemed.core.btmodule.events.BTSocketWriteEvent;
+import com.ti.app.telemed.core.btmodule.events.BTSocketWriteEventListener;
 
 import android.bluetooth.BluetoothSocket;
 import android.util.Log;
@@ -33,7 +33,7 @@ public class BTSocketWrite implements Runnable {
 	//Listener management
 	private Vector<BTSocketWriteEventListener> btSocketWriteEventListeners = new Vector<BTSocketWriteEventListener>();
 	
-	private static final String TAG = "BTSocketWrite";
+	private static final String TAG = "BTSocket";
 	 
 	public BTSocketWrite() {		
 		reset();

@@ -45,7 +45,6 @@ class IHealthHS4S extends Handler implements IHealtDevice{
     IHealthHS4S(IHealth iHealth, Measure m) {
         this.iHealth = iHealth;
         this.measure = m;
-        this.measure.setDeviceType(XmlManager.TDeviceType.WEIGHTSCALE_DT);
     }
 
     private iHealthDevicesCallback mIHealthDevicesCallback = new iHealthDevicesCallback() {
@@ -103,6 +102,8 @@ class IHealthHS4S extends Handler implements IHealtDevice{
             Log.e(TAG, "startMeasure: iHealth is NULL!");
             return;
         }
+
+        measure.setBtAddress(mac);
 
         firstRead = true;
         endOperation = false;

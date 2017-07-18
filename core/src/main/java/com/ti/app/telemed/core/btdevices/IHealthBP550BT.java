@@ -47,7 +47,6 @@ class IHealthBP550BT extends Handler implements IHealtDevice{
 
     IHealthBP550BT(IHealth iHealth, Measure m) {
         this.measure = m;
-        this.measure.setDeviceType(XmlManager.TDeviceType.BLOODPRESSURE_DT);
         this.iHealth = iHealth;
     }
 
@@ -111,6 +110,8 @@ class IHealthBP550BT extends Handler implements IHealtDevice{
             Log.e(TAG, "startMeasure: iHealth is NULL!");
             return;
         }
+
+        measure.setBtAddress(mac);
 
         callbackId = iHealthDevicesManager.getInstance().registerClientCallback(mIHealthDevicesCallback);
      /* Limited wants to receive notification specified device */

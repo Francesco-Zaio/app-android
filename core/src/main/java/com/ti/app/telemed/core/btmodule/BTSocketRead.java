@@ -1,11 +1,11 @@
-package com.ti.app.mydoctor.core.btmodule;
+package com.ti.app.telemed.core.btmodule;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Vector;
 
-import com.ti.app.mydoctor.core.btmodule.events.BTSocketReadEvent;
-import com.ti.app.mydoctor.core.btmodule.events.BTSocketReadEventListener;
+import com.ti.app.telemed.core.btmodule.events.BTSocketReadEvent;
+import com.ti.app.telemed.core.btmodule.events.BTSocketReadEventListener;
 
 import android.bluetooth.BluetoothSocket;
 import android.util.Log;
@@ -36,7 +36,7 @@ public class BTSocketRead implements Runnable {
 	//Listener management
 	private Vector<BTSocketReadEventListener> btSocketReadEventListeners = new Vector<BTSocketReadEventListener>();
 	
-	private static final String TAG = "BTSocketRead";
+	private static final String TAG = "BTSocket";
 	
 	public BTSocketRead() {
 		reset();
@@ -146,8 +146,8 @@ public class BTSocketRead implements Runnable {
 						break;
 					case OPEN:
 						try {      
-                        	inStream = mmSocket.getInputStream();
-							currentOpOn = Op.IDLE;
+                        	inStream = mmSocket.getInputStream();;
+                            currentOpOn = Op.IDLE;
                             isClosed = false;
                             fireOpenDone();                            
                         } catch (IOException ioe) {

@@ -7,8 +7,10 @@ import android.os.Message;
 import android.util.Log;
 
 import com.ti.app.mydoctor.AppResourceManager;
+import com.ti.app.telemed.core.btdevices.EcgProtocol;
 import com.ti.app.telemed.core.btdevices.IHealth;
-import com.ti.app.telemed.core.btmodule.BTSearcherEventListener;
+import com.ti.app.telemed.core.btdevices.RocheProthrombineTimeClient;
+import com.ti.app.telemed.core.btmodule.events.BTSearcherEventListener;
 import com.ti.app.telemed.core.btmodule.DeviceHandler;
 import com.ti.app.telemed.core.btmodule.DeviceListener;
 import com.ti.app.telemed.core.common.Measure;
@@ -32,9 +34,8 @@ public class DeviceManager implements DeviceListener {
 	private User currentUser;
 	private DeviceHandler currentDeviceHandler;
 	private BTSearcherEventListener btSearcherListener;
-    private Measure m;
 	
-	private boolean pairingModeOn;
+	private boolean pairingMode;
 	private boolean isConfig;
 	
 	private Handler handler;
@@ -60,7 +61,7 @@ public class DeviceManager implements DeviceListener {
 
 	public void startDiscovery(DeviceScanActivity listener){
 		if(!operationRunning){
-	        pairingModeOn = true;
+	        pairingMode = true;
 			setConfig(false);
 	        setBtSearcherListener(listener);
 	        startOperation();	
@@ -71,11 +72,7 @@ public class DeviceManager implements DeviceListener {
 	
 	public void startMeasure() {		
 		if(!operationRunning){
-			if(isGlucoTelDevicePairing()){
-                pairingModeOn = true;
-			} else {
-                pairingModeOn = false;
-			}
+            pairingMode = Util.isEmptyString(currentDevice.getBtAddress());
 			setConfig(false);
 			startOperation();
 		} else {
@@ -85,17 +82,7 @@ public class DeviceManager implements DeviceListener {
 	
 	public void startConfig() {	
 		if(!operationRunning){
-            pairingModeOn = false;
-			setConfig(true);
-			startOperation();
-		} else {
-			Log.i(TAG, "Operation already RUNNING");
-		}
-	}
-	
-	public void startAlternativeConfig() {	
-		if(!operationRunning){
-            pairingModeOn = false;
+            pairingMode = false;
 			setConfig(true);
 			startOperation();
 		} else {
@@ -107,7 +94,7 @@ public class DeviceManager implements DeviceListener {
 		Log.i(TAG, "DeviceManager: startOperation");
 		if (BluetoothAdapter.getDefaultAdapter().isEnabled()) {
 			if (currentDevice != null) {
-				if (isPairingModeOn() || (currentUser != null)) {
+				if (pairingMode || (currentUser != null)) {
 					try {
 						operationRunning = true;
 						executeOp();
@@ -124,15 +111,11 @@ public class DeviceManager implements DeviceListener {
 			showError(AppResourceManager.getResource().getString("KNoBluetooth"));
 		}
 	}
-	
-	public boolean isPairingModeOn() {
-		return pairingModeOn;
-	}
 
 	private void executeOp() throws Exception {
 
         User u = UserManager.getUserManager().getCurrentUser();
-        m = new Measure();
+        Measure m = new Measure();
         m.setMeasureType(currentDevice.getDevice().getMeasure());
         m.setStandardProtocol(true);
         m.setDeviceDesc(currentDevice.getDevice().getDescription());
@@ -145,20 +128,25 @@ public class DeviceManager implements DeviceListener {
 
 		switch (currentDevice.getDevice().getModel()) {
 			case GWConst.KPO3IHealth:
-				m.setDeviceType(XmlManager.TDeviceType.MIR_OXIMETER_DT);
 				currentDeviceHandler = new IHealth(this, m, currentDevice.getDevice().getModel());
 				startMeasure(AppResourceManager.getResource().getString("KInitMsgOS"));
 				break;
             case GWConst.KBP5IHealth:
             case GWConst.KBP550BTHealth:
-				m.setDeviceType(XmlManager.TDeviceType.BLOODPRESSURE_DT);
                 currentDeviceHandler = new IHealth(this, m, currentDevice.getDevice().getModel());
 				startMeasure(AppResourceManager.getResource().getString("KInitMsgPR"));
 				break;
 			case GWConst.KHS4SIHealth:
-				m.setDeviceType(XmlManager.TDeviceType.WEIGHTSCALE_DT);
 				currentDeviceHandler = new IHealth(this, m, currentDevice.getDevice().getModel());
 				startMeasure(AppResourceManager.getResource().getString("KInitMsgPS"));
+				break;
+			case GWConst.KEcgMicro:
+				currentDeviceHandler = new EcgProtocol(this, m);
+				startMeasure(AppResourceManager.getResource().getString("KInitMsg"));
+				break;
+			case GWConst.KCcxsRoche:
+				currentDeviceHandler = new RocheProthrombineTimeClient(this, m);
+                startMeasure(AppResourceManager.getResource().getString("KInitMsg"));
 				break;
 		}
 	}
@@ -171,14 +159,6 @@ public class DeviceManager implements DeviceListener {
 		this.isConfig = isConfig;
 	}
 
-	private void startPairing() throws Exception {
-		currentDeviceHandler.start(btSearcherListener);
-	}
-	
-	private void startConfiguration() throws Exception {
-		currentDeviceHandler.start(currentDevice.getBtAddress());
-	}
-
 	private void startMeasure(String msg) throws Exception {
 		Log.d(TAG, "startMeasure " + msg);
 		if (currentDevice.getBtAddress()!= null && 
@@ -187,11 +167,11 @@ public class DeviceManager implements DeviceListener {
 			
 			Log.d(TAG, "search by address: " + currentDevice.getBtAddress());
 		    // search by address			
-			currentDeviceHandler.start(currentDevice.getBtAddress());
+			currentDeviceHandler.start(currentDevice.getBtAddress(), pairingMode);
 		} else {
 			Log.d(TAG, "search by user");
 		    // search by user
-			currentDeviceHandler.start(btSearcherListener);
+			currentDeviceHandler.start(btSearcherListener, pairingMode);
 		}	
 	}
 
@@ -333,6 +313,13 @@ public class DeviceManager implements DeviceListener {
     }
 
     @Override
+    public void configReady(String msg) {
+        Log.i(TAG, "configReady: "+ msg);
+        sendMessageToHandler(msg, CONFIG_READY, GWConst.MESSAGE);
+        operationRunning = false;
+    }
+
+    @Override
     public void notifyError(String errorCode, String errorMessage) {
         Log.e(TAG, "notifyError: " + errorCode + " - " + errorMessage);
         operationRunning = false;
@@ -356,16 +343,37 @@ public class DeviceManager implements DeviceListener {
 		Log.i(TAG, "notifyWaitToUi: "+msg);
 		sendMessageToHandler(msg, MESSAGE_STATE_WAIT, AppConst.MESSAGE);
     }
+    @Override
+    public void askSomething(String messageText, String positiveText, String negativeText) {
+
+        Message message = handler.obtainMessage(ASK_SOMETHING);
+        Bundle bundle = new Bundle();
+        bundle.putBoolean(AppConst.MESSAGE_CANCELLABLE, false);
+        bundle.putString(AppConst.ASK_MESSAGE, messageText);
+        bundle.putString(AppConst.ASK_POSITIVE, positiveText);
+        bundle.putString(AppConst.ASK_NEGATIVE, negativeText);
+
+        message.setData(bundle);
+        handler.sendMessage(message);
+    }
+
+    public void confirmDialog() {
+        currentDeviceHandler.confirmDialog();
+    }
+
+    public void cancelDialog() {
+        currentDeviceHandler.cancelDialog();
+    }
 
 
 
-    public void showError(String msg) {
+    private void showError(String msg) {
         Log.e(TAG, "showError: " +msg);
         operationRunning = false;
         sendMessageToHandler(msg, ERROR_STATE, AppConst.MESSAGE);
     }
 
-	public void sendMessageToHandler(String msgText, int messageType, String messageKey) {
+	private void sendMessageToHandler(String msgText, int messageType, String messageKey) {
 		Message message = handler.obtainMessage(messageType);
         Bundle bundle = new Bundle();
         bundle.putString(messageKey, msgText);
@@ -378,17 +386,12 @@ public class DeviceManager implements DeviceListener {
         handler.sendMessage(message);
 	}
 	
-	public void setBtSearcherListener(BTSearcherEventListener btSearcherListener) {
+	private void setBtSearcherListener(BTSearcherEventListener btSearcherListener) {
 		this.btSearcherListener = btSearcherListener;
 	}
 
 	public boolean isOperationRunning() {
 		return operationRunning;
-	}
-	
-	private boolean isGlucoTelDevicePairing() {
-		UserDevice device = getCurrentDevice();
-		return Util.isGlucoTelDevice(device.getDevice()) && Util.isEmptyString(device.getBtAddress());
 	}
 
 	public void finalizeMeasure() {
@@ -399,39 +402,6 @@ public class DeviceManager implements DeviceListener {
 		} catch (Exception e) {
 			showError(AppResourceManager.getResource().getString(
 			"EGWNurseBtDeviceDisconnError"));
-		}
-	}
-
-	public void confirmDialog() {
-
-		try {
-			//currentDeviceHandler.getClass().getDeclaredMethod("confirmDialog").invoke(new Object[0]);
-		}
-		catch (Exception e) {
-			Log.w(TAG, "confirmDialog=" + e);
-		}
-
-	}
-
-
-	public void askSomething(String messageText, String positiveText, String negativeText) {
-
-		Message message = handler.obtainMessage(ASK_SOMETHING);
-        Bundle bundle = new Bundle();
-        bundle.putBoolean(AppConst.MESSAGE_CANCELLABLE, false);
-        bundle.putString(AppConst.ASK_MESSAGE, messageText);
-        bundle.putString(AppConst.ASK_POSITIVE, positiveText);
-        bundle.putString(AppConst.ASK_NEGATIVE, negativeText);
-
-        message.setData(bundle);
-        handler.sendMessage(message);
-	}
-
-	public void cancelDialog() {
-		try {
-			currentDeviceHandler.stop();
-		} catch (Exception e) {
-			Log.w(TAG, "cancelDialog=" + e);
 		}
 	}
 }

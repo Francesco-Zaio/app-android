@@ -2,12 +2,6 @@ package com.ti.app.telemed.core.btmodule;
 
 import com.ti.app.telemed.core.common.Measure;
 
-import java.util.ArrayList;
-
-/**
- * Created by SO000228 on 07/11/2016.
- */
-
 public interface DeviceListener {
     String CONNECTION_ERROR = "E01";
     String DEVICE_NOT_FOUND_ERROR = "E02";
@@ -20,7 +14,9 @@ public interface DeviceListener {
     void notifyError(String errorCode, String errorMessage);
     void notifyToUi(String message);
     void notifyWaitToUi(String message);
+    void askSomething(String messageText, String positiveText, String negativeText);
     void setBtMAC(String mac);
     void showMeasurementResults(Measure m);
+    void configReady(String msg);
     void operationCompleted();
 }

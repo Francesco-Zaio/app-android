@@ -517,9 +517,6 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
 					Util.setRegistryValue(Util.KEY_LAST_USER, activeUser.getId());
 			}
 		}
-
-		DbManager.getDbManager().close();
-		AppResourceManager.getResource().closeResource();
 	}
 
 	/**
@@ -2090,7 +2087,7 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
 	private String getMeasureMessage(Measure data) {
 
         String msg = "";
-        Vector<MeasureDetail> mdv = MeasureDetail.getMeasureDetails(data);
+        Vector<MeasureDetail> mdv = MeasureDetail.getMeasureDetails(data, false);
         for (MeasureDetail md: mdv) {
             msg += md.getName() + ": " + md.getValue() + " " + md.getUnit() + "\n";
         }
@@ -2237,6 +2234,9 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
 		    	}
 				break;
 			case UserManager.LOGIN_FAILED:
+			case UserManager.BAD_PASSWORD:
+			case UserManager.USER_BLOCKED:
+			case UserManager.USER_LOCKED:
 				Log.e(TAG, "userManagerHandler: login failed");
                 activity.removeDialog(PROGRESS_DIALOG);
 				dataBundle = msg.getData();
@@ -2244,14 +2244,9 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
                 activity.showDialog(ALERT_DIALOG);
                 activity.runningConfig = false;
 				break;
-            case UserManager.BAD_PASSWORD:
-            case UserManager.USER_BLOCKED:
-            case UserManager.USER_LOCKED:
-                // TODO
-                break;
 			}
 		}
-	};
+	}
 
 	private void setupDeviceList() throws DbException {
 		User currentUser = UserManager.getUserManager().getCurrentUser();
@@ -2535,12 +2530,13 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
 
     			progressDialog.getButton(DialogInterface.BUTTON_POSITIVE).setEnabled(false);
     		}
-        	if (dataBundle.getString(AppConst.MESSAGE).startsWith(AppResourceManager.getResource().getString("KReliabilityStm") + ":") &&
-        			dataBundle.getString(AppConst.MESSAGE).endsWith("%")) {
-	        	String rvalue = dataBundle.getString(AppConst.MESSAGE).split(":")[1].trim().split("%")[0].trim();
+    		String msg = dataBundle.getString(AppConst.MESSAGE);
+            if (msg != null && msg.startsWith(AppResourceManager.getResource().getString("KReliabilityStm") + ":") &&
+                    msg.endsWith("%")) {
+	        	String rvalue = msg.split(":")[1].trim().split("%")[0].trim();
 	        	Log.i(TAG, "Reliability Value=" + rvalue);
 
-	        	int reliabilityValue = 0;
+	        	int reliabilityValue;
 	        	try {
 	        		reliabilityValue = Integer.parseInt(rvalue);
 	        	}
@@ -3156,7 +3152,6 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
         Measure m = new Measure();
         m.setMeasureType(measure);
         m.setStandardProtocol(true);
-		m.setDeviceType(XmlManager.TDeviceType.TEMPERATURE_DT);
         m.setDeviceDesc(AppResourceManager.getResource().getString("KMsgManualMeasure"));
         m.setTimestamp(XmlManager.getXmlManager().getTimestamp(null));
         m.setFile(null);

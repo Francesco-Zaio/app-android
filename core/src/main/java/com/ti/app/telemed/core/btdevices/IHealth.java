@@ -14,8 +14,8 @@ import android.util.Log;
 
 import com.ti.app.telemed.core.MyApp;
 import com.ti.app.telemed.core.ResourceManager;
-import com.ti.app.telemed.core.btmodule.BTSearcherEvent;
-import com.ti.app.telemed.core.btmodule.BTSearcherEventListener;
+import com.ti.app.telemed.core.btmodule.events.BTSearcherEvent;
+import com.ti.app.telemed.core.btmodule.events.BTSearcherEventListener;
 import com.ti.app.telemed.core.btmodule.DeviceHandler;
 
 import com.ti.app.telemed.core.btmodule.DeviceListener;
@@ -81,10 +81,22 @@ public class IHealth extends Handler implements DeviceHandler {
         }
     }
 
+
+    // methods of DeviceHandler interface
+
     @Override
-    public void start(String btAddr) {
+    public void confirmDialog() {
+        // Not used for this device
+    }
+    @Override
+    public void cancelDialog(){
+        // Not used for this device
+    }
+    @Override
+    public void start(String btAddr, boolean pairingMode) {
         Log.d(TAG, "start(String btAddr)");
         iBTAddress = btAddr;
+
         iCmdCode = TCmd.ECmdConnByAddr;
         if (iState == TState.EWaitingToGetDevice) {
             scanActivityListener = null;
@@ -112,9 +124,8 @@ public class IHealth extends Handler implements DeviceHandler {
             iState = TState.EGettingDevice;
         }
     }
-
     @Override
-    public void start(BTSearcherEventListener listener) {
+    public void start(BTSearcherEventListener listener, boolean pairingMode) {
         Log.d(TAG, "start(BTSearcherEventListener listener)");
         iCmdCode = TCmd.ECmdConnByUser;
         if (iState == TState.EWaitingToGetDevice) {
@@ -143,7 +154,6 @@ public class IHealth extends Handler implements DeviceHandler {
             iState = TState.EGettingDevice;
         }
     }
-
     @Override
     public void stop() {
         Log.d(TAG, "stop");
@@ -166,7 +176,6 @@ public class IHealth extends Handler implements DeviceHandler {
 
         reset();
     }
-
     @Override
     public void stopDeviceOperation(int selected) {
         Log.d(TAG, "stopDeviceOperation: selected=" + selected);
@@ -185,7 +194,6 @@ public class IHealth extends Handler implements DeviceHandler {
             sendMessage(msg);
         }
     }
-
     @Override
     public void reset() {
         Log.d(TAG, "reset");

@@ -101,9 +101,7 @@ public class Util {
 	}
 
 	public static boolean isNoPairingDevice(Device device){
-		return device.getModel().equalsIgnoreCase(GWConst.KEcgAR)
-				|| device.getModel().equalsIgnoreCase(GWConst.KEcgAR1200)
-				|| device.getModel().equalsIgnoreCase(GWConst.KEcgMicro)
+		return device.getModel().equalsIgnoreCase(GWConst.KEcgMicro)
 				|| device.getModel().equalsIgnoreCase(GWConst.KCcxsRoche)
 				|| device.getModel().equalsIgnoreCase(GWConst.KOximeterNon)
 				|| device.getModel().equalsIgnoreCase(GWConst.KFORATherm)

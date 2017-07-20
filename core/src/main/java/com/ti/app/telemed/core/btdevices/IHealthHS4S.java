@@ -13,7 +13,6 @@ import com.ti.app.telemed.core.ResourceManager;
 import com.ti.app.telemed.core.btmodule.DeviceListener;
 import com.ti.app.telemed.core.common.Measure;
 import com.ti.app.telemed.core.util.GWConst;
-import com.ti.app.telemed.core.xmlmodule.XmlManager;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -126,7 +125,7 @@ class IHealthHS4S extends Handler implements IHealtDevice{
 
     @Override
     public String getStartMeasureMessage() {
-        return ResourceManager.getResource().getString("KMeasStartMsgHS4S");
+        return ResourceManager.getResource().getString("KStartMeasWeight");
     }
 
     @Override
@@ -182,7 +181,7 @@ class IHealthHS4S extends Handler implements IHealtDevice{
         } catch (JSONException e) {
             Log.e(TAG, "notifyResultData(): ", e);
             iHealth.notifyError(DeviceListener.DEVICE_DATA_ERROR,
-                    ResourceManager.getResource().getString("EGWDeviceDataError"));
+                    ResourceManager.getResource().getString("EDataReadError"));
             return;
         }
 

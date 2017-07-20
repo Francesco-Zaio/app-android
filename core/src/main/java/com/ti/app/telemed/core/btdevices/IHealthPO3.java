@@ -25,7 +25,6 @@ import java.util.Calendar;
 import java.util.GregorianCalendar;
 
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Vector;
 
 
@@ -168,7 +167,7 @@ class IHealthPO3 extends Handler implements IHealtDevice{
                     batteryLevel = reader.getInt(PoProfile.BATTERY_PO);
                 } catch (JSONException e) {
                     iHealth.notifyError(DeviceListener.DEVICE_DATA_ERROR,
-                            ResourceManager.getResource().getString("EGWDeviceDataError"));
+                            ResourceManager.getResource().getString("EDataReadError"));
                     Log.e(TAG, "HANDLER_BATTERY", e);
                     break;
                 }

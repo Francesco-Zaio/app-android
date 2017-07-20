@@ -23,11 +23,13 @@ import java.util.Map;
 
 public class Util {
 	
-	public static final String KEY_SHARED_PREFS = "TELEMONITORING_SP";
-	public static final String KEY_BTGT_CALIBRATE_VALUE = "BTGT_CALIBRATE_VALUE";
+	private static final String KEY_SHARED_PREFS = "TELEMONITORING_SP";
+	private static final String KEY_BTGT_CALIBRATE_VALUE = "BTGT_CALIBRATE_VALUE";
 	private static final String TAG = "Util";
+    private static final String KEY_DEMO_MODE = "DEMO_MODE";
+
 	public static final String KEY_WARNING_TIMESTAMP = "KEY_WARNING_TIMESTAMP";
-	
+
 	@SuppressLint("NewApi")
 	public static File getDir() {
 		File sdDir = Environment
@@ -56,17 +58,6 @@ public class Util {
                 Log.e(TAG, "ERROR: unable to create Directory " + result);
 		return result;
 	}
-	
-	public static String toHexString(byte[] array, int max){
-    	String tmp = "";
-    	for (int i = 0; i < array.length; i++) {
-			tmp += " " + Integer.toHexString(array[i] & 0x000000ff);
-			
-			if (i == max)
-				return tmp;
-		}
-    	return tmp;
-    }
 
 	public static Map<String,String> jsonToStringMap(String jsonString) {
 		HashMap<String, String> map = new HashMap<>();
@@ -85,22 +76,6 @@ public class Util {
 		}
 		return map;
 	}
-
-	public static String toHexString(byte[] array){
-    	String tmp = "";
-    	for (int i = 0; i < array.length; i++) {
-			tmp += " " + Integer.toHexString(array[i] & 0x000000ff);
-		}
-    	return tmp;
-    }
-	
-	public static String toHexString(char[] array){
-    	String tmp = "";
-    	for (int i = 0; i < array.length; i++) {
-			tmp += " " + Integer.toHexString(array[i] & 0x000000ff);
-		}
-    	return tmp;
-    }
 
 	public static Long getRegistryLongValue(String keyValue) {		
 		SharedPreferences sp = MyApp.getContext().getSharedPreferences(KEY_SHARED_PREFS, 0);		 		
@@ -149,16 +124,11 @@ public class Util {
 	}
 	
 	public static String getCurrentCalibrationCode(){
-		//String cal = getRegistryValue(KEY_BTGT_CALIBRATE_VALUE + "_" + DbManager.getDbManager().getActiveUser().getId());
-		String cal = getRegistryValue(KEY_BTGT_CALIBRATE_VALUE/* + "_" + DbManager.getDbManager().getActiveUser().getId()*/);
-		if(isEmptyString(cal)){
+		String cal = getRegistryValue(KEY_BTGT_CALIBRATE_VALUE);
+		if((cal == null) || cal.isEmpty()){
 			cal = "-";
 		}
 		return "[" + cal + "]";
-	}
-	
-	public static boolean isEmptyString(String s) {
-		return s == null || s.equals("");
 	}
 
 	public static byte[] hexStringToByteArray(String s) {
@@ -199,24 +169,11 @@ public class Util {
 	}
 	
 	public static boolean isDemoMode() {
-		boolean demoMode = false;
-		
-		try {		
-			String baseDir = Environment.getExternalStorageDirectory().getAbsolutePath();
-			String fileName = "tlm.demo";
-			
-			File f = new File(baseDir + File.separator + fileName);
-			Log.d(TAG, "exists? " + f.toString());
-			
-			demoMode = f.exists();
-			f = null;			
-		}
-		catch (Exception e) {
-			demoMode = false;
-		}		
-		Log.i(TAG, "isDemoMode=" + demoMode);
-		
-		return demoMode;
+        return getRegistryValue(Util.KEY_DEMO_MODE, false);
+	}
+
+	public static void setDemoMode(boolean demoMode) {
+		setRegistryValue(Util.KEY_DEMO_MODE, demoMode);
 	}
 
 	public static int getDiffHours(long t1, long t2) {
@@ -239,18 +196,6 @@ public class Util {
 	    editor.remove(keyValue);
 	    editor.commit();
 	}
-	
-	public static String truncate(String str, int len) {
-	    if (len <= 3) {
-	      throw new IllegalArgumentException();
-	    }
-
-	    if (str.length() > len) {
-	      return str.substring(0, (len - 3)) + "...";
-	    } else {
-	      return str;
-	    }
-	  }
 
     public static boolean isToday(String date) {
         Log.i(TAG, "isToday");

@@ -10,6 +10,7 @@ import com.ti.app.mydoctor.R;
 import com.ti.app.mydoctor.MyDoctorApp;
 import com.ti.app.mydoctor.util.AppConst;
 import com.ti.app.mydoctor.AppResourceManager;
+import com.ti.app.mydoctor.util.AppUtil;
 import com.ti.app.telemed.core.common.Patient;
 import com.ti.app.telemed.core.common.User;
 import com.ti.app.telemed.core.common.UserDevice;
@@ -20,7 +21,6 @@ import com.ti.app.telemed.core.usermodule.UserManager;
 import com.ti.app.telemed.core.exceptions.DbException;
 import com.ti.app.mydoctor.gui.DeviceScanActivity;
 import com.ti.app.mydoctor.gui.listadapter.DeviceListAdapter;
-import com.ti.app.mydoctor.util.Util;
 import com.ti.app.telemed.core.util.GWConst;
 
 import android.app.Activity;
@@ -145,7 +145,7 @@ public class DeviceSettingsFragment extends ListFragment {
 			
 			inflater.inflate(R.menu.context_menu_device_settings_advanced, menu);
 			menu.setHeaderTitle(AppResourceManager.getResource().getString("measureType." + selectedMeasureType));
-			menu.setHeaderIcon(Util.getSmallIconId(selectedMeasureType));
+			menu.setHeaderIcon(AppUtil.getSmallIconId(selectedMeasureType));
 			
 			if (pd.getBtAddress() == null){
 				menu.setGroupVisible(R.id.pair_group, false);
@@ -230,7 +230,7 @@ public class DeviceSettingsFragment extends ListFragment {
 	//Inizializza il singolo elemento per fillMaps
 	private HashMap<String, String> setFieldsMap(String measureType) {
 		HashMap<String, String> map = new HashMap<String, String>();
-		map.put(KEY_ICON, "" + Util.getIconId(measureType));		
+		map.put(KEY_ICON, "" + AppUtil.getIconId(measureType));
 		//map.put(KEY_LABEL, setupFeedback(AppResourceManager.getResource().getString("measureType." + measureType)));
 		map.put(KEY_LABEL, AppResourceManager.getResource().getString("measureType." + measureType));
 		UserDevice pd = deviceMap.get(measureType);
@@ -367,7 +367,7 @@ public class DeviceSettingsFragment extends ListFragment {
 		
 		String titleDialog = getString(R.string.select_model);
 		builder.setTitle(R.string.select_model);
-		builder.setIcon(Util.getSmallIconId(selectedMeasureType));
+		builder.setIcon(AppUtil.getSmallIconId(selectedMeasureType));
 		
 		builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {			
 			@Override
@@ -443,11 +443,11 @@ public class DeviceSettingsFragment extends ListFragment {
 		tmpUd.setBtAddress(null);
 		deviceManager.setCurrentDevice(tmpUd);
 		
-		if (!Util.isGlucoTelDevice(deviceManager.getCurrentDevice().getDevice())
+		if (!AppUtil.isGlucoTelDevice(deviceManager.getCurrentDevice().getDevice())
 				&&
-				!Util.isC40(deviceManager.getCurrentDevice().getDevice())	
+				!AppUtil.isC40(deviceManager.getCurrentDevice().getDevice())
 				&&
-				!Util.isCamera(deviceManager.getCurrentDevice().getDevice())
+				!AppUtil.isCamera(deviceManager.getCurrentDevice().getDevice())
 				) {
 			// Launch the DeviceScanActivity to see devices and do scan
 			Intent serverIntent = new Intent(getActivity(), DeviceScanActivity.class);

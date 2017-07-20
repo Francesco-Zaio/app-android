@@ -31,15 +31,14 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import com.ti.app.mydoctor.R;
-import com.ti.app.mydoctor.util.AppConst;
 import com.ti.app.mydoctor.AppResourceManager;
+import com.ti.app.mydoctor.util.AppUtil;
 import com.ti.app.telemed.core.common.User;
 import com.ti.app.telemed.core.dbmodule.DbManager;
 import com.ti.app.telemed.core.exceptions.DbException;
 import com.ti.app.mydoctor.gui.customview.ActionBarListActivity;
 import com.ti.app.mydoctor.gui.customview.GWTextView;
 import com.ti.app.mydoctor.gui.listadapter.UserListAdapter;
-import com.ti.app.mydoctor.util.Util;
 import com.ti.app.telemed.core.util.GWConst;
 
 public class UsersList extends ActionBarListActivity {
@@ -207,7 +206,7 @@ public class UsersList extends ActionBarListActivity {
 		if ( (info.position != users.size()) && enableDeleteUserMenu ) {
 			android.view.MenuInflater inflater = getMenuInflater();
 			inflater.inflate(R.menu.users_context_menu, menu);
-			menu.setHeaderTitle(Util.getString(R.string.user_title));
+			menu.setHeaderTitle(AppUtil.getString(R.string.user_title));
 		}
 		else
 			Log.e(TAG, "Selezionato utente corrente. Non faccio nulla");

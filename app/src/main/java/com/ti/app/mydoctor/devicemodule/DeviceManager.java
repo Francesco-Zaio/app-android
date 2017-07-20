@@ -8,6 +8,7 @@ import android.util.Log;
 
 import com.ti.app.mydoctor.AppResourceManager;
 import com.ti.app.telemed.core.btdevices.EcgProtocol;
+import com.ti.app.telemed.core.btdevices.ForaThermometerClient;
 import com.ti.app.telemed.core.btdevices.IHealth;
 import com.ti.app.telemed.core.btdevices.RocheProthrombineTimeClient;
 import com.ti.app.telemed.core.btmodule.events.BTSearcherEventListener;
@@ -20,7 +21,7 @@ import com.ti.app.telemed.core.dbmodule.DbManager;
 import com.ti.app.telemed.core.util.GWConst;
 import com.ti.app.mydoctor.gui.DeviceScanActivity;
 import com.ti.app.mydoctor.util.AppConst;
-import com.ti.app.mydoctor.util.Util;
+import com.ti.app.mydoctor.util.AppUtil;
 import com.ti.app.telemed.core.usermodule.UserManager;
 import com.ti.app.telemed.core.xmlmodule.XmlManager;
 
@@ -72,7 +73,7 @@ public class DeviceManager implements DeviceListener {
 	
 	public void startMeasure() {		
 		if(!operationRunning){
-            pairingMode = Util.isEmptyString(currentDevice.getBtAddress());
+            pairingMode = AppUtil.isEmptyString(currentDevice.getBtAddress());
 			setConfig(false);
 			startOperation();
 		} else {
@@ -142,13 +143,18 @@ public class DeviceManager implements DeviceListener {
 				break;
 			case GWConst.KEcgMicro:
 				currentDeviceHandler = new EcgProtocol(this, m);
-				startMeasure(AppResourceManager.getResource().getString("KInitMsg"));
+				startMeasure(AppResourceManager.getResource().getString("KInitMsgECG"));
 				break;
 			case GWConst.KCcxsRoche:
 				currentDeviceHandler = new RocheProthrombineTimeClient(this, m);
-                startMeasure(AppResourceManager.getResource().getString("KInitMsg"));
+                startMeasure(AppResourceManager.getResource().getString("KInitMsgPT"));
 				break;
-		}
+            case GWConst.KFORATherm:
+                currentDeviceHandler = new ForaThermometerClient(this, m);
+                startMeasure(AppResourceManager.getResource().getString("KInitMsgTC"));
+                break;
+
+        }
 	}
 
 	public boolean isConfig() {
@@ -322,8 +328,16 @@ public class DeviceManager implements DeviceListener {
     @Override
     public void notifyError(String errorCode, String errorMessage) {
         Log.e(TAG, "notifyError: " + errorCode + " - " + errorMessage);
+		String msg = "";
+		if ((errorCode != null) && !errorCode.isEmpty())
+			msg = errorCode;
+		if ((errorMessage != null) && !errorMessage.isEmpty()) {
+            if (!msg.isEmpty())
+                msg = msg + " - ";
+            msg = msg + errorMessage;
+        }
         operationRunning = false;
-        sendMessageToHandler(errorCode + " - " + errorMessage, ERROR_STATE, AppConst.MESSAGE);
+        sendMessageToHandler(msg, ERROR_STATE, AppConst.MESSAGE);
     }
 
     @Override

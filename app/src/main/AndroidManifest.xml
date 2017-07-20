@@ -42,7 +42,7 @@
         
         <activity
 			android:label="@string/show_settings"
-			android:name=".gui.ShowSettings">
+			android:name=".gui.ShowUserSettings">
             <intent-filter>
         		<action android:name=".DeviceList" />
         	</intent-filter>		  
@@ -53,14 +53,8 @@
             android:name=".gui.ShowUtilitySettings"
             android:windowSoftInputMode="stateHidden">            
         </activity>
-        
+
         <activity
-            android:label="@string/show_settings_tab_title"
-            android:name=".gui.ShowUtilitySettingsTabs"
-            android:windowSoftInputMode="stateHidden">            
-        </activity>
-       	
-       	<activity
 			android:name=".gui.SelectPatient">
        	</activity>
 

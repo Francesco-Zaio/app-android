@@ -14,11 +14,11 @@ import com.ti.app.telemed.core.util.GWConst;
 import java.io.File;
 import java.io.FileOutputStream;
 
-public class Util {
+public class AppUtil {
 	
 	public static final String KEY_SHARED_PREFS = "TELEMONITORING_SP";
 	public static final String KEY_BTGT_CALIBRATE_VALUE = "BTGT_CALIBRATE_VALUE";
-	private static final String TAG = "Util";
+	private static final String TAG = "AppUtil";
 	public static final String KEY_AUTO_UPDATE = "KEY_AUTO_UPDATE";
 	public static final String KEY_AUTO_UPDATE_DATE = "KEY_AUTO_UPDATE_DATE";
 	public static final String KEY_WARNING_TIMESTAMP = "KEY_WARNING_TIMESTAMP";
@@ -27,6 +27,7 @@ public class Util {
 	public static final String KEY_URL_QUIZ = "KEY_URL_QUIZ";
 	public static final String URL_QUIZ_DEFAULT = "group/pazienti/lista-attestati";
 	public static final String KEY_MEASURE_TYPE = "measureType.";
+
 
 	public static final String KEY_GRID_LAYOUT = "KEY_GRID_LAYOUT";
 
@@ -96,8 +97,8 @@ public class Util {
 	}
 	
 	public static boolean glucoTelNotCalibrated(){
-		//return isEmptyString(getRegistryValue(Util.KEY_BTGT_CALIBRATE_VALUE + "_" + DbManager.getDbManager().getActiveUser().getId()));
-		return isEmptyString(getRegistryValue(Util.KEY_BTGT_CALIBRATE_VALUE/* + "_" + DbManager.getDbManager().getActiveUser().getId()*/));
+		//return isEmptyString(getRegistryValue(AppUtil.KEY_BTGT_CALIBRATE_VALUE + "_" + DbManager.getDbManager().getActiveUser().getId()));
+		return isEmptyString(getRegistryValue(AppUtil.KEY_BTGT_CALIBRATE_VALUE/* + "_" + DbManager.getDbManager().getActiveUser().getId()*/));
 	}
 
 	public static boolean isNoPairingDevice(Device device){

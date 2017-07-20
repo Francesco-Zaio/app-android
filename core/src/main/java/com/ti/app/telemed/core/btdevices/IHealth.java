@@ -348,13 +348,13 @@ public class IHealth extends Handler implements DeviceHandler {
                 case HANDLER_DISCOVERY_FINISH:
                     if (iState == TState.EGettingDevice && iCmdCode == TCmd.ECmdConnByAddr) {
                         // Bluetooth discovery finished without finding the device
-                        String message = ResourceManager.getResource().getString("EGWDeviceNotFound");
+                        String message = ResourceManager.getResource().getString("EDeviceNotFound");
                         deviceListener.notifyError(DeviceListener.DEVICE_NOT_FOUND_ERROR, message);
                         stop();
                     }
                     break;
                 case HANDLER_ERROR:
-                    String message = ResourceManager.getResource().getString("EGWCommunicationError");
+                    String message = ResourceManager.getResource().getString("ECommunicationError");
                     deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR,message);
                     stop();
                     break;

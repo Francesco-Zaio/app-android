@@ -111,5 +111,7 @@
 	
 	<string name="totalDuration">Total duration</string>
 	<string name="readLoop">Continuous sampling</string>
+    <string name="demo">Demo mode</string>
+	<string name="on_off">"On/Off "</string>
 
 </resources>

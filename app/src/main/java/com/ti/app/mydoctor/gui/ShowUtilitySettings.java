@@ -7,8 +7,6 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
@@ -21,17 +19,18 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Switch;
 import android.widget.Toast;
 
 import com.ti.app.mydoctor.R;
 import com.ti.app.mydoctor.MyDoctorApp;
 import com.ti.app.mydoctor.AppResourceManager;
+import com.ti.app.mydoctor.util.AppUtil;
 import com.ti.app.telemed.core.common.ServerConf;
 import com.ti.app.telemed.core.dbmodule.DbManager;
-import com.ti.app.telemed.core.scmodule.ServerCertificateManager;
 import com.ti.app.telemed.core.exceptions.DbException;
 import com.ti.app.mydoctor.gui.customview.GWTextView;
-import com.ti.app.mydoctor.util.Util;
+import com.ti.app.telemed.core.util.Util;
 
 public class ShowUtilitySettings extends ActionBarActivity {
 	private static final String TAG = "ShowUtilitySettings";
@@ -44,15 +43,13 @@ public class ShowUtilitySettings extends ActionBarActivity {
 	private EditText hostEt;
 	private EditText portEt;
 	private EditText quizEt;
+	private Switch demoSw;
 	private Button okButton;
 	private Button cancelButton;
-			
-	private String[] portDefaultArray = new String[] {"443", "80"};
-	
+
 	//Dialog
 	public static final int ERROR_DIALOG = 0;
 	public static final int CONNECTING_CONFIRM_DIALOG = 1;
-	//public static final int SENDING_CONFIRM_DIALOG = 2;
 	public static final int ALERT_DIALOG = 3;
 	
 	private Bundle dataBundle;
@@ -73,10 +70,7 @@ public class ShowUtilitySettings extends ActionBarActivity {
 		getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
 		//Flag per mantenere attivo lo schermo finchè l'activity è in primo piano
 		getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-		
-		/**
-		 * ACTION BAR
-		 */
+
 		//Inizializza l'ActionBAr
 		customActionBar = this.getSupportActionBar();
 		//Setta il gradiente di sfondo della action bar
@@ -99,13 +93,12 @@ public class ShowUtilitySettings extends ActionBarActivity {
 		//L'icona dell'App diventa tasto per tornare nella Home
 		customActionBar.setHomeButtonEnabled(true);
 		customActionBar.setDisplayHomeAsUpEnabled(true);
-		/*************************************************/
-		
+
 		//Ottengo il riferimento degli elementi che compongono la GUI
 		hostEt = (EditText) findViewById(R.id.host_et);
 		portEt = (EditText) findViewById(R.id.port_et);
-				
 		quizEt = (EditText) findViewById(R.id.quiz_et);
+        demoSw = (Switch) findViewById(R.id.demo_sw);
 
 		okButton = (Button) findViewById(R.id.confirm_button);
 		cancelButton = (Button) findViewById(R.id.cancel_button);
@@ -117,40 +110,6 @@ public class ShowUtilitySettings extends ActionBarActivity {
 				
 		rManager = AppResourceManager.getResource();
 	}
-	
-	@Override
-	protected void onResume() {
-		// TODO Auto-generated method stub
-		super.onResume();
-		
-		/*protocolSpinner.setOnTouchListener(new View.OnTouchListener() {			
-			@Override
-			public boolean onTouch(View v, MotionEvent event) {
-				isProtocolSpinnerTouched = true;
-				return true;
-			}
-		});
-		
-		protocolSpinner.setOnItemSelectedListener( new AdapterView.OnItemSelectedListener() {
-
-			@Override
-			public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
-						
-				if(isProtocolSpinnerTouched) {
-					Toast.makeText(parent.getContext(), 
-							"OnItemSelectedListener : " + parent.getItemAtPosition(pos).toString(),
-							Toast.LENGTH_SHORT).show();
-					
-					portEt.setText(portDefaultArray[pos]);
-				}
-			}
-
-			@Override
-			public void onNothingSelected(AdapterView<?> arg0) {
-				// Do nothing				
-			}
-		});	*/
-	}
 
 	/**
 	 * Metodo che permette di popolare gli elementi che compongono la GUI con le informazioni lette da db
@@ -161,8 +120,10 @@ public class ShowUtilitySettings extends ActionBarActivity {
 			ServerConf sc = dbManager.getServerConf();
 			hostEt.setText(sc.getIp());
 			portEt.setText(sc.getPort());
-			quizEt.setText(Util.getRegistryValue(Util.KEY_URL_QUIZ, Util.URL_QUIZ_DEFAULT));
-		} catch (DbException e) {
+			quizEt.setText(AppUtil.getRegistryValue(AppUtil.KEY_URL_QUIZ, AppUtil.URL_QUIZ_DEFAULT));
+            demoSw.setChecked(Util.isDemoMode());
+
+        } catch (DbException e) {
 			showDialog(ShowUtilitySettings.ERROR_DIALOG);
 		}
 	}
@@ -264,7 +225,7 @@ public class ShowUtilitySettings extends ActionBarActivity {
 			//Identifico quale button è stato selezionato
 			switch(v.getId()) {
 			case R.id.confirm_button:
-				Util.setRegistryValue(Util.KEY_URL_QUIZ, quizEt.getText().toString());
+				AppUtil.setRegistryValue(AppUtil.KEY_URL_QUIZ, quizEt.getText().toString());
 				DbManager dbManager = DbManager.getDbManager();
 				try {
                     //Aggiorno il contenuto del db in base agli input dell'utente
@@ -276,6 +237,7 @@ public class ShowUtilitySettings extends ActionBarActivity {
 					sc.setTargetCfg(defaultSC.getTargetCfgDef());
 					sc.setTargetSend(defaultSC.getTargetSendDef());
 					MyDoctorApp.getConfigurationManager().updateConfiguration(sc);
+                    Util.setDemoMode(demoSw.isChecked());
 					finish();
 				} catch (DbException e) {
 					e.printStackTrace();
@@ -342,34 +304,4 @@ public class ShowUtilitySettings extends ActionBarActivity {
 			}
 		}
 	};
-	
-	private final Handler scManagerHandler = new Handler() {
-		
-		@Override
-		public void handleMessage(Message msg) {
-			switch(msg.what) {
-			case ServerCertificateManager.DELETE_FAILURE:
-				Log.i(TAG, "scManagerHandler: errore nella cancellazione dei certificati");
-				prepareBundle(0, rManager.getString("warningTitle"), rManager.getString("deleteServerCertFailure"));
-				showDialog(ShowUtilitySettings.ALERT_DIALOG);
-				break;
-			case ServerCertificateManager.DELETE_SUCCESS:
-				Log.i(TAG, "scManagerHandler: certificati cancellati con successo");
-				prepareBundle(0, rManager.getString("warningTitle"), rManager.getString("deleteServerCertSuccess"));
-				showDialog(ShowUtilitySettings.ALERT_DIALOG);
-				break;
-			}
-		}
-		
-	};
-
-	/**
-	 * Interfaccia OnPageChangedListener
-	 */
-	/*@Override
-	public void onPageChanged() {
-		mPageSelectedIndex = this.getSupportActionBar().getSelectedNavigationIndex();
-		//Bisogna cambiare il menu, quindi lo invalida per richiamare onCreateOptionsMenu
-		supportInvalidateOptionsMenu();	
-	}*/
 }

@@ -114,7 +114,7 @@ public class DbManager {
 		+ "ID integer primary key autoincrement,"
 		+ "MEASURE text, " 
 		+ "MODEL text, "
-		+ "DESCRIPTION text )"
+		+ "DESCRIPTION text, "
         + "NEED_CFG integer)";
     
     private static final String CREATE_USER_DEVICE_TBL = "CREATE table USER_DEVICE ("

@@ -151,7 +151,7 @@ class IHealthBP550BT extends Handler implements IHealtDevice{
                     batteryLevel = reader.getString(BpProfile.BATTERY_BP);
                 } catch (JSONException e) {
                     iHealth.notifyError(DeviceListener.DEVICE_DATA_ERROR,
-                            ResourceManager.getResource().getString("EGWDeviceDataError"));
+                            ResourceManager.getResource().getString("EDataReadError"));
                     Log.e(TAG, "HANDLER_BATTERY", e);
                     break;
                 }
@@ -171,7 +171,7 @@ class IHealthBP550BT extends Handler implements IHealtDevice{
                     iHealth.notifyError(DeviceListener.MEASUREMENT_ERROR, "error num: " + num);
                 } catch (JSONException e) {
                     iHealth.notifyError(DeviceListener.DEVICE_DATA_ERROR,
-                            ResourceManager.getResource().getString("EGWDeviceDataError"));
+                            ResourceManager.getResource().getString("EDataReadError"));
                     Log.e(TAG, "HANDLER_ERROR", e);
                     break;
                 }
@@ -196,7 +196,7 @@ class IHealthBP550BT extends Handler implements IHealtDevice{
             if (info.has(BpProfile.HISTORICAL_DATA_BP)) {
                 JSONArray array = info.getJSONArray(BpProfile.HISTORICAL_DATA_BP);
                 if (array.length() <= 0) {
-                    iHealth.notifyError(DeviceListener.NO_HISTORICAL_DATA, ResourceManager.getResource().getString("EGWMeasureNotFound"));
+                    iHealth.notifyError(DeviceListener.NO_HISTORICAL_DATA, ResourceManager.getResource().getString("ENoMeasuresFound"));
                     return;
                 }
                 JSONObject obj = array.getJSONObject(0);
@@ -212,18 +212,18 @@ class IHealthBP550BT extends Handler implements IHealtDevice{
                 } catch (ParseException e) {
                     Log.e(TAG, "notifyResultData(): ", e);
                     iHealth.notifyError(DeviceListener.DEVICE_DATA_ERROR,
-                            ResourceManager.getResource().getString("EGWDeviceDataError"));
+                            ResourceManager.getResource().getString("EDataReadError"));
                     return;
                 }
 
             } else {
-                iHealth.notifyError(DeviceListener.NO_HISTORICAL_DATA, ResourceManager.getResource().getString("EGWMeasureNotFound"));
+                iHealth.notifyError(DeviceListener.NO_HISTORICAL_DATA, ResourceManager.getResource().getString("ENoMeasuresFound"));
                 return;
             }
         } catch (JSONException e) {
             Log.e(TAG, "notifyResultData(): ", e);
             iHealth.notifyError(DeviceListener.DEVICE_DATA_ERROR,
-                    ResourceManager.getResource().getString("EGWDeviceDataError"));
+                    ResourceManager.getResource().getString("EDataReadError"));
             return;
         }
 

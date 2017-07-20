@@ -4,18 +4,4 @@
     <item android:id="@+id/reset_settings"
     	  android:title="@string/reset_settings"
           android:icon="@drawable/ic_menu_refresh" />
-          
-    <!-- <item android:id="@+id/mi_action_bar_menu_overflow"
-          android:icon="@drawable/ic_menu_moreoverflow"
-          android:title="@string/mi_menu_overflow"
-          android:showAsAction="always">
-          
-        <menu>
-            <item android:id="@+id/reset_settings" 
-                android:title="@string/reset_settings"
-                android:icon="@drawable/ic_menu_refresh">                
-            </item>
-        </menu>
-    </item> -->
-          
 </menu>

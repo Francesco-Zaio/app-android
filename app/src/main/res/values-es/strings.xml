@@ -111,5 +111,7 @@
 	
 	<string name="totalDuration">Duración total</string>
 	<string name="readLoop">Muestreo continuo</string>
+    <string name="demo">modo de demostración</string>
+	<string name="on_off">"On/Off "</string>
 
 </resources>

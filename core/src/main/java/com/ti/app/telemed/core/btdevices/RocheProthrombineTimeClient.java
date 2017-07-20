@@ -272,7 +272,7 @@ public class RocheProthrombineTimeClient implements DeviceHandler,
     }
     @Override
     public void cancelDialog(){
-        // Not used for this device
+        stop();
     }
 	@Override
 	public void reset() {
@@ -372,7 +372,7 @@ public class RocheProthrombineTimeClient implements DeviceHandler,
 						
 			Log.d(TAG, "iLastMeasure [48]=" + iLastMeasure.charAt(48) + " ? " + 0x31);
 			if (!demoMode && iLastMeasure.charAt(48) == 0x31) {
-                String msg = ResourceManager.getResource().getString("showMeasureDialogNoData");
+                String msg = ResourceManager.getResource().getString("KNoNewMeasure");
 				iScheduler.notifyError(msg,msg);
 			}
 			else {
@@ -463,7 +463,7 @@ public class RocheProthrombineTimeClient implements DeviceHandler,
 				runBTSocket();
 			}
 			reset();
-            String msg = ResourceManager.getResource().getString("EGWCommunicationError");
+            String msg = ResourceManager.getResource().getString("ECommunicationError");
 			iScheduler.notifyError(msg,msg);
 			break;
 		case 2: // bluetooth read error
@@ -473,13 +473,13 @@ public class RocheProthrombineTimeClient implements DeviceHandler,
 			operationDeleted = true;
 			runBTSocket();
 			reset();
-            msg = ResourceManager.getResource().getString("EGWCommunicationError");
+            msg = ResourceManager.getResource().getString("ECommunicationError");
 			iScheduler.notifyError(msg,msg);
 			break;
 		case 4: // bluetooth close error
 			Log.e(TAG, description);
 			reset();
-            msg = ResourceManager.getResource().getString("EGWCommunicationError");
+            msg = ResourceManager.getResource().getString("ECommunicationError");
             iScheduler.notifyError(msg,msg);
 			break;
 		}
@@ -697,7 +697,7 @@ public class RocheProthrombineTimeClient implements DeviceHandler,
 		// Invia messaggio di errore allo scheduler
 		//if (!isRecoveryStatus)
 			iScheduler.notifyToUi(ResourceManager.getResource().getString(
-					"KErrAlignMsgRochePTR"));
+                    "KErrAlignDevices"));
 
 		/*
 		iCountReadClear = 0;
@@ -828,10 +828,10 @@ public class RocheProthrombineTimeClient implements DeviceHandler,
     			}
     			// Strumento trovato si procede all'allineamento dei dispositivi
     			iScheduler.notifyToUi(ResourceManager.getResource().getString(
-    					"KAlignMsgRochePTR"));
+                        "KAlignDevices"));
     						
     			iScheduler.askSomething(
-    					ResourceManager.getResource().getString("KMsg1RochePTR"), 
+    					ResourceManager.getResource().getString("KAlignDevicesSend"),
     	    			ResourceManager.getResource().getString("confirmButton"), 
     	    			ResourceManager.getResource().getString("cancelButton"));
     		}						
@@ -1125,7 +1125,7 @@ public class RocheProthrombineTimeClient implements DeviceHandler,
 						iPTRSocket.close();
 						iPTRSocket.removeBTSocketEventListener(this);
 						iState = TState.EWaitingToGetDevice;
-                        String msg = ResourceManager.getResource().getString("EGWCommunicationError");
+                        String msg = ResourceManager.getResource().getString("ECommunicationError");
 						iScheduler.notifyError(msg,msg);
 					}
 				} else {

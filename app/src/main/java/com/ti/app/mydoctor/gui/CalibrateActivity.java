@@ -18,7 +18,7 @@ import com.ti.app.mydoctor.util.AppConst;
 import com.ti.app.mydoctor.gui.customview.CustomKeyboard;
 import com.ti.app.mydoctor.gui.customview.CustomKeyboardListener;
 import com.ti.app.mydoctor.gui.customview.GWTextView;
-import com.ti.app.mydoctor.util.Util;
+import com.ti.app.mydoctor.util.AppUtil;
 
 public class CalibrateActivity extends ActionBarActivity implements CustomKeyboardListener {
 
@@ -104,8 +104,8 @@ public class CalibrateActivity extends ActionBarActivity implements CustomKeyboa
 		String value = calibrateEditText.getText().toString();
 		
 		if( isValueInRange(value) ){
-			//Util.setRegistryValue(Util.KEY_BTGT_CALIBRATE_VALUE + "_" + DbManager.getDbManager().getActiveUser().getId(), calibrateEditText.getText().toString());
-			Util.setRegistryValue(Util.KEY_BTGT_CALIBRATE_VALUE/* + "_" + DbManager.getDbManager().getActiveUser().getId()*/, calibrateEditText.getText().toString());
+			//AppUtil.setRegistryValue(AppUtil.KEY_BTGT_CALIBRATE_VALUE + "_" + DbManager.getDbManager().getActiveUser().getId(), calibrateEditText.getText().toString());
+			AppUtil.setRegistryValue(AppUtil.KEY_BTGT_CALIBRATE_VALUE/* + "_" + DbManager.getDbManager().getActiveUser().getId()*/, calibrateEditText.getText().toString());
 
 			Intent intent = new Intent();			
 			setResult(RESULT_OK, intent);
@@ -130,7 +130,7 @@ public class CalibrateActivity extends ActionBarActivity implements CustomKeyboa
 
 	private boolean isValueInRange(String calValue) {
 		boolean ret = false;
-		if(!Util.isEmptyString(calValue)){
+		if(!AppUtil.isEmptyString(calValue)){
 			int cal = Integer.valueOf(calValue);
 			ret = (AppConst.MIN_STRIP_CODE <= cal) && (cal <= AppConst.MAX_STRIP_CODE);
 		}

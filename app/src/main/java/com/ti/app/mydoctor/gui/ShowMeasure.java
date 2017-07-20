@@ -40,6 +40,7 @@ import android.widget.Toast;
 import com.ti.app.mydoctor.R;
 import com.ti.app.mydoctor.util.AppConst;
 import com.ti.app.mydoctor.AppResourceManager;
+import com.ti.app.mydoctor.util.AppUtil;
 import com.ti.app.telemed.core.common.Measure;
 import com.ti.app.telemed.core.common.MeasureDetail;
 import com.ti.app.telemed.core.dbmodule.DbManager;
@@ -56,7 +57,6 @@ import com.ti.app.mydoctor.gui.customview.DragSortListView;
 import com.ti.app.mydoctor.gui.customview.GWTextView;
 import com.ti.app.mydoctor.gui.listadapter.MeasureListAdapter;
 import com.ti.app.mydoctor.util.MediaScannerNotifier;
-import com.ti.app.mydoctor.util.Util;
 
 public class ShowMeasure extends ActionBarListActivity{
 
@@ -384,7 +384,7 @@ public class ShowMeasure extends ActionBarListActivity{
 		selected_measure = listaMisure.get(info.position);
 		
 		menu.setHeaderTitle(AppResourceManager.getResource().getString("measureType." + selected_measure.getMeasureType()));
-		menu.setHeaderIcon(Util.getSmallIconId(selected_measure.getMeasureType()));
+		menu.setHeaderIcon(AppUtil.getSmallIconId(selected_measure.getMeasureType()));
 	}
 
 	
@@ -490,7 +490,7 @@ public class ShowMeasure extends ActionBarListActivity{
 					measureManager.deleteMeasures(idUser, idPatient, currentOperation);
 					
 					if (isImageManager) {
-						final File[] files = Util.getDir().listFiles();
+						final File[] files = AppUtil.getDir().listFiles();
 						for (File fileToDelete: files){
 							new MediaScannerNotifier().delete(ShowMeasure.this, fileToDelete.getAbsolutePath());	
 							fileToDelete.delete();						

@@ -75,9 +75,6 @@ public class AboutScreen extends AppCompatActivity {
 					new DialogInterface.OnClickListener(){
 						public void onClick(DialogInterface arg0,
 								int arg1) {
-							//Intent intent = new Intent(AboutScreen.this, ShowUtilitySettingsTabs.class);
-							//intent.putExtra("TYPE_SETTINGS", "CONNECTION");
-
 							Intent intent = new Intent(AboutScreen.this, ShowUtilitySettings.class);
 							startActivity(intent);
 						}

@@ -13,7 +13,6 @@ import com.ti.app.telemed.core.ResourceManager;
 import com.ti.app.telemed.core.btmodule.DeviceListener;
 import com.ti.app.telemed.core.common.Measure;
 import com.ti.app.telemed.core.util.GWConst;
-import com.ti.app.telemed.core.xmlmodule.XmlManager;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -163,7 +162,7 @@ class IHealthBP5 extends Handler implements IHealtDevice{
                     batteryLevel = reader.getInt(BpProfile.BATTERY_BP);
                 } catch (JSONException e) {
                     iHealth.notifyError(DeviceListener.DEVICE_DATA_ERROR,
-                            ResourceManager.getResource().getString("EGWDeviceDataError"));
+                            ResourceManager.getResource().getString("EDataReadError"));
                     Log.e(TAG, "HANDLER_BATTERY", e);
                     break;
                 }
@@ -219,7 +218,7 @@ class IHealthBP5 extends Handler implements IHealtDevice{
         } catch (JSONException e) {
             Log.e(TAG, "notifyResultData(): ", e);
             iHealth.notifyError(DeviceListener.DEVICE_DATA_ERROR,
-                    ResourceManager.getResource().getString("EGWDeviceDataError"));
+                    ResourceManager.getResource().getString("EDataReadError"));
             return;
         }
 

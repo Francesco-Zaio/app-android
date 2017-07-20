@@ -11,7 +11,7 @@ import android.widget.TextView;
 
 import com.ti.app.mydoctor.R;
 import com.ti.app.mydoctor.util.AppConst;
-import com.ti.app.mydoctor.util.Util;
+import com.ti.app.mydoctor.util.AppUtil;
 
 public class CalibrateDialog extends Dialog implements OnClickListener {
 	
@@ -38,8 +38,8 @@ public class CalibrateDialog extends Dialog implements OnClickListener {
 		cancelButton.setOnClickListener(this);
 		
 		calibrateEditText = (EditText)findViewById(R.id.calibrate);		
-		//calibrateEditText.setText(Util.getRegistryValue(Util.KEY_BTGT_CALIBRATE_VALUE + "_" + DbManager.getDbManager().getActiveUser().getId()));
-		calibrateEditText.setText(Util.getRegistryValue(Util.KEY_BTGT_CALIBRATE_VALUE/* + "_" + DbManager.getDbManager().getActiveUser().getId()*/));
+		//calibrateEditText.setText(AppUtil.getRegistryValue(AppUtil.KEY_BTGT_CALIBRATE_VALUE + "_" + DbManager.getDbManager().getActiveUser().getId()));
+		calibrateEditText.setText(AppUtil.getRegistryValue(AppUtil.KEY_BTGT_CALIBRATE_VALUE/* + "_" + DbManager.getDbManager().getActiveUser().getId()*/));
 		currentValue = calibrateEditText.getText().toString();
 	}
 
@@ -48,8 +48,8 @@ public class CalibrateDialog extends Dialog implements OnClickListener {
 		switch (v.getId()) {
 			case R.id.okButton:								
 				if (isValueInRange(calibrateEditText.getText().toString())) {
-					//Util.setRegistryValue(Util.KEY_BTGT_CALIBRATE_VALUE + "_" + DbManager.getDbManager().getActiveUser().getId(), calibrateEditText.getText().toString());
-					Util.setRegistryValue(Util.KEY_BTGT_CALIBRATE_VALUE/* + "_" + DbManager.getDbManager().getActiveUser().getId()*/, calibrateEditText.getText().toString());
+					//AppUtil.setRegistryValue(AppUtil.KEY_BTGT_CALIBRATE_VALUE + "_" + DbManager.getDbManager().getActiveUser().getId(), calibrateEditText.getText().toString());
+					AppUtil.setRegistryValue(AppUtil.KEY_BTGT_CALIBRATE_VALUE/* + "_" + DbManager.getDbManager().getActiveUser().getId()*/, calibrateEditText.getText().toString());
 					dismiss();
 					listener.onCalibrationConfirmed();
 				} else {
@@ -64,7 +64,7 @@ public class CalibrateDialog extends Dialog implements OnClickListener {
 
 	private boolean isValueInRange(String calValue) {
 		boolean ret = false;
-		if(!Util.isEmptyString(calValue)){
+		if(!AppUtil.isEmptyString(calValue)){
 			int cal = Integer.valueOf(calValue);
 			ret = (AppConst.MIN_STRIP_CODE <= cal) && (cal <= AppConst.MAX_STRIP_CODE);
 		}

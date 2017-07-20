@@ -14,7 +14,7 @@ import com.ti.app.telemed.core.common.MeasureDetail;
 import com.ti.app.telemed.core.common.Patient;
 import com.ti.app.telemed.core.dbmodule.DbManager;
 import com.ti.app.mydoctor.gui.listadapter.MeasureDetailsListAdapter;
-import com.ti.app.mydoctor.util.Util;
+import com.ti.app.mydoctor.util.AppUtil;
 import com.ti.app.telemed.core.util.GWConst;
 
 import android.app.AlertDialog;
@@ -58,7 +58,7 @@ public class MeasureDetails extends ListActivity {
 			
 			//Setta l'icona
 			ImageView measureIcon = (ImageView)findViewById(R.id.measureIcon);
-			measureIcon.setImageResource(Util.getIconId(currentMeasure.getMeasureType()));
+			measureIcon.setImageResource(AppUtil.getIconId(currentMeasure.getMeasureType()));
 						
 			//Setta la stringa tipo misura
 			final String title = AppResourceManager.getResource().getString("measureType." + currentMeasure.getMeasureType());

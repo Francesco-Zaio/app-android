@@ -68,6 +68,7 @@ import android.widget.Toast;
 
 import com.ti.app.mydoctor.R;
 import com.ti.app.mydoctor.AppResourceManager;
+import com.ti.app.mydoctor.util.AppUtil;
 import com.ti.app.telemed.core.common.Measure;
 import com.ti.app.telemed.core.common.MeasureDetail;
 import com.ti.app.telemed.core.common.Patient;
@@ -87,7 +88,6 @@ import com.ti.app.mydoctor.gui.customview.GWTextView;
 import com.ti.app.mydoctor.gui.listadapter.DeviceListAdapter;
 import com.ti.app.mydoctor.gui.listadapter.MainMenuListAdapter;
 import com.ti.app.mydoctor.util.DialogManager;
-import com.ti.app.mydoctor.util.Util;
 
 import java.lang.ref.WeakReference;
 import java.text.SimpleDateFormat;
@@ -474,10 +474,10 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
 		}
 
 
-		if (Util.getRegistryValue(Util.KEY_FORCE_LOGOUT, false) && UserManager.getUserManager().getCurrentPatient() != null) {
+		if (AppUtil.getRegistryValue(AppUtil.KEY_FORCE_LOGOUT, false) && UserManager.getUserManager().getCurrentPatient() != null) {
 
     		DialogManager.showToastMessage(DeviceList.this, AppResourceManager.getResource().getString("userBlocked"));
-			Util.setRegistryValue(Util.KEY_FORCE_LOGOUT, false);
+			AppUtil.setRegistryValue(AppUtil.KEY_FORCE_LOGOUT, false);
 
 
 			measureList = new ArrayList<>();
@@ -514,7 +514,7 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
 				Log.d(TAG, "exit=" + activeUser.getLogin());
 
 				if( !activeUser.getId().equalsIgnoreCase( GWConst.DEFAULT_USER_ID ) )
-					Util.setRegistryValue(Util.KEY_LAST_USER, activeUser.getId());
+					AppUtil.setRegistryValue(AppUtil.KEY_LAST_USER, activeUser.getId());
 			}
 		}
 	}
@@ -709,7 +709,7 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
 	private void setFragmentView() {
 		Log.d(TAG, "setFragmentView()");
 
-		isGrid = Boolean.parseBoolean(Util.getRegistryValue(Util.KEY_GRID_LAYOUT, Boolean.toString(isGrid)));
+		isGrid = Boolean.parseBoolean(AppUtil.getRegistryValue(AppUtil.KEY_GRID_LAYOUT, Boolean.toString(isGrid)));
 
 		fragmentManager = getSupportFragmentManager();
 
@@ -831,7 +831,7 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
                 showDialog(LOGIN_DIALOG);
                 break;
             case ITEM_USER_OPTIONS:
-                Intent intentSettingsUser = new Intent(DeviceList.this, ShowSettings.class);
+                Intent intentSettingsUser = new Intent(DeviceList.this, ShowUserSettings.class);
                 intentSettingsUser.putExtra("TYPE_SETTINGS", "USER");
                 startActivity(intentSettingsUser);
                 break;
@@ -1156,9 +1156,9 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
 	private HashMap<String, String> setFieldsMap(String measureType) {
 		HashMap<String, String> map = new HashMap<>();
 		if(deviceManager.isOperationRunning() && !isConfig && !isPairing){
-			map.put(KEY_ICON, "" + Util.getIconRunningId(measureType));
+			map.put(KEY_ICON, "" + AppUtil.getIconRunningId(measureType));
 		} else {
-			map.put(KEY_ICON, "" + Util.getIconId(measureType));
+			map.put(KEY_ICON, "" + AppUtil.getIconId(measureType));
 		}
 		map.put(KEY_LABEL, setupFeedback(AppResourceManager.getResource().getString("measureType." + measureType)));
 		UserDevice pd = deviceMap.get(measureType);
@@ -1244,11 +1244,11 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
 			android.view.MenuInflater inflater = getMenuInflater();
 
 			//Menu per l'inserimento manuale delle misure
-			if (Util.isManualMeasure(pd.getDevice())) {
+			if (AppUtil.isManualMeasure(pd.getDevice())) {
 				inflater.inflate(R.menu.context_menu_manual_insert, menu);
 				menu.setHeaderTitle(AppResourceManager.getResource().getString("measureType." + selectedMeasureType));
-				//menu.setHeaderIcon(Util.getIconId(selectedMeasureType));
-				menu.setHeaderIcon(Util.getSmallIconId(selectedMeasureType));
+				//menu.setHeaderIcon(AppUtil.getIconId(selectedMeasureType));
+				menu.setHeaderIcon(AppUtil.getSmallIconId(selectedMeasureType));
 
 				if (userManager.getCurrentPatient() != null) {
 					ArrayList<Measure> patientMeasures = measureManager.getMeasureData(userManager.getCurrentUser().getId(), null, null, selectedMeasureType, userManager.getCurrentPatient().getId(), MeasureManager.BooleanFilter.ignore);
@@ -1267,11 +1267,11 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
 			}
 			//Menu per i dispositivi che non richiedono una procedura di pairing
 			//ECG, INR, OSSIMETRO NONIN
-			else if (Util.isNoPairingDevice(pd.getDevice())) {
+			else if (AppUtil.isNoPairingDevice(pd.getDevice())) {
 				inflater.inflate(R.menu.context_menu_no_pair_device, menu);
 				menu.setHeaderTitle(AppResourceManager.getResource().getString("measureType." + selectedMeasureType));
-				//menu.setHeaderIcon(Util.getIconId(selectedMeasureType));
-				menu.setHeaderIcon(Util.getSmallIconId(selectedMeasureType));
+				//menu.setHeaderIcon(AppUtil.getIconId(selectedMeasureType));
+				menu.setHeaderIcon(AppUtil.getSmallIconId(selectedMeasureType));
 
 				if (userManager.getCurrentPatient() != null) {
 					ArrayList<Measure> patientMeasures = measureManager.getMeasureData(userManager.getCurrentUser().getId(), null, null, selectedMeasureType, userManager.getCurrentPatient().getId(), MeasureManager.BooleanFilter.ignore);
@@ -1310,8 +1310,8 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
 			} else {
 				inflater.inflate(R.menu.context_menu_pair_device, menu);
 				menu.setHeaderTitle(AppResourceManager.getResource().getString("measureType." + selectedMeasureType));
-				//menu.setHeaderIcon(Util.getIconId(selectedMeasureType));
-				menu.setHeaderIcon(Util.getSmallIconId(selectedMeasureType));
+				//menu.setHeaderIcon(AppUtil.getIconId(selectedMeasureType));
+				menu.setHeaderIcon(AppUtil.getSmallIconId(selectedMeasureType));
 
 				if (userManager.getCurrentPatient() != null) {
 					ArrayList<Measure> patientMeasures = measureManager.getMeasureData(userManager.getCurrentUser().getId(), null, null, selectedMeasureType, userManager.getCurrentPatient().getId(), MeasureManager.BooleanFilter.not);
@@ -1354,7 +1354,8 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
 
 	@Override
 	public void onBackPressed() {
-
+		Log.i(TAG, "Premuto il tasto back");
+		showDialog(CONFIRM_CLOSE_DIALOG);
 	}
 
 	@Override
@@ -1398,7 +1399,7 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
 
 	    switch (item.getItemId()) {
 		    case R.id.pair:
-		    	if(Util.isGlucoTelDevice(deviceMap.get(selectedMeasureType).getDevice()) && Util.glucoTelNotCalibrated()){
+		    	if(AppUtil.isGlucoTelDevice(deviceMap.get(selectedMeasureType).getDevice()) && AppUtil.glucoTelNotCalibrated()){
 		    		showCalibrateActivity(false, true);
 				}
 		    	else {
@@ -1500,7 +1501,7 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
 			transaction.commit();
 		}
 
-		Util.setRegistryValue(Util.KEY_GRID_LAYOUT, Boolean.toString(isGrid));
+		AppUtil.setRegistryValue(AppUtil.KEY_GRID_LAYOUT, Boolean.toString(isGrid));
 	}
 
 	/**
@@ -1566,7 +1567,7 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
 		User activeUser = DbManager.getDbManager().getActiveUser();
 		if (activeUser != null) {
 			if( !activeUser.getId().equalsIgnoreCase( GWConst.DEFAULT_USER_ID ) )
-				Util.setRegistryValue(Util.KEY_LAST_USER, activeUser.getId());
+				AppUtil.setRegistryValue(AppUtil.KEY_LAST_USER, activeUser.getId());
 		}
 		try {
             DbManager.getDbManager().setCurrentUser(null);
@@ -1604,9 +1605,9 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
 	private void doMeasure() {
 		UserDevice uDevice = deviceMap.get(selectedMeasureType);
 		if(uDevice != null && measureEnabled(uDevice)){
-			if(Util.isGlucoTelDevice(uDevice.getDevice()) && Util.glucoTelNotCalibrated()){
+			if(AppUtil.isGlucoTelDevice(uDevice.getDevice()) && AppUtil.glucoTelNotCalibrated()){
 				showCalibrateActivity(true, false);
-			} else if(Util.isManualMeasure(uDevice.getDevice())){
+			} else if(AppUtil.isManualMeasure(uDevice.getDevice())){
 				doManualMeasure();
 			} else {
 				isPairing = false;
@@ -1619,7 +1620,7 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
 					requestEnableBT();
 				} else {
 
-					if(Util.isGlucoTelDevice(uDevice.getDevice())) {
+					if(AppUtil.isGlucoTelDevice(uDevice.getDevice())) {
 
 						if (uDevice.getBtAddress() == null)
 							doScan();
@@ -1649,11 +1650,11 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
 	}
 
 	private void startScan() {
-		if (!Util.isGlucoTelDevice(deviceManager.getCurrentDevice().getDevice())
+		if (!AppUtil.isGlucoTelDevice(deviceManager.getCurrentDevice().getDevice())
 				&&
-				!Util.isC40(deviceManager.getCurrentDevice().getDevice())
+				!AppUtil.isC40(deviceManager.getCurrentDevice().getDevice())
 				&&
-				!Util.isCamera(deviceManager.getCurrentDevice().getDevice())
+				!AppUtil.isCamera(deviceManager.getCurrentDevice().getDevice())
 				) {
 			// Launch the DeviceScanActivity to see devices and do scan
 			Intent serverIntent = new Intent(this, DeviceScanActivity.class);
@@ -1720,7 +1721,7 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
                         break;
                     }
 	    			Log.i(TAG, "Login utente " + user.getName() + " da db");
-	    			if(!user.getHasAutoLogin() ||  Util.getRegistryValue(Util.KEY_FORCE_LOGOUT + user.getId(), false)) {
+	    			if(!user.getHasAutoLogin() ||  AppUtil.getRegistryValue(AppUtil.KEY_FORCE_LOGOUT + user.getId(), false)) {
 	    				userDataBundle = new Bundle();
 	    				userDataBundle.putBoolean("CHANGEABLE", false);
 	    				userDataBundle.putString("LOGIN", user.getLogin());
@@ -1744,7 +1745,7 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
 					if (user != null) {
 						Log.i(TAG, "Login utente " + user.getName() + " da db");
 
-						if (!user.getHasAutoLogin() || Util.getRegistryValue(Util.KEY_FORCE_LOGOUT + user.getId(), false)) {
+						if (!user.getHasAutoLogin() || AppUtil.getRegistryValue(AppUtil.KEY_FORCE_LOGOUT + user.getId(), false)) {
 							userDataBundle = new Bundle();
 							userDataBundle.putBoolean("CHANGEABLE", false);
 							userDataBundle.putString("LOGIN", user.getLogin());
@@ -1946,7 +1947,7 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
 		AlertDialog.Builder builder = new AlertDialog.Builder(this);
 
 		builder.setTitle(R.string.select_model);
-		builder.setIcon(Util.getSmallIconId(selectedMeasureType));
+		builder.setIcon(AppUtil.getSmallIconId(selectedMeasureType));
 
 		builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
 			@Override
@@ -2011,7 +2012,7 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
 		progressDialog.setButton(DialogInterface.BUTTON_NEGATIVE, AppResourceManager.getResource().getString("EGwnurseCancel"),  new ProgressDialogClickListener());
 
 		if(deviceMap != null && selectedMeasureType != null &&
-				(deviceMap.get(selectedMeasureType) != null && Util.isStmDevice(deviceMap.get(selectedMeasureType).getDevice())) &&
+				(deviceMap.get(selectedMeasureType) != null && AppUtil.isStmDevice(deviceMap.get(selectedMeasureType).getDevice())) &&
 				!isPairing && isConfig && isManualMeasure) {
 
 			progressDialog.setButton(DialogInterface.BUTTON_POSITIVE, AppResourceManager.getResource().getString("DeviceListView.configureBtn"),
@@ -2198,7 +2199,7 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
 			case UserManager.ERROR_OCCURED:
 				Log.d(TAG, "UserManager.ERROR_OCCURED:");
 				if (activity.runningConfig) {
-					if (!Util.getRegistryValue(Util.KEY_FORCE_LOGOUT, false)) {
+					if (!AppUtil.getRegistryValue(AppUtil.KEY_FORCE_LOGOUT, false)) {
 						try {
 							User activeUser = DbManager.getDbManager().getActiveUser();
 							if (activeUser == null && (activity.loginET != null && activity.pwdET != null && activity.pwdET.getText().length() > 0)) {
@@ -2221,9 +2222,9 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
                 activity.showDialog(ALERT_DIALOG);
                 activity.runningConfig = false;
 
-				if (Util.getRegistryValue(Util.KEY_FORCE_LOGOUT, false)) {
+				if (AppUtil.getRegistryValue(AppUtil.KEY_FORCE_LOGOUT, false)) {
 					DialogManager.showToastMessage(activity, AppResourceManager.getResource().getString("userBlocked"));
-					Util.setRegistryValue(Util.KEY_FORCE_LOGOUT, false);
+					AppUtil.setRegistryValue(AppUtil.KEY_FORCE_LOGOUT, false);
                     activity.measureList = new ArrayList<>();
                     activity.setupView();
                     activity.resetView();
@@ -2254,7 +2255,7 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
 			//L'utente corrente diventa utente attivo
 			currentUser.setActive(true);
 			//Registra il suo ID
-			Util.setRegistryValue(Util.KEY_LAST_USER, currentUser.getId());
+			AppUtil.setRegistryValue(AppUtil.KEY_LAST_USER, currentUser.getId());
 			//Modifica il DB
 			DbManager.getDbManager().setCurrentUser(currentUser);
 
@@ -2307,10 +2308,10 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
 
     protected void showWarningMessage() {
 
-    	if (Util.getRegistryValue(Util.KEY_WARNING_TIMESTAMP, false)) {
+    	if (AppUtil.getRegistryValue(AppUtil.KEY_WARNING_TIMESTAMP, false)) {
 
     		DialogManager.showToastMessage(DeviceList.this, AppResourceManager.getResource().getString("warningDate"));
-			Util.setRegistryValue(Util.KEY_WARNING_TIMESTAMP, false);
+			AppUtil.setRegistryValue(AppUtil.KEY_WARNING_TIMESTAMP, false);
 		}
 	}
 
@@ -2321,13 +2322,13 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
     		Log.i(TAG, "onCreateDialog bypassed");
     		if(dataBundle != null){
     			String msg = dataBundle.getString(SEND_STATUS);
-    			if(Util.isEmptyString(msg)){
+    			if(AppUtil.isEmptyString(msg)){
     				msg = dataBundle.getString(SAVE_STATUS);
     			}
-    			if(Util.isEmptyString(msg)){
+    			if(AppUtil.isEmptyString(msg)){
     				msg = dataBundle.getString(AppConst.MESSAGE);
     			}
-				if(!Util.isEmptyString(msg) && AppResourceManager.getResource().getString("KConnMsgZephyr").equalsIgnoreCase(msg)){
+				if(!AppUtil.isEmptyString(msg) && AppResourceManager.getResource().getString("KConnMsgZephyr").equalsIgnoreCase(msg)){
     				Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
     				return null;
     			}
@@ -2498,13 +2499,13 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
     	if(isAR && deviceManager.isOperationRunning()){
     		Log.i(TAG, "onPrepareDialog bypassed");
             String msg = dataBundle.getString(SEND_STATUS);
-            if(Util.isEmptyString(msg)){
+            if(AppUtil.isEmptyString(msg)){
                 msg = dataBundle.getString(SAVE_STATUS);
             }
-            if(Util.isEmptyString(msg)){
+            if(AppUtil.isEmptyString(msg)){
                 msg = dataBundle.getString(AppConst.MESSAGE);
             }
-            if(!Util.isEmptyString(msg) && AppResourceManager.getResource().getString("KConnMsgZephyr").equalsIgnoreCase(msg)){
+            if(!AppUtil.isEmptyString(msg) && AppResourceManager.getResource().getString("KConnMsgZephyr").equalsIgnoreCase(msg)){
                 DialogManager.showSimpleToastMessage(DeviceList.this, msg);
                 super.onPrepareDialog(id, dialog);
                 runOnUiThread(new Runnable() {
@@ -2526,7 +2527,7 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
         case PROGRESS_DIALOG:
             ((ProgressDialog)dialog).setMessage(dataBundle.getString(AppConst.MESSAGE));
         	if(deviceMap != null && selectedMeasureType != null && deviceMap.get(selectedMeasureType) != null &&
-        			Util.isStmDevice(deviceMap.get(selectedMeasureType).getDevice()) && !isPairing && isConfig && isManualMeasure) {
+        			AppUtil.isStmDevice(deviceMap.get(selectedMeasureType).getDevice()) && !isPairing && isConfig && isManualMeasure) {
 
     			progressDialog.getButton(DialogInterface.BUTTON_POSITIVE).setEnabled(false);
     		}
@@ -2768,7 +2769,7 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
         ctx.setTheme(R.style.Theme_MyDoctorAtHome_Light);
         AlertDialog.Builder builder = new AlertDialog.Builder(ctx);
 
-        String keyMeasType = Util.KEY_MEASURE_TYPE.concat(data.getMeasureType());
+        String keyMeasType = AppUtil.KEY_MEASURE_TYPE.concat(data.getMeasureType());
         String title = AppResourceManager.getResource().getString(keyMeasType);
         builder.setTitle(title);
 
@@ -2900,9 +2901,9 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
 
 	private boolean measureEnabled(UserDevice device) {
 		return (device.getBtAddress()!= null && device.getBtAddress().length() > 0)
-				|| Util.isGlucoTelDevice(device.getDevice())
-				|| Util.isManualMeasure(device.getDevice())
-				|| Util.isStmDevice(device.getDevice());
+				|| AppUtil.isGlucoTelDevice(device.getDevice())
+				|| AppUtil.isManualMeasure(device.getDevice())
+				|| AppUtil.isStmDevice(device.getDevice());
 	}
 
 	private class ProgressDialogClickListener implements DialogInterface.OnClickListener {
@@ -3024,7 +3025,7 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
 		Log.d(TAG, "checkActiveUser()");
 
 		try {
-			String lastUserId = Util.getRegistryValue(Util.KEY_LAST_USER);
+			String lastUserId = AppUtil.getRegistryValue(AppUtil.KEY_LAST_USER);
 			User lastUser = null;
 			if ( lastUserId.length() > 0 ) {
 				lastUser = DbManager.getDbManager().getUser(lastUserId);
@@ -3041,7 +3042,7 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
 				mUIHandler.sendEmptyMessage(PRECOMPILED_LOGIN_DIALOG);
 
 			} else {
-				if (Util.getRegistryValue(Util.KEY_FORCE_LOGOUT + lastUser.getId(), false)) {
+				if (AppUtil.getRegistryValue(AppUtil.KEY_FORCE_LOGOUT + lastUser.getId(), false)) {
 					mUIHandler.sendEmptyMessage(LOGIN_DIALOG);
 				} else {
 					checkAutoUpdate();
@@ -3193,13 +3194,13 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
 				final User activeUser = DbManager.getDbManager().getActiveUser();				
 				if(activeUser != null && activeUser.getHasAutoLogin()) {
 					
-					boolean autoUpdate = Util.getRegistryValue(Util.KEY_AUTO_UPDATE + "_" + activeUser.getId(), true);		
-					long autoUpdateDate = Util.getRegistryLongValue(Util.KEY_AUTO_UPDATE_DATE + "_" + activeUser.getId());
+					boolean autoUpdate = AppUtil.getRegistryValue(AppUtil.KEY_AUTO_UPDATE + "_" + activeUser.getId(), true);
+					long autoUpdateDate = AppUtil.getRegistryLongValue(AppUtil.KEY_AUTO_UPDATE_DATE + "_" + activeUser.getId());
 					
 					if (autoUpdateDate == 0)
-						Util.setRegistryValue(Util.KEY_AUTO_UPDATE_DATE + "_" + activeUser.getId(), Long.toString(new Date().getTime()));
+						AppUtil.setRegistryValue(AppUtil.KEY_AUTO_UPDATE_DATE + "_" + activeUser.getId(), Long.toString(new Date().getTime()));
 					
-					int diffHours = Util.getDiffHours(new Date().getTime(), autoUpdateDate);	
+					int diffHours = AppUtil.getDiffHours(new Date().getTime(), autoUpdateDate);
 					
 					Log.d(TAG, "diffHours=" + diffHours + " autoUpdate=" + autoUpdate + " autoUpdateDate=" + autoUpdateDate);
 

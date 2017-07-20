@@ -262,7 +262,7 @@ public class EcgProtocol implements DeviceHandler,
         iECGSocket.removeBTSocketEventListener(this);
         iECGSocket.close();
         reset();
-        String msg = ResourceManager.getResource().getString("EGWCommunicationError");
+        String msg = ResourceManager.getResource().getString("ECommunicationError");
         iScheduler.notifyError(msg,msg);
     }
 
@@ -460,7 +460,7 @@ public class EcgProtocol implements DeviceHandler,
                     runBTSocket();
                 }
                 reset();
-                String msg = ResourceManager.getResource().getString("EGWCommunicationError");
+                String msg = ResourceManager.getResource().getString("ECommunicationError");
                 iScheduler.notifyError(msg,msg);
                 break;
             case 2: //bluetooth read error
@@ -469,12 +469,12 @@ public class EcgProtocol implements DeviceHandler,
                 operationDeleted = true;
                 runBTSocket();
                 reset();
-                msg = ResourceManager.getResource().getString("EGWCommunicationError");
+                msg = ResourceManager.getResource().getString("ECommunicationError");
                 iScheduler.notifyError(msg,msg);
                 break;
             case 4: //bluetooth close error
                 reset();
-                msg = ResourceManager.getResource().getString("EGWCommunicationError");
+                msg = ResourceManager.getResource().getString("ECommunicationError");
                 iScheduler.notifyError(msg,msg);
                 break;
         }
@@ -1068,7 +1068,7 @@ public class EcgProtocol implements DeviceHandler,
                             iECGSocket.removeBTSocketEventListener(this);
                             iECGSocket.close();
                             reset();
-                            String msg = ResourceManager.getResource().getString("EGWCommunicationError");
+                            String msg = ResourceManager.getResource().getString("ECommunicationError");
                             iScheduler.notifyError(msg,msg);
                         }
                     }
@@ -1101,7 +1101,7 @@ public class EcgProtocol implements DeviceHandler,
                         iECGSocket.removeBTSocketEventListener(this);
                         iECGSocket.close();
                         reset();
-                        String msg = ResourceManager.getResource().getString("EGWCommunicationError");
+                        String msg = ResourceManager.getResource().getString("ECommunicationError");
                         iScheduler.notifyError(msg,msg);
                   }
                 }
@@ -1207,7 +1207,7 @@ public class EcgProtocol implements DeviceHandler,
                         iECGSocket.removeBTSocketEventListener(this);
                         iECGSocket.close();
                         reset();
-                        String msg = ResourceManager.getResource().getString("EGWCommunicationError");
+                        String msg = ResourceManager.getResource().getString("ECommunicationError");
                         iScheduler.notifyError(msg,msg);
                     }
                 }

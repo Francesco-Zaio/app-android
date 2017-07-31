@@ -12,10 +12,6 @@ import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -24,7 +20,6 @@ import java.util.Map;
 public class Util {
 	
 	private static final String KEY_SHARED_PREFS = "TELEMONITORING_SP";
-	private static final String KEY_BTGT_CALIBRATE_VALUE = "BTGT_CALIBRATE_VALUE";
 	private static final String TAG = "Util";
     private static final String KEY_DEMO_MODE = "DEMO_MODE";
 
@@ -94,7 +89,7 @@ public class Util {
 		SharedPreferences sp = MyApp.getContext().getSharedPreferences(KEY_SHARED_PREFS, 0);
 		SharedPreferences.Editor editor = sp.edit();
 	    editor.putString(keyValue, stringValue);
-	    editor.commit();
+	    editor.apply();
 	}
 	
 	public static boolean getRegistryValue(String keyValue, boolean defaultValue) {
@@ -120,26 +115,7 @@ public class Util {
 		SharedPreferences sp = MyApp.getContext().getSharedPreferences(KEY_SHARED_PREFS, 0);
 		SharedPreferences.Editor editor = sp.edit();
 	    editor.putBoolean(keyValue, stringValue);
-	    editor.commit();
-	}
-	
-	public static String getCurrentCalibrationCode(){
-		String cal = getRegistryValue(KEY_BTGT_CALIBRATE_VALUE);
-		if((cal == null) || cal.isEmpty()){
-			cal = "-";
-		}
-		return "[" + cal + "]";
-	}
-
-	public static byte[] hexStringToByteArray(String s) {
-
-		int len = s.length();
-		byte[] data = new byte[len / 2];
-		for (int i = 0; i < len; i += 2) {
-			data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4) + Character
-					.digit(s.charAt(i + 1), 16));
-		}
-		return data;
+	    editor.apply();
 	}
 
 	public static void storeFile(String fileName, byte[] buffer) {
@@ -185,75 +161,4 @@ public class Util {
 		catch(Exception e) {}
 		return result;
 	}
-
-
-	public static void removeRegistryValue(String keyValue) {
-		
-		Log.d(TAG, "removeRegistryValue(" + keyValue +  ")");
-		
-		SharedPreferences sp = MyApp.getContext().getSharedPreferences(KEY_SHARED_PREFS, 0);
-		SharedPreferences.Editor editor = sp.edit();
-	    editor.remove(keyValue);
-	    editor.commit();
-	}
-
-    public static boolean isToday(String date) {
-        Log.i(TAG, "isToday");
-
-        boolean retValue = false;
-
-        long currentDateTime = System.currentTimeMillis();
-        Date currentDate = new Date(currentDateTime);
-        DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
-        String currentDateString = df.format(currentDate);
-
-        Log.i(TAG, "isToday " + currentDateString);
-        Log.i(TAG, "isToday " + date);
-
-        if( date.equalsIgnoreCase(currentDateString) )
-            retValue = true;
-
-        return retValue;
-    }
-
-    public static boolean isToday(Date date) {
-        Log.i(TAG, "isToday");
-
-        boolean retValue = false;
-
-        long currentDateTime = System.currentTimeMillis();
-        Date currentDate = new Date(currentDateTime);
-        DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
-        String currentDateString = df.format(currentDate);
-
-        Log.i(TAG, "isToday " + currentDateString);
-        Log.i(TAG, "isToday " + date);
-
-        if( df.format(date).equalsIgnoreCase(currentDateString) )
-            retValue = true;
-
-        return retValue;
-    }
-
-    public static Date getStartOfDay(Date date) {
-        Calendar calendar = Calendar.getInstance();
-        calendar.setTime(date);
-        int year = calendar.get(Calendar.YEAR);
-        int month = calendar.get(Calendar.MONTH);
-        int day = calendar.get(Calendar.DATE);
-
-        calendar.set(year, month, day, 0, 0, 0);
-
-        return calendar.getTime();
-    }
-
-    public static Date getEndOfDay(Date date) {
-        Calendar calendar = Calendar.getInstance();
-        calendar.setTime(date);
-        int year = calendar.get(Calendar.YEAR);
-        int month = calendar.get(Calendar.MONTH);
-        int day = calendar.get(Calendar.DATE);
-        calendar.set(year, month, day, 23, 59, 59);
-        return calendar.getTime();
-    }
 }

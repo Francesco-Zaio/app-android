@@ -11,6 +11,7 @@ import com.ti.app.telemed.core.btdevices.EcgProtocol;
 import com.ti.app.telemed.core.btdevices.ForaThermometerClient;
 import com.ti.app.telemed.core.btdevices.IHealth;
 import com.ti.app.telemed.core.btdevices.RocheProthrombineTimeClient;
+import com.ti.app.telemed.core.btdevices.MIRSpirodoc;
 import com.ti.app.telemed.core.btmodule.events.BTSearcherEventListener;
 import com.ti.app.telemed.core.btmodule.DeviceHandler;
 import com.ti.app.telemed.core.btmodule.DeviceListener;
@@ -133,7 +134,7 @@ public class DeviceManager implements DeviceListener {
 				startMeasure(AppResourceManager.getResource().getString("KInitMsgOS"));
 				break;
             case GWConst.KBP5IHealth:
-            case GWConst.KBP550BTHealth:
+            case GWConst.KBP550BTIHealth:
                 currentDeviceHandler = new IHealth(this, m, currentDevice.getDevice().getModel());
 				startMeasure(AppResourceManager.getResource().getString("KInitMsgPR"));
 				break;
@@ -150,10 +151,39 @@ public class DeviceManager implements DeviceListener {
                 startMeasure(AppResourceManager.getResource().getString("KInitMsgPT"));
 				break;
             case GWConst.KFORATherm:
-                currentDeviceHandler = new ForaThermometerClient(this, m);
-                startMeasure(AppResourceManager.getResource().getString("KInitMsgTC"));
-                break;
-
+				currentDeviceHandler = new ForaThermometerClient(this, m);
+				startMeasure(AppResourceManager.getResource().getString("KInitMsgTC"));
+				break;
+			case GWConst.KSpirodocOS:
+				if (isConfig()) {
+					currentDeviceHandler = new MIRSpirodoc(this, m, 1, GWConst.KSpirodocOS);
+					notifyToUi(AppResourceManager.getResource().getString("KInitMsgConfOxySpirodoc"));
+                    currentDeviceHandler.start(currentDevice.getBtAddress(), pairingMode);
+				} else {
+					if (pairingMode) {
+						currentDeviceHandler = new MIRSpirodoc(this, m, 0, GWConst.KSpirodocOS);
+                        currentDeviceHandler.start(btSearcherListener, pairingMode);
+					} else {
+						currentDeviceHandler = new MIRSpirodoc(this, m, 3, GWConst.KSpirodocOS);
+						startMeasure(AppResourceManager.getResource().getString("KInitMsgOxiMirSpirodoc"));
+					}
+				}
+				break;
+			case GWConst.KSpirodocSP:
+				if (isConfig()) {
+					currentDeviceHandler = new MIRSpirodoc(this, m, 1, GWConst.KSpirodocSP);
+					notifyToUi(AppResourceManager.getResource().getString("KInitMsgConfSpiroSpirodoc"));
+                    currentDeviceHandler.start(currentDevice.getBtAddress(), pairingMode);
+				} else {
+					if (pairingMode) {
+						currentDeviceHandler = new MIRSpirodoc(this, m, 0, GWConst.KSpirodocSP);
+                        currentDeviceHandler.start(btSearcherListener, pairingMode);
+					} else {
+						currentDeviceHandler = new MIRSpirodoc(this, m, 2, GWConst.KSpirodocSP);
+						startMeasure(AppResourceManager.getResource().getString("KInitMsgSpirMirSpirodoc"));
+					}
+				}
+				break;
         }
 	}
 

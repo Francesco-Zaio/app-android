@@ -16,7 +16,7 @@ import java.io.FileOutputStream;
 
 public class AppUtil {
 	
-	public static final String KEY_SHARED_PREFS = "TELEMONITORING_SP";
+	private static final String KEY_SHARED_PREFS = "TELEMONITORING_SP";
 	public static final String KEY_BTGT_CALIBRATE_VALUE = "BTGT_CALIBRATE_VALUE";
 	private static final String TAG = "AppUtil";
 	public static final String KEY_AUTO_UPDATE = "KEY_AUTO_UPDATE";
@@ -97,7 +97,6 @@ public class AppUtil {
 	}
 	
 	public static boolean glucoTelNotCalibrated(){
-		//return isEmptyString(getRegistryValue(AppUtil.KEY_BTGT_CALIBRATE_VALUE + "_" + DbManager.getDbManager().getActiveUser().getId()));
 		return isEmptyString(getRegistryValue(AppUtil.KEY_BTGT_CALIBRATE_VALUE/* + "_" + DbManager.getDbManager().getActiveUser().getId()*/));
 	}
 
@@ -109,7 +108,7 @@ public class AppUtil {
 				|| device.getModel().equalsIgnoreCase(GWConst.KPO3IHealth)
 				|| device.getModel().equalsIgnoreCase(GWConst.KBP5IHealth)
 				|| device.getModel().equalsIgnoreCase(GWConst.KHS4SIHealth)
-				|| device.getModel().equalsIgnoreCase(GWConst.KBP550BTHealth)
+				|| device.getModel().equalsIgnoreCase(GWConst.KBP550BTIHealth)
 				|| isManualMeasure(device);
 	}
 
@@ -191,7 +190,7 @@ public class AppUtil {
 		SharedPreferences sp = MyDoctorApp.getContext().getSharedPreferences(KEY_SHARED_PREFS, 0);
 		SharedPreferences.Editor editor = sp.edit();
 	    editor.putString(keyValue, stringValue);
-	    editor.commit();
+	    editor.apply();
 	}
 	
 	public static boolean getRegistryValue(String keyValue, boolean defaultValue) {
@@ -217,7 +216,7 @@ public class AppUtil {
 		SharedPreferences sp = MyDoctorApp.getContext().getSharedPreferences(KEY_SHARED_PREFS, 0);
 		SharedPreferences.Editor editor = sp.edit();
 	    editor.putBoolean(keyValue, stringValue);
-	    editor.commit();
+	    editor.apply();
 	}
 	
 	public static String getCurrentCalibrationCode(){

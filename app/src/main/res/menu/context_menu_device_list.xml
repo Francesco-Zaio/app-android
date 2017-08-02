@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item android:id="@+id/pair"
+        android:visible="false"
+        android:icon="@drawable/ic_menu_bluetooth_pairing"
+        android:title="@string/pair"
+        android:textSize="15sp">
+    </item>
+
+    <item android:id="@+id/pair_and_measure"
+        android:visible="false"
+        android:icon="@drawable/ic_menu_bluetooth_pairing"
+        android:title="@string/new_device_first_run"
+        android:textSize="15sp">
+    </item>
+
+    <item android:id="@+id/new_device_only_association"
+        android:visible="false"
+        android:icon="@drawable/ic_menu_bluetooth_pairing"
+        android:title="@string/new_device"
+        android:textSize="15sp">
+    </item>
+
+    <item android:id="@+id/select_model"
+        android:visible="false"
+        android:icon="@drawable/ic_menu_device_collections_list"
+        android:title="@string/select_model"
+        android:textSize="15sp">
+    </item>
+
+    <item android:id="@+id/show_measure"
+        android:visible="false"
+        android:icon="@drawable/ic_menu_archive_light"
+        android:title="@string/show_measure"
+        android:textSize="15sp">
+    </item>
+
+    <item android:id="@+id/config"
+        android:visible="false"
+        android:icon="@drawable/ic_menu_configure"
+        android:title="@string/config"
+        android:textSize="15sp">
+    </item>
+
+</menu>

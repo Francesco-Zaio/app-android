@@ -99,46 +99,13 @@ public class MeasureDetails extends ListActivity {
             String[] separator;
             String[] item;
 
-            if (currentMeasure.getMeasureType().equals(GWConst.KMsrSpir)) {
-                if (measureList.size() == 6) {
-                    separator = new String[measureList.size()];
-                    item = new String[measureList.size()];
+			separator = new String[measureList.size()];
+			item = new String[measureList.size()];
 
-                    //Misura semplice di spirometria
-                    for(int i = 0; i < measureList.size(); i++) {
-                        String label = measureList.get(i).getName();
-                        StringTokenizer st = new StringTokenizer(label, "-");
-
-                        separator[i] = st.nextToken().trim();
-                        item[i] = measureList.get(i).getValue() + " " + measureList.get(i).getUnit();
-                    }
-                } else {
-                    //Misura comparativa di spirometria
-                    int index = 0;
-
-                    separator = new String[measureList.size() / 2];
-                    item = new String[measureList.size() / 2];
-
-                    for(int i = 0; i < measureList.size(); i+=2) {
-
-                        String readValue = measureList.get(i).getValue() + " " + measureList.get(i).getUnit();
-                        String theoricValue = measureList.get(i+1).getValue() + " " + measureList.get(i+1).getUnit();
-
-                        separator[index] = measureList.get(i).getName();
-                        item[index] = readValue + " - " + theoricValue;
-
-                        index++;
-                    }
+			for(int i = 0; i < measureList.size(); i++) {
+				separator[i] = measureList.get(i).getName();
+				item[i] = measureList.get(i).getValue() + " " + measureList.get(i).getUnit();
                 }
-            } else {
-                separator = new String[measureList.size()];
-                item = new String[measureList.size()];
-
-                for(int i = 0; i < measureList.size(); i++) {
-                    separator[i] = measureList.get(i).getName();
-                    item[i] = measureList.get(i).getValue() + " " + measureList.get(i).getUnit();
-                }
-            }
 
             MeasureDetailsListAdapter adapter = new MeasureDetailsListAdapter(this);
             for (int i = 0; i < separator.length; i++) {
@@ -147,8 +114,6 @@ public class MeasureDetails extends ListActivity {
             }
             setListAdapter(adapter);
 		}
-		
-		
 	}
 
 	@Override

@@ -69,6 +69,7 @@ import android.widget.Toast;
 import com.ti.app.mydoctor.R;
 import com.ti.app.mydoctor.AppResourceManager;
 import com.ti.app.mydoctor.util.AppUtil;
+import com.ti.app.telemed.core.btdevices.MIRSpirodoc;
 import com.ti.app.telemed.core.common.Measure;
 import com.ti.app.telemed.core.common.MeasureDetail;
 import com.ti.app.telemed.core.common.Patient;
@@ -78,6 +79,7 @@ import com.ti.app.telemed.core.common.UserPatient;
 import com.ti.app.telemed.core.dbmodule.DbManager;
 import com.ti.app.telemed.core.measuremodule.MeasureManager;
 import com.ti.app.telemed.core.usermodule.UserManager;
+import com.ti.app.telemed.core.util.Util;
 import com.ti.app.telemed.core.xmlmodule.XmlManager;
 import com.ti.app.telemed.core.exceptions.DbException;
 import com.ti.app.telemed.core.util.GWConst;
@@ -1243,6 +1245,58 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
 			//MenuInflater inflater = getSupportMenuInflater();
 			android.view.MenuInflater inflater = getMenuInflater();
 
+            inflater.inflate(R.menu.context_menu_device_list, menu);
+            menu.setHeaderTitle(AppResourceManager.getResource().getString("measureType." + selectedMeasureType));
+            menu.setHeaderIcon(AppUtil.getSmallIconId(selectedMeasureType));
+
+            //Visibiltà voce "Mostra misure"
+            if (userManager.getCurrentPatient() != null) {
+                ArrayList<Measure> patientMeasures = measureManager.getMeasureData(userManager.getCurrentUser().getId(), null, null, selectedMeasureType, userManager.getCurrentPatient().getId(), MeasureManager.BooleanFilter.ignore);
+                if (patientMeasures != null && patientMeasures.size() > 0) {
+                    MenuItem mi = menu.findItem(R.id.show_measure);
+                    mi.setVisible(true);
+                }
+            }
+
+            //Visibiltà voce "Seleziona Modello"
+            if(measureModelsMap.get(selectedMeasureType).size() > 1){
+                MenuItem mi = menu.findItem(R.id.select_model);
+                mi.setVisible(true);
+            }
+
+            // Visibiltà voci "Associa", "Associa e misura", "Nuova associazione"
+            MenuItem mi;
+            switch (pd.getDevice().getModel()) {
+                case GWConst.KPO3IHealth:
+                case GWConst.KBP5IHealth:
+                case GWConst.KBP550BTIHealth:
+                case GWConst.KHS4SIHealth:
+                case GWConst.KEcgMicro:
+                case GWConst.KFORATherm:
+                case GWConst.KCcxsRoche:
+                    mi = menu.findItem(R.id.pair_and_measure);
+                    mi.setVisible(true);
+                    break;
+                case GWConst.KSpirodocOS:
+                case GWConst.KSpirodocSP:
+                    mi = menu.findItem(R.id.pair);
+                    mi.setVisible(true);
+                    break;
+            }
+
+            // Visibiltà voce "Configura"
+            switch (pd.getDevice().getModel()) {
+                case GWConst.KSpirodocOS:
+                case GWConst.KSpirodocSP:
+                    if (MIRSpirodoc.isStandardModel(pd.getBtAddress())) {
+                            mi = menu.findItem(R.id.config);
+                            mi.setVisible(true);
+                        }
+                    break;
+            }
+
+            /*
+
 			//Menu per l'inserimento manuale delle misure
 			if (AppUtil.isManualMeasure(pd.getDevice())) {
 				inflater.inflate(R.menu.context_menu_manual_insert, menu);
@@ -1346,6 +1400,7 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
 				menu.setGroupVisible(R.id.new_device_group, false);
 				menu.setGroupVisible(R.id.new_device_first_run_group, false);
 			}
+			*/
 		} catch (DbException e) {
 			e.printStackTrace();
 			showErrorDialog(AppResourceManager.getResource().getString("errorDb"));
@@ -1399,26 +1454,17 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
 
 	    switch (item.getItemId()) {
 		    case R.id.pair:
-		    	if(AppUtil.isGlucoTelDevice(deviceMap.get(selectedMeasureType).getDevice()) && AppUtil.glucoTelNotCalibrated()){
-		    		showCalibrateActivity(false, true);
-				}
-		    	else {
-		    		doScan();
-		    	}
-		    	return true;
-		    case R.id.calibrate:
-		    	showCalibrateActivity(false, false);
+                doScan();
 		    	return true;
 		    case R.id.config:
 		    	doConfig();
 		    	return true;
-		    case R.id.new_device:
+		    case R.id.pair_and_measure:
 			case R.id.new_device_only_association:
 		    	doNewDevice();
 		    	return true;
 		    case R.id.show_measure:
 		    	if(patientNameTV.getText().toString().trim().equals(getText(R.string.selectPatient))) {
-
 		    		if (patients == null || patients.length == 0) {
 		    			dataBundle = new Bundle();
 						dataBundle.putString(AppConst.MESSAGE, getString(R.string.noPatient));

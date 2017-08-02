@@ -18,7 +18,7 @@ public interface GWConst {
 	String KPO3IHealth = "PO3";
 	String KBP5IHealth = "BP5";
 	String KHS4SIHealth = "HS4S";
-	String KBP550BTHealth = "BP550BT";
+	String KBP550BTIHealth = "BP550BT";
 	String KMirSpirometerSNA = "SNA23060";
 	String KMirOxySNA = "SNA23067";
 	String KCGBPPro = "CGBPPRO";

@@ -75,7 +75,7 @@ public class IHealth extends Handler implements DeviceHandler {
             case GWConst.KHS4SIHealth:
                 deviceController = new IHealthHS4S(this, m);
                 break;
-            case GWConst.KBP550BTHealth:
+            case GWConst.KBP550BTIHealth:
                 deviceController = new IHealthBP550BT(this, m);
                 break;
         }
@@ -108,7 +108,7 @@ public class IHealth extends Handler implements DeviceHandler {
             }
 
             switch(deviceModel) {
-                case GWConst.KBP550BTHealth:
+                case GWConst.KBP550BTIHealth:
                     iHealthDevicesManager.getInstance().startDiscovery(iHealthDevicesManager.DISCOVERY_BP550BT);
                     break;
                 case GWConst.KBP5IHealth:
@@ -138,7 +138,7 @@ public class IHealth extends Handler implements DeviceHandler {
             }
 
             switch(deviceModel) {
-                case GWConst.KBP550BTHealth:
+                case GWConst.KBP550BTIHealth:
                     iHealthDevicesManager.getInstance().startDiscovery(iHealthDevicesManager.DISCOVERY_BP550BT);
                     break;
                 case GWConst.KBP5IHealth:

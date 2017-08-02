@@ -2,6 +2,8 @@ package com.ti.app.telemed.core.common;
 
 import com.ti.app.telemed.core.ResourceManager;
 import com.ti.app.telemed.core.util.GWConst;
+
+import java.util.Map;
 import java.util.Vector;
 
 public class MeasureDetail {
@@ -17,6 +19,8 @@ public class MeasureDetail {
     private static final String[] TC_Detail = {GWConst.EGwCode_0R,GWConst.EGwCode_0U,GWConst.EGwCode_BATTERY};
     private static final String[] PT_Short = {GWConst.EGwCode_0Z,GWConst.EGwCode_0X,GWConst.EGwCode_0V};
     private static final String[] PT_Detail = {GWConst.EGwCode_0Z,GWConst.EGwCode_0X,GWConst.EGwCode_0V,GWConst.EGwCode_BATTERY};
+    private static final String[] SP_Short = {GWConst.EGwCode_08,GWConst.EGwCode_09,GWConst.EGwCode_0A,GWConst.EGwCode_0C,GWConst.EGwCode_0L};
+    private static final String[] SP_Detail = {GWConst.EGwCode_08,GWConst.EGwCode_09,GWConst.EGwCode_0A,GWConst.EGwCode_0C,GWConst.EGwCode_0D,GWConst.EGwCode_0L,GWConst.EGwCode_BATTERY};
     // utilizzato per gruppi misura che non prevedono la visualizzazione delle misure (es.ECG)
     private static final String[] NoShow = {};
 
@@ -25,8 +29,7 @@ public class MeasureDetail {
 	private String unit;
 
 	static public Vector<MeasureDetail> getMeasureDetails(Measure m, boolean detailed){
-
-    String[] toShow;
+        String[] toShow;
 		switch (m.getMeasureType()) {
 			case GWConst.KMsrOss:
 			    if (detailed)
@@ -58,6 +61,13 @@ public class MeasureDetail {
                 else
                     toShow = PT_Short;
                 break;
+            case GWConst.KMsrSpir:
+                if (detailed)
+                    toShow = SP_Detail;
+                else
+                    toShow = SP_Short;
+                break;
+
             default:
                 toShow = NoShow;
 		}
@@ -65,11 +75,22 @@ public class MeasureDetail {
         Vector<MeasureDetail> ret = new Vector<>();
 		String val;
 		for (String key : toShow) {
+            MeasureDetail md;
             if ((val = m.getMeasures().get(key)) != null) {
-                MeasureDetail md = new MeasureDetail();
-                md.setName(ResourceManager.getResource().getString("MeasureName_" + key));
-                md.setValue(val);
-                md.setUnit(ResourceManager.getResource().getString("MeasureUnit_" + key));
+                switch (m.getMeasureType()) {
+                    case GWConst.KMsrSpir:
+                        if (detailed) {
+                            md = spirDetail(m.getMeasures(), key);
+                            break;
+                        }
+                        // se non devo visualizzare il dettaglio vale il ramo default:
+                    default:
+                        md = new MeasureDetail();
+                        md.setName(ResourceManager.getResource().getString("MeasureName_" + key));
+                        md.setValue(val);
+                        md.setUnit(ResourceManager.getResource().getString("MeasureUnit_" + key));
+                        break;
+                }
                 ret.add(md);
             }
 		}
@@ -77,7 +98,53 @@ public class MeasureDetail {
 		return ret;
 	}
 
-	public void setName(String name) {
+	// Il dettaglio della misura di spirometria contiene sulla stessa riga la misura rilevata e quella teorica
+	static private MeasureDetail spirDetail(Map<String,String> map, String key) {
+        MeasureDetail md = new MeasureDetail();
+        String keyT = null;
+
+        // keyT contiene la chiave della corrispndente misura teorica da visualizzare sulla stessa riga
+        switch (key) {
+            case GWConst.EGwCode_08:
+                keyT = GWConst.EGwCode_B8;
+                break;
+            case GWConst.EGwCode_09:
+                keyT = GWConst.EGwCode_B9;
+                break;
+            case GWConst.EGwCode_0A:
+                keyT = GWConst.EGwCode_BA;
+                break;
+            case GWConst.EGwCode_0C:
+                keyT = GWConst.EGwCode_BC;
+                break;
+            case GWConst.EGwCode_0D:
+                keyT = GWConst.EGwCode_BD;
+                break;
+            case GWConst.EGwCode_0L:
+                keyT = GWConst.EGwCode_BL;
+                break;
+        }
+
+        String name = ResourceManager.getResource().getString("MeasureName_" + key);
+        String val = map.get(key);
+        String unit = ResourceManager.getResource().getString("MeasureUnit_" + key);
+        String valT;
+        if ((keyT != null) && (map.get(keyT)) != null) {
+            name = name + " - " + ResourceManager.getResource().getString("MeasureName_" + keyT);
+            val = val + " " + unit + " - " + map.get(keyT) + " " + unit;
+            md.setName(name);
+            md.setValue(val);
+            md.setUnit("");
+        } else {
+            // nel caso la misura non abbia il corrispondente valore teorico mostro la singola misura
+            md.setName(name);
+            md.setValue(val);
+            md.setUnit(unit);
+        }
+        return md;
+    }
+
+    public void setName(String name) {
 		this.name = name;
 	}
 	

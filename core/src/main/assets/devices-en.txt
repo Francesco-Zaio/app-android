@@ -10,3 +10,5 @@ Q2, Q2, Survey 2, 0
 EC, MICROTELBT, ECG - Cardioline, 1
 PT, CCXS, Coaguchek XS - Roche, 1
 TC, FORAIR21B, IR 20b/21b - Fora, 1
+OS, SPIRODOCOS, Spirodoc - MIR, 1
+SP, SPIRODOCSP, Spirodoc - MIR, 1

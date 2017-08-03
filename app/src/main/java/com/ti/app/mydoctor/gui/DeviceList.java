@@ -79,7 +79,6 @@ import com.ti.app.telemed.core.common.UserPatient;
 import com.ti.app.telemed.core.dbmodule.DbManager;
 import com.ti.app.telemed.core.measuremodule.MeasureManager;
 import com.ti.app.telemed.core.usermodule.UserManager;
-import com.ti.app.telemed.core.util.Util;
 import com.ti.app.telemed.core.xmlmodule.XmlManager;
 import com.ti.app.telemed.core.exceptions.DbException;
 import com.ti.app.telemed.core.util.GWConst;
@@ -296,6 +295,7 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
             customActionBar.setHomeButtonEnabled(true);
             //Setta l'icon
             customActionBar.setIcon(R.drawable.icon_action_bar);
+
             //Ricava la TextView dell'ActionBar
             LayoutInflater inflator = (LayoutInflater)this.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
             View titleView = inflator.inflate(R.layout.actionbar_title, null);
@@ -465,41 +465,28 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
 	@Override
 	protected void onResume() {
 		super.onResume();
-
 		Log.i(TAG, "onResume()");
-
 		try {
 			deviceManager.setHandler(deviceManagerHandler);
 			userManager.setHandler(userManagerHandler);
 		} catch (Exception e) {
 			Log.e(TAG, "ERROR on onResume: " + e.getMessage());
 		}
-
-
 		if (AppUtil.getRegistryValue(AppUtil.KEY_FORCE_LOGOUT, false) && UserManager.getUserManager().getCurrentPatient() != null) {
-
     		DialogManager.showToastMessage(DeviceList.this, AppResourceManager.getResource().getString("userBlocked"));
 			AppUtil.setRegistryValue(AppUtil.KEY_FORCE_LOGOUT, false);
-
-
 			measureList = new ArrayList<>();
 			setupView();
-
 			resetView();
-
 			UserManager.getUserManager().setCurrentPatient(null);
-
 			doLogout();
     	}
-
 	}
 
 	@Override
 	public void onDestroy(){
 		super.onDestroy();
-
 		Log.i(TAG, "onDestroy()");
-
 		if (fastRestart) {
 			Log.i(TAG, "fastRestart()");
 			fastRestart = false;
@@ -508,7 +495,6 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
 
 		ACTIVE_INSTANCE = null;
 		UserManager.getUserManager().setCurrentPatient(null);
-
 		if (DbManager.getDbManager() != null) {
 			User activeUser = DbManager.getDbManager().getActiveUser();
 			if (activeUser != null) {
@@ -1294,113 +1280,6 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
                         }
                     break;
             }
-
-            /*
-
-			//Menu per l'inserimento manuale delle misure
-			if (AppUtil.isManualMeasure(pd.getDevice())) {
-				inflater.inflate(R.menu.context_menu_manual_insert, menu);
-				menu.setHeaderTitle(AppResourceManager.getResource().getString("measureType." + selectedMeasureType));
-				//menu.setHeaderIcon(AppUtil.getIconId(selectedMeasureType));
-				menu.setHeaderIcon(AppUtil.getSmallIconId(selectedMeasureType));
-
-				if (userManager.getCurrentPatient() != null) {
-					ArrayList<Measure> patientMeasures = measureManager.getMeasureData(userManager.getCurrentUser().getId(), null, null, selectedMeasureType, userManager.getCurrentPatient().getId(), MeasureManager.BooleanFilter.ignore);
-					if (patientMeasures == null || patientMeasures.size() == 0) {
-						//All'esame non � associata alcuna misura
-						menu.setGroupVisible(R.id.show_measure_group, false);
-					}
-				}
-				else
-					menu.setGroupVisible(R.id.show_measure_group, false);
-
-				if(measureModelsMap.get(selectedMeasureType).size() == 1){
-					//Un solo modello di device disponibile
-					menu.setGroupVisible(R.id.select_model_group, false);
-				}
-			}
-			//Menu per i dispositivi che non richiedono una procedura di pairing
-			//ECG, INR, OSSIMETRO NONIN
-			else if (AppUtil.isNoPairingDevice(pd.getDevice())) {
-				inflater.inflate(R.menu.context_menu_no_pair_device, menu);
-				menu.setHeaderTitle(AppResourceManager.getResource().getString("measureType." + selectedMeasureType));
-				//menu.setHeaderIcon(AppUtil.getIconId(selectedMeasureType));
-				menu.setHeaderIcon(AppUtil.getSmallIconId(selectedMeasureType));
-
-				if (userManager.getCurrentPatient() != null) {
-					ArrayList<Measure> patientMeasures = measureManager.getMeasureData(userManager.getCurrentUser().getId(), null, null, selectedMeasureType, userManager.getCurrentPatient().getId(), MeasureManager.BooleanFilter.ignore);
-					if (patientMeasures == null || patientMeasures.size() == 0) {
-						//All'esame non � associata alcuna misura
-						menu.setGroupVisible(R.id.show_measure_group, false);
-					}
-				}
-				else
-					menu.setGroupVisible(R.id.show_measure_group, false);
-
-				if(measureModelsMap.get(selectedMeasureType).size() == 1){
-					//Un solo modello di device disponibile
-					menu.setGroupVisible(R.id.select_model_group, false);
-				}
-
-				if(measureEnabled(pd)){
-					Log.i(TAG, "Gi� associato");
-					menu.setGroupVisible(R.id.new_device_first_run_group, false);
-				} else {
-					Log.i(TAG, "Prima associazione");
-					menu.setGroupVisible(R.id.new_device_group, false);
-				}
-
-				if (pd.getDevice().getModel().equals(GWConst.KPO3IHealth)
-						|| pd.getDevice().getModel().equals(GWConst.KBP5IHealth)
-						|| pd.getDevice().getModel().equals(GWConst.KHS4SIHealth)) {
-					menu.setGroupVisible(R.id.new_device_first_run_group, true);
-					menu.setGroupVisible(R.id.new_device_group, false);
-				}
-
-				if(!pd.isActive()){
-					menu.setGroupVisible(R.id.new_device_group, false);
-					menu.setGroupVisible(R.id.new_device_first_run_group, false);
-				}
-			} else {
-				inflater.inflate(R.menu.context_menu_pair_device, menu);
-				menu.setHeaderTitle(AppResourceManager.getResource().getString("measureType." + selectedMeasureType));
-				//menu.setHeaderIcon(AppUtil.getIconId(selectedMeasureType));
-				menu.setHeaderIcon(AppUtil.getSmallIconId(selectedMeasureType));
-
-				if (userManager.getCurrentPatient() != null) {
-					ArrayList<Measure> patientMeasures = measureManager.getMeasureData(userManager.getCurrentUser().getId(), null, null, selectedMeasureType, userManager.getCurrentPatient().getId(), MeasureManager.BooleanFilter.not);
-					if (patientMeasures == null || patientMeasures.size() == 0) {
-						//All'esame non � associata alcuna misura
-						menu.setGroupVisible(R.id.show_measure_group, false);
-					}
-				}
-				else
-					menu.setGroupVisible(R.id.show_measure_group, false);
-
-				if(measureModelsMap.get(selectedMeasureType).size() == 1){
-					//Un solo modello di device disponibile
-					menu.setGroupVisible(R.id.select_model_group, false);
-				}
-
-				if(measureEnabled(pd)){
-					menu.setGroupVisible(R.id.pair_group, false);
-				} else {
-					menu.setGroupVisible(R.id.new_device_group, false);
-				}
-
-				if(!pd.isActive()){
-					menu.setGroupVisible(R.id.pair_group, false);
-					menu.setGroupVisible(R.id.new_device_group, false);
-					menu.setGroupVisible(R.id.new_device_first_run_group, false);
-				}
-			}
-
-			if (pd.getDevice().getModel().equalsIgnoreCase(GWConst.KCAMERA)) {
-				menu.setGroupVisible(R.id.pair_group, false);
-				menu.setGroupVisible(R.id.new_device_group, false);
-				menu.setGroupVisible(R.id.new_device_first_run_group, false);
-			}
-			*/
 		} catch (DbException e) {
 			e.printStackTrace();
 			showErrorDialog(AppResourceManager.getResource().getString("errorDb"));
@@ -1651,9 +1530,7 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
 	private void doMeasure() {
 		UserDevice uDevice = deviceMap.get(selectedMeasureType);
 		if(uDevice != null && measureEnabled(uDevice)){
-			if(AppUtil.isGlucoTelDevice(uDevice.getDevice()) && AppUtil.glucoTelNotCalibrated()){
-				showCalibrateActivity(true, false);
-			} else if(AppUtil.isManualMeasure(uDevice.getDevice())){
+			if(AppUtil.isManualMeasure(uDevice.getDevice())){
 				doManualMeasure();
 			} else {
 				isPairing = false;
@@ -1665,17 +1542,7 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
 					// startMeasure() will then be called during onActivityResult
 					requestEnableBT();
 				} else {
-
-					if(AppUtil.isGlucoTelDevice(uDevice.getDevice())) {
-
-						if (uDevice.getBtAddress() == null)
-							doScan();
-						else
-							startMeasure();
-					}
-					else {
-						startMeasure();
-					}
+                    startMeasure();
 				}
 			}
 		}
@@ -1696,12 +1563,8 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
 	}
 
 	private void startScan() {
-		if (!AppUtil.isGlucoTelDevice(deviceManager.getCurrentDevice().getDevice())
-				&&
-				!AppUtil.isC40(deviceManager.getCurrentDevice().getDevice())
-				&&
-				!AppUtil.isCamera(deviceManager.getCurrentDevice().getDevice())
-				) {
+		if (!AppUtil.isC40(deviceManager.getCurrentDevice().getDevice())
+				&& !AppUtil.isCamera(deviceManager.getCurrentDevice().getDevice())) {
 			// Launch the DeviceScanActivity to see devices and do scan
 			Intent serverIntent = new Intent(this, DeviceScanActivity.class);
 			//startActivity(serverIntent);
@@ -2056,21 +1919,6 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
 
 		progressDialog.setMessage(data.getString(AppConst.MESSAGE));
 		progressDialog.setButton(DialogInterface.BUTTON_NEGATIVE, AppResourceManager.getResource().getString("EGwnurseCancel"),  new ProgressDialogClickListener());
-
-		if(deviceMap != null && selectedMeasureType != null &&
-				(deviceMap.get(selectedMeasureType) != null && AppUtil.isStmDevice(deviceMap.get(selectedMeasureType).getDevice())) &&
-				!isPairing && isConfig && isManualMeasure) {
-
-			progressDialog.setButton(DialogInterface.BUTTON_POSITIVE, AppResourceManager.getResource().getString("DeviceListView.configureBtn"),
-					new DialogInterface.OnClickListener() {
-
-						@Override
-						public void onClick(DialogInterface dialog, int which) {
-							stopDeviceOperation(-1);
-							doConfig();
-						}
-					});
-		}
 
 		progressDialog.setOnKeyListener(new DialogInterface.OnKeyListener() {
 			@Override
@@ -2572,11 +2420,6 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
 		switch(id) {
         case PROGRESS_DIALOG:
             ((ProgressDialog)dialog).setMessage(dataBundle.getString(AppConst.MESSAGE));
-        	if(deviceMap != null && selectedMeasureType != null && deviceMap.get(selectedMeasureType) != null &&
-        			AppUtil.isStmDevice(deviceMap.get(selectedMeasureType).getDevice()) && !isPairing && isConfig && isManualMeasure) {
-
-    			progressDialog.getButton(DialogInterface.BUTTON_POSITIVE).setEnabled(false);
-    		}
     		String msg = dataBundle.getString(AppConst.MESSAGE);
             if (msg != null && msg.startsWith(AppResourceManager.getResource().getString("KReliabilityStm") + ":") &&
                     msg.endsWith("%")) {
@@ -2947,9 +2790,7 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
 
 	private boolean measureEnabled(UserDevice device) {
 		return (device.getBtAddress()!= null && device.getBtAddress().length() > 0)
-				|| AppUtil.isGlucoTelDevice(device.getDevice())
-				|| AppUtil.isManualMeasure(device.getDevice())
-				|| AppUtil.isStmDevice(device.getDevice());
+				|| AppUtil.isManualMeasure(device.getDevice());
 	}
 
 	private class ProgressDialogClickListener implements DialogInterface.OnClickListener {
@@ -3173,21 +3014,6 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
 				showManualTemperatureActivity();
 			}
 		}
-	}
-	
-	private void showCalibrateActivity(boolean doMeasure, boolean doScan) {
-        if (doMeasure)
-            if (doScan)
-                calibrateState = TCalibrateState.EMeasureOn_ScanOn;
-            else
-                calibrateState = TCalibrateState.EMeasureOn_ScanOff;
-        else
-            if (doScan)
-                calibrateState = TCalibrateState.EMeasureOff_ScanOn;
-            else
-                calibrateState = TCalibrateState.EMeasureOff_ScanOff;
-		Intent intent = new Intent( DeviceList.this, CalibrateActivity.class );			
-		startActivityForResult( intent, CALIBRATE_ENTRY );
 	}
 	
 	private void showManualTemperatureActivity(){

@@ -11,8 +11,6 @@ public interface GWConst {
 	int MAX_SEND_RETRY = 10;        // numero massimo di retry invio misure
 	int SEND_RETRY_TIMEOUT = 300;   // timeout in sec per retry invio misure
 
-	String KBalanceMD = "UC321PBT";
-	String KPressureMD = "UA767PBT";
 	String KEcgMicro = "MICROTELBT";
 	String KOximeterNon = "NONIN4100";
 	String KPO3IHealth = "PO3";
@@ -20,20 +18,13 @@ public interface GWConst {
 	String KHS4SIHealth = "HS4S";
 	String KBP550BTIHealth = "BP550BT";
 	String KMirSpirometerSNA = "SNA23060";
-	String KMirOxySNA = "SNA23067";
-	String KCGBPPro = "CGBPPRO";
-	String KCGWSPro = "CGWSPRO";
-	String KCGHP = "CGHP";
 	String KTDCC = "CLEVERCHEK";
-	String KOBC = "OBC";
 	String KCcxsRoche = "CCXS";
 	String KIEMWS = "IEMWS";
 	String KIEMBP = "IEMBP";
 	String KFORATherm = "FORAIR21B";
 	String KForaWS = "FORAW310";
     String KManualMeasure = "MANUALE";
-    String KBTGT = "GLUCOTEL";
-    String KSTM = "STM";
     String KSpirodocSP = "SPIRODOCSP";
     String KSpirodocOS = "SPIRODOCOS";
     String KANDPS = "ANDPS";

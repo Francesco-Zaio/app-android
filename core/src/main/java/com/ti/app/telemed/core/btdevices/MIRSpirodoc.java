@@ -1090,8 +1090,10 @@ public class MIRSpirodoc implements DeviceHandler,
 		double measurementBPMbas = (double)(getIntValue(textBuffer.get(98),textBuffer.get(99)))/10;
 		
 		//--------------------------------------------------------------------------Durata Test		
-		DecimalFormat dfb = new DecimalFormat("00");
-		String durata = dfb.format(textBuffer.get(84)) + dfb.format(textBuffer.get(85)) + dfb.format(textBuffer.get(86));
+		int sec = textBuffer.get(84)*3600 + textBuffer.get(85)*60 + textBuffer.get(86);
+		String durata = Integer.toString(sec);
+//		DecimalFormat dfb = new DecimalFormat("00");
+//		String durata = dfb.format(textBuffer.get(84)) + dfb.format(textBuffer.get(85)) + dfb.format(textBuffer.get(86));
 
 		//--------------------------------------------------------------------------Batteria
 		int batt = (int) iInfoPacket[13] * 256 + (int) iInfoPacket[14];
@@ -1307,12 +1309,6 @@ public class MIRSpirodoc implements DeviceHandler,
 			iCurve1.write(iControlPacket, 0, iControlPacket.length);
 			iCurve1.write(iInfoPatientPacket, 0, iInfoPatientPacket.length);
 			iCurve1.write(iInfoCurveOxyPacket, 0, iInfoCurveOxyPacket.length);
-			/*
-			 * iCurve1->Des().Copy(iControlPacket);
-			 * iCurve1->Des().Append(iInfoPatientPacket);
-			 * iCurve1->Des().Append(iInfoCurveOxyPacket);
-			 */
-
 		} else {
 			iCurve1.write(iInfoCurveOxyPacket, 0, iInfoCurveOxyPacket.length);
 		}

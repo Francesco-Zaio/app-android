@@ -128,7 +128,6 @@ public class MeasureDetail {
         String name = ResourceManager.getResource().getString("MeasureName_" + key);
         String val = map.get(key);
         String unit = ResourceManager.getResource().getString("MeasureUnit_" + key);
-        String valT;
         if ((keyT != null) && (map.get(keyT)) != null) {
             name = name + " - " + ResourceManager.getResource().getString("MeasureName_" + keyT);
             val = val + " " + unit + " - " + map.get(keyT) + " " + unit;

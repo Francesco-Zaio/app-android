@@ -365,7 +365,7 @@ class IHealthPO3 extends Handler implements IHealtDevice{
         // DURATA
         Time tDurata = calcTime(iAnalysisTime);
         String durata = Integer.toString(iAnalysisTime);
-//        String durata = String.format(Locale.ENGLISH, "%02d:%02d:%02d", tDurata.getHh(), tDurata.getMm(), tDurata.getSs());
+//        String durata = String.format(Locale.ENGLISH, "%02d%02d%02d", tDurata.getHh(), tDurata.getMm(), tDurata.getSs());
 
         //Recording Time & Analysis Time
         oxyStream[84] = (byte)tDurata.getHh();

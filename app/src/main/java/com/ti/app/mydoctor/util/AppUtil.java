@@ -17,7 +17,6 @@ import java.io.FileOutputStream;
 public class AppUtil {
 	
 	private static final String KEY_SHARED_PREFS = "TELEMONITORING_SP";
-	public static final String KEY_BTGT_CALIBRATE_VALUE = "BTGT_CALIBRATE_VALUE";
 	private static final String TAG = "AppUtil";
 	public static final String KEY_AUTO_UPDATE = "KEY_AUTO_UPDATE";
 	public static final String KEY_AUTO_UPDATE_DATE = "KEY_AUTO_UPDATE_DATE";
@@ -27,7 +26,6 @@ public class AppUtil {
 	public static final String KEY_URL_QUIZ = "KEY_URL_QUIZ";
 	public static final String URL_QUIZ_DEFAULT = "group/pazienti/lista-attestati";
 	public static final String KEY_MEASURE_TYPE = "measureType.";
-
 
 	public static final String KEY_GRID_LAYOUT = "KEY_GRID_LAYOUT";
 
@@ -73,10 +71,6 @@ public class AppUtil {
 	public static String getString(int id){
 		return MyDoctorApp.getContext().getResources().getString(id);
 	}
-
-	public static boolean isGlucoTelDevice(Device device) {
-		return (device.getModel() != null && device.getModel().equalsIgnoreCase(GWConst.KBTGT));
-	}
 	
 	public static boolean isC40(Device device) {
 		return  (
@@ -90,26 +84,6 @@ public class AppUtil {
 		return  (
 				(device.getModel() != null && device.getModel().equalsIgnoreCase(GWConst.KCAMERA))
 				);
-	}
-	
-	public static boolean isStmDevice(Device device) {
-		return (device.getModel() != null && device.getModel().equalsIgnoreCase(GWConst.KSTM));
-	}
-	
-	public static boolean glucoTelNotCalibrated(){
-		return isEmptyString(getRegistryValue(AppUtil.KEY_BTGT_CALIBRATE_VALUE/* + "_" + DbManager.getDbManager().getActiveUser().getId()*/));
-	}
-
-	public static boolean isNoPairingDevice(Device device){
-		return device.getModel().equalsIgnoreCase(GWConst.KEcgMicro)
-				|| device.getModel().equalsIgnoreCase(GWConst.KCcxsRoche)
-				|| device.getModel().equalsIgnoreCase(GWConst.KOximeterNon)
-				|| device.getModel().equalsIgnoreCase(GWConst.KFORATherm)
-				|| device.getModel().equalsIgnoreCase(GWConst.KPO3IHealth)
-				|| device.getModel().equalsIgnoreCase(GWConst.KBP5IHealth)
-				|| device.getModel().equalsIgnoreCase(GWConst.KHS4SIHealth)
-				|| device.getModel().equalsIgnoreCase(GWConst.KBP550BTIHealth)
-				|| isManualMeasure(device);
 	}
 
 	public static int getIconId(String measure) {
@@ -218,15 +192,7 @@ public class AppUtil {
 	    editor.putBoolean(keyValue, stringValue);
 	    editor.apply();
 	}
-	
-	public static String getCurrentCalibrationCode(){
-		//String cal = getRegistryValue(KEY_BTGT_CALIBRATE_VALUE + "_" + DbManager.getDbManager().getActiveUser().getId());
-		String cal = getRegistryValue(KEY_BTGT_CALIBRATE_VALUE/* + "_" + DbManager.getDbManager().getActiveUser().getId()*/);
-		if(isEmptyString(cal)){
-			cal = "-";
-		}
-		return "[" + cal + "]";
-	}
+
 	
 	public static boolean isEmptyString(String s) {
 		return s == null || s.equals("");
@@ -280,7 +246,6 @@ public class AppUtil {
 			Log.d(TAG, "exists? " + f.toString());
 			
 			demoMode = f.exists();
-			f = null;			
 		}
 		catch (Exception e) {
 			demoMode = false;
@@ -296,7 +261,9 @@ public class AppUtil {
 		try {
 			result = Math.abs( (int) ((t1-t2) / (60 * 60 * 1000)) );
 		}
-		catch(Exception e) {}
+		catch(Exception e) {
+			e.printStackTrace();
+		}
 		return result;
 	}
 }

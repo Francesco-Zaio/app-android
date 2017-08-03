@@ -12,6 +12,7 @@ import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.support.v4.content.res.ResourcesCompat;
 import android.support.v7.app.ActionBar;
 import android.util.Log;
 import android.util.SparseIntArray;
@@ -48,6 +49,7 @@ import com.ti.app.mydoctor.gui.customview.ActionBarListActivity;
 import com.ti.app.mydoctor.gui.customview.GWTextView;
 import com.ti.app.mydoctor.gui.listadapter.DeviceListAdapter;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -58,8 +60,7 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
 	// Intent request codes
     private static final int REQUEST_ENABLE_BT = 1;
     private static final int REQUEST_SCAN_DEVICES = 2;
-    private static final int REQUEST_CALIBRATE_ENTRY = 3;
-    
+
     //Dialog
     private static ProgressDialog progressDialog;
     private static AlertDialog alertDialog;
@@ -68,9 +69,6 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
 	private static final String KEY_ICON = "icon";
 	private static final String KEY_LABEL = "label";
 	private static final String KEY_MODEL = "model";
-	
-	//Elementi della GUI
-	private GWTextView titleTV;
 	
 	//Gestione lista misure
 	private List<String> measureList;
@@ -89,12 +87,9 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
 	
 	//Device Manager
 	private DeviceManager deviceManager;
-	private DeviceManagerMessageHandler deviceManagerHandler;
-	
-	//Lista pazienti
-	private List<UserPatient> patientList;
-	
-	//Controlla se l'operazione di pairing è stata avviata
+	private DeviceManagerMessageHandler deviceManagerHandler = new DeviceManagerMessageHandler(this);
+
+    //Controlla se l'operazione di pairing è stata avviata
 	private boolean isPairing;
 	
 	@Override
@@ -105,35 +100,30 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
 		
 		//Flag per mantenere attivo lo schermo finchè l'activity è in primo piano
 		getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-		
-		/**
-		 * ACTION BAR
-		 */
+
 		//Inizializza l'ActionBAr
 		ActionBar actionBar = this.getSupportActionBar();
-		//Setta il gradiente di sfondo della action bar
-		Drawable cd = this.getResources().getDrawable(R.drawable.action_bar_background_color);
-		actionBar.setBackgroundDrawable(cd);
-				
-		actionBar.setDisplayShowCustomEnabled(true);
-		actionBar.setDisplayShowTitleEnabled(false);
-		
-		//Setta l'icon
-		actionBar.setIcon(R.drawable.icon_action_bar);
+		if (actionBar != null) {
+			//Setta il gradiente di sfondo della action bar
+            Drawable cd = ResourcesCompat.getDrawable(getResources(), R.drawable.action_bar_background_color, null);
+			actionBar.setBackgroundDrawable(cd);
+			actionBar.setDisplayShowCustomEnabled(true);
+			actionBar.setDisplayShowTitleEnabled(false);
+			//Setta l'icon
+			actionBar.setIcon(R.drawable.icon_action_bar);
+			//L'icona dell'App diventa tasto per tornare nella Home
+			actionBar.setHomeButtonEnabled(true);
+			actionBar.setDisplayHomeAsUpEnabled(true);
+			//Settare il font e il titolo della Activity
+			LayoutInflater inflator = (LayoutInflater)this.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+			View titleView = inflator.inflate(R.layout.actionbar_title, null);
+            GWTextView titleTV = (GWTextView)titleView.findViewById(R.id.actionbar_title_label);
+			titleTV.setText(R.string.app_name);
+			actionBar.setCustomView(titleView);
+		} else {
+            Log.e(TAG, "ActionBar is NULL!!");
+        }
 
-		//Settare il font e il titolo della Activity
-		LayoutInflater inflator = (LayoutInflater)this.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-		View titleView = inflator.inflate(R.layout.actionbar_title, null);
-		titleTV = (GWTextView)titleView.findViewById(R.id.actionbar_title_label);
-		titleTV.setText(R.string.app_name);
-		actionBar.setCustomView(titleView);
-		
-		//L'icona dell'App diventa tasto per tornare nella Home
-		actionBar.setHomeButtonEnabled(true);
-		actionBar.setDisplayHomeAsUpEnabled(true);
-		/*************************************************/
-		
-		deviceManagerHandler = new DeviceManagerMessageHandler();		
 		deviceManager = MyDoctorApp.getDeviceManager();
 		deviceManager.setHandler(deviceManagerHandler);	
 		
@@ -188,7 +178,6 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
 			}
 		} catch (DbException e) {
 			e.printStackTrace();
-			//showErrorDialog(AppResourceManager.getResource().getString("errorDb"));
 		}
 	}
 	
@@ -197,30 +186,24 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
 		
 		AdapterContextMenuInfo info = (AdapterContextMenuInfo) item.getMenuInfo();
 		getListView().setSelection(info.position);
-    	setCurrentDevice(info.position);
+
+        UserDevice ud = deviceMap.get(selectedMeasureType);
+        if(ud.isActive()){
+            deviceManager.setCurrentDevice(ud);
+        } else {
+            deviceManager.setCurrentDevice(null);
+        }
     	
 	    switch (item.getItemId()) {
 		    case R.id.pair:			    	
 	    		doScan();		    	
 		    	return true;
-		    
-		    
 		    case R.id.select_model:
 		    	showSelectModelDialog();
-		    	return true;	    
-		    
+		    	return true;
 		    default:
 		        return super.onOptionsItemSelected(item);
 	    }
-	}
-	
-	private void setCurrentDevice(int position) {
-		UserDevice ud = deviceMap.get(selectedMeasureType);
-		if(ud.isActive()){
-			deviceManager.setCurrentDevice(ud);
-		} else {
-			deviceManager.setCurrentDevice(null);
-		}
 	}
 	
 	//Inizializza mappa dei dispositivi
@@ -273,8 +256,8 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
             measureList = DbManager.getDbManager().getCfgMeasureTypes();
 			initDeviceMap();
 			initMeasureModelsMap(defaultUser.getId());
-			
-			patientList = DbManager.getDbManager().getUserPatients(defaultUser.getId());
+
+            List<UserPatient> patientList = DbManager.getDbManager().getUserPatients(defaultUser.getId());
 			if( patientList.size() == 1 ) {
 				//L'utente default ha un solo paziente, se stesso
 				Patient p = DbManager.getDbManager().getPatientData(patientList.get(0).getIdPatient()); 
@@ -459,24 +442,14 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
 		tmpUd.setBtAddress(null);
 		deviceManager.setCurrentDevice(tmpUd);
 		
-		if (!AppUtil.isGlucoTelDevice(deviceManager.getCurrentDevice().getDevice())
-				&&
-				!AppUtil.isC40(deviceManager.getCurrentDevice().getDevice())
-				&&
-				!AppUtil.isCamera(deviceManager.getCurrentDevice().getDevice())
-				) {
+		if (!AppUtil.isC40(deviceManager.getCurrentDevice().getDevice())
+                && !AppUtil.isCamera(deviceManager.getCurrentDevice().getDevice())) {
 			// Launch the DeviceScanActivity to see devices and do scan
 			Intent serverIntent = new Intent(this, DeviceScanActivity.class);
 			//startActivity(serverIntent);
 			startActivityForResult(serverIntent, REQUEST_SCAN_DEVICES);	
 		} else {
-			if ( AppUtil.isGlucoTelDevice(deviceManager.getCurrentDevice().getDevice()) ) {
-				//Se è stato scelto il GlucoTel allora bisogna procedere prima con la calibrazione
-				Intent intent = new Intent( DeviceSettingsActivity.this, CalibrateActivity.class );			
-				startActivityForResult( intent, REQUEST_CALIBRATE_ENTRY );
-			} else {
-				deviceManager.startDiscovery(null);
-			}
+            deviceManager.startDiscovery(null);
 		}
 	}
 	
@@ -518,19 +491,24 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
     		} else {
     			stopDeviceOperation(-2); 
     		}
-    		break;    
-    		
-    	case REQUEST_CALIBRATE_ENTRY:
-    		if (resultCode == Activity.RESULT_OK){
-    			deviceManager.startDiscovery(null);
-    		}
     		break;
     	}
 	}
 
-	private class DeviceManagerMessageHandler extends Handler {    	
+    private static class DeviceManagerMessageHandler extends Handler {
+
+        private final WeakReference<DeviceSettingsActivity> mActivity;
+
+        DeviceManagerMessageHandler(DeviceSettingsActivity activity) {
+            mActivity = new WeakReference<>(activity);
+        }
+
     	@Override
 		public void handleMessage(Message msg) {
+            DeviceSettingsActivity activity = mActivity.get();
+            if (activity == null)
+                return;
+
         	Bundle dataBundle = msg.getData();        	
         	
         	Log.d(TAG, "DeviceManagerMessageHandler d=" + dataBundle);
@@ -539,52 +517,22 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
             case DeviceManager.MESSAGE_STATE:   
             	dataBundle.putBoolean(AppConst.IS_MEASURE, true);
             	if( progressDialog == null )
-            		createProgressDialog(dataBundle);
+                    activity.createProgressDialog(dataBundle);
                 //getActivity().showDialog(PROGRESS_DIALOG);
                 break;
             case DeviceManager.MESSAGE_STATE_WAIT:
             	dataBundle.putBoolean(AppConst.IS_MEASURE, true);
             	if( progressDialog == null )
-            		createProgressDialog(dataBundle);
+                    activity.createProgressDialog(dataBundle);
             	//getActivity().showDialog(PROGRESS_DIALOG);
                 break;
             case DeviceManager.CONFIG_READY:
-	        	
-	        	refreshList();
-	        	
-	        	closeProgressDialog();
-	        	createAlertDialog(dataBundle);	        	           
+
+                activity.refreshList();
+
+                activity.closeProgressDialog();
+                activity.createAlertDialog(dataBundle);
 	            break;
-            /*case DeviceManager.ASK_PREPOST_PRANDIAL_GLYCEMIA:
-            	askPrePostPrandialGlycaemia(false);
-            	break;
-            	
-            case DeviceManager.ASK_SOMETHING:
-            	askSomething(
-            			dataBundle.getString(AppConst.ASK_MESSAGE),
-            			dataBundle.getString(AppConst.ASK_POSITIVE),
-            			dataBundle.getString(AppConst.ASK_NEGATIVE));
-            	break;
-            	
-            case DeviceManager.REFRESH_LIST:
-            	refreshList();
-            	
-            	break;
-            	
-            case DeviceManager.STOP_BACKGROUND:
-            	            	
-	       		stopDeviceOperation(-1);
-	       		refreshList();
-	       									
-	       		//Per essere sicuro che venga ripristinato l'APN di default del dispositivo
-	       		ConnectionManager.getConnectionManager(DeviceList.this).resetDefaultConnection();
-	       		
-	       		isAR = false;
-       			break;     
-	        case DeviceManager.ERROR_STATE:  
-	        	closeProgressDialog();
-	        	showDialog(ALERT_DIALOG);	                       
-	            break;*/	        
             }
         }
     }

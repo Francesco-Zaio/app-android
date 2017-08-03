@@ -91,12 +91,8 @@
             android:name=".gui.ManualTemperatureActivity"
             android:windowSoftInputMode="stateAlwaysVisible" >
 	    </activity>
-	    
-	    <activity
-            android:name=".gui.CalibrateActivity"
-            android:windowSoftInputMode="stateAlwaysVisible" >
-	    </activity>
-    </application>
+
+	</application>
 
 
 </manifest> 

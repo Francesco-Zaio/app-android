@@ -158,7 +158,9 @@ public class Util {
 		try {
 			result = Math.abs( (int) ((t1-t2) / (60 * 60 * 1000)) );
 		}
-		catch(Exception e) {}
+		catch(Exception e) {
+			e.printStackTrace();
+		}
 		return result;
 	}
 }

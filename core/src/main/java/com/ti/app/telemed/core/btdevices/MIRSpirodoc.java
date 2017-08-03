@@ -1131,6 +1131,7 @@ public class MIRSpirodoc implements DeviceHandler,
         iMeasure.setFile(textBuffer.array());
         iMeasure.setFileType(XmlManager.MIR_OXY_FILE_TYPE);
         iMeasure.setFailed(false);
+        iMeasure.setBtAddress(iBTAddress);
 
         iScheduler.showMeasurementResults(iMeasure);
 	}

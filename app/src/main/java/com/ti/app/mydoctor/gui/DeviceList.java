@@ -27,12 +27,13 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.content.res.ResourcesCompat;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
-import android.support.v7.app.ActionBarActivity;
 import android.support.v7.app.ActionBarDrawerToggle;
+import android.support.v7.app.AppCompatActivity;
 import android.text.Html;
 import android.text.Html.ImageGetter;
 import android.text.InputType;
@@ -102,8 +103,8 @@ import java.util.Set;
 import java.util.Vector;
 
 
-@SuppressWarnings("deprecation")
-public class DeviceList extends ActionBarActivity implements OnChildClickListener, DeviceListFragmentListener {
+// @SuppressWarnings("deprecation")
+public class DeviceList extends AppCompatActivity implements OnChildClickListener, DeviceListFragmentListener {
 	private static final String TAG = "DeviceList";
 
     //Costants for Bundle
@@ -183,8 +184,7 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
 	
     private boolean isPairing;
     private boolean isConfig;    
-    private boolean isManualMeasure;    
-    private boolean isAR;
+    private boolean isManualMeasure;
     
     int sentMeasures;
     int receivedMeasures;
@@ -286,7 +286,7 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
 		ActionBar customActionBar = getSupportActionBar();
         if (customActionBar != null) {
             //Setta il gradiente di sfondo della action bar
-            Drawable cd = this.getResources().getDrawable(R.drawable.action_bar_background_color);
+            Drawable cd = ResourcesCompat.getDrawable(getResources(), R.drawable.action_bar_background_color, null);
             customActionBar.setBackgroundDrawable(cd);
             customActionBar.setDisplayShowCustomEnabled(true);
             customActionBar.setDisplayShowTitleEnabled(false);
@@ -944,7 +944,6 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
                     if (!deviceMap.get(selectedMeasureType).isActive()) {
                         showSelectModelDialog();
                     } else {
-                        isAR = selectedMeasureType.equalsIgnoreCase(GWConst.KMsrAritm);
                         setCurrentDevice();
                         selectPatient();
                     }
@@ -1046,7 +1045,6 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
 					if(!deviceMap.get(selectedMeasureType).isActive()){
 						showSelectModelDialog();
 					} else {
-						isAR = selectedMeasureType.equalsIgnoreCase(GWConst.KMsrAritm);
 						setCurrentDevice();
 						selectPatient();
 					}
@@ -1087,37 +1085,14 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
 		}
 		else {
 			if(measureEnabled(deviceMap.get(selectedMeasureType))){
-
-				if(isAR){
-					//Chiedo conferma per stop server
-					AlertDialog.Builder builder = new AlertDialog.Builder(DeviceList.this);
-					builder.setMessage(AppResourceManager.getResource().getString("KConfirmStopStm"));
-					builder.setPositiveButton(AppResourceManager.getResource().getString("EGwnurseOk"), new DialogInterface.OnClickListener() {
-						public void onClick(DialogInterface dialog, int which) {
-							stopDeviceOperation(-1);
-							refreshList();
-							isAR = false;
-						}
-					});
-					builder.setNegativeButton(AppResourceManager.getResource().getString("EGwnurseCancel"), new DialogInterface.OnClickListener() {
-						public void onClick(DialogInterface dialog, int which) {
-						}
-					});
-					builder.setTitle(AppResourceManager.getResource().getString("KTitleStm"));
-					builder.show();
-
-				} else {
-
-					deviceManager.checkIfAnotherSpirodocIsPaired(deviceManager.getCurrentDevice().getDevice().getModel());
-					try {
-						initDeviceMap();
-					} catch (DbException e) {
-						e.printStackTrace();
-					}
-					doMeasure();
-				}
+                deviceManager.checkIfAnotherSpirodocIsPaired(deviceManager.getCurrentDevice().getDevice().getModel());
+                try {
+                    initDeviceMap();
+                } catch (DbException e) {
+                    e.printStackTrace();
+                }
+                doMeasure();
 			} else {
-
 				if (deviceManager.getCurrentDevice().getDevice().getModel().equals(GWConst.KSpirodocOS) ||
 						deviceManager.getCurrentDevice().getDevice().getModel().equals(GWConst.KSpirodocSP)) {
 
@@ -1148,7 +1123,7 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
 		} else {
 			map.put(KEY_ICON, "" + AppUtil.getIconId(measureType));
 		}
-		map.put(KEY_LABEL, setupFeedback(AppResourceManager.getResource().getString("measureType." + measureType)));
+		map.put(KEY_LABEL, AppResourceManager.getResource().getString("measureType." + measureType));
 		UserDevice pd = deviceMap.get(measureType);
 		if(pd.isActive()){
 			map.put(KEY_MODEL, pd.getDevice().getDescription());
@@ -1156,14 +1131,6 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
 			map.put(KEY_MODEL, getString(R.string.selectDevice));
 		}
 		return map;
-	}
-
-	private String setupFeedback(String measureLabel) {
-		String label = measureLabel;
-		if(isAR && deviceManager.isOperationRunning() && !isConfig && !isPairing){
-			label = measureLabel.concat(" (" + sentMeasures + "/" + receivedMeasures + ") ");
-		}
-		return label;
 	}
 
 	private void fitTextInPatientNameLabel(String text) {
@@ -1260,6 +1227,7 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
                 case GWConst.KEcgMicro:
                 case GWConst.KFORATherm:
                 case GWConst.KCcxsRoche:
+                case GWConst.KOximeterNon:
                     mi = menu.findItem(R.id.pair_and_measure);
                     mi.setVisible(true);
                     break;
@@ -2209,27 +2177,33 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
 		}
 	}
 
+/*
+    HashMap<Integer, Dialog> mDialogs = new HashMap<Integer, Dialog>();
+
+    public void myShowDialog(int dialogId){
+
+        Dialog d = mDialogs.get(dialogId);
+        if (d == null){
+
+            d = myOnCreateDialog(dialogId);
+            mDialogs.put(dialogId, d);
+        }
+        if (d != null){
+            myOnPrepareDialog(d, dialogId);
+            d.show();
+        }
+
+    }
+
+    public void myRemoveDialog(int dialogId) {
+        Dialog d = mDialogs.get(dialogId);
+        if (d != null)
+            d.dismiss();
+    }
+    */
+
 	@Override
 	protected Dialog onCreateDialog(int id) {
-
-    	if(isAR && deviceManager.isOperationRunning()){
-    		Log.i(TAG, "onCreateDialog bypassed");
-    		if(dataBundle != null){
-    			String msg = dataBundle.getString(SEND_STATUS);
-    			if(AppUtil.isEmptyString(msg)){
-    				msg = dataBundle.getString(SAVE_STATUS);
-    			}
-    			if(AppUtil.isEmptyString(msg)){
-    				msg = dataBundle.getString(AppConst.MESSAGE);
-    			}
-				if(!AppUtil.isEmptyString(msg) && AppResourceManager.getResource().getString("KConnMsgZephyr").equalsIgnoreCase(msg)){
-    				Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
-    				return null;
-    			}
-    		}
-
-    	}
-
     	Context ctx = this;
         ctx.setTheme(R.style.Theme_MyDoctorAtHome_Light);
         AlertDialog.Builder builder = new AlertDialog.Builder(ctx);
@@ -2390,33 +2364,6 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
             return;
         }
 
-    	if(isAR && deviceManager.isOperationRunning()){
-    		Log.i(TAG, "onPrepareDialog bypassed");
-            String msg = dataBundle.getString(SEND_STATUS);
-            if(AppUtil.isEmptyString(msg)){
-                msg = dataBundle.getString(SAVE_STATUS);
-            }
-            if(AppUtil.isEmptyString(msg)){
-                msg = dataBundle.getString(AppConst.MESSAGE);
-            }
-            if(!AppUtil.isEmptyString(msg) && AppResourceManager.getResource().getString("KConnMsgZephyr").equalsIgnoreCase(msg)){
-                DialogManager.showSimpleToastMessage(DeviceList.this, msg);
-                super.onPrepareDialog(id, dialog);
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        new Handler().post(new Runnable() {
-                            @Override
-                            public void run() {
-                                closeProgressDialog();
-                            }
-                        });
-                    }
-                });
-                return;
-            }
-    	}
-
 		switch(id) {
         case PROGRESS_DIALOG:
             ((ProgressDialog)dialog).setMessage(dataBundle.getString(AppConst.MESSAGE));
@@ -2455,14 +2402,15 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
 					@Override
 					public Drawable getDrawable(String source) {
 
-						Drawable d = DeviceList.this.getResources().getDrawable(R.drawable.traffic1);
+                        Drawable d = ResourcesCompat.getDrawable(getResources(), R.drawable.traffic1, null);
 						if (source.endsWith("0.png"))
-							d = DeviceList.this.getResources().getDrawable(R.drawable.traffic0);
+                            d = ResourcesCompat.getDrawable(getResources(), R.drawable.traffic0, null);
 						else
 							if (source.endsWith("2.png"))
-								d = DeviceList.this.getResources().getDrawable(R.drawable.traffic2);
+                                d = ResourcesCompat.getDrawable(getResources(), R.drawable.traffic2, null);
 
-						d.setBounds(0,0,(int)(d.getIntrinsicWidth()*0.7f),(int)(d.getIntrinsicHeight()*0.7f));
+                        if (d != null)
+                            d.setBounds(0,0,(int)(d.getIntrinsicWidth()*0.7f),(int)(d.getIntrinsicHeight()*0.7f));
 						return d;
 					}
 				}, null));
@@ -2566,7 +2514,6 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
      * Listener per i click sulla dialog STATUS_DIALOG
      */
     private DialogInterface.OnClickListener status_dialog_click_listener = new DialogInterface.OnClickListener() {
-
 		@Override
 		public void onClick(DialogInterface dialog, int which) {
 			switch(which) {
@@ -2773,7 +2720,7 @@ public class DeviceList extends ActionBarActivity implements OnChildClickListene
 	private void setOperationCompleted(){
 		//imposto il current device a null per segnalare al DeviceManager
 		//che la misura corrente � terminata (eventualmente inviata e/o salvata su DB)
-		if(deviceManager.getCurrentDevice() != null && !isAR) {
+		if(deviceManager.getCurrentDevice() != null) {
 			Log.i(TAG, "setOperationCompleted: " + deviceManager.getCurrentDevice().getDevice().getDescription() + " ha terminato");
 			deviceManager.setCurrentDevice(null);
 		}

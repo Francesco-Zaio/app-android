@@ -226,6 +226,7 @@ public class ForaThermometerClient implements DeviceHandler,
             iMeasure.setFile(null);
             iMeasure.setFileType(null);
             iMeasure.setFailed(false);
+			iMeasure.setBtAddress(iBTAddress);
 
             iScheduler.showMeasurementResults(iMeasure);
 

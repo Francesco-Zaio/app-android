@@ -4,8 +4,6 @@ import com.ti.app.telemed.core.btmodule.events.BTSearcherEventListener;
 
 public interface DeviceHandler {
 
-	int SERVICE_SEARCH_MAX_RETRY = 3;
-
 	enum TCmd {
 		ECmdConnByUser,
 		ECmdConnByAddr

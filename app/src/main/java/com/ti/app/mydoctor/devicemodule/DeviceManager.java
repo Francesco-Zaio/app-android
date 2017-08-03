@@ -10,6 +10,7 @@ import com.ti.app.mydoctor.AppResourceManager;
 import com.ti.app.telemed.core.btdevices.EcgProtocol;
 import com.ti.app.telemed.core.btdevices.ForaThermometerClient;
 import com.ti.app.telemed.core.btdevices.IHealth;
+import com.ti.app.telemed.core.btdevices.NoninOximeter;
 import com.ti.app.telemed.core.btdevices.RocheProthrombineTimeClient;
 import com.ti.app.telemed.core.btdevices.MIRSpirodoc;
 import com.ti.app.telemed.core.btmodule.events.BTSearcherEventListener;
@@ -157,7 +158,7 @@ public class DeviceManager implements DeviceListener {
 			case GWConst.KSpirodocOS:
 				if (isConfig()) {
 					currentDeviceHandler = new MIRSpirodoc(this, m, 1, GWConst.KSpirodocOS);
-					notifyToUi(AppResourceManager.getResource().getString("KInitMsgConfOxySpirodoc"));
+					notifyToUi(AppResourceManager.getResource().getString("KInitMsgConfOxy"));
                     currentDeviceHandler.start(currentDevice.getBtAddress(), pairingMode);
 				} else {
 					if (pairingMode) {
@@ -165,14 +166,14 @@ public class DeviceManager implements DeviceListener {
                         currentDeviceHandler.start(btSearcherListener, pairingMode);
 					} else {
 						currentDeviceHandler = new MIRSpirodoc(this, m, 3, GWConst.KSpirodocOS);
-						startMeasure(AppResourceManager.getResource().getString("KInitMsgOxiMirSpirodoc"));
+						startMeasure(AppResourceManager.getResource().getString("KInitMsgOS"));
 					}
 				}
 				break;
 			case GWConst.KSpirodocSP:
 				if (isConfig()) {
 					currentDeviceHandler = new MIRSpirodoc(this, m, 1, GWConst.KSpirodocSP);
-					notifyToUi(AppResourceManager.getResource().getString("KInitMsgConfSpiroSpirodoc"));
+					notifyToUi(AppResourceManager.getResource().getString("KInitMsgConfSpiro"));
                     currentDeviceHandler.start(currentDevice.getBtAddress(), pairingMode);
 				} else {
 					if (pairingMode) {
@@ -180,18 +181,22 @@ public class DeviceManager implements DeviceListener {
                         currentDeviceHandler.start(btSearcherListener, pairingMode);
 					} else {
 						currentDeviceHandler = new MIRSpirodoc(this, m, 2, GWConst.KSpirodocSP);
-						startMeasure(AppResourceManager.getResource().getString("KInitMsgSpirMirSpirodoc"));
+						startMeasure(AppResourceManager.getResource().getString("KInitMsgSP"));
 					}
 				}
 				break;
-        }
+            case GWConst.KOximeterNon:
+                currentDeviceHandler = new NoninOximeter(this, m);
+                startMeasure(AppResourceManager.getResource().getString("KInitMsgOS"));
+                break;
+		}
 	}
 
-	public boolean isConfig() {
+	private boolean isConfig() {
 		return isConfig;
-	}		
+	}
 
-	public void setConfig(boolean isConfig) {
+    private void setConfig(boolean isConfig) {
 		this.isConfig = isConfig;
 	}
 

@@ -40,6 +40,7 @@ import com.ti.app.mydoctor.gui.customview.ActionBarListActivity;
 import com.ti.app.mydoctor.gui.customview.GWTextView;
 import com.ti.app.mydoctor.gui.listadapter.UserListAdapter;
 import com.ti.app.telemed.core.util.GWConst;
+import com.ti.app.telemed.core.util.Util;
 
 public class UsersList extends ActionBarListActivity {
 	
@@ -120,8 +121,8 @@ public class UsersList extends ActionBarListActivity {
 		newUserSelectedLL = (LinearLayout) findViewById(R.id.new_user_linear_layout);
 		newUserSelectedLL.setOnClickListener(newUserSelectedClickListener);
 
-		users = DbManager.getDbManager().getNotLoggedUsers();
-		
+        users = DbManager.getDbManager().getNotLoggedUsers();
+
 		if(users != null && users.size() > 0){
 			// create the grid item mapping
 			String[] from = new String[] { KEY_USER_SURNAME, KEY_USER_NAME, KEY_USER_CF };

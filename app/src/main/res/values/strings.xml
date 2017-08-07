@@ -109,7 +109,8 @@
 	<string name="quiz">Questionari</string>
 	<string name="quiz_loading">Caricamento questionario in corso&#8230;</string>
 
-	<string name="demo">Modalità demo</string>
+	<string name="demoRoche">Modalità demo (Coaguchek XS - Roche)</string>
+	<string name="demoOffline">Modalità demo offline</string>
 	<string name="on_off">On/Off </string>
 
 	<string name="totalDuration">Durata totale</string>

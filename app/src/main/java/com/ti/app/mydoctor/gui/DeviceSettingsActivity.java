@@ -441,16 +441,7 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
 		UserDevice tmpUd = (UserDevice) ud.clone();
 		tmpUd.setBtAddress(null);
 		deviceManager.setCurrentDevice(tmpUd);
-		
-		if (!AppUtil.isC40(deviceManager.getCurrentDevice().getDevice())
-                && !AppUtil.isCamera(deviceManager.getCurrentDevice().getDevice())) {
-			// Launch the DeviceScanActivity to see devices and do scan
-			Intent serverIntent = new Intent(this, DeviceScanActivity.class);
-			//startActivity(serverIntent);
-			startActivityForResult(serverIntent, REQUEST_SCAN_DEVICES);	
-		} else {
-            deviceManager.startDiscovery(null);
-		}
+		deviceManager.startDiscovery(null);
 	}
 	
 	//Termina operazione di scansione

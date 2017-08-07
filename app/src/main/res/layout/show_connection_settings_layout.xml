@@ -84,15 +84,15 @@
 					android:hint="@string/target_hint" />
 
 				<TextView
-					android:id="@+id/demo_tv"
+					android:id="@+id/demo_roche_tv"
 					android:layout_below="@id/quiz_et"
 					android:layout_width="fill_parent"
 					android:layout_height="wrap_content"
-					android:text="@string/demo" />
+					android:text="@string/demoRoche" />
 
 				<Switch
-					android:id="@+id/demo_sw"
-					android:layout_below="@id/demo_tv"
+					android:id="@+id/demo_roche_sw"
+					android:layout_below="@id/demo_roche_tv"
 					android:layout_width="wrap_content"
 					android:layout_height="wrap_content"
 					android:text="@string/on_off" />

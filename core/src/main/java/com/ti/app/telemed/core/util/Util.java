@@ -6,6 +6,11 @@ import android.os.Environment;
 import android.util.Log;
 
 import com.ti.app.telemed.core.MyApp;
+import com.ti.app.telemed.core.common.Patient;
+import com.ti.app.telemed.core.common.User;
+import com.ti.app.telemed.core.common.UserMeasure;
+import com.ti.app.telemed.core.dbmodule.DbManager;
+import com.ti.app.telemed.core.exceptions.DbException;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -14,16 +19,17 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Vector;
 
 
 public class Util {
 	
 	private static final String KEY_SHARED_PREFS = "TELEMONITORING_SP";
 	private static final String TAG = "Util";
-    private static final String KEY_DEMO_MODE = "DEMO_MODE";
-
-	public static final String KEY_WARNING_TIMESTAMP = "KEY_WARNING_TIMESTAMP";
+    private static final String KEY_ROCHE_DEMO_MODE = "ROCHE_DEMO_MODE";
 
 	@SuppressLint("NewApi")
 	public static File getDir() {
@@ -143,24 +149,25 @@ public class Util {
 			Log.d(TAG, "storeFile Error: " + e);
 		}
 	}
-	
-	public static boolean isDemoMode() {
-        return getRegistryValue(Util.KEY_DEMO_MODE, false);
-	}
 
-	public static void setDemoMode(boolean demoMode) {
-		setRegistryValue(Util.KEY_DEMO_MODE, demoMode);
-	}
+    public static int getDiffHours(long t1, long t2) {
 
-	public static int getDiffHours(long t1, long t2) {
-		
-		int result = 0;
-		try {
-			result = Math.abs( (int) ((t1-t2) / (60 * 60 * 1000)) );
-		}
-		catch(Exception e) {
-			e.printStackTrace();
-		}
-		return result;
+        int result = 0;
+        try {
+            result = Math.abs( (int) ((t1-t2) / (60 * 60 * 1000)) );
+        }
+        catch(Exception e) {
+            e.printStackTrace();
+        }
+        return result;
+    }
+
+	// Modalità demo che permettono di leggere le misure dal device Coaguchek XS - Roche
+    // anche se la misura è già stata scaricata dal device
+	public static boolean isDemoRocheMode() {
+        return getRegistryValue(Util.KEY_ROCHE_DEMO_MODE, false);
+	}
+	public static void setDemoRocheMode(boolean demoMode) {
+		setRegistryValue(Util.KEY_ROCHE_DEMO_MODE, demoMode);
 	}
 }

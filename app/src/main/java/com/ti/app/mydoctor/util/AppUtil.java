@@ -18,17 +18,10 @@ public class AppUtil {
 	
 	private static final String KEY_SHARED_PREFS = "TELEMONITORING_SP";
 	private static final String TAG = "AppUtil";
-	public static final String KEY_AUTO_UPDATE = "KEY_AUTO_UPDATE";
-	public static final String KEY_AUTO_UPDATE_DATE = "KEY_AUTO_UPDATE_DATE";
-	public static final String KEY_WARNING_TIMESTAMP = "KEY_WARNING_TIMESTAMP";
-	public static final String KEY_FORCE_LOGOUT = "KEY_FORCE_LOGOUT";
-	public static final String KEY_LAST_USER = "KEY_LAST_USER";
 	public static final String KEY_URL_QUIZ = "KEY_URL_QUIZ";
 	public static final String URL_QUIZ_DEFAULT = "group/pazienti/lista-attestati";
 	public static final String KEY_MEASURE_TYPE = "measureType.";
-
 	public static final String KEY_GRID_LAYOUT = "KEY_GRID_LAYOUT";
-
 	
 	@SuppressLint("NewApi")
 	public static File getDir() {
@@ -70,14 +63,6 @@ public class AppUtil {
 	
 	public static String getString(int id){
 		return MyDoctorApp.getContext().getResources().getString(id);
-	}
-	
-	public static boolean isC40(Device device) {
-		return  (
-				(device.getModel() != null && device.getModel().equalsIgnoreCase(GWConst.KANDPR))
-				||
-				(device.getModel() != null && device.getModel().equalsIgnoreCase(GWConst.KANDPS))
-				);
 	}
 	
 	public static boolean isCamera(Device device) {
@@ -250,7 +235,7 @@ public class AppUtil {
 		catch (Exception e) {
 			demoMode = false;
 		}		
-		Log.i(TAG, "isDemoMode=" + demoMode);
+		Log.i(TAG, "isDemoRocheMode=" + demoMode);
 		
 		return demoMode;
 	}

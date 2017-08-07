@@ -1,9 +1,6 @@
 package com.ti.app.mydoctor.util;
 
 public interface AppConst {
-	enum TCmd {
-		ECmdConnByAddr, ECmdConnByUser
-	}
 
 	//Constants for Message Bundles
 	String MESSAGE = "MESSAGE";
@@ -20,7 +17,4 @@ public interface AppConst {
     float MAX_TEMPERATURE = 45;
     char DOT = '.';
 	char COMMA = ',';
-	
-	int MIN_STRIP_CODE = 500;
-	int MAX_STRIP_CODE = 947;
 }

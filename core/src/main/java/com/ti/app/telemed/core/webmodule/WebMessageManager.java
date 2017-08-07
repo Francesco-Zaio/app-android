@@ -223,13 +223,10 @@ public class WebMessageManager {
 			long diffHoursTimestamp = -1;
 			try {
 				diffHoursTimestamp = Util.getDiffHours(new Date().getTime(), sdf.parse(xmlManager.getResponseTimestamp()).getTime());
-			} catch (ParseException e) { }
-			logger.log(Level.INFO, "diffHoursTimestamp=" + diffHoursTimestamp);
-			
-			if (diffHoursTimestamp > 24) {
-				
-				Util.setRegistryValue(Util.KEY_WARNING_TIMESTAMP, true);			
+			} catch (ParseException e) {
+				e.printStackTrace();
 			}
+			logger.log(Level.INFO, "diffHoursTimestamp=" + diffHoursTimestamp);
 		}
 		
 		xmlResultCode = xmlManager.getResponseResultCode();

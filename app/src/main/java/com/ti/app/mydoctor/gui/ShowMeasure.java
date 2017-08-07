@@ -602,34 +602,7 @@ public class ShowMeasure extends ActionBarListActivity{
 				}
 			}
 		}
-	};	
-	
-	/**
-	 * Versione customizzata per misura di OSSIMETRIA
-	 * Metodo che permette di costruire il testo della dialog con i dettagli relativi alla misura
-	 * @param xml variabile di tipo {@code String} che contiene l'xml della misura
-	 * @return variabile di tipo {@code String} che contiene il messaggio da visualizzare sulla dialog
-	 */
-	private String getBodyOxy(String xml) {
-		StringBuilder builder = new StringBuilder();
-		try {
-			(XmlManager.getXmlManager()).parse(xml);
-			Vector<Object> measureList = (XmlManager.getXmlManager()).getParsedData();
-			
-			for (int i = 0; i < measureList.size(); i++) {
-				String name = ((MeasureDetail) (measureList.get(i))).getName();
-				if(name.equals(AppResourceManager.getResource().getString("EGwnurseMeasureOxyMed")) || name.equals(AppResourceManager.getResource().getString("EGwnurseMeasureOxyFreqMed"))) {
-					String value = ((MeasureDetail) (measureList.get(i))).getValue();
-					String unit = ((MeasureDetail) (measureList.get(i))).getUnit();
-					builder.append(name + " " + value + " " + unit + "\n");
-				}
-			}
-		} catch (XmlException e) {
-			e.printStackTrace();
-			createAlertDialog(AppResourceManager.getResource().getString("warningTitle"), AppResourceManager.getResource().getString("errorDbRead"));
-		}
-		return builder.toString();
-	}
+	};
 	
 	protected void startSendingAllMeasures() {
         startService(new Intent(this, SendMeasuresService.class));

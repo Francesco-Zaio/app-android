@@ -896,8 +896,6 @@ public class DbManager {
         }
 	}
 
-    // USER methods
-
     public User createDefaultUser() throws DbException {
         Vector<Object> dataContainer = new Vector<>();
 
@@ -1058,8 +1056,9 @@ public class DbManager {
                 if (c != null) {
                     while (c.moveToNext()) {
                         User u = getUserObject(c);
-                        if ( !u.getId().equalsIgnoreCase( GWConst.DEFAULT_USER_ID ) )
-                            ret.add(u);
+                        if (u.getId().equalsIgnoreCase( GWConst.DEFAULT_USER_ID ) )
+                            continue;
+                        ret.add(u);
                     }
                 }
             } finally {
@@ -1098,8 +1097,11 @@ public class DbManager {
     public void deleteUser(String idUser) throws DbException {
         synchronized (this) {
             try {
+                // on delete cascade clause ensures all related rows are also removed.
+                // Only Patient table should be checked due to the many to many relationship
                 int rows = mDb.delete("USER", "ID = ?", new String[] {idUser});
-                Log.i(TAG, "Eliminato " + rows + " utente dal db: "+idUser);
+                rows += mDb.delete("PATIENT", "ID NOT IN (SELECT ID_PATIENT FROM USER_PATIENT)", null);
+                Log.i(TAG, "Eliminate " + rows + " righe dell utente " + idUser + " dal db");
             } catch (Exception e) {
                 e.printStackTrace();
                 logger.log(Level.SEVERE, e.getMessage());

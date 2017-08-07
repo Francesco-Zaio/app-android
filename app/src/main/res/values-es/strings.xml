@@ -111,7 +111,8 @@
 	
 	<string name="totalDuration">Duración total</string>
 	<string name="readLoop">Muestreo continuo</string>
-    <string name="demo">modo de demostración</string>
+    <string name="demoRoche">modo de demostración (Coaguchek XS - Roche)</string>
+	<string name="demoOffline">modo de demostración \'offline\'</string>
 	<string name="on_off">"On/Off "</string>
 
 </resources>

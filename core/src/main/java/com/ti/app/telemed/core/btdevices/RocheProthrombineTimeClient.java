@@ -209,7 +209,7 @@ public class RocheProthrombineTimeClient implements DeviceHandler,
 	 */
 	public RocheProthrombineTimeClient(DeviceListener aScheduler, Measure m) {
 		
-		demoMode  = Util.isDemoMode();
+		demoMode  = Util.isDemoRocheMode();
 		iState = TState.EWaitingToGetDevice;
 		iScheduler = aScheduler;
         iMeasure = m;

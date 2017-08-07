@@ -28,8 +28,7 @@ public class UserManager implements Runnable, WebManagerResultEventListener {
         IDLE,
         TALK_TO_WEB,
         CHANGE_PWD,
-        TALK_TO_DB,
-        RETURN_LOGIN_FAILED
+        TALK_TO_DB
     }
 
 	private static final String TAG = "UserManager";
@@ -282,15 +281,20 @@ public class UserManager implements Runnable, WebManagerResultEventListener {
 		if(code!=null){
 			logger.log(Level.INFO, code.toString());
             if(code.equals(XmlErrorCode.PLATFORM_ERROR))
+            	//
                 sendMessage(ERROR_OCCURED, ResourceManager.getResource().getString("errorPlatform"));
             else if(code.equals(XmlErrorCode.PASSWORD_WRONG_TOO_MANY_TIMES))
+            	// Troppi tentativi di autenticazione falliti, utente temporaneamente bloccato
                 sendMessage(USER_LOCKED, ResourceManager.getResource().getString("passwordWrongLock"));
             else if(code.equals(XmlErrorCode.USER_BLOCKED)) {
+				// Utente disattivato
 				setUserBlocked(login);
 				sendMessage(USER_BLOCKED, ResourceManager.getResource().getString("userBlocked"));
 			} else if(code.equals(XmlErrorCode.BAD_PASSWORD)) {
+				// La nuova password inviata non rispetta i requisiti minimi di sicurezza
                 sendMessage(BAD_PASSWORD, ResourceManager.getResource().getString("badPassword"));
             }else
+            	// errore generico non identificato
                 sendMessage(ERROR_OCCURED, "");
         }
 	}
@@ -349,12 +353,6 @@ public class UserManager implements Runnable, WebManagerResultEventListener {
 							currentOpOn = Op.IDLE;
 						}
                         break;
-                    case RETURN_LOGIN_FAILED:
-            			// the login failed and we have to require to the user to retry to
-                    	// log in
-                    	sendMessage(LOGIN_FAILED, ResourceManager.getResource().getString("LoginDialog.badCredentials"));
-            			currentOpOn = Op.IDLE;
-						break;
                 }
             }
         }

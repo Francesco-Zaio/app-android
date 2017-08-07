@@ -27,6 +27,7 @@ import com.ti.app.mydoctor.MyDoctorApp;
 import com.ti.app.mydoctor.AppResourceManager;
 import com.ti.app.mydoctor.util.AppUtil;
 import com.ti.app.telemed.core.common.ServerConf;
+import com.ti.app.telemed.core.common.UserMeasure;
 import com.ti.app.telemed.core.dbmodule.DbManager;
 import com.ti.app.telemed.core.exceptions.DbException;
 import com.ti.app.mydoctor.gui.customview.GWTextView;
@@ -43,7 +44,7 @@ public class ShowUtilitySettings extends ActionBarActivity {
 	private EditText hostEt;
 	private EditText portEt;
 	private EditText quizEt;
-	private Switch demoSw;
+	private Switch demoRocheSw;
 	private Button okButton;
 	private Button cancelButton;
 
@@ -98,7 +99,7 @@ public class ShowUtilitySettings extends ActionBarActivity {
 		hostEt = (EditText) findViewById(R.id.host_et);
 		portEt = (EditText) findViewById(R.id.port_et);
 		quizEt = (EditText) findViewById(R.id.quiz_et);
-        demoSw = (Switch) findViewById(R.id.demo_sw);
+        demoRocheSw = (Switch) findViewById(R.id.demo_roche_sw);
 
 		okButton = (Button) findViewById(R.id.confirm_button);
 		cancelButton = (Button) findViewById(R.id.cancel_button);
@@ -121,8 +122,7 @@ public class ShowUtilitySettings extends ActionBarActivity {
 			hostEt.setText(sc.getIp());
 			portEt.setText(sc.getPort());
 			quizEt.setText(AppUtil.getRegistryValue(AppUtil.KEY_URL_QUIZ, AppUtil.URL_QUIZ_DEFAULT));
-            demoSw.setChecked(Util.isDemoMode());
-
+            demoRocheSw.setChecked(Util.isDemoRocheMode());
         } catch (DbException e) {
 			showDialog(ShowUtilitySettings.ERROR_DIALOG);
 		}
@@ -237,7 +237,7 @@ public class ShowUtilitySettings extends ActionBarActivity {
 					sc.setTargetCfg(defaultSC.getTargetCfgDef());
 					sc.setTargetSend(defaultSC.getTargetSendDef());
 					MyDoctorApp.getConfigurationManager().updateConfiguration(sc);
-                    Util.setDemoMode(demoSw.isChecked());
+                    Util.setDemoRocheMode(demoRocheSw.isChecked());
 					finish();
 				} catch (DbException e) {
 					e.printStackTrace();

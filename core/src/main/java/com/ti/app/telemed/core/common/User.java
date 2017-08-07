@@ -11,7 +11,7 @@ public class User implements Serializable {
 	private String cf; // codice fiscale
 	private String name;
 	private String surname;
-	private long timestamp;
+	private long timestamp;  // set to current time every time the User data is Updated on the DB
 	private String login;
 	private String password;
 	private boolean hasAutoLogin;

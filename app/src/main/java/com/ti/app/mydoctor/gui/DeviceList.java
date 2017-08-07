@@ -34,11 +34,10 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
-import android.text.Html;
-import android.text.Html.ImageGetter;
 import android.text.InputType;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.util.SparseArray;
 import android.util.SparseIntArray;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
@@ -92,12 +91,10 @@ import com.ti.app.mydoctor.gui.listadapter.MainMenuListAdapter;
 import com.ti.app.mydoctor.util.DialogManager;
 
 import java.lang.ref.WeakReference;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.Vector;
@@ -127,7 +124,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	private static final int ITEM_USER_LIST = 4;
 	private static final int ITEM_USER_NEW = 5;
 	private static final int ITEM_USER_OPTIONS = 6;
-	private static final int ITEM_USER_SHEALTH_OPTIONS = 7;
 	private static final int ITEM_DEVICES_MANAGEMENT = 8;
 	private static final int ITEM_ABOUT = 9;
 	private static final int ITEM_LOGOUT = 10;
@@ -138,41 +134,21 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
     private static final int USER_SELECTION = 2;
     private static final int REQUEST_ENABLE_BT = 3;
     private static final int REQUEST_SCAN_DEVICES = 4;
-    private static final int REQUEST_DISCOVERABLE = 5;
     public static final int PATIENT_SELECTION = 6;
     public static final int PATIENT_SELECTION_2 = 7;
-    public static final int PATIENT_SELECTION_SEND_ALL = 8;
     public static final int MANUAL_MEASURE_ENTRY = 9;
-    public static final int CALIBRATE_ENTRY = 10;
         
     //Dialog
     private static final int MEASURE_RESULT_DIALOG = 1;
     private static final int PROGRESS_DIALOG = 2;
     private static final int ALERT_DIALOG = 3;
-	private static final int STATUS_DIALOG = 6;
 	private static final int LOGIN_DIALOG = 8;
-	private static final int SIMPLE_DIALOG_WITH_CLOSE = 10;
+	private static final int ERROR_EXIT_APP_DIALOG = 10;
 	private static final int CONFIRM_PATIENT_DIALOG = 11;
 	private static final int LIST_OR_NEW_USER_DIALOG = 13;
-	private static final int SIMPLE_DIALOG_WITHOUT_CLOSE = 14;
+	private static final int SIMPLE_DIALOG = 14;
 	private static final int PRECOMPILED_LOGIN_DIALOG = 16;
 	private static final int CONFIRM_CLOSE_DIALOG = 18;
-	private static final int MEASURE_RESULT_DIALOG_SEND_ALL = 19;
-    
-    private static final String SEND_STATUS = "SEND_STATUS";
-	private static final String SAVE_STATUS = "SAVE_STATUS";
-
-	private static final int DISCOVERABLE_DURATION = 120;
-
-	//Stato della calibrazione
-	private enum TCalibrateState {
-		EIdle,
-		EMeasureOn_ScanOn,
-		EMeasureOn_ScanOff,
-		EMeasureOff_ScanOn,
-		EMeasureOff_ScanOff
-	}
-	protected TCalibrateState calibrateState = TCalibrateState.EIdle;
     
     private static ProgressDialog progressDialog;
     
@@ -224,10 +200,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	
 	private String[] patients;
 	private List<UserPatient> patientList;
-		
-	public static DeviceList ACTIVE_INSTANCE;
-
-    private boolean fastRestart = false;
 	
 	//Gestione menu laterale sinistro
 	private DrawerLayout mDrawerLayout;
@@ -351,7 +323,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
             	}
             }
         };
-        mDrawerLayout.setDrawerListener(mActionBarDrawerToggle);
+        mDrawerLayout.addDrawerListener(mActionBarDrawerToggle);
 
         //Inizializza la ListFragment con l'elenco dei dispositivi
         setFragmentView();
@@ -363,8 +335,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 
 		userManager = UserManager.getUserManager();
 		userManager.setHandler(userManagerHandler);
-
-		ACTIVE_INSTANCE = this;
 
         if ((ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_WIFI_STATE) != PackageManager.PERMISSION_GRANTED) ||
                 (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) ||
@@ -417,10 +387,10 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
             if (activity != null) {
                 switch(msg.what) {
                     case LOGIN_DIALOG:
-                        activity.showDialog(LIST_OR_NEW_USER_DIALOG);
+                        activity.myShowDialog(LIST_OR_NEW_USER_DIALOG);
                         break;
                     case PRECOMPILED_LOGIN_DIALOG:
-                        activity.showDialog(PRECOMPILED_LOGIN_DIALOG);
+                        activity.myShowDialog(PRECOMPILED_LOGIN_DIALOG);
                         break;
                 }
             }
@@ -433,11 +403,10 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 
         @Override
         protected Void doInBackground(Void... unused) {
-
             try {
                 errorFound = false;
                 MyDoctorApp.getConfigurationManager().init();
-                checkActiveUser();
+                checkUser(DbManager.getDbManager().getActiveUser());
             } catch (Exception e) {
                 e.printStackTrace();
                 Log.e(TAG, "ERROR on doInBackground: " + e.getMessage());
@@ -451,7 +420,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
         @Override
         protected void onPostExecute(Void unused) {
             if(errorFound)
-                showDialog(SIMPLE_DIALOG_WITH_CLOSE);
+                myShowDialog(ERROR_EXIT_APP_DIALOG);
         }
     }
 
@@ -472,9 +441,10 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 		} catch (Exception e) {
 			Log.e(TAG, "ERROR on onResume: " + e.getMessage());
 		}
-		if (AppUtil.getRegistryValue(AppUtil.KEY_FORCE_LOGOUT, false) && UserManager.getUserManager().getCurrentPatient() != null) {
+
+		User u = UserManager.getUserManager().getCurrentUser();
+		if ((u != null) && u.isBlocked()) {
     		DialogManager.showToastMessage(DeviceList.this, AppResourceManager.getResource().getString("userBlocked"));
-			AppUtil.setRegistryValue(AppUtil.KEY_FORCE_LOGOUT, false);
 			measureList = new ArrayList<>();
 			setupView();
 			resetView();
@@ -487,24 +457,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	public void onDestroy(){
 		super.onDestroy();
 		Log.i(TAG, "onDestroy()");
-		if (fastRestart) {
-			Log.i(TAG, "fastRestart()");
-			fastRestart = false;
-			return;
-		}
-
-		ACTIVE_INSTANCE = null;
 		UserManager.getUserManager().setCurrentPatient(null);
-		if (DbManager.getDbManager() != null) {
-			User activeUser = DbManager.getDbManager().getActiveUser();
-			if (activeUser != null) {
-				Log.d(TAG, "auto=" + activeUser.getHasAutoLogin());
-				Log.d(TAG, "exit=" + activeUser.getLogin());
-
-				if( !activeUser.getId().equalsIgnoreCase( GWConst.DEFAULT_USER_ID ) )
-					AppUtil.setRegistryValue(AppUtil.KEY_LAST_USER, activeUser.getId());
-			}
-		}
 	}
 
 	/**
@@ -763,9 +716,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
     		selectedItemBundle.putInt(SELECTED_MENU_ITEM, ITEM_USER_NEW);
     	} else if( tv.getText().toString().equalsIgnoreCase(getResources().getString(R.string.settings)) ){
     		selectedItemBundle.putInt(SELECTED_MENU_ITEM, ITEM_USER_OPTIONS);
-    	} else if( tv.getText().toString().equalsIgnoreCase(getResources().getString(R.string.shealth_settings)) ){
-			selectedItemBundle.putInt(SELECTED_MENU_ITEM, ITEM_USER_SHEALTH_OPTIONS);
-		}
+    	}
 	}
 
     private void selectedMenuItemAction() {
@@ -785,7 +736,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                     if(patients == null || patients.length == 0) {
                         dataBundle = new Bundle();
                         dataBundle.putString(AppConst.MESSAGE, getString(R.string.noPatient));
-                        showDialog(SIMPLE_DIALOG_WITHOUT_CLOSE);
+                        myShowDialog(SIMPLE_DIALOG);
                     }
                     else {
                         viewMeasureBundle = new Bundle();
@@ -808,15 +759,13 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                 dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("KMsgConf"));
                 dataBundle.putBoolean(AppConst.MESSAGE_CANCELLABLE, true);
                 dataBundle.putBoolean(AppConst.IS_CONFIGURATION, true);
-                loginET = null;
-                pwdET = null;
-                doLogin();
+                userManager.logInUser();
                 break;
             case ITEM_USER_LIST:
                 showUsers(USER_LIST);
                 break;
             case ITEM_USER_NEW:
-                showDialog(LOGIN_DIALOG);
+                myShowDialog(LOGIN_DIALOG);
                 break;
             case ITEM_USER_OPTIONS:
                 Intent intentSettingsUser = new Intent(DeviceList.this, ShowUserSettings.class);
@@ -1075,7 +1024,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 			if (patients == null || patients.length == 0) {
 				dataBundle = new Bundle();
 				dataBundle.putString(AppConst.MESSAGE, getString(R.string.noPatient));
-				showDialog(SIMPLE_DIALOG_WITHOUT_CLOSE);
+				myShowDialog(SIMPLE_DIALOG);
 			}
 			else {
 				startMeasureBundle = new Bundle();
@@ -1257,7 +1206,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	@Override
 	public void onBackPressed() {
 		Log.i(TAG, "Premuto il tasto back");
-		showDialog(CONFIRM_CLOSE_DIALOG);
+		myShowDialog(CONFIRM_CLOSE_DIALOG);
 	}
 
 	@Override
@@ -1315,7 +1264,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 		    		if (patients == null || patients.length == 0) {
 		    			dataBundle = new Bundle();
 						dataBundle.putString(AppConst.MESSAGE, getString(R.string.noPatient));
-						showDialog(SIMPLE_DIALOG_WITHOUT_CLOSE);
+						myShowDialog(SIMPLE_DIALOG);
 		    		}
 		    		else {
 		    			viewMeasureBundle = new Bundle();
@@ -1457,11 +1406,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 
 		//Rimuove paziente e utenti
 		UserManager.getUserManager().setCurrentPatient(null);
-		User activeUser = DbManager.getDbManager().getActiveUser();
-		if (activeUser != null) {
-			if( !activeUser.getId().equalsIgnoreCase( GWConst.DEFAULT_USER_ID ) )
-				AppUtil.setRegistryValue(AppUtil.KEY_LAST_USER, activeUser.getId());
-		}
 		try {
             DbManager.getDbManager().setCurrentUser(null);
         } catch (DbException e) {
@@ -1526,19 +1470,16 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 			// startConfig() will then be called during onActivityResult
 			requestEnableBT();
 		} else {
-			startConfig();
+            deviceManager.startConfig();
 		}
 	}
 
 	private void startScan() {
-		if (!AppUtil.isC40(deviceManager.getCurrentDevice().getDevice())
-				&& !AppUtil.isCamera(deviceManager.getCurrentDevice().getDevice())) {
+		if (!AppUtil.isCamera(deviceManager.getCurrentDevice().getDevice())) {
 			// Launch the DeviceScanActivity to see devices and do scan
 			Intent serverIntent = new Intent(this, DeviceScanActivity.class);
 			//startActivity(serverIntent);
 			startActivityForResult(serverIntent, REQUEST_SCAN_DEVICES);
-		} else {
-			deviceManager.startDiscovery(null);
 		}
 	}
 
@@ -1576,8 +1517,8 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	}
 
 	public void showUserDialog(/*View button*/) {
-		removeDialog(PRECOMPILED_LOGIN_DIALOG);
-		removeDialog(LOGIN_DIALOG);
+		myRemoveDialog(PRECOMPILED_LOGIN_DIALOG);
+		myRemoveDialog(LOGIN_DIALOG);
 		showUsers(USER_SELECTION);
 	}
 
@@ -1591,24 +1532,12 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 
     	case USER_LIST:
     		if(resultCode == RESULT_OK){
-	    		if(data != null){
-	    			Bundle extras = data.getExtras();
-	    			User user = (User) extras.get(UsersList.SELECTED_USER);
-                    if (user == null) {
-                        break;
-                    }
-	    			Log.i(TAG, "Login utente " + user.getName() + " da db");
-	    			if(!user.getHasAutoLogin() ||  AppUtil.getRegistryValue(AppUtil.KEY_FORCE_LOGOUT + user.getId(), false)) {
-	    				userDataBundle = new Bundle();
-	    				userDataBundle.putBoolean("CHANGEABLE", false);
-	    				userDataBundle.putString("LOGIN", user.getLogin());
-	    				showDialog(PRECOMPILED_LOGIN_DIALOG);
-	    			}
-	    			else
-	    				userManager.selectUser(user);
-	    		} else {
-	    			showDialog(LOGIN_DIALOG);
-	    		}
+                User user = null;
+	    		if(data != null) {
+                    Bundle extras = data.getExtras();
+                    user = (User) extras.get(UsersList.SELECTED_USER);
+                }
+                checkUser(user);
     		} else if(resultCode == UsersList.RESULT_DB_ERROR){
     			showErrorDialog(AppResourceManager.getResource().getString("errorDb"));
     		}
@@ -1622,22 +1551,22 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 					if (user != null) {
 						Log.i(TAG, "Login utente " + user.getName() + " da db");
 
-						if (!user.getHasAutoLogin() || AppUtil.getRegistryValue(AppUtil.KEY_FORCE_LOGOUT + user.getId(), false)) {
+						if (!user.getHasAutoLogin() || user.isBlocked()) {
 							userDataBundle = new Bundle();
 							userDataBundle.putBoolean("CHANGEABLE", false);
 							userDataBundle.putString("LOGIN", user.getLogin());
-							showDialog(PRECOMPILED_LOGIN_DIALOG);
+							myShowDialog(PRECOMPILED_LOGIN_DIALOG);
 						}
 					}
 	    			else
 	    				userManager.selectUser((User)null);
 	    		} else {
-	    			showDialog(LOGIN_DIALOG);
+	    			myShowDialog(LOGIN_DIALOG);
 	    		}
     		} else if(resultCode == UsersList.RESULT_DB_ERROR){
     			showErrorDialog(AppResourceManager.getResource().getString("errorDb"));
     		} else {
-    			showDialog(PRECOMPILED_LOGIN_DIALOG);
+    			myShowDialog(PRECOMPILED_LOGIN_DIALOG);
     		}
     		break;
     	case PATIENT_SELECTION:
@@ -1679,7 +1608,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 					UserManager.getUserManager().setCurrentPatient(p);
     			}
     		}
-    		showDialog(MEASURE_RESULT_DIALOG);
+    		myShowDialog(MEASURE_RESULT_DIALOG);
     		break;
 
     	case REQUEST_ENABLE_BT:
@@ -1688,7 +1617,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
             	if(isPairing){
             		startScan();
             	} else if(isConfig){
-            		startConfig();
+                    deviceManager.startConfig();
             	} else if(isManualMeasure){
             		startManualMeasure();
             	} else {
@@ -1700,27 +1629,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                 Toast.makeText(this, R.string.bt_not_enabled, Toast.LENGTH_SHORT).show();
             }
             break;
-    	case REQUEST_DISCOVERABLE:
-    		if (resultCode == DISCOVERABLE_DURATION) {
-    			if(!deviceManager.isOperationRunning()){
-	            	if(isConfig){
-	            		startConfig();
-	            	} else {
-	            		startMeasure();
-	            	}
-    			} else {
-    				Log.i(TAG, "OPERATION ALREADY RUNNING");
-    			}
-            } else {
-            	// User did not enable Bluetooth discoverability
-                Log.i(TAG, "BT discoverability not enabled by user");
-                if(deviceManager.isOperationRunning()){
-                	Log.i(TAG, "Stop running device operation");
-                	closeProgressDialog();
-                	stopDeviceOperation(-1);
-                }
-            }
-    		break;
     	case REQUEST_SCAN_DEVICES:
     		if (resultCode == Activity.RESULT_OK){
     			int position = data.getExtras().getInt(DeviceScanActivity.SELECTED_DEVICE_POSITION);
@@ -1743,26 +1651,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
     	    	 cancelManualMeasure();
     	     }
     		 break;
-
-    	case CALIBRATE_ENTRY:
-    		if(resultCode == RESULT_OK) {
-    			switch( calibrateState ) {
-    			case EMeasureOn_ScanOn:
-    				doMeasure();
-    				doScan();
-    				break;
-    			case EMeasureOn_ScanOff:
-    				doMeasure();
-    				break;
-    			case EMeasureOff_ScanOn:
-    				doScan();
-    				break;
-    			case EIdle:
-    			case EMeasureOff_ScanOff:
-    				break;
-    			}
-	   	     }
-	   		 break;
     	}
 	}
 
@@ -1909,7 +1797,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 				if (patientList == null) {
 					dataBundle = new Bundle();
 					dataBundle.putString(AppConst.MESSAGE, getString(R.string.noPatient));
-					showDialog(SIMPLE_DIALOG_WITHOUT_CLOSE);
+					myShowDialog(SIMPLE_DIALOG);
 				}
 				else if (patientList.size() != 1) {
 					patients = new String[patientList.size()];
@@ -1927,7 +1815,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 					if(patients == null || patients.length == 0) {
 						dataBundle = new Bundle();
 						dataBundle.putString(AppConst.MESSAGE, getString(R.string.noPatient));
-						showDialog(SIMPLE_DIALOG_WITHOUT_CLOSE);
+						myShowDialog(SIMPLE_DIALOG);
 					}
 					else {
 						startSelectPatientActivity();
@@ -1977,11 +1865,11 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
             switch (msg.what) {
                 case DeviceManager.MESSAGE_STATE:
                     dataBundle.putBoolean(AppConst.IS_MEASURE, true);
-                    activity.showDialog(PROGRESS_DIALOG);
+                    activity.myShowDialog(PROGRESS_DIALOG);
                     break;
                 case DeviceManager.MESSAGE_STATE_WAIT:
                     dataBundle.putBoolean(AppConst.IS_MEASURE, true);
-                    activity.showDialog(PROGRESS_DIALOG);
+                    activity.myShowDialog(PROGRESS_DIALOG);
                     break;
                 case DeviceManager.ASK_SOMETHING:
                     activity.askSomething(
@@ -1999,16 +1887,16 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                     activity.refreshList();
                     activity.closeProgressDialog();
                     activity.measureData = (Measure) msg.getData().getSerializable(DeviceManager.MEASURE);// MeasureManager.getMeasureManager().saveMeasureData(measureData);
-                    activity.showDialog(MEASURE_RESULT_DIALOG);
+                    activity.myShowDialog(MEASURE_RESULT_DIALOG);
                     break;
                 case DeviceManager.ERROR_STATE:
                     activity.closeProgressDialog();
-                    activity.showDialog(ALERT_DIALOG);
+                    activity.myShowDialog(ALERT_DIALOG);
                     break;
                 case DeviceManager.CONFIG_READY:
                     activity.refreshList();
                     activity.closeProgressDialog();
-                    activity.showDialog(ALERT_DIALOG);
+                    activity.myShowDialog(ALERT_DIALOG);
                     break;
             }
         }
@@ -2029,8 +1917,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
             if (activity == null)
                 return;
 
-            activity.showWarningMessage();
-
 			switch (msg.what) {
 			case UserManager.USER_CHANGED:
 				Log.d(TAG, " UserManager.USER_CHANGED: runningConfig=" + activity.runningConfig);
@@ -2041,7 +1927,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 				try {
                     activity.titleTV.setText(UserManager.getUserManager().getCurrentUser().getName() + "\n" + UserManager.getUserManager().getCurrentUser().getSurname());
                     activity.fitTextInPatientNameLabel(activity.getString(R.string.selectPatient));
-                    activity.removeDialog(PROGRESS_DIALOG);
+                    activity.myRemoveDialog(PROGRESS_DIALOG);
                     activity.setupDeviceList();
 
 					//Forzo la ricostruzione del menu
@@ -2059,52 +1945,39 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                 activity.runningConfig = false;
 				break;
 			case UserManager.ERROR_OCCURED:
+            case UserManager.BAD_PASSWORD:
 				Log.d(TAG, "UserManager.ERROR_OCCURED:");
-				if (activity.runningConfig) {
-					if (!AppUtil.getRegistryValue(AppUtil.KEY_FORCE_LOGOUT, false)) {
-						try {
-							User activeUser = DbManager.getDbManager().getActiveUser();
-							if (activeUser == null && (activity.loginET != null && activity.pwdET != null && activity.pwdET.getText().length() > 0)) {
-								UserManager.getUserManager().logInUserFromDb(activity.loginET.getText().toString(), activity.pwdET.getText().toString());
-                                activity.pwdET.setText("");
-								break;
-							}
-							else if (activeUser != null){
-                                activity.userManager.logInUserFromDb(activeUser.getLogin(), activeUser.getPassword());
-							}
-						} catch (Exception e) {
-							Log.e(TAG, "logInUserFromDb: " + e);
-						}
-					}
-				}
-				Log.i(TAG, "userManangerHandler: error occurred");
-                activity.removeDialog(PROGRESS_DIALOG);
+                activity.myRemoveDialog(PROGRESS_DIALOG);
 				dataBundle = msg.getData();
 				dataBundle.putBoolean(AppConst.LOGIN_ERROR, false);
-                activity.showDialog(ALERT_DIALOG);
+                activity.myShowDialog(ALERT_DIALOG);
                 activity.runningConfig = false;
-
-				if (AppUtil.getRegistryValue(AppUtil.KEY_FORCE_LOGOUT, false)) {
-					DialogManager.showToastMessage(activity, AppResourceManager.getResource().getString("userBlocked"));
-					AppUtil.setRegistryValue(AppUtil.KEY_FORCE_LOGOUT, false);
-                    activity.measureList = new ArrayList<>();
-                    activity.setupView();
-                    activity.resetView();
-					UserManager.getUserManager().setCurrentPatient(null);
-                    activity.setCurrentUserLabel("");
-                    activity.currentPatientLL.setVisibility(View.GONE);
-                    activity.doLogout();
-		    	}
 				break;
 			case UserManager.LOGIN_FAILED:
-			case UserManager.BAD_PASSWORD:
+                Log.e(TAG, "userManagerHandler: login failed");
+                activity.myRemoveDialog(PROGRESS_DIALOG);
+                dataBundle = msg.getData();
+                dataBundle.putBoolean(AppConst.LOGIN_ERROR, true);
+                activity.myShowDialog(ALERT_DIALOG);
+                activity.runningConfig = false;
+                break;
 			case UserManager.USER_BLOCKED:
-			case UserManager.USER_LOCKED:
-				Log.e(TAG, "userManagerHandler: login failed");
-                activity.removeDialog(PROGRESS_DIALOG);
+                Log.e(TAG, "userManagerHandler: User Blocked");
+			    DialogManager.showToastMessage(activity, AppResourceManager.getResource().getString("userBlocked"));
+                activity.measureList = new ArrayList<>();
+                activity.setupView();
+                activity.resetView();
+                UserManager.getUserManager().setCurrentPatient(null);
+                activity.setCurrentUserLabel("");
+                activity.currentPatientLL.setVisibility(View.GONE);
+                activity.doLogout();
+                break;
+            case UserManager.USER_LOCKED:
+				Log.e(TAG, "userManagerHandler: User Locked");
+                activity.myRemoveDialog(PROGRESS_DIALOG);
 				dataBundle = msg.getData();
-				dataBundle.putBoolean(AppConst.LOGIN_ERROR, true);
-                activity.showDialog(ALERT_DIALOG);
+				dataBundle.putBoolean(AppConst.LOGIN_ERROR, false);
+                activity.myShowDialog(ALERT_DIALOG);
                 activity.runningConfig = false;
 				break;
 			}
@@ -2116,8 +1989,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 		if(currentUser != null){
 			//L'utente corrente diventa utente attivo
 			currentUser.setActive(true);
-			//Registra il suo ID
-			AppUtil.setRegistryValue(AppUtil.KEY_LAST_USER, currentUser.getId());
 			//Modifica il DB
 			DbManager.getDbManager().setCurrentUser(currentUser);
 
@@ -2131,7 +2002,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 			if (patientList == null || patientList.size() == 0) {
 				dataBundle = new Bundle();
 				dataBundle.putString(AppConst.MESSAGE, getString(R.string.noPatient));
-				showDialog(SIMPLE_DIALOG_WITHOUT_CLOSE);
+				myShowDialog(SIMPLE_DIALOG);
 			}
 			else if (patientList.size() != 1) {
 				setCurrentUserLabel(AppResourceManager.getResource().getString("selectPatient"));
@@ -2147,7 +2018,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	        	if (patients == null || patients.length == 0) {
 	        		dataBundle = new Bundle();
 					dataBundle.putString(AppConst.MESSAGE, getString(R.string.noPatient));
-					showDialog(SIMPLE_DIALOG_WITHOUT_CLOSE);
+					myShowDialog(SIMPLE_DIALOG);
 	        	}
 	        	else {
 	        		startSelectPatientActivity();
@@ -2168,31 +2039,19 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 		}
 	}
 
-    protected void showWarningMessage() {
 
-    	if (AppUtil.getRegistryValue(AppUtil.KEY_WARNING_TIMESTAMP, false)) {
-
-    		DialogManager.showToastMessage(DeviceList.this, AppResourceManager.getResource().getString("warningDate"));
-			AppUtil.setRegistryValue(AppUtil.KEY_WARNING_TIMESTAMP, false);
-		}
-	}
-
-/*
-    HashMap<Integer, Dialog> mDialogs = new HashMap<Integer, Dialog>();
-
+    SparseArray<Dialog> mDialogs = new SparseArray<>();
     public void myShowDialog(int dialogId){
 
         Dialog d = mDialogs.get(dialogId);
         if (d == null){
-
             d = myOnCreateDialog(dialogId);
             mDialogs.put(dialogId, d);
         }
         if (d != null){
-            myOnPrepareDialog(d, dialogId);
             d.show();
+            myOnPrepareDialog(dialogId, d);
         }
-
     }
 
     public void myRemoveDialog(int dialogId) {
@@ -2200,18 +2059,14 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
         if (d != null)
             d.dismiss();
     }
-    */
 
-	@Override
-	protected Dialog onCreateDialog(int id) {
+	protected Dialog myOnCreateDialog(int id) {
     	Context ctx = this;
         ctx.setTheme(R.style.Theme_MyDoctorAtHome_Light);
         AlertDialog.Builder builder = new AlertDialog.Builder(ctx);
         LayoutInflater inflater = (LayoutInflater) ctx.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 
-    	//AlertDialog.Builder builder = new AlertDialog.Builder(this);
-    	//LayoutInflater inflater = (LayoutInflater) getApplicationContext().getSystemService(LAYOUT_INFLATER_SERVICE);
-		CheckBox pwdCB;
+        CheckBox pwdCB;
 
 		switch (id) {
 		case LIST_OR_NEW_USER_DIALOG:
@@ -2224,9 +2079,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 		case MEASURE_RESULT_DIALOG:
 			Log.i(TAG, "Visualizzo dialog MEASURE_RESULT_DIALOG");
             return createMeasureResultDialog(measureData);
-		case MEASURE_RESULT_DIALOG_SEND_ALL:
-			Log.i(TAG, "Visualizzo dialog MEASURE_RESULT_DIALOG_SEND_ALL");
-            return createMeasureResultDialog(measureData, PATIENT_SELECTION_SEND_ALL);
         case PROGRESS_DIALOG:
         	return createProgressDialog(dataBundle);
         case ALERT_DIALOG:
@@ -2333,23 +2185,14 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
         	return builder.create();
         case CONFIRM_PATIENT_DIALOG:
         	return createConfirmPatientDialog();
-        case SIMPLE_DIALOG_WITH_CLOSE:
+        case ERROR_EXIT_APP_DIALOG:
         	builder.setMessage(dataBundle.getString(AppConst.MESSAGE));
-        	builder.setNeutralButton("Ok", simple_dialog_with_close_click_listener);
+        	builder.setNeutralButton("Ok", error_exit_app_dialog_click_listener);
         	beep();
         	return builder.create();
-        case SIMPLE_DIALOG_WITHOUT_CLOSE:
+        case SIMPLE_DIALOG:
         	builder.setMessage(dataBundle.getString(AppConst.MESSAGE));
-        	builder.setNeutralButton("Ok", simple_dialog_without_close_click_listener);
-        	beep();
-        	return builder.create();
-        case STATUS_DIALOG:
-        	if(dataBundle.getString(SEND_STATUS) != null){
-        		builder.setMessage(dataBundle.getString(SEND_STATUS));
-        	} else {
-        		builder.setMessage(dataBundle.getString(SAVE_STATUS));
-        	}
-        	builder.setNeutralButton("Ok", status_dialog_click_listener);
+        	builder.setNeutralButton("Ok", simple_dialog_click_listener);
         	beep();
         	return builder.create();
         default:
@@ -2357,8 +2200,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 		}
 	}
 
-    @Override
-	protected void onPrepareDialog(int id, Dialog dialog) {
+	protected void myOnPrepareDialog(int id, Dialog dialog) {
         if (dataBundle == null) {
             Log.e(TAG, "onPrepareDialog: dataBundle is null");
             return;
@@ -2367,59 +2209,11 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 		switch(id) {
         case PROGRESS_DIALOG:
             ((ProgressDialog)dialog).setMessage(dataBundle.getString(AppConst.MESSAGE));
-    		String msg = dataBundle.getString(AppConst.MESSAGE);
-            if (msg != null && msg.startsWith(AppResourceManager.getResource().getString("KReliabilityStm") + ":") &&
-                    msg.endsWith("%")) {
-	        	String rvalue = msg.split(":")[1].trim().split("%")[0].trim();
-	        	Log.i(TAG, "Reliability Value=" + rvalue);
-
-	        	int reliabilityValue;
-	        	try {
-	        		reliabilityValue = Integer.parseInt(rvalue);
-	        	}
-	        	catch (Exception e) {
-	        		reliabilityValue = 0;
-				}
-	        	String color = "yellow";
-	        	((ProgressDialog)dialog).getButton(DialogInterface.BUTTON_POSITIVE).setEnabled(false);
-
-	        	int traffic = 1;
-	        	if (reliabilityValue<70) {
-	        		traffic = 0;
-	        		color = "red";
-	        	}
-	        	else {
-	        		if (reliabilityValue>90) {
-	        			traffic = 2;
-	        			color = "#7BFF02";
-	        			((ProgressDialog)dialog).getButton(DialogInterface.BUTTON_POSITIVE).setEnabled(true);
-	        		}
-	        	}
-
-	        	((ProgressDialog)dialog).setMessage(Html.fromHtml(
-	               "<img src=\"file:///android_res/drawable/traffic" + traffic + ".png\" /><h1>" + AppResourceManager.getResource().getString("KReliabilityStm") +": <font color='" + color + "'>" +  rvalue + "%</font></h1>",
-	               new ImageGetter() {
-					@Override
-					public Drawable getDrawable(String source) {
-
-                        Drawable d = ResourcesCompat.getDrawable(getResources(), R.drawable.traffic1, null);
-						if (source.endsWith("0.png"))
-                            d = ResourcesCompat.getDrawable(getResources(), R.drawable.traffic0, null);
-						else
-							if (source.endsWith("2.png"))
-                                d = ResourcesCompat.getDrawable(getResources(), R.drawable.traffic2, null);
-
-                        if (d != null)
-                            d.setBounds(0,0,(int)(d.getIntrinsicWidth()*0.7f),(int)(d.getIntrinsicHeight()*0.7f));
-						return d;
-					}
-				}, null));
-        	}
-
+            Button b = ((ProgressDialog)dialog).getButton(ProgressDialog.BUTTON_NEGATIVE);
         	if(dataBundle.getBoolean(AppConst.MESSAGE_CANCELLABLE)){
-    			((ProgressDialog)dialog).getButton(ProgressDialog.BUTTON_NEGATIVE).setEnabled(true);//Visibility(View.VISIBLE);
+    			b.setEnabled(true);//Visibility(View.VISIBLE);
     		} else {
-    			((ProgressDialog)dialog).getButton(ProgressDialog.BUTTON_NEGATIVE).setEnabled(false);//setVisibility(View.INVISIBLE);
+    			b.setEnabled(false);//setVisibility(View.INVISIBLE);
     		}
     		//Assegno un tag al button per poter gestire correttamente il click su Annulla
     		if(dataBundle.getBoolean(AppConst.IS_MEASURE)){
@@ -2431,8 +2225,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
         case ALERT_DIALOG:
             ((AlertDialog)dialog).setMessage(dataBundle.getString(AppConst.MESSAGE));
             break;
-        default:
-        	super.onPrepareDialog(id, dialog);
         }
 	}
 
@@ -2443,8 +2235,8 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 
 		@Override
 		public void onClick(DialogInterface dialog, int which) {
-			removeDialog(PRECOMPILED_LOGIN_DIALOG);
-			removeDialog(LOGIN_DIALOG);
+			myRemoveDialog(PRECOMPILED_LOGIN_DIALOG);
+			myRemoveDialog(LOGIN_DIALOG);
 			switch(which) {
 			case DialogInterface.BUTTON_POSITIVE:
 				dataBundle = new Bundle();
@@ -2452,7 +2244,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 				dataBundle.putBoolean(AppConst.MESSAGE_CANCELLABLE, true);
 				dataBundle.putBoolean(AppConst.IS_CONFIGURATION, true);
 				runningConfig = true;
-                doLogin();
+                userManager.logInUser(loginET.getText().toString(),  pwdET.getText().toString());
                 break;
 			}
 		}
@@ -2465,7 +2257,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 
 		@Override
 		public void onClick(DialogInterface dialog, int which) {
-			removeDialog(LIST_OR_NEW_USER_DIALOG);
+			myRemoveDialog(LIST_OR_NEW_USER_DIALOG);
 			switch(which) {
 			case 1:
 				//Premuto l'elemento "Elenco utenti"
@@ -2473,22 +2265,23 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 				break;
 			case 0:
 				//Premuto l'elemento "Nuovo utente"
-				showDialog(LOGIN_DIALOG);
+				myShowDialog(LOGIN_DIALOG);
 				break;
 			}
+
 		}
 	};
 
 	/**
-	 * Listener per i click sulla dialog SIMPLE_DIALOG_WITH_CLOSE
+	 * Listener per i click sulla dialog ERROR_EXIT_APP_DIALOG
 	 */
-	private DialogInterface.OnClickListener simple_dialog_with_close_click_listener = new DialogInterface.OnClickListener() {
+	private DialogInterface.OnClickListener error_exit_app_dialog_click_listener = new DialogInterface.OnClickListener() {
 
 		@Override
 		public void onClick(DialogInterface dialog, int which) {
 			switch(which) {
 			case DialogInterface.BUTTON_NEUTRAL:
-				removeDialog(SIMPLE_DIALOG_WITH_CLOSE);
+				myRemoveDialog(ERROR_EXIT_APP_DIALOG);
 				finish();
 				break;
 			}
@@ -2496,29 +2289,15 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	};
 
 	/**
-	 * Listener per i click sulla dialog SIMPLE_DIALOG_WITHOUT_CLOSE
+	 * Listener per i click sulla dialog SIMPLE_DIALOG
 	 */
-	private DialogInterface.OnClickListener simple_dialog_without_close_click_listener = new DialogInterface.OnClickListener() {
+	private DialogInterface.OnClickListener simple_dialog_click_listener = new DialogInterface.OnClickListener() {
 
 		@Override
 		public void onClick(DialogInterface dialog, int which) {
 			switch(which) {
 			case DialogInterface.BUTTON_NEUTRAL:
-				removeDialog(SIMPLE_DIALOG_WITHOUT_CLOSE);
-				break;
-			}
-		}
-	};
-
-    /**
-     * Listener per i click sulla dialog STATUS_DIALOG
-     */
-    private DialogInterface.OnClickListener status_dialog_click_listener = new DialogInterface.OnClickListener() {
-		@Override
-		public void onClick(DialogInterface dialog, int which) {
-			switch(which) {
-			case DialogInterface.BUTTON_NEUTRAL:
-				removeDialog(STATUS_DIALOG);
+				myRemoveDialog(SIMPLE_DIALOG);
 				break;
 			}
 		}
@@ -2532,7 +2311,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 		@Override
 		public void onClick(DialogInterface dialog, int which) {
 			//Identifico quale pulsante della dialog � stato premuto
-			removeDialog(CONFIRM_CLOSE_DIALOG);
+			myRemoveDialog(CONFIRM_CLOSE_DIALOG);
 			switch (which) {
 			case DialogInterface.BUTTON_POSITIVE:
 				finish();
@@ -2542,18 +2321,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 			}
 		}
 	};
-
-	private void doLogin() {
-        if(loginET == null || pwdET == null) {
-            if (UserManager.getUserManager().getCurrentUser() == null) {
-                Log.i(TAG, "DB getActiveUser:" + DbManager.getDbManager().getActiveUser());
-                UserManager.getUserManager().selectUser(DbManager.getDbManager().getActiveUser(), true);
-            }
-            userManager.logInUser();
-        }
-        else
-            userManager.logInUser(loginET.getText().toString(), pwdET.getText().toString());
-    }
 
 	private Dialog createConfirmPatientDialog() {
 		Context ctx = this;
@@ -2572,13 +2339,13 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
-				removeDialog(CONFIRM_PATIENT_DIALOG);
+				myRemoveDialog(CONFIRM_PATIENT_DIALOG);
 				Log.i(TAG, "Cambia paziente");
 
 				if (patients == null || patients.length == 0) {
 					dataBundle = new Bundle();
 					dataBundle.putString(AppConst.MESSAGE, getString(R.string.noPatient));
-					showDialog(SIMPLE_DIALOG_WITHOUT_CLOSE);
+					myShowDialog(SIMPLE_DIALOG);
 				}
 				else {
 					viewMeasureBundle = null;
@@ -2593,13 +2360,8 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	}
 
 	private Dialog createMeasureResultDialog(Measure data) {
-		return createMeasureResultDialog(data, PATIENT_SELECTION_2);
-	}
-
-	private Dialog createMeasureResultDialog(Measure data, final int id) {
         measureData = data;
-
-        Log.d(TAG, "createMeasureResultDialog id=" + id);
+        Log.d(TAG, "createMeasureResultDialog ");
 
         Context ctx = this;
         ctx.setTheme(R.style.Theme_MyDoctorAtHome_Light);
@@ -2613,7 +2375,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
         Patient patient = UserManager.getUserManager().getCurrentPatient();
         String msg = String.format(txt, patient.getName(), patient.getSurname());
         String okBtnMsg = AppResourceManager.getResource().getString("MeasureResultDialog.sendBtn");
-        String action = MeasureDialogClickListener.SEND_ACTION;
+        String action = MeasureDialogClickListener.SAVE_ACTION;
 
         String measureStr = getMeasureMessage(data);
         builder.setMessage(measureStr + "\n" + msg);
@@ -2621,24 +2383,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
         MeasureDialogClickListener measureDialogListener = new MeasureDialogClickListener(action, data.getMeasureType());
         builder.setPositiveButton(okBtnMsg, measureDialogListener);
         builder.setNegativeButton(AppResourceManager.getResource().getString("MeasureResultDialog.cancelBtn"), measureDialogListener);
-
-        if ((action.equals(MeasureDialogClickListener.SEND_ALL_ACTION) || action.equals(MeasureDialogClickListener.SEND_ACTION)) && !deviceManager.getCurrentUser().getIsPatient() && !deviceManager.getCurrentDevice().getMeasure().equals(GWConst.KMsrSpir)) {
-            List<UserPatient> patients = DbManager.getDbManager().getUserPatients(UserManager.getUserManager().getCurrentUser().getId());
-            if (patients != null && patients.size() != 1) {
-                builder.setNeutralButton(R.string.changePatientQuestion, new DialogInterface.OnClickListener() {
-
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        removeDialog(MEASURE_RESULT_DIALOG);
-                        removeDialog(MEASURE_RESULT_DIALOG_SEND_ALL);
-                        Intent selectPatientIntent = new Intent(DeviceList.this, SelectPatient.class);
-                        selectPatientIntent.putExtra(SelectPatient.USER_ID, deviceManager.getCurrentUser().getId());
-                        startActivityForResult(selectPatientIntent, id);
-                    }
-                });
-
-            }
-        }
 
         beep();
         builder.setCancelable(false);
@@ -2671,7 +2415,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 
 	private void closeProgressDialog() {
 		if(progressDialog!= null && progressDialog.isShowing()){
-			removeDialog(PROGRESS_DIALOG);
+			myRemoveDialog(PROGRESS_DIALOG);
 			progressDialog.dismiss();
 			progressDialog = null;
 		}
@@ -2684,7 +2428,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 		if(!DbManager.getDbManager().getIsPatient(currentUser.getId()) && selectedMeasureType.equalsIgnoreCase(GWConst.KMsrSpir)) {
 			List<UserPatient> userPatients = DbManager.getDbManager().getUserPatients(currentUser.getId());
 			if (userPatients != null && userPatients.size() != 1){
-				showDialog(CONFIRM_PATIENT_DIALOG);
+				myShowDialog(CONFIRM_PATIENT_DIALOG);
 			} else {
 				makeMeasure();
 			}
@@ -2702,10 +2446,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 		} else {
 			deviceManager.startMeasure();
 		}
-	}
-
-	private void startConfig() {
-		deviceManager.startConfig();
 	}
 
 	private void setCurrentDevice() {
@@ -2729,7 +2469,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	private void stopDeviceOperation(int position) {
 		deviceManager.stopDeviceOperation(position);
 		if(position < 0){
-			removeDialog(PROGRESS_DIALOG);
+			myRemoveDialog(PROGRESS_DIALOG);
 		}
 
 		refreshList();
@@ -2744,7 +2484,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 		public void onClick(DialogInterface dialog, int which) {
 			Button btn = ((ProgressDialog)dialog).getButton(which);
 			String tag = (String) btn.getTag();
-			removeDialog(PROGRESS_DIALOG);
+			myRemoveDialog(PROGRESS_DIALOG);
 			if(AppConst.IS_MEASURE.equals(tag)){
                 // annullo l'acquisizione di una misura
 				stopDeviceOperation(-1);
@@ -2759,7 +2499,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 
 		@Override
 		public void onClick(DialogInterface dialog, int which) {
-			removeDialog(CONFIRM_PATIENT_DIALOG);
+			myRemoveDialog(CONFIRM_PATIENT_DIALOG);
 			switch(which) {
 			case DialogInterface.BUTTON_POSITIVE:
 				Log.i(TAG, "Conferma paziente");
@@ -2776,11 +2516,11 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	private class AlertDialogClickListener implements DialogInterface.OnClickListener {
 		public void onClick(DialogInterface dialog, int which) {
 			if(progressDialog != null && progressDialog.isShowing()){
-				removeDialog(PROGRESS_DIALOG);
+				myRemoveDialog(PROGRESS_DIALOG);
 			}
 
-			removeDialog(ALERT_DIALOG);
-     	   	removeDialog(MEASURE_RESULT_DIALOG);
+			myRemoveDialog(ALERT_DIALOG);
+     	   	myRemoveDialog(MEASURE_RESULT_DIALOG);
 
      	   	if (dataBundle.getBoolean(AppConst.LOGIN_ERROR)) {
      	   		userDataBundle = new Bundle();
@@ -2790,14 +2530,13 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
      	   			userDataBundle.putString("LOGIN", loginET.getText().toString());
      	   		else
      	   			userDataBundle.putString("LOGIN", "");
-     	   		showDialog(PRECOMPILED_LOGIN_DIALOG);
+     	   		myShowDialog(PRECOMPILED_LOGIN_DIALOG);
      	   	}
 		}
 	}
 
     private class MeasureDialogClickListener implements DialogInterface.OnClickListener {
-        static final String SEND_ACTION = "SEND_ACTION";
-        static final String SEND_ALL_ACTION = "SEND_ALL_ACTION";
+        static final String SAVE_ACTION = "SAVE_ACTION";
 
         private String action;
         private String measureType;
@@ -2814,9 +2553,9 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
             //Identifico quale button � stato premuto dall'utente
             switch(which) {
                 case DialogInterface.BUTTON_POSITIVE:
-                    removeDialog(PROGRESS_DIALOG);
-                    removeDialog(MEASURE_RESULT_DIALOG);
-                    if(action.equals(SEND_ACTION)){
+                    myRemoveDialog(PROGRESS_DIALOG);
+                    myRemoveDialog(MEASURE_RESULT_DIALOG);
+                    if(action.equals(SAVE_ACTION)){
                         Patient p = UserManager.getUserManager().getCurrentPatient();
                         if (p != null)
                             measureData.setIdPatient(p.getId());
@@ -2825,14 +2564,14 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                     }
                     break;
                 case DialogInterface.BUTTON_NEGATIVE:
-                    removeDialog(MEASURE_RESULT_DIALOG);
-                    if(action.equals(SEND_ACTION)){
+                    myRemoveDialog(MEASURE_RESULT_DIALOG);
+                    if(action.equals(SAVE_ACTION)){
                         // TODO chiedere conferma dello scarto della misura
                         setOperationCompleted();
                     }
                     break;
                 case DialogInterface.BUTTON_NEUTRAL:
-                    removeDialog(MEASURE_RESULT_DIALOG);
+                    myRemoveDialog(MEASURE_RESULT_DIALOG);
                     Intent selectPatientIntent = new Intent(DeviceList.this, SelectPatient.class);
                     selectPatientIntent.putExtra(SelectPatient.USER_ID, deviceManager.getCurrentUser().getId());
                     startActivityForResult(selectPatientIntent, PATIENT_SELECTION_2);
@@ -2851,40 +2590,38 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 		dataBundle = new Bundle();
 		Log.i(TAG, "showErrorDialog: " + msg);
 		dataBundle.putString(AppConst.MESSAGE, msg);
-		showDialog(ALERT_DIALOG);
+		myShowDialog(ALERT_DIALOG);
 	}
 
-	private void checkActiveUser() throws DbException{
-
-		Log.d(TAG, "checkActiveUser()");
-
-		try {
-			String lastUserId = AppUtil.getRegistryValue(AppUtil.KEY_LAST_USER);
-			User lastUser = null;
-			if ( lastUserId.length() > 0 ) {
-				lastUser = DbManager.getDbManager().getUser(lastUserId);
-			}
-
-			if( lastUser == null ){
-				mUIHandler.sendEmptyMessage(LOGIN_DIALOG);
-			} else if ( !lastUser.getHasAutoLogin() ) {
-				//L'utente non ha l'autologin quindi appare dialog di inserimento precompilata
-				userDataBundle = new Bundle();
-				userDataBundle.putBoolean("CHANGEABLE", false);
-				userDataBundle.putString("LOGIN", lastUser.getLogin());
-
-				mUIHandler.sendEmptyMessage(PRECOMPILED_LOGIN_DIALOG);
-
-			} else {
-				if (AppUtil.getRegistryValue(AppUtil.KEY_FORCE_LOGOUT + lastUser.getId(), false)) {
-					mUIHandler.sendEmptyMessage(LOGIN_DIALOG);
-				} else {
-					checkAutoUpdate();
-				}
-			}
-		} catch (Exception e) {
-			throw new DbException(e.getMessage());
-		}
+	private void checkUser(User user) {
+        if (user == null ){
+            mUIHandler.sendEmptyMessage(LOGIN_DIALOG);
+        } else if ( !user.getHasAutoLogin() || user.isBlocked()) {
+            //L'utente non ha l'autologin quindi appare dialog di inserimento precompilata
+            userDataBundle = new Bundle();
+            userDataBundle.putBoolean("CHANGEABLE", false);
+            userDataBundle.putString("LOGIN", user.getLogin());
+            mUIHandler.sendEmptyMessage(PRECOMPILED_LOGIN_DIALOG);
+        } else {
+            long lastUpdateTime = user.getTimestamp();
+            int diffHours = AppUtil.getDiffHours(new Date().getTime(), lastUpdateTime);
+            if (diffHours > 1) {
+                runningConfig = true;
+                //l'update della configurazione equivale a rifare il login (senza per� chiedere user e pwd)
+                dataBundle = new Bundle();
+                dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("KMsgConf"));
+                dataBundle.putBoolean(AppConst.MESSAGE_CANCELLABLE, false);
+                dataBundle.putBoolean(AppConst.IS_CONFIGURATION, true);
+                userManager.logInUser(user.getLogin(), user.getPassword());
+            }
+            else {
+                try {
+                    userManager.logInUserFromDb(user.getLogin(), user.getPassword());
+                } catch (Exception e) {
+                    Log.e(TAG, "logInUserFromDb: " + e);
+                }
+            }
+        }
 	}
 
 	private void askPrePostPrandialGlycaemia() {
@@ -2931,7 +2668,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 				new DialogInterface.OnClickListener(){
 					public void onClick(DialogInterface arg0, int arg1) {		
 						deviceManager.cancelDialog();
-						removeDialog(PROGRESS_DIALOG);						
+						myRemoveDialog(PROGRESS_DIALOG);
 					}
 		});
 		builder.setCancelable(true);
@@ -3000,93 +2737,5 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 		fillMaps.remove(selectedMeasurePosition);
 		fillMaps.add(selectedMeasurePosition, map);
 		listAdapter.notifyDataSetChanged();
-	}
-	
-	private void checkAutoUpdate() throws Exception {
-		
-		Log.d(TAG, "checkAutoUpdate()");
-		
-		runOnUiThread(new Runnable() {
-			
-			@Override
-			public void run() {
-				final User activeUser = DbManager.getDbManager().getActiveUser();				
-				if(activeUser != null && activeUser.getHasAutoLogin()) {
-					
-					boolean autoUpdate = AppUtil.getRegistryValue(AppUtil.KEY_AUTO_UPDATE + "_" + activeUser.getId(), true);
-					long autoUpdateDate = AppUtil.getRegistryLongValue(AppUtil.KEY_AUTO_UPDATE_DATE + "_" + activeUser.getId());
-					
-					if (autoUpdateDate == 0)
-						AppUtil.setRegistryValue(AppUtil.KEY_AUTO_UPDATE_DATE + "_" + activeUser.getId(), Long.toString(new Date().getTime()));
-					
-					int diffHours = AppUtil.getDiffHours(new Date().getTime(), autoUpdateDate);
-					
-					Log.d(TAG, "diffHours=" + diffHours + " autoUpdate=" + autoUpdate + " autoUpdateDate=" + autoUpdateDate);
-
-					if (diffHours > (24 * 7)) {
-						
-						if (autoUpdate) {
-							runningConfig = true;
-					    	//l'update della configurazione equivale a rifare il login (senza per� chiedere user e pwd)
-					    	dataBundle = new Bundle();
-							dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("KMsgConf"));
-							dataBundle.putBoolean(AppConst.MESSAGE_CANCELLABLE, false);
-							dataBundle.putBoolean(AppConst.IS_CONFIGURATION, true);
-							loginET = null;
-							pwdET = null;
-                            doLogin();
-						}
-						else {
-											
-							AlertDialog dialog = new AlertDialog.Builder(DeviceList.this).create();
-							dialog.setTitle(AppResourceManager.getResource().getString("autoUpdateSetting"));
-							SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
-							
-							dialog.setMessage(String.format(AppResourceManager.getResource().getString("autoUpdate"), sdf.format(new Date(autoUpdateDate))));
-							dialog.setButton(DialogInterface.BUTTON_NEGATIVE,
-									AppResourceManager.getResource().getString("EGwnurseCancel"),
-									new DialogInterface.OnClickListener() {
-
-								@Override
-								public void onClick(DialogInterface dialog, int which) {				
-									
-									try {
-										userManager.logInUserFromDb(activeUser.getLogin(), activeUser.getPassword());
-									} catch (Exception e) {
-										Log.e(TAG, "logInUserFromDb: " + e);
-									}
-								} });
-							
-							dialog.setButton(DialogInterface.BUTTON_POSITIVE, 
-									AppResourceManager.getResource().getString("BTDeviceScoutingDialog.updateBtn"),
-									new DialogInterface.OnClickListener() {
-								
-								@Override
-								public void onClick(DialogInterface dialog, int which) {
-									runningConfig = true;
-							    	//l'update della configurazione equivale a rifare il login (senza per� chiedere user e pwd)
-							    	dataBundle = new Bundle();
-									dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("KMsgConf"));
-									dataBundle.putBoolean(AppConst.MESSAGE_CANCELLABLE, true);
-									dataBundle.putBoolean(AppConst.IS_CONFIGURATION, true);
-									loginET = null;
-									pwdET = null;
-                                    doLogin();
-								}
-							});
-							dialog.show();
-						}
-					}
-					else {
-						
-						try {
-							userManager.logInUserFromDb(activeUser.getLogin(), activeUser.getPassword());
-						} catch (Exception e) {
-							Log.e(TAG, "logInUserFromDb: " + e);
-						}
-					}
-				}		
-			}
-		});
 	}
 }

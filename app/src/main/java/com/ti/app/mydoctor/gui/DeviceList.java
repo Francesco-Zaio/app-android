@@ -150,8 +150,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	private static final int PRECOMPILED_LOGIN_DIALOG = 16;
 	private static final int CONFIRM_CLOSE_DIALOG = 18;
     
-    private static ProgressDialog progressDialog;
-    
     private GWTextView titleTV;
     private EditText loginET;
     private EditText pwdET;
@@ -1748,17 +1746,14 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	}
 
 	private Dialog createProgressDialog(Bundle data) {
-		progressDialog = new ProgressDialog(this);
-
 		String msg = data.getString( AppConst.MESSAGE );
 		Log.d(TAG, "createProgressDialog msg=" + msg);
 
+        ProgressDialog progressDialog = new ProgressDialog(this);
         progressDialog.setIndeterminate(true);
 		progressDialog.setCancelable(false);
-
 		progressDialog.setMessage(data.getString(AppConst.MESSAGE));
 		progressDialog.setButton(DialogInterface.BUTTON_NEGATIVE, AppResourceManager.getResource().getString("EGwnurseCancel"),  new ProgressDialogClickListener());
-
 		progressDialog.setOnKeyListener(new DialogInterface.OnKeyListener() {
 			@Override
 			public boolean onKey(DialogInterface dialog, int keyCode, KeyEvent event) {
@@ -1868,17 +1863,17 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                 case DeviceManager.MEASURE_RESULT:
                     activity.receivedMeasures++;
                     activity.refreshList();
-                    activity.closeProgressDialog();
+                    activity.myRemoveDialog(PROGRESS_DIALOG);
                     activity.measureData = (Measure) msg.getData().getSerializable(DeviceManager.MEASURE);// MeasureManager.getMeasureManager().saveMeasureData(measureData);
                     activity.myShowDialog(MEASURE_RESULT_DIALOG);
                     break;
                 case DeviceManager.ERROR_STATE:
-                    activity.closeProgressDialog();
+                    activity.myRemoveDialog(PROGRESS_DIALOG);
                     activity.myShowDialog(ALERT_DIALOG);
                     break;
                 case DeviceManager.CONFIG_READY:
                     activity.refreshList();
-                    activity.closeProgressDialog();
+                    activity.myRemoveDialog(PROGRESS_DIALOG);
                     activity.myShowDialog(ALERT_DIALOG);
                     break;
             }
@@ -2024,32 +2019,40 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 
 
     SparseArray<Dialog> mDialogs = new SparseArray<>();
+    Dialog currentDialog = null;
+
     public void myShowDialog(int dialogId){
         Dialog d = mDialogs.get(dialogId);
         if (d == null) {
             d = myOnCreateDialog(dialogId);
-            if (d != null)
-                mDialogs.put(dialogId,d);
+            mDialogs.put(dialogId,d);
         }
+
         if (d != null){
-            d.show();
+            if (currentDialog != d) {
+                if (currentDialog != null && currentDialog.isShowing())
+                    currentDialog.dismiss();
+                currentDialog = d;
+                currentDialog.show();
+            }
             myOnPrepareDialog(dialogId, d);
         }
     }
 
     public void myRemoveDialog(int dialogId) {
         Dialog d = mDialogs.get(dialogId);
-        if (d != null) {
-			d.dismiss();
+        if ((d != null) && (d == currentDialog)) {
+            if (currentDialog.isShowing() )
+                currentDialog.dismiss();
             mDialogs.remove(dialogId);
-		}
+            currentDialog= null;
+        }
     }
 
 	protected Dialog myOnCreateDialog(int id) {
-    	Context ctx = this;
-        ctx.setTheme(R.style.Theme_MyDoctorAtHome_Light);
-        AlertDialog.Builder builder = new AlertDialog.Builder(ctx);
-        LayoutInflater inflater = (LayoutInflater) ctx.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        setTheme(R.style.Theme_MyDoctorAtHome_Light);
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        LayoutInflater inflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 
         CheckBox pwdCB;
 
@@ -2402,14 +2405,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 		}
 	};
 
-	private void closeProgressDialog() {
-		if(progressDialog!= null && progressDialog.isShowing()){
-			myRemoveDialog(PROGRESS_DIALOG);
-			progressDialog.dismiss();
-			progressDialog = null;
-		}
-	}
-
 	private void startMeasure() {
 		User currentUser = UserManager.getUserManager().getCurrentUser();
 
@@ -2504,12 +2499,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 
 	private class AlertDialogClickListener implements DialogInterface.OnClickListener {
 		public void onClick(DialogInterface dialog, int which) {
-			if(progressDialog != null && progressDialog.isShowing()){
-				myRemoveDialog(PROGRESS_DIALOG);
-			}
-
 			myRemoveDialog(ALERT_DIALOG);
-     	   	myRemoveDialog(MEASURE_RESULT_DIALOG);
 
      	   	if (dataBundle.getBoolean(AppConst.LOGIN_ERROR)) {
      	   		userDataBundle = new Bundle();

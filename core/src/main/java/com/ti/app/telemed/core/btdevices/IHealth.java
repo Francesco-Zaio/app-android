@@ -31,7 +31,8 @@ public class IHealth extends Handler implements DeviceHandler {
     private enum TState {
         EWaitingToGetDevice,    // default e notifica disconnessione
         EGettingDevice,         // chiamata di start(...)
-        EGettingConnection,     // chaimata a connect()
+        EGettingConnection,     // chiamata a connectDevice()
+        EDisconnecting,         // chiamata a disconnectDevice
         EConnected,             // callabck connessione avvenuta OK o fine Misura
         EGettingMeasures       // chiamata startMeasures
     }
@@ -47,6 +48,7 @@ public class IHealth extends Handler implements DeviceHandler {
 
     private TState iState;
     private int callbackId = -1;
+    private boolean iPairingMode;
     private String iBTAddress = "";
     private String deviceType = "";
     private IHealtDevice deviceController = null;
@@ -96,6 +98,7 @@ public class IHealth extends Handler implements DeviceHandler {
     public void start(String btAddr, boolean pairingMode) {
         Log.d(TAG, "start(String btAddr)");
         iBTAddress = btAddr;
+        iPairingMode = pairingMode;
 
         iCmdCode = TCmd.ECmdConnByAddr;
         if (iState == TState.EWaitingToGetDevice) {
@@ -127,6 +130,7 @@ public class IHealth extends Handler implements DeviceHandler {
     @Override
     public void start(BTSearcherEventListener listener, boolean pairingMode) {
         Log.d(TAG, "start(BTSearcherEventListener listener)");
+        iPairingMode = pairingMode;
         iCmdCode = TCmd.ECmdConnByUser;
         if (iState == TState.EWaitingToGetDevice) {
             scanActivityListener = listener;
@@ -298,6 +302,10 @@ public class IHealth extends Handler implements DeviceHandler {
                     msg.what = HANDLER_CONNECTED;
                     sendMessage(msg);
                     break;
+                case iHealthDevicesManager.DEVICE_STATE_DISCONNECTED:
+                    msg.what = HANDLER_DISCONNECTED;
+                    sendMessage(msg);
+                    break;
             }
         }
     };
@@ -305,6 +313,7 @@ public class IHealth extends Handler implements DeviceHandler {
     private static final int HANDLER_DEVICE_SELECTED =100;
     private static final int HANDLER_USER_STATUS = 101;
     private static final int HANDLER_CONNECTED = 102;
+    private static final int HANDLER_DISCONNECTED = 103;
     private static final int HANDLER_ERROR = 104;
     private static final int HANDLER_DISCOVERY_FINISH = 105;
 
@@ -340,10 +349,21 @@ public class IHealth extends Handler implements DeviceHandler {
                     }
                     break;
                 case HANDLER_CONNECTED:
-                    iState = TState.EConnected;
                     deviceListener.setBtMAC(iBTAddress);
-                    deviceController.startMeasure(iBTAddress);
-                    deviceListener.notifyToUi(deviceController.getStartMeasureMessage());
+                    if (iPairingMode) {
+                        iState = TState.EDisconnecting;
+                        iHealthDevicesManager.getInstance().disconnectDevice(iBTAddress.replace(":", ""), deviceType);
+                    } else {
+                        iState = TState.EConnected;
+                        deviceController.startMeasure(iBTAddress);
+                        deviceListener.notifyToUi(deviceController.getStartMeasureMessage());
+                    }
+                    break;
+                case HANDLER_DISCONNECTED:
+                    if (iPairingMode) {
+                        deviceListener.configReady(ResourceManager.getResource().getString("KPairingMsgDone"));
+                        stop();
+                    }
                     break;
                 case HANDLER_DISCOVERY_FINISH:
                     if (iState == TState.EGettingDevice && iCmdCode == TCmd.ECmdConnByAddr) {

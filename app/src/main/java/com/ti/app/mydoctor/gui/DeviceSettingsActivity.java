@@ -293,7 +293,6 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
 					int position, long id) {
 				Log.i(TAG, "position: "+position);
 				Log.i(TAG, "parent.getItemAtPosition: "+parent.getItemAtPosition(position));
-								
 				try {
 					initDeviceMap();
 				} catch (DbException e) {
@@ -313,10 +312,10 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
 						} else {
 							deviceManager.setCurrentDevice(null);
 						}
-						
-						doScan();
-					}							
-								
+                        if (ud.getDevice().needCfg())
+                            doScan();
+                    }
+
 				} else {
 					Log.i(TAG, "operation running: click ignored");	
 					Toast.makeText(getApplicationContext(), AppResourceManager.getResource().getString("KOperationRunning"), Toast.LENGTH_LONG).show();
@@ -441,7 +440,10 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
 		UserDevice tmpUd = (UserDevice) ud.clone();
 		tmpUd.setBtAddress(null);
 		deviceManager.setCurrentDevice(tmpUd);
-		deviceManager.startDiscovery(null);
+		// Launch the DeviceScanActivity to see devices and do scan
+		Intent serverIntent = new Intent(this, DeviceScanActivity.class);
+		//startActivity(serverIntent);
+		startActivityForResult(serverIntent, REQUEST_SCAN_DEVICES);
 	}
 	
 	//Termina operazione di scansione

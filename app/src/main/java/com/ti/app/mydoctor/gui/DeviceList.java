@@ -1664,23 +1664,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 			listAdapter.notifyDataSetChanged();
 	}
 
-	private Dialog createAlertDialog(Bundle data) {
-    	String msg = data.getString(AppConst.MESSAGE);
-		return createAlert(msg, null);
-	}
-
-    private AlertDialog createAlert(String msg, String title) {
-
-    	Log.d(TAG, "createAlert() msg=" + msg);
-
-    	AlertDialog.Builder builder = new AlertDialog.Builder(DeviceList.this);
-		builder.setMessage(msg);
-		builder.setPositiveButton("Ok", new AlertDialogClickListener());
-		builder.setTitle(title);
-		beep();
-		return builder.create();
-	}
-
     private void showSelectModelDialog() {
 		final List<UserDevice> userDevices = measureModelsMap.get(selectedMeasureType);
 
@@ -2042,11 +2025,11 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 
     SparseArray<Dialog> mDialogs = new SparseArray<>();
     public void myShowDialog(int dialogId){
-
         Dialog d = mDialogs.get(dialogId);
-        if (d == null){
+        if (d == null) {
             d = myOnCreateDialog(dialogId);
-            mDialogs.put(dialogId, d);
+            if (d != null)
+                mDialogs.put(dialogId,d);
         }
         if (d != null){
             d.show();
@@ -2056,8 +2039,10 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 
     public void myRemoveDialog(int dialogId) {
         Dialog d = mDialogs.get(dialogId);
-        if (d != null)
-            d.dismiss();
+        if (d != null) {
+			d.dismiss();
+            mDialogs.remove(dialogId);
+		}
     }
 
 	protected Dialog myOnCreateDialog(int id) {
@@ -2082,7 +2067,11 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
         case PROGRESS_DIALOG:
         	return createProgressDialog(dataBundle);
         case ALERT_DIALOG:
-            return createAlertDialog(dataBundle);
+			builder.setMessage(dataBundle.getString(AppConst.MESSAGE));
+			builder.setPositiveButton("Ok", new AlertDialogClickListener());
+			builder.setTitle(null);
+			beep();
+			return builder.create();
         case PRECOMPILED_LOGIN_DIALOG:
         	builder.setTitle(R.string.authentication);
         	View login_dialog_v = inflater.inflate(R.layout.new_user, null);

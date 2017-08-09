@@ -125,9 +125,11 @@ public class DeviceManager implements DeviceListener {
         m.setTimestamp(XmlManager.getXmlManager().getTimestamp(null));
         m.setFile(null);
         m.setFileType(null);
-        m.setIdUser(u.getId());
-        if (u.getIsPatient())
-            m.setIdPatient(u.getId());
+		if (u != null) {
+			m.setIdUser(u.getId());
+			if (u.getIsPatient())
+				m.setIdPatient(u.getId());
+		}
 
 		switch (currentDevice.getDevice().getModel()) {
 			case GWConst.KPO3IHealth:

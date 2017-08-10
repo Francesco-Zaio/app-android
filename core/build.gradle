@@ -20,9 +20,10 @@ android {
 
 dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
-    compile 'com.android.support:appcompat-v7:25.3.1'
     compile files('libs/d2xx.jar')
     compile files('libs/pl2303driver.jar')
     compile files('libs/smartlinklib3.6.4_product.jar')
     compile files('libs/iHealthLibrary_2.3.3.jar')
+    compile 'com.android.support:appcompat-v7:25.3.1'
+    compile 'com.android.support:support-v4:25.3.1'
 }

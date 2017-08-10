@@ -40,12 +40,9 @@ public interface GWConst {
 	String KMsrPres = "PR";
 	String KMsrPeso = "PS";
 	String KMsrGlic = "GL";
-	String KMsrBodyFat = "MG";
 	String KMsrTemp = "TC";
-	String KMsrAritm = "AR";
 	String KMsrProtr = "PT";
 	String KMsrImg = "IM";
-	String KMsrLoc = "PO";
 	String KMsr_Healt = "Q0";
 	String KMsr_Sleep = "Q1";
 	String KMsr_Pain = "Q2";

@@ -1994,7 +1994,7 @@ public class DbManager {
                 }
 
                 long num = mDb.insert("MEASURE", null, values);
-                Log.i(TAG, "Inserite: " + num + " misure");
+                Log.i(TAG, "Inserita misura con rowId: " + num);
             } catch (Exception sqle) {
                 logger.log(Level.SEVERE, sqle.getMessage());
                 Log.i(TAG, "Exception insertMeasure: " + sqle.getMessage());

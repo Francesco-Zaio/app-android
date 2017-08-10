@@ -132,10 +132,15 @@ public class SendMeasuresService extends Service implements Runnable, WebManager
                 try {
                     if ((currentMeasure == null) && (measuresToSend.isEmpty())) {
                         currentUser = UserManager.getUserManager().getCurrentUser();
-                        if (currentUser == null)
+                        if (currentUser == null) {
+                            Log.d(TAG, "UserManager:currentUser is null");
                             currentUser = DbManager.getDbManager().getActiveUser();
-                        if (currentUser != null)
+                        }
+                        if (currentUser != null) {
                             measuresToSend = DbManager.getDbManager().getNotSentMeasures(currentUser.getId());
+                            Log.d(TAG, "currentUser is " + currentUser.getLogin());
+                            Log.d(TAG, "Found " + measuresToSend.size() + " measures to send!");
+                        }
                     }
                     if (!isNetworkConnected() || (currentMeasure != null) || measuresToSend.isEmpty()) {
                         Log.d(TAG, "Wait ....");

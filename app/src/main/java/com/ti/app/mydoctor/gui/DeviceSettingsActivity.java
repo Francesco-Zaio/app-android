@@ -299,7 +299,7 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
                     e.printStackTrace();
 				}
 				
-				if(!deviceManager.isOperationRunning() || measureList.get(position).equalsIgnoreCase(GWConst.KMsrAritm)){
+				if(!deviceManager.isOperationRunning()){
 					selectedMeasureType = measureList.get(position);
 					selectedMeasurePosition = position;		
 					

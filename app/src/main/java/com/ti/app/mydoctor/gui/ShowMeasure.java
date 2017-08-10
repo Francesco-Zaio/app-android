@@ -592,13 +592,9 @@ public class ShowMeasure extends ActionBarListActivity{
 					}
 				}
 				else {
-				
-					if (!selected_measure.getMeasureType().equalsIgnoreCase(GWConst.KMsrAritm)) {
-						
-						Intent intent = new Intent(ShowMeasure.this, MeasureDetails.class);
-						intent.putExtra(SELECTED_MEASURE_KEY, selected_measure);
-						startActivityForResult(intent, MEASURE_DETAILS);
-					}
+					Intent intent = new Intent(ShowMeasure.this, MeasureDetails.class);
+					intent.putExtra(SELECTED_MEASURE_KEY, selected_measure);
+					startActivityForResult(intent, MEASURE_DETAILS);
 				}
 			}
 		}

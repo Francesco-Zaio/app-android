@@ -885,7 +885,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 
                 sentMeasures = 0;
                 receivedMeasures = 0;
-                if (!deviceManager.isOperationRunning() || measureList.get(position).equalsIgnoreCase(GWConst.KMsrAritm)) {
+                if (!deviceManager.isOperationRunning()) {
                     selectedMeasureType = measureList.get(position);
                     selectedMeasurePosition = position;
                     if (!deviceMap.get(selectedMeasureType).isActive()) {
@@ -986,7 +986,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 
 				sentMeasures = 0;
 				receivedMeasures = 0;
-				if(!deviceManager.isOperationRunning() || measureList.get(position).equalsIgnoreCase(GWConst.KMsrAritm)){
+				if(!deviceManager.isOperationRunning()){
 					selectedMeasureType = measureList.get(position);
 					selectedMeasurePosition = position;
 					if(!deviceMap.get(selectedMeasureType).isActive()){
@@ -1032,7 +1032,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 		}
 		else {
 			if(measureEnabled(deviceMap.get(selectedMeasureType))){
-                deviceManager.checkIfAnotherSpirodocIsPaired(deviceManager.getCurrentDevice().getDevice().getModel());
                 try {
                     initDeviceMap();
                 } catch (DbException e) {
@@ -1040,25 +1039,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                 }
                 doMeasure();
 			} else {
-				if (deviceManager.getCurrentDevice().getDevice().getModel().equals(GWConst.KSpirodocOS) ||
-						deviceManager.getCurrentDevice().getDevice().getModel().equals(GWConst.KSpirodocSP)) {
-
-					if (deviceManager.checkIfAnotherSpirodocIsPaired(deviceManager.getCurrentDevice().getDevice().getModel())) {
-						try {
-							initDeviceMap();
-						} catch (DbException e) {
-                            Log.e(TAG, e.getMessage());
-						}
-						doMeasure();
-					}
-					else {
-						doScan();
-					}
-
-				}
-				else {
-					doScan();
-				}
+                doScan();
 			}
 		}
 	}
@@ -1441,7 +1422,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 		UserDevice uDevice = deviceMap.get(selectedMeasureType);
 		if(uDevice != null && measureEnabled(uDevice)){
 			if(AppUtil.isManualMeasure(uDevice.getDevice())){
-				doManualMeasure();
+                startManualMeasure();
 			} else {
 				isPairing = false;
 				isConfig = false;
@@ -1449,10 +1430,10 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 
 				if (!BluetoothAdapter.getDefaultAdapter().isEnabled()) {
 					// If BT is not on, request that it be enabled.
-					// startMeasure() will then be called during onActivityResult
+					// startDeviceMeasure() will then be called during onActivityResult
 					requestEnableBT();
 				} else {
-                    startMeasure();
+                    startDeviceMeasure();
 				}
 			}
 		}
@@ -1619,7 +1600,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
             	} else if(isManualMeasure){
             		startManualMeasure();
             	} else {
-            		startMeasure();
+            		startDeviceMeasure();
             	}
             } else {
             	// User did not enable Bluetooth or an error occured
@@ -1646,7 +1627,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
     	         sendManualMeasure(measure, values);
     	     }
     	     if (resultCode == RESULT_CANCELED) {
-    	    	 cancelManualMeasure();
+                 deviceManager.setCurrentDevice(null);
     	     }
     		 break;
     	}
@@ -2017,7 +1998,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 		}
 	}
 
-
     SparseArray<Dialog> mDialogs = new SparseArray<>();
     Dialog currentDialog = null;
 
@@ -2375,7 +2355,24 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
         MeasureDialogClickListener measureDialogListener = new MeasureDialogClickListener(action, data.getMeasureType());
         builder.setPositiveButton(okBtnMsg, measureDialogListener);
         builder.setNegativeButton(AppResourceManager.getResource().getString("MeasureResultDialog.cancelBtn"), measureDialogListener);
+        if (!deviceManager.getCurrentUser().getIsPatient() && !deviceManager.getCurrentDevice().getMeasure().equals(GWConst.KMsrSpir)) {
+            List<UserPatient> patients = DbManager.getDbManager().getUserPatients(UserManager.getUserManager().getCurrentUser().getId());
+            if (patients != null && patients.size() != 1) {
+                builder.setNeutralButton(R.string.changePatientQuestion, measureDialogListener);
+ /*               builder.setNeutralButton(R.string.changePatientQuestion, new DialogInterface.OnClickListener() {
 
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        removeDialog(MEASURE_RESULT_DIALOG);
+                        removeDialog(MEASURE_RESULT_DIALOG_SEND_ALL);
+                        Intent selectPatientIntent = new Intent(DeviceList.this, SelectPatient.class);
+                        selectPatientIntent.putExtra(GWConst.USER_ID, deviceManager.getCurrentUser().getId());
+                        startActivityForResult(selectPatientIntent, id);
+                    }
+                });
+                */
+            }
+        }
         beep();
         builder.setCancelable(false);
         return builder.create();
@@ -2405,7 +2402,19 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 		}
 	};
 
-	private void startMeasure() {
+	private void startManualMeasure() {
+		if(UserManager.getUserManager().getCurrentPatient() != null){
+			UserDevice uDevice = deviceMap.get(selectedMeasureType);
+			//We set the current device in device Manager
+			deviceManager.setCurrentDevice(uDevice);
+			if(uDevice.getMeasure().equalsIgnoreCase(GWConst.KMsrTemp)){
+				Intent intent = new Intent( DeviceList.this, ManualTemperatureActivity.class );
+				startActivityForResult( intent, MANUAL_MEASURE_ENTRY );
+			}
+		}
+	}
+
+	private void startDeviceMeasure() {
 		User currentUser = UserManager.getUserManager().getCurrentUser();
 
 		//La richiesta di conferma deve essere visualizzata se l'utente � un nurse, se il nurse ha pi� di un paziente e se la misura da effettuare � una spirometria
@@ -2414,21 +2423,10 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 			if (userPatients != null && userPatients.size() != 1){
 				myShowDialog(CONFIRM_PATIENT_DIALOG);
 			} else {
-				makeMeasure();
+                deviceManager.startMeasure();
 			}
 		} else {
-			makeMeasure();
-		}
-	}
-
-	private void makeMeasure() {
-		if(selectedMeasureType.equalsIgnoreCase(GWConst.KMsrGlic) &&
-				(!deviceManager.getCurrentDevice().getDevice().getModel().equals(GWConst.KMYGLUCOHEALTH)) &&
-				(!deviceManager.getCurrentDevice().getDevice().getModel().equals(GWConst.KTDCC))
-				){
-			askPrePostPrandialGlycaemia();
-		} else {
-			deviceManager.startMeasure();
+            deviceManager.startMeasure();
 		}
 	}
 
@@ -2480,19 +2478,18 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	 * Listener per i click sulla alert CONFIRM_PATIENT_DIALOG
 	 */
 	private DialogInterface.OnClickListener confirm_patient_dialog_click_listener = new DialogInterface.OnClickListener() {
-
 		@Override
 		public void onClick(DialogInterface dialog, int which) {
 			myRemoveDialog(CONFIRM_PATIENT_DIALOG);
 			switch(which) {
-			case DialogInterface.BUTTON_POSITIVE:
-				Log.i(TAG, "Conferma paziente");
-				makeMeasure();
-				break;
-			case DialogInterface.BUTTON_NEGATIVE:
-				Log.i(TAG, "Annulla misura");
-				setOperationCompleted();
-				break;
+                case DialogInterface.BUTTON_POSITIVE:
+                    Log.i(TAG, "Conferma paziente");
+                    deviceManager.startMeasure();
+                    break;
+                case DialogInterface.BUTTON_NEGATIVE:
+                    Log.i(TAG, "Annulla misura");
+                    setOperationCompleted();
+                    break;
 			}
 		}
 	};
@@ -2653,36 +2650,8 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 		builder.setCancelable(true);
 		builder.show();		
 	}
-	
-	public void doManualMeasure() {
-		// If BT is not on, request that it be enabled.
-		// startManualMeasure() will then be called during onActivityResult
-		startManualMeasure();
-	}
 
-	private void startManualMeasure() {		
-		if (UserManager.getUserManager().getCurrentPatient() == null) {
-			selectPatient();
-		}
-		showManualMeasureDialog();
-	}
-	
-	private void showManualMeasureDialog() {		
-		if(UserManager.getUserManager().getCurrentPatient() != null){
-			UserDevice uDevice = deviceMap.get(selectedMeasureType);
-			//We set the current device in device Manager 
-			deviceManager.setCurrentDevice(uDevice);	
-			if(uDevice.getMeasure().equalsIgnoreCase(GWConst.KMsrTemp)){
-				//showManualTemperatureDialog();
-				showManualTemperatureActivity();
-			}
-		}
-	}
-	
-	private void showManualTemperatureActivity(){
-		Intent intent = new Intent( DeviceList.this, ManualTemperatureActivity.class );			
-		startActivityForResult( intent, MANUAL_MEASURE_ENTRY );
-	}
+
 		
 	public void sendManualMeasure(String measure, ArrayList<String> values) {
         Measure m = new Measure();
@@ -2704,11 +2673,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
         m.setFileType(null);
         m.setFailed(false);
 		deviceManager.showMeasurementResults(m);
-	}
-	
-	public void cancelManualMeasure() {
-		//We set the current device in device Manager 
-		deviceManager.setCurrentDevice(null);	
 	}
 
 	private void refreshList() {

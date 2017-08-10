@@ -88,8 +88,6 @@ public class AppUtil {
 			return R.drawable.spirometria_icon;
 		else if(measure.equalsIgnoreCase(GWConst.KMsrTemp))
 			return R.drawable.temperatura_icon;
-		else if(measure.equalsIgnoreCase(GWConst.KMsrAritm))
-			return R.drawable.aritmia_icon;
 		else if(measure.equalsIgnoreCase(GWConst.KMsrImg))
 			return R.drawable.immagini_icon;
 		else
@@ -113,8 +111,6 @@ public class AppUtil {
 			return R.drawable.small_spirometria_icon;
 		else if(measure.equalsIgnoreCase(GWConst.KMsrTemp))
 			return R.drawable.small_temperatura_icon;
-		else if(measure.equalsIgnoreCase(GWConst.KMsrAritm))
-			return R.drawable.small_aritmia_icon;
 		else if(measure.equalsIgnoreCase(GWConst.KMsrImg))
 			return R.drawable.small_immagini_icon;
 		else
@@ -122,10 +118,7 @@ public class AppUtil {
 	}	
 	
 	public static int getIconRunningId(String measure) {
-		if(measure.equalsIgnoreCase(GWConst.KMsrAritm))
-			return R.drawable.aritmia_icon_run;
-		else
-			return getIconId(measure);
+		return getIconId(measure);
 	}
 	
 	public static boolean isManualMeasure(Device device) {

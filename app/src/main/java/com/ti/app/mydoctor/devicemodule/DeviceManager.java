@@ -302,48 +302,12 @@ public class DeviceManager implements DeviceListener {
 		return result;
 	}
 
-	private void cleanBtAddressSpirodoc() {
-		
-		Log.d(TAG, "cleanBtAddressSpirodoc()");
-		try {
-			if (currentDevice.getDevice().getModel().equals(GWConst.KSpirodocOS)) {
-			
-				List<UserDevice> udl = DbManager.getDbManager().getCurrentUserDevices();
-				for (UserDevice userDevice : udl) {
-					if (userDevice.getDevice().getModel().equals(GWConst.KSpirodocSP)) {
-						if (userDevice.isActive()) {
-							
-							Log.d(TAG, "clean=" + userDevice.getDevice().getModel());
-							DbManager.getDbManager().cleanBtAddressDevice(userDevice);
-						}
-					}
-				}
-			} else if (currentDevice.getDevice().getModel().equals(GWConst.KSpirodocSP)) {
-			
-				List<UserDevice> udl = DbManager.getDbManager().getCurrentUserDevices();
-				for (UserDevice userDevice : udl) {
-					if (userDevice.getDevice().getModel().equals(GWConst.KSpirodocOS)) {
-						if (userDevice.isActive()) {
-							
-							Log.d(TAG, "clean=" + userDevice.getDevice().getModel());
-							DbManager.getDbManager().cleanBtAddressDevice(userDevice);
-						}
-					}
-				}
-			}
-		}
-		catch(Exception e) {
-			Log.e(TAG, "cleanBtAddressSpirodoc() " + e);
-		}
-	}
-
     // DeviceListener methods
     @Override
     public void setBtMAC(String aMac) {
         Log.i(TAG, "setBtMac: " + aMac);
         currentDevice.setBtAddress(aMac);
         DbManager.getDbManager().updateBtAddressDevice(currentDevice);
-        cleanBtAddressSpirodoc();
     }
 
     @Override

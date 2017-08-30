@@ -33,12 +33,20 @@ public class Util {
 
 	@SuppressLint("NewApi")
 	public static File getDir() {
-		File sdDir = Environment
-				.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
+		File sdDir = Environment.getExternalStorageDirectory();
 		File result = new File(sdDir, "nithd");
         if(!result.exists())
             if (!result.mkdirs())
                 Log.e(TAG, "ERROR: unable to create Directory " + result);
+		return result;
+	}
+
+	public static File getMeasuresDir() {
+		File sdDir = getDir();
+		File result = new File(sdDir, "measures");
+		if(!result.exists())
+			if (!result.mkdirs())
+				Log.e(TAG, "ERROR: unable to create Directory " + result);
 		return result;
 	}
 

@@ -32,6 +32,7 @@ public interface GWConst {
     String KCAMERA = "CAMERA";
     String KAEROTEL = "AEROTEL";
     String KMYGLUCOHEALTH = "MYGLUCOHEALTH";
+	String K8000GW = "8000GW";
 
         
 	String KMsrOss = "OS";

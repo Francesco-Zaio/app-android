@@ -7,6 +7,7 @@ import android.os.Message;
 import android.util.Log;
 
 import com.ti.app.mydoctor.AppResourceManager;
+import com.ti.app.telemed.core.btdevices.Contec8000GW;
 import com.ti.app.telemed.core.btdevices.EcgProtocol;
 import com.ti.app.telemed.core.btdevices.ForaThermometerClient;
 import com.ti.app.telemed.core.btdevices.IHealth;
@@ -188,9 +189,13 @@ public class DeviceManager implements DeviceListener {
 				}
 				break;
             case GWConst.KOximeterNon:
-                currentDeviceHandler = new NoninOximeter(this, m);
-                startMeasure(AppResourceManager.getResource().getString("KInitMsgOS"));
-                break;
+				currentDeviceHandler = new NoninOximeter(this, m);
+				startMeasure(AppResourceManager.getResource().getString("KInitMsgOS"));
+				break;
+			case GWConst.K8000GW:
+				currentDeviceHandler = new Contec8000GW(this, m);
+				startMeasure(AppResourceManager.getResource().getString("KInitMsgECG"));
+				break;
 		}
 	}
 

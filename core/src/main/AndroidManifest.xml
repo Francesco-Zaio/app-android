@@ -25,6 +25,11 @@
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
+
+        <activity
+            android:theme="@android:style/Theme.Black.NoTitleBar"
+            android:name=".devicesactivities.Contec8000GWActivity">
+        </activity>
     </application>
 
 </manifest>

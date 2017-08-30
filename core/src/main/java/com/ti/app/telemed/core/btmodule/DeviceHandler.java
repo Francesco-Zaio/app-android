@@ -4,6 +4,9 @@ import com.ti.app.telemed.core.btmodule.events.BTSearcherEventListener;
 
 public interface DeviceHandler {
 
+	String BT_ADDRESS = "BT_ADDRESS";
+    String MEASURE_OBJECT = "MEASURE_OBJECT";
+
 	enum TCmd {
 		ECmdConnByUser,
 		ECmdConnByAddr

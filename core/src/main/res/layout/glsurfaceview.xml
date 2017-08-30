@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:theme="@android:style/Theme.Black.NoTitleBar"
+    android:windowNoTitle="true"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:id="@+id/lineargl"
+        android:layout_width="fill_parent"
+        android:layout_height="37dp"
+        android:orientation="horizontal"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentBottom="true">
+
+        <Button
+            android:id="@+id/btn07"
+            android:layout_weight="1"
+            android:layout_width="wrap_content"
+            android:layout_height="37dp"
+            android:text="Save"
+            />
+          <Button
+            android:id="@+id/btn08"
+            android:layout_weight="1"
+            android:layout_width="wrap_content"
+            android:layout_height="37dp"
+            android:text="Del"
+            />
+    </LinearLayout>
+
+    <serial.jni.GLView
+        android:id="@+id/GLWave"
+        android:layout_above="@+id/lineargl"
+        android:layout_below="@+id/titlebar"
+        android:layout_width="fill_parent" 
+        android:layout_height="fill_parent" />
+
+    <RelativeLayout 
+        android:layout_width="fill_parent"
+        android:layout_height="63dp"
+        android:id="@+id/titlebar"
+        >
+       <ImageView 
+            android:layout_width="wrap_content"
+            android:layout_height="fill_parent"
+            android:id="@+id/image1"
+            android:layout_alignParentLeft="true"
+            android:src="@drawable/titlebar_1"
+           />
+       <TextView
+           android:layout_width="wrap_content"
+           android:layout_height="fill_parent"
+           android:id="@+id/textHR"
+           android:layout_alignLeft="@id/image1"
+		   android:layout_alignRight="@id/image1"     
+		   android:layout_alignTop="@id/image1"  
+		   android:layout_alignBottom="@id/image1"  
+           android:gravity="center_vertical|center_horizontal"
+           android:text="HR"
+           android:textColor="#00FF00"
+           android:textSize="30sp"
+           />
+
+        <ProgressBar
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/progressBar"
+            android:layout_alignParentRight="true"
+            android:layout_toRightOf="@+id/image1"
+            android:layout_centerHorizontal="true"
+            android:layout_centerVertical="true"
+            style="?android:attr/progressBarStyleHorizontal" />
+    </RelativeLayout>
+</RelativeLayout>

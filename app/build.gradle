@@ -18,10 +18,13 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
         }
     }
+
     productFlavors {
     }
+
 }
 
 dependencies {
     compile project(':core')
+    debugCompile 'com.amitshekhar.android:debug-db:1.0.0'
 }

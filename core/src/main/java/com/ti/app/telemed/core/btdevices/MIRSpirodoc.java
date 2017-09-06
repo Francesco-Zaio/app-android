@@ -124,7 +124,6 @@ public class MIRSpirodoc implements DeviceHandler,
 	// a pointer to scheduler
     private DeviceListener iScheduler;
 	private BTSearcherEventListener scanActivityListener;
-	private String deviceModel;
 
 	private static final String TAG = "MIRSpirodoc";
 
@@ -136,11 +135,10 @@ public class MIRSpirodoc implements DeviceHandler,
         return spirodocType == TSpirodocType.DEV_STANDARD;
     }
 
-	public MIRSpirodoc(DeviceListener aScheduler, Measure m, int aMsrType, String deviceModel) {
+	public MIRSpirodoc(DeviceListener aScheduler, Measure m, int aMsrType) {
 
         iScheduler = aScheduler;
         iMeasure = m;
-		this.deviceModel = deviceModel;
 				
 		switch (aMsrType) {
 			case 1:
@@ -455,11 +453,7 @@ public class MIRSpirodoc implements DeviceHandler,
 				// the selection done by user is managed in the ui class which
 				// implements BTSearcherEventListener interface, so here arrive
 				// when the selection is already done
-				
-				if (deviceModel.equals(GWConst.KSpirodocOS))
-					iScheduler.notifyWaitToUi(ResourceManager.getResource().getString("KPairingMsg"));
-				else
-					iScheduler.notifyWaitToUi(ResourceManager.getResource().getString("KPairingMsg"));
+				iScheduler.notifyWaitToUi(ResourceManager.getResource().getString("KPairingMsg"));
 				break;
 			}
 		 
@@ -694,19 +688,11 @@ public class MIRSpirodoc implements DeviceHandler,
 
 					if (iErrorCode == TMyDoctorErrorCode.KErrNone) {
 						// Pairing eseguito con successo. Salva il BT MAC
-					
 						Util.setRegistryValue(REGKEY+iBTAddress, iDeviceType.toString());
-					
 						iMIRSpiroDocSocket.removeBTSocketEventListener(this);
-						
-						if (deviceModel.equals(GWConst.KSpirodocOS))
-							iScheduler.configReady(ResourceManager.getResource().getString("KPairingMsgDone"));
-						else
-							iScheduler.configReady(ResourceManager.getResource().getString("KPairingMsgDone"));
-						
+						iScheduler.configReady(ResourceManager.getResource().getString("KPairingMsgDone"));
 						iScheduler.setBtMAC(iBTAddress);
 						currentPos = 0;
-
 						// Chiude la connessione
 						iState = TState.EDisconnecting;
 						DisconnectFromServerL();

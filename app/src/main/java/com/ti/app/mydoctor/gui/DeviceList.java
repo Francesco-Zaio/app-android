@@ -1159,8 +1159,10 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                     mi = menu.findItem(R.id.pair_and_measure);
                     mi.setVisible(true);
                     break;
-                case GWConst.KSpirodocOS:
-                case GWConst.KSpirodocSP:
+                case GWConst.KSpirodoc:
+
+				case GWConst.K8000GW:
+				case GWConst.KPC300SpotCheck:
                     mi = menu.findItem(R.id.pair);
                     mi.setVisible(true);
                     break;
@@ -1168,8 +1170,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 
             // Visibiltà voce "Configura"
             switch (pd.getDevice().getModel()) {
-                case GWConst.KSpirodocOS:
-                case GWConst.KSpirodocSP:
+                case GWConst.KSpirodoc:
                     if (MIRSpirodoc.isStandardModel(pd.getBtAddress())) {
                             mi = menu.findItem(R.id.config);
                             mi.setVisible(true);
@@ -1596,7 +1597,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
             	if(isPairing){
             		startScan();
             	} else if(isConfig){
-                    deviceManager.startConfig();
+					deviceManager.startConfig();
             	} else if(isManualMeasure){
             		startManualMeasure();
             	} else {

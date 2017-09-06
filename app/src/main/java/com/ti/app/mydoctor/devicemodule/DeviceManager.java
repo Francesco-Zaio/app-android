@@ -10,6 +10,7 @@ import com.ti.app.mydoctor.AppResourceManager;
 import com.ti.app.telemed.core.btdevices.Contec8000GW;
 import com.ti.app.telemed.core.btdevices.EcgProtocol;
 import com.ti.app.telemed.core.btdevices.ForaThermometerClient;
+import com.ti.app.telemed.core.btdevices.GIMAPC300SpotCheck;
 import com.ti.app.telemed.core.btdevices.IHealth;
 import com.ti.app.telemed.core.btdevices.NoninOximeter;
 import com.ti.app.telemed.core.btdevices.RocheProthrombineTimeClient;
@@ -158,33 +159,23 @@ public class DeviceManager implements DeviceListener {
 				currentDeviceHandler = new ForaThermometerClient(this, m);
 				startMeasure(AppResourceManager.getResource().getString("KInitMsgTC"));
 				break;
-			case GWConst.KSpirodocOS:
+			case GWConst.KSpirodoc:
 				if (isConfig()) {
-					currentDeviceHandler = new MIRSpirodoc(this, m, 1, GWConst.KSpirodocOS);
+					currentDeviceHandler = new MIRSpirodoc(this, m, 1);
 					notifyToUi(AppResourceManager.getResource().getString("KInitMsgConfOxy"));
                     currentDeviceHandler.start(currentDevice.getBtAddress(), pairingMode);
 				} else {
 					if (pairingMode) {
-						currentDeviceHandler = new MIRSpirodoc(this, m, 0, GWConst.KSpirodocOS);
+						currentDeviceHandler = new MIRSpirodoc(this, m, 0);
                         currentDeviceHandler.start(btSearcherListener, pairingMode);
 					} else {
-						currentDeviceHandler = new MIRSpirodoc(this, m, 3, GWConst.KSpirodocOS);
+						if (GWConst.KMsrOss.equals(currentDevice.getMeasure()))
+							currentDeviceHandler = new MIRSpirodoc(this, m, 3);
+						else if (GWConst.KMsrSpir.equals(currentDevice.getMeasure()))
+							currentDeviceHandler = new MIRSpirodoc(this, m, 2);
+						else
+							return;
 						startMeasure(AppResourceManager.getResource().getString("KInitMsgOS"));
-					}
-				}
-				break;
-			case GWConst.KSpirodocSP:
-				if (isConfig()) {
-					currentDeviceHandler = new MIRSpirodoc(this, m, 1, GWConst.KSpirodocSP);
-					notifyToUi(AppResourceManager.getResource().getString("KInitMsgConfSpiro"));
-                    currentDeviceHandler.start(currentDevice.getBtAddress(), pairingMode);
-				} else {
-					if (pairingMode) {
-						currentDeviceHandler = new MIRSpirodoc(this, m, 0, GWConst.KSpirodocSP);
-                        currentDeviceHandler.start(btSearcherListener, pairingMode);
-					} else {
-						currentDeviceHandler = new MIRSpirodoc(this, m, 2, GWConst.KSpirodocSP);
-						startMeasure(AppResourceManager.getResource().getString("KInitMsgSP"));
 					}
 				}
 				break;
@@ -195,6 +186,10 @@ public class DeviceManager implements DeviceListener {
 			case GWConst.K8000GW:
 				currentDeviceHandler = new Contec8000GW(this, m);
 				startMeasure(AppResourceManager.getResource().getString("KInitMsgECG"));
+				break;
+			case GWConst.KPC300SpotCheck:
+				currentDeviceHandler = new GIMAPC300SpotCheck(this, m);
+				startMeasure(AppResourceManager.getResource().getString("KInitMsgTC"));
 				break;
 		}
 	}
@@ -253,58 +248,6 @@ public class DeviceManager implements DeviceListener {
 
 	public void setCurrentUser(User currentUser) {
 		this.currentUser = currentUser;
-	}
-
-	public boolean checkIfAnotherSpirodocIsPaired(String kspirodoc) {
-		
-		Log.d(TAG, "checkIfAnotherSpirodocIsPaired() " + kspirodoc + "=" + currentDevice.getBtAddress());
-		boolean result = false;
-		try {
-			
-			if (currentDevice.getBtAddress() == null) {
-			
-				if (kspirodoc.equals(GWConst.KSpirodocOS)) {
-					
-					List<UserDevice> udl = DbManager.getDbManager().getCurrentUserDevices();
-					for (UserDevice userDevice : udl) {
-						if (userDevice.getDevice().getModel().equals(GWConst.KSpirodocSP)) {
-							if (userDevice.isActive() && userDevice.getBtAddress() != null) {
-								
-								Log.d(TAG, "copy=" + userDevice.getBtAddress());
-								
-								currentDevice.setBtAddress(userDevice.getBtAddress());
-								DbManager.getDbManager().updateBtAddressDevice(currentDevice);
-								result = true;
-							}
-						}
-					}
-					
-				} else if (kspirodoc.equals(GWConst.KSpirodocSP)) {
-										
-					List<UserDevice> udl = DbManager.getDbManager().getCurrentUserDevices();
-					for (UserDevice userDevice : udl) {
-						if (userDevice.getDevice().getModel().equals(GWConst.KSpirodocOS)) {
-							if (userDevice.isActive() && userDevice.getBtAddress() != null) {
-								
-								Log.d(TAG, "copy=" + userDevice.getBtAddress());
-								
-								currentDevice.setBtAddress(userDevice.getBtAddress());
-								DbManager.getDbManager().updateBtAddressDevice(currentDevice);
-								result = true;
-							}
-						}
-					}
-				}
-			}
-		}
-		catch(Exception e) {
-			Log.e(TAG, "checkIfAnotherSpirodocIsPaired() " + e);
-			result = false;
-		}
-		
-		Log.d(TAG, "checkIfAnotherSpirodocIsPaired() result=" + result);
-		
-		return result;
 	}
 
     // DeviceListener methods

@@ -25,14 +25,14 @@ public interface GWConst {
 	String KFORATherm = "FORAIR21B";
 	String KForaWS = "FORAW310";
     String KManualMeasure = "MANUALE";
-    String KSpirodocSP = "SPIRODOCSP";
-    String KSpirodocOS = "SPIRODOCOS";
+    String KSpirodoc = "SPIRODOC";
     String KANDPS = "ANDPS";
     String KANDPR = "ANDPR";
     String KCAMERA = "CAMERA";
     String KAEROTEL = "AEROTEL";
     String KMYGLUCOHEALTH = "MYGLUCOHEALTH";
 	String K8000GW = "8000GW";
+	String KPC300SpotCheck = "PC300";
 
         
 	String KMsrOss = "OS";

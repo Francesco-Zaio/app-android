@@ -97,8 +97,6 @@ public class Contec8000GW extends BroadcastReceiver implements DeviceHandler, BT
                 iScheduler.showMeasurementResults(iMeasure);
                 break;
         }
-
-    // TODO implementare gestione risultato
     }
 
     public Contec8000GW (DeviceListener aScheduler, Measure m) {

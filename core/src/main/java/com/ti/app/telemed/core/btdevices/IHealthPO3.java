@@ -32,10 +32,11 @@ class IHealthPO3 extends Handler implements IHealtDevice{
 
     private static final String TAG = "IHealthPO3";
 
-    private static final int NUMBER_OF_MEASUREMENTS = 2000; // = 5 min, 1 measure every 150ms
-    private static final int MIN_SAMPLES = 45;
+    private static final int NUMBER_OF_MEASUREMENTS = 300; // = 5 min, 1 measure every sec
+    private static final int MIN_SAMPLES = 7;
     private static final int BASE_OXY_STREAM_LENGTH = 189; //
 
+    private int counter;
     private double iSpO2Med,iHRMed;
     private int	iSpO2Min,iSpO2Max;
     private int	iHRMin,iHRMax;
@@ -74,8 +75,8 @@ class IHealthPO3 extends Handler implements IHealtDevice{
     private iHealthDevicesCallback mIHealthDevicesCallback = new iHealthDevicesCallback() {
         @Override
         public void onDeviceNotify(String mac, String deviceType, String action, String message) {
-            Log.d(TAG, "iHealthDevicesCallback:onDeviceNotify ++ " + "MAC=" + mac + " - DevType=" + deviceType
-                    + " - Action=" + action + " - Message=" + message);
+//            Log.v(TAG, "iHealthDevicesCallback:onDeviceNotify ++ " + "MAC=" + mac + " - DevType=" + deviceType
+//                    + " - Action=" + action + " - Message=" + message);
             Bundle bundle = new Bundle();
             Message msg = new Message();
             bundle.putString("message", message);
@@ -109,6 +110,7 @@ class IHealthPO3 extends Handler implements IHealtDevice{
         measure.setBtAddress(mac);
 
         firstRead = true;
+        counter = 0;
 
         iSpO2Min = 1024;
         iSpO2Max = 0;
@@ -123,7 +125,8 @@ class IHealthPO3 extends Handler implements IHealtDevice{
 
         oxyQueue = new Vector<>(NUMBER_OF_MEASUREMENTS);
         ByteBuffer tmpStream = ByteBuffer.allocate(BASE_OXY_STREAM_LENGTH);
-        tmpStream.put(67, (byte)0x0A); //STEP_OXY
+        tmpStream.put(66, (byte)0x00); //STEP_OXY MSB
+        tmpStream.put(67, (byte)0x0A); //STEP_OXY LSB (tempo di campionamento in 1/10 sec)
         tmpStream.put(68, (byte)0x04);
         tmpStream.put(69, (byte)0x20); //FL_TEST
         oxyStream = tmpStream.array();
@@ -205,6 +208,12 @@ class IHealthPO3 extends Handler implements IHealtDevice{
         int aSpO2 = 0;
         int aHR = 0;
 
+        // get only 3 samples every 20 (samples arrive every 150msec -> 1 sample/sec stored)
+        counter++;
+        int n = counter%20;
+        if (n!=0 && n!=6 && n!=13)
+            return;
+
         try {
             JSONTokener jsonTokener = new JSONTokener(message);
             JSONObject jsonObject = (JSONObject) jsonTokener.nextValue();
@@ -283,7 +292,7 @@ class IHealthPO3 extends Handler implements IHealtDevice{
             oxyStream[BASE_OXY_STREAM_LENGTH + (i*2) + 1] = (byte)(elem.getIFreq() & 0xFF);	//HR
         }
 
-        iAnalysisTime = sampleCount*150/1000; // tempo in secondi
+        iAnalysisTime = sampleCount; // tempo in secondi
 
         iSpO2Med = ((double)spO2Tot/(double)sampleCount);
         iHRMed = ((double)hrTot/(double)sampleCount);

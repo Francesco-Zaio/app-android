@@ -383,7 +383,7 @@ public class DbManager {
         }
 	}
 
-	///////////////////
+ 	///////////////////
     private Device getDeviceObject(Cursor c) {
         synchronized (this) {
             Device ret = new Device();
@@ -1827,11 +1827,24 @@ public class DbManager {
 	
 	public void updateBtAddressDevice(UserDevice ud) {
         synchronized (this) {
+
+            // In case the same device model manages more mesure types we need to update
+            // all entries of USER_DEVICE where device model and user id mach the given device
+            Log.i(TAG, "updateBtAddressDevice");
+            ContentValues values = new ContentValues();
+            values.put("BTADDRESS", ud.getBtAddress());
+            String[] args = new String[]{ud.getDevice().getModel(), ud.getIdUser()};
+            String whereClause = "ID in (select UD.ID from USER_DEVICE AS UD JOIN DEVICE AS D ON UD.ID_DEVICE=D.ID AND D.MODEL = ? AND UD.ID_USER = ?)";
+            int n = mDb.update("USER_DEVICE", values, whereClause, args);
+            Log.i(TAG, "updateBtAddressDevice " + n + " records updated");
+
+            /*
             Log.i(TAG, "updateBtAddressDevice");
             ContentValues values = new ContentValues();
             values.put("BTADDRESS", ud.getBtAddress());
             String[] args = new String[]{"" + ud.getId()};
             mDb.update("USER_DEVICE", values, "ID = ? ", args);
+            */
 
             // Aggiorno i dati sulla tabella current_device
             try {

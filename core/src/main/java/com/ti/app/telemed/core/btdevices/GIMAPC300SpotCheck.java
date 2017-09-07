@@ -16,7 +16,9 @@ import com.ti.app.telemed.core.btmodule.DeviceListener;
 import com.ti.app.telemed.core.btmodule.events.BTSearcherEvent;
 import com.ti.app.telemed.core.btmodule.events.BTSearcherEventListener;
 import com.ti.app.telemed.core.common.Measure;
+import com.ti.app.telemed.core.common.User;
 import com.ti.app.telemed.core.common.UserDevice;
+import com.ti.app.telemed.core.usermodule.UserManager;
 import com.ti.app.telemed.core.util.GWConst;
 
 import java.io.IOException;
@@ -75,6 +77,7 @@ public class GIMAPC300SpotCheck
 
     // BT address of the connected device or the device to connect to
     private String iBtDevAddr;
+    private UserDevice iUserDevice;
 
     private BluetoothDevice selectedDevice;
     private BluetoothOpertion  bluetoothOper = null;
@@ -89,7 +92,6 @@ public class GIMAPC300SpotCheck
     private int iBattery = 0;
 
     private DeviceListener deviceListener;
-    private Measure iMeasure;
 
     // Indicates that the current request is not a measure but a connection request
     private boolean iPairingMode = false;
@@ -103,13 +105,11 @@ public class GIMAPC300SpotCheck
         return false;
     }
 
-    public GIMAPC300SpotCheck(DeviceListener aScheduler, Measure m) {
+    public GIMAPC300SpotCheck(DeviceListener aScheduler) {
         deviceList = new Vector<>();
-        scanActivityListener = null;
         bluetoothOper = new BluetoothOpertion(MyApp.getContext(),this);
         iState = TState.WaitingToGetDevice;
         deviceListener = aScheduler;
-        iMeasure = m;
     }
 
 
@@ -344,33 +344,37 @@ public class GIMAPC300SpotCheck
     }
 
     @Override
-    public void start(String deviceInfo, boolean pairingMode) {
-        iBtDevAddr = deviceInfo;
-        iPairingMode = pairingMode;
-        iCmdCode = TCmd.ECmdConnByAddr;
+    public void start(OperationType ot, UserDevice ud, BTSearcherEventListener scanActivityListener) {
         if (iState == TState.WaitingToGetDevice) {
-            // it changes state
+            iPairingMode = ot == OperationType.Pair;
+            iUserDevice = ud;
+            this.scanActivityListener = scanActivityListener;
+            iBtDevAddr = iUserDevice.getBtAddress();
+            if (iBtDevAddr != null && !iBtDevAddr.isEmpty()) {
+                iCmdCode = TCmd.ECmdConnByAddr;
+            } else {
+                iCmdCode = TCmd.ECmdConnByUser;
+            }
             iState = TState.GettingDevice;
             bluetoothOper.discovery();
         }
     }
 
     @Override
-    public void start(BTSearcherEventListener listener, boolean pairingMode) {
-        iCmdCode = TCmd.ECmdConnByUser;
-        iPairingMode = pairingMode;
-        if (iState == TState.WaitingToGetDevice) {
-            // it changes state
-            iState = TState.GettingDevice;
-            scanActivityListener = listener;
-            bluetoothOper.discovery();
-        }
+    public void stopDeviceOperation(int selected) {
+    	if (selected < 0) {
+            stop();
+		} else {
+            selectedDevice = deviceList.elementAt(selected);
+            iBtDevAddr = selectedDevice.getAddress();
+            sendEmptyMessage(MSG_DEVICE_SELECTED);
+		}
     }
 
-    @Override
+
     public void reset() {
         iState = TState.WaitingToGetDevice;
-        scanActivityListener = null;
+
         deviceList.clear();
         selectedDevice = null;
         devSocket = null;
@@ -378,7 +382,6 @@ public class GIMAPC300SpotCheck
         spotCheck = null;
     }
 
-    @Override
     public void stop() {
         Log.d(TAG, "stop");
         iState = TState.Disconnecting;
@@ -392,17 +395,6 @@ public class GIMAPC300SpotCheck
 
         reset();
         deviceListener.operationCompleted();
-    }
-    
-    @Override
-    public void stopDeviceOperation(int selected) {
-    	if (selected < 0) {
-            stop();
-		} else {
-            selectedDevice = deviceList.elementAt(selected);
-            iBtDevAddr = selectedDevice.getAddress();
-            sendEmptyMessage(MSG_DEVICE_SELECTED);
-		}
     }
 
 
@@ -455,7 +447,7 @@ public class GIMAPC300SpotCheck
                     // Bluetooth discovery finished without finding the device
                     deviceListener.notifyError(DeviceListener.DEVICE_NOT_FOUND_ERROR, ResourceManager.getResource().getString("EDeviceNotFound"));
                     stop();
-                } else if (scanActivityListener != null)
+                } else if (iCmdCode == TCmd.ECmdConnByUser && scanActivityListener != null)
                     scanActivityListener.deviceSearchCompleted(new BTSearcherEvent(this));
                 break;
             case MSG_DEVICE_SELECTED:
@@ -491,9 +483,9 @@ public class GIMAPC300SpotCheck
             deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR,ResourceManager.getResource().getString("ECommunicationError"));
             stop();
         }
-        if (GWConst.KMsrOss.equalsIgnoreCase(iMeasure.getMeasureType()))
+        if (GWConst.KMsrOss.equalsIgnoreCase(iUserDevice.getMeasure()))
             initOxyData();
-        switch (iMeasure.getMeasureType()) {
+        switch (iUserDevice.getMeasure()) {
             case GWConst.KMsrTemp:
                 deviceListener.notifyToUi(ResourceManager.getResource().getString("DoMeasureTC"));
                 break;
@@ -507,18 +499,30 @@ public class GIMAPC300SpotCheck
     // Temperature Measure metohds
 
     private void makeTemperatureResultData() {
-        if (!GWConst.KMsrTemp.equals(iMeasure.getMeasureType())) {
+        if (!GWConst.KMsrTemp.equals(iUserDevice.getMeasure())) {
             deviceListener.notifyError(DeviceListener.MEASURE_PROCEDURE_ERROR,ResourceManager.getResource().getString("KWrongMeasure"));
         } else {
             HashMap<String, String> tmpVal = new HashMap<>();
             tmpVal.put(GWConst.EGwCode_0R, iBodyTemperature);
             tmpVal.put(GWConst.EGwCode_BATTERY, Integer.toString(iBattery)); // livello batteria
-            iMeasure.setMeasures(tmpVal);
-            iMeasure.setFile(null);
-            iMeasure.setFileType(null);
-            iMeasure.setFailed(false);
-            iMeasure.setBtAddress(iBtDevAddr);
-            deviceListener.showMeasurementResults(iMeasure);
+
+            Measure m = new Measure();
+            User u = UserManager.getUserManager().getCurrentUser();
+            m.setMeasureType(iUserDevice.getMeasure());
+            m.setDeviceDesc(iUserDevice.getDevice().getDescription());
+            m.setTimestamp(XmlManager.getXmlManager().getTimestamp(null));
+            m.setFile(null);
+            m.setFileType(null);
+            if (u != null) {
+                m.setIdUser(u.getId());
+                if (u.getIsPatient())
+                    m.setIdPatient(u.getId());
+            }
+            m.setMeasures(tmpVal);
+            m.setFailed(false);
+            m.setBtAddress(iBtDevAddr);
+
+            deviceListener.showMeasurementResults(m);
         }
         stop();
     }
@@ -756,12 +760,24 @@ public class GIMAPC300SpotCheck
         tmpVal.put(GWConst.EGwCode_1H, oxyFileName);  // filename
         tmpVal.put(GWConst.EGwCode_BATTERY, Integer.toString(iBattery)); // livello batteria
 
-        iMeasure.setMeasures(tmpVal);
-        iMeasure.setFile(oxyStream);
-        iMeasure.setFileType(XmlManager.MIR_OXY_FILE_TYPE);
-        iMeasure.setFailed(false);
-        iMeasure.setBtAddress(iBtDevAddr);
-        deviceListener.showMeasurementResults(iMeasure);
+
+        Measure m = new Measure();
+        User u = UserManager.getUserManager().getCurrentUser();
+        m.setMeasureType(iUserDevice.getMeasure());
+        m.setDeviceDesc(iUserDevice.getDevice().getDescription());
+        m.setTimestamp(XmlManager.getXmlManager().getTimestamp(null));
+        m.setFile(oxyStream);
+        m.setFileType(XmlManager.MIR_OXY_FILE_TYPE);
+        if (u != null) {
+            m.setIdUser(u.getId());
+            if (u.getIsPatient())
+                m.setIdPatient(u.getId());
+        }
+        m.setMeasures(tmpVal);
+        m.setFailed(false);
+        m.setBtAddress(iBtDevAddr);
+
+        deviceListener.showMeasurementResults(m);
         stop();
     }
 

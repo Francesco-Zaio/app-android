@@ -18,8 +18,11 @@ import com.ti.app.telemed.core.btmodule.events.BTSearcherEventListener;
 import com.ti.app.telemed.core.btmodule.events.BTSocketEvent;
 import com.ti.app.telemed.core.btmodule.events.BTSocketEventListener;
 import com.ti.app.telemed.core.common.Measure;
+import com.ti.app.telemed.core.common.User;
 import com.ti.app.telemed.core.common.UserDevice;
 import com.ti.app.telemed.core.devicesactivities.Contec8000GWActivity;
+import com.ti.app.telemed.core.usermodule.UserManager;
+import com.ti.app.telemed.core.xmlmodule.XmlManager;
 
 
 import java.io.IOException;
@@ -67,6 +70,7 @@ public class Contec8000GW extends BroadcastReceiver implements DeviceHandler, BT
     // after the device finding)
     private String iBTAddress;
     private boolean iPairingMode;
+    private Measure iMeasure;
 
     private boolean serverOpenFailed;
 
@@ -76,10 +80,6 @@ public class Contec8000GW extends BroadcastReceiver implements DeviceHandler, BT
 
     // a pointer to scheduler
     private DeviceListener iScheduler;
-    private Measure iMeasure;
-
-    private BTSearcherEventListener scanActivityListener;
-
 
     public static boolean needPairing(UserDevice userDevice) {
         return true;
@@ -89,10 +89,9 @@ public class Contec8000GW extends BroadcastReceiver implements DeviceHandler, BT
         return false;
     }
 
-    public Contec8000GW (DeviceListener aScheduler, Measure m) {
+    public Contec8000GW (DeviceListener aScheduler) {
         iState = TState.EWaitingToGetDevice;
         iScheduler = aScheduler;
-        iMeasure = m;
         deviceSearchCompleted = false;
         serverOpenFailed = false;
         iServiceSearcher = new BTSearcher();
@@ -141,10 +140,6 @@ public class Contec8000GW extends BroadcastReceiver implements DeviceHandler, BT
             case EGettingService:
                 iState = TState.EGettingConnection;
                 try {
-                    iServiceSearcher.removeBTSearcherEventListener(this);
-                    if(scanActivityListener!= null){
-                        iServiceSearcher.removeBTSearcherEventListener(scanActivityListener);
-                    }
                     if (iPairingMode)
                         connectToDevice();
                     else {
@@ -204,15 +199,35 @@ public class Contec8000GW extends BroadcastReceiver implements DeviceHandler, BT
     }
 
     @Override
-    public void start(String btAddr, boolean pairingMode) {
-        iBtDevAddr = btAddr;
-        iPairingMode = pairingMode;
-        iCmdCode = TCmd.ECmdConnByAddr;
-
+    public void start(OperationType ot, UserDevice ud, BTSearcherEventListener btSearchListener) {
         if (iState == TState.EWaitingToGetDevice) {
-            // it changes state
-            iState = TState.EGettingDevice;
+            iPairingMode = ot == OperationType.Pair;
+            iBtDevAddr = ud.getBtAddress();
+
+            iMeasure = new Measure();
+            User u = UserManager.getUserManager().getCurrentUser();
+            iMeasure.setMeasureType(ud.getMeasure());
+            iMeasure.setDeviceDesc(ud.getDevice().getDescription());
+            iMeasure.setTimestamp(XmlManager.getXmlManager().getTimestamp(null));
+            iMeasure.setFile(null);
+            iMeasure.setFileType(null);
+            if (u != null) {
+                iMeasure.setIdUser(u.getId());
+                if (u.getIsPatient())
+                    iMeasure.setIdPatient(u.getId());
+            }
+            iMeasure.setFailed(false);
+            iMeasure.setBtAddress(iBTAddress);
+
+            iServiceSearcher.clearBTSearcherEventListener();
             iServiceSearcher.addBTSearcherEventListener(this);
+            if (iBtDevAddr != null && !iBtDevAddr.isEmpty()) {
+                iCmdCode = TCmd.ECmdConnByAddr;
+            } else {
+                iCmdCode = TCmd.ECmdConnByUser;
+                iServiceSearcher.addBTSearcherEventListener(btSearchListener);
+            }
+            iState = TState.EGettingDevice;
             iServiceSearcher.setSearchType(iCmdCode);
             // it launch the automatic procedures for the manual device search
             iServiceSearcher.startSearchDevices();
@@ -220,23 +235,26 @@ public class Contec8000GW extends BroadcastReceiver implements DeviceHandler, BT
     }
 
     @Override
-    public void start(BTSearcherEventListener listener, boolean pairingMode) {
-        iCmdCode = TCmd.ECmdConnByUser;
-        iPairingMode = pairingMode;
-        if (iState == TState.EWaitingToGetDevice) {
-            // it changes state
-            iState = TState.EGettingDevice;
-            //in questo caso ci sono 2 listener... uno è DeviceScanActivity, l'altro è la classe stessa
-            scanActivityListener = listener;
-            iServiceSearcher.addBTSearcherEventListener(listener);
-            iServiceSearcher.addBTSearcherEventListener(this);
-            iServiceSearcher.setSearchType(iCmdCode);
-            // it launch the automatic procedures for the manual device search
-            iServiceSearcher.startSearchDevices();
+    public void stopDeviceOperation(int selected) {
+        if (selected == -1) {
+            // L'utente ha premuto Annulla sulla finestra di dialogo
+            stop();
+            reset();
+        } else if (selected == -2) {
+            // L'utente ha premuto back o ha chiuso la lista dei device trovati sena selezionarne nessuno
+            iServiceSearcher.stopSearchDevices(-1);
+            iServiceSearcher.removeBTSearcherEventListener(this);
+            if (iState != TState.EGettingDevice) {
+                // we advise the scheduler of the end of the activity on the device
+                iScheduler.operationCompleted();
+            }
+        } else {
+            // >= 0 (device selezionato)
+            iServiceSearcher.stopSearchDevices(selected);
         }
     }
 
-    @Override
+
     public void reset() {
         iState = TState.EWaitingToGetDevice;
         deviceSearchCompleted = false;
@@ -244,14 +262,9 @@ public class Contec8000GW extends BroadcastReceiver implements DeviceHandler, BT
         iBTAddress = null;
     }
 
-    @Override
     public void stop() {
         if (iState == TState.EGettingDevice) {
             iServiceSearcher.stopSearchDevices(-1);
-            iServiceSearcher.removeBTSearcherEventListener(this);
-            if(scanActivityListener!= null){
-                iServiceSearcher.removeBTSearcherEventListener(scanActivityListener);
-            }
             iServiceSearcher.close();
             // we advise the scheduler of the end of the activity on the device
             iScheduler.operationCompleted();
@@ -273,26 +286,6 @@ public class Contec8000GW extends BroadcastReceiver implements DeviceHandler, BT
             }
             // we advise the scheduler of the end of the activity on the device
             iScheduler.operationCompleted();
-        }
-    }
-
-    @Override
-    public void stopDeviceOperation(int selected) {
-        if (selected == -1) {
-            // L'utente ha premuto Annulla sulla finestra di dialogo
-            stop();
-            reset();
-        } else if (selected == -2) {
-            // L'utente ha premuto back o ha chiuso la lista dei device trovati sena selezionarne nessuno
-            iServiceSearcher.stopSearchDevices(-1);
-            iServiceSearcher.removeBTSearcherEventListener(this);
-            if (iState != TState.EGettingDevice) {
-                // we advise the scheduler of the end of the activity on the device
-                iScheduler.operationCompleted();
-            }
-        } else {
-            // >= 0 (device selezionato)
-            iServiceSearcher.stopSearchDevices(selected);
         }
     }
 

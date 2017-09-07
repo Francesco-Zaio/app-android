@@ -2537,36 +2537,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
         }
 	}
 
-	private void askPrePostPrandialGlycaemia() {
-		askPrePostPrandialGlycaemia(true);
-	}
-
-	private void askPrePostPrandialGlycaemia(final boolean startMeasure) {
-		AlertDialog.Builder builder = new AlertDialog.Builder(this);
-    	builder.setTitle("");
-    	builder.setCancelable(false);
-		builder.setMessage(AppResourceManager.getResource().getString("KPrePostMsgCGE2Pro"));
-		builder.setPositiveButton(AppResourceManager.getResource().getString("EGwnurseMeasureGlyPREBtn"),
-				new DialogInterface.OnClickListener(){
-					public void onClick(DialogInterface arg0, int arg1) {
-						if (startMeasure)
-							deviceManager.startMeasure();
-						else
-							deviceManager.finalizeMeasure();
-					}
-		});
-		builder.setNegativeButton(AppResourceManager.getResource().getString("EGwnurseMeasureGlyPOSTBtn"),
-				new DialogInterface.OnClickListener(){
-					public void onClick(DialogInterface arg0, int arg1) {
-						if (startMeasure)
-							deviceManager.startMeasure();
-						else
-							deviceManager.finalizeMeasure();
-					}
-		});
-		builder.show();
-	}
-
 	private void askSomething(String message, String positive, String negative) {
 		AlertDialog.Builder builder = new AlertDialog.Builder(this);
     	builder.setTitle("");

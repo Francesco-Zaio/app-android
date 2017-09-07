@@ -22,7 +22,9 @@ import com.ti.app.telemed.core.btmodule.events.BTSocketEventListener;
 import com.ti.app.telemed.core.btmodule.DeviceHandler;
 import com.ti.app.telemed.core.btmodule.DeviceListener;
 import com.ti.app.telemed.core.common.Measure;
+import com.ti.app.telemed.core.common.User;
 import com.ti.app.telemed.core.common.UserDevice;
+import com.ti.app.telemed.core.usermodule.UserManager;
 import com.ti.app.telemed.core.util.GWConst;
 import com.ti.app.telemed.core.xmlmodule.XmlManager;
 
@@ -159,7 +161,8 @@ public class EcgProtocol implements DeviceHandler,
 
     // a pointer to scheduler
     private DeviceListener iScheduler;
-    private Measure iMeasure;
+    private BTSearcherEventListener iBTSearchListener;
+    private UserDevice iUserDevice;
 
     // Controlla il numero di tentativi di ritrasmissione di
     // un pacchetto errato
@@ -167,8 +170,6 @@ public class EcgProtocol implements DeviceHandler,
 
     private boolean iFirstPacket;
     private Timer timer;
-    private BTSearcherEventListener scanActivityListener;
-
 
     private static final String TAG = "EcgProtocol";
 
@@ -180,10 +181,9 @@ public class EcgProtocol implements DeviceHandler,
         return false;
     }
 
-    public EcgProtocol(DeviceListener aScheduler, Measure m) {
+    public EcgProtocol(DeviceListener aScheduler) {
         iState = TState.EWaitingToGetDevice;
         iScheduler = aScheduler;
-        iMeasure = m;
         deviceSearchCompleted = false;
         dataFound = false;
 
@@ -250,6 +250,79 @@ public class EcgProtocol implements DeviceHandler,
     }
 
     @Override
+    public void start(OperationType ot, UserDevice ud, BTSearcherEventListener btSearchListener) {
+        if (iState == TState.EWaitingToGetDevice) {
+            iPairingMode = (ot == OperationType.Pair);
+            iUserDevice = ud;
+            iBTSearchListener = btSearchListener;
+            iBtDevAddr = iUserDevice.getBtAddress();
+            iServiceSearcher.clearBTSearcherEventListener();
+            iServiceSearcher.addBTSearcherEventListener(this);
+            if (iBtDevAddr != null && !iBtDevAddr.isEmpty()) {
+                iCmdCode = TCmd.ECmdConnByAddr;
+            } else {
+                iCmdCode = TCmd.ECmdConnByUser;
+                iServiceSearcher.addBTSearcherEventListener(iBTSearchListener);
+            }
+            iState = TState.EGettingDevice;
+            iServiceSearcher.setSearchType(iCmdCode);
+            // it launch the automatic procedures for the manual device search
+            iServiceSearcher.startSearchDevices();
+        }
+    }
+
+
+    @Override
+    public void stopDeviceOperation(int selected) {
+        if (selected == -1) {
+            stop();
+        } else if (selected == -2) {
+            iServiceSearcher.stopSearchDevices(-1);
+            iServiceSearcher.removeBTSearcherEventListener(this);
+            if (iState != TState.EGettingDevice) {
+                // we advise the scheduler of the end of the activity on the device
+                iScheduler.operationCompleted();
+            }
+        } else {
+            iBTAddress = deviceList.elementAt(selected).getAddress();
+            iServiceSearcher.stopSearchDevices(selected);
+        }
+    }
+
+
+    public void stop() {
+        if (iState == TState.EGettingDevice) {
+            iServiceSearcher.stopSearchDevices(-1);
+            iServiceSearcher.close();
+            // we advise the scheduler of the end of the activity on the device
+            iScheduler.operationCompleted();
+        } else if (iState == TState.EGettingService) {
+            iServiceSearcher.close();
+            // we advise the scheduler of the end of the activity on the device
+            iScheduler.operationCompleted();
+        } else if (iState == TState.EDisconnectingPairing) {
+            iECGSocket.close();
+            iECGSocket.removeBTSocketEventListener(this);
+            runBTSocket();
+            // we advise the scheduler of the end of the activity on the device
+            iScheduler.operationCompleted();
+        } else if (iState == TState.EDisconnectingOK) {
+            iECGSocket.close();
+            iECGSocket.removeBTSocketEventListener(this);
+            iState = TState.EWaitingToGetDevice;
+            makeResultData();
+            currentPos = 0;
+        } else {
+            if (!serverOpenFailed) {
+                // cancels all outstanding operations on socket
+                iECGSocket.close();
+                iECGSocket.removeBTSocketEventListener(this);
+            }
+            // we advise the scheduler of the end of the activity on the device
+            iScheduler.operationCompleted();
+        }
+    }
+
     public void reset() {
         Log.i(TAG, "-----------------ECG reset");
         if (timer!=null) {
@@ -283,93 +356,6 @@ public class EcgProtocol implements DeviceHandler,
         serverOpenFailed = false;
         // this class object must return to the initial state
         iState = TState.EWaitingToGetDevice;
-    }
-
-    @Override
-    public void start(String deviceInfo, boolean pairingMode) {
-        iPairingMode = pairingMode;
-        iBtDevAddr = deviceInfo;
-        iCmdCode = TCmd.ECmdConnByAddr;
-        if (iState == TState.EWaitingToGetDevice) {
-            // it changes state
-            iState = TState.EGettingDevice;
-            iServiceSearcher.addBTSearcherEventListener(this);
-            iServiceSearcher.setSearchType(iCmdCode);
-            // it launch the automatic procedures for the manual device search
-            iServiceSearcher.startSearchDevices();
-        }
-    }
-
-    @Override
-    public void start(BTSearcherEventListener listener, boolean pairingMode) {
-        iPairingMode = pairingMode;
-        iCmdCode = TCmd.ECmdConnByUser;
-        if (iState == TState.EWaitingToGetDevice) {
-            // it changes state
-            iState = TState.EGettingDevice;
-            //in questo caso ci sono 2 listener... uno è DeviceScanActivity, l'altro è la classe stessa
-            scanActivityListener = listener;
-            iServiceSearcher.addBTSearcherEventListener(listener);
-            iServiceSearcher.addBTSearcherEventListener(this);
-            iServiceSearcher.setSearchType(iCmdCode);
-            // it launch the automatic procedures for the manual device search
-            iServiceSearcher.startSearchDevices();
-        }
-    }
-
-    @Override
-    public void stop() {
-        if (iState == TState.EGettingDevice) {
-            iServiceSearcher.stopSearchDevices(-1);
-            iServiceSearcher.removeBTSearcherEventListener(this);
-            if(scanActivityListener!= null){
-                iServiceSearcher.removeBTSearcherEventListener(scanActivityListener);
-            }
-            iServiceSearcher.close();
-            // we advise the scheduler of the end of the activity on the device
-            iScheduler.operationCompleted();
-        } else if (iState == TState.EGettingService) {
-            iServiceSearcher.close();
-            // we advise the scheduler of the end of the activity on the device
-            iScheduler.operationCompleted();
-        } else if (iState == TState.EDisconnectingPairing) {
-            iECGSocket.close();
-            iECGSocket.removeBTSocketEventListener(this);
-            runBTSocket();
-            // we advise the scheduler of the end of the activity on the device
-            iScheduler.operationCompleted();
-        } else if (iState == TState.EDisconnectingOK) {
-            iECGSocket.close();
-            iECGSocket.removeBTSocketEventListener(this);
-            iState = TState.EWaitingToGetDevice;
-            makeResultData();
-            currentPos = 0;
-        } else {
-            if (!serverOpenFailed) {
-                // cancels all outstanding operations on socket
-                iECGSocket.close();
-                iECGSocket.removeBTSocketEventListener(this);
-            }
-            // we advise the scheduler of the end of the activity on the device
-            iScheduler.operationCompleted();
-        }
-    }
-
-    @Override
-    public void stopDeviceOperation(int selected) {
-        if (selected == -1) {
-            stop();
-        } else if (selected == -2) {
-            iServiceSearcher.stopSearchDevices(-1);
-            iServiceSearcher.removeBTSearcherEventListener(this);
-            if (iState != TState.EGettingDevice) {
-                // we advise the scheduler of the end of the activity on the device
-                iScheduler.operationCompleted();
-            }
-        } else {
-            iBTAddress = deviceList.elementAt(selected).getAddress();
-            iServiceSearcher.stopSearchDevices(selected);
-        }
     }
 
 
@@ -751,16 +737,27 @@ public class EcgProtocol implements DeviceHandler,
         tmpVal.put(GWConst.EGwCode_0G, ecgFileName);  // filename
         if (iBattery > 0)
             tmpVal.put(GWConst.EGwCode_BATTERY, Integer.toString(iBattery)); // livello batteria
-        iMeasure.setMeasures(tmpVal);
         ByteBuffer buf = ByteBuffer.wrap(iEcgBuffer, 128, iEcgBuffer.length -128);
         byte[] iEcgBufferTemp = new byte[iEcgBuffer.length -128];
         buf.get(iEcgBufferTemp);
-        iMeasure.setFile(iEcgBufferTemp);
-        iMeasure.setFileType(XmlManager.ECG_FILE_TYPE);
-        iMeasure.setFailed(false);
-        iMeasure.setBtAddress(iBTAddress);
 
-        iScheduler.showMeasurementResults(iMeasure);
+        Measure m = new Measure();
+        User u = UserManager.getUserManager().getCurrentUser();
+        m.setMeasureType(iUserDevice.getMeasure());
+        m.setDeviceDesc(iUserDevice.getDevice().getDescription());
+        m.setTimestamp(XmlManager.getXmlManager().getTimestamp(null));
+        m.setFile(iEcgBufferTemp);
+        m.setFileType(XmlManager.ECG_FILE_TYPE);
+        if (u != null) {
+            m.setIdUser(u.getId());
+            if (u.getIsPatient())
+                m.setIdPatient(u.getId());
+        }
+        m.setMeasures(tmpVal);
+        m.setFailed(false);
+        m.setBtAddress(iBTAddress);
+
+        iScheduler.showMeasurementResults(m);
     }
 
     private void runBTSearcher(){
@@ -823,18 +820,12 @@ public class EcgProtocol implements DeviceHandler,
             case EGettingService:
                 iState = TState.EConnected;
                 try {
-                    // the search is finished and we stop it (we remove from event list)
-                    iServiceSearcher.removeBTSearcherEventListener(this);
-                    if(scanActivityListener!= null){
-                        iServiceSearcher.removeBTSearcherEventListener(scanActivityListener);
-                    }
                     connectToServer();
                 } catch (IOException e) {
                     String msg = ResourceManager.getResource().getString("EBtDeviceConnError");
                     iScheduler.notifyError(msg,msg);
                 }
                 break;
-
         }
     }
 

@@ -156,103 +156,22 @@ public class DeviceManager implements DeviceListener {
 
 	private void executeOp() throws Exception {
 
-        User u = UserManager.getUserManager().getCurrentUser();
-        Measure m = new Measure();
-        m.setMeasureType(currentDevice.getDevice().getMeasure());
-        m.setStandardProtocol(true);
-        m.setDeviceDesc(currentDevice.getDevice().getDescription());
-        m.setTimestamp(XmlManager.getXmlManager().getTimestamp(null));
-        m.setFile(null);
-        m.setFileType(null);
-		if (u != null) {
-			m.setIdUser(u.getId());
-			if (u.getIsPatient())
-				m.setIdPatient(u.getId());
-		}
+        Class<?> c = Class.forName("com.ti.app.telemed.core.btdevices." + currentDevice.getDevice().getClassName());
+        currentDeviceHandler = (DeviceHandler) c.getDeclaredConstructor(DeviceListener.class).newInstance(this);
 
-		switch (currentDevice.getDevice().getModel()) {
-			case GWConst.KPO3IHealth:
-				currentDeviceHandler = new IHealth(this, m, currentDevice.getDevice().getModel());
-				startMeasure(AppResourceManager.getResource().getString("KInitMsgOS"));
-				break;
-            case GWConst.KBP5IHealth:
-            case GWConst.KBP550BTIHealth:
-                currentDeviceHandler = new IHealth(this, m, currentDevice.getDevice().getModel());
-				startMeasure(AppResourceManager.getResource().getString("KInitMsgPR"));
-				break;
-			case GWConst.KHS4SIHealth:
-				currentDeviceHandler = new IHealth(this, m, currentDevice.getDevice().getModel());
-				startMeasure(AppResourceManager.getResource().getString("KInitMsgPS"));
-				break;
-			case GWConst.KEcgMicro:
-				currentDeviceHandler = new EcgProtocol(this, m);
-				startMeasure(AppResourceManager.getResource().getString("KInitMsgECG"));
-				break;
-			case GWConst.KCcxsRoche:
-				currentDeviceHandler = new RocheProthrombineTimeClient(this, m);
-                startMeasure(AppResourceManager.getResource().getString("KInitMsgPT"));
-				break;
-            case GWConst.KFORATherm:
-				currentDeviceHandler = new ForaThermometerClient(this, m);
-				startMeasure(AppResourceManager.getResource().getString("KInitMsgTC"));
-				break;
-			case GWConst.KSpirodoc:
-				if (isConfig()) {
-					currentDeviceHandler = new MIRSpirodoc(this, m, 1);
-					notifyToUi(AppResourceManager.getResource().getString("KInitMsgConfOxy"));
-                    currentDeviceHandler.start(currentDevice.getBtAddress(), pairingMode);
-				} else {
-					if (pairingMode) {
-						currentDeviceHandler = new MIRSpirodoc(this, m, 0);
-                        currentDeviceHandler.start(btSearcherListener, pairingMode);
-					} else {
-						if (GWConst.KMsrOss.equals(currentDevice.getMeasure()))
-							currentDeviceHandler = new MIRSpirodoc(this, m, 3);
-						else if (GWConst.KMsrSpir.equals(currentDevice.getMeasure()))
-							currentDeviceHandler = new MIRSpirodoc(this, m, 2);
-						else
-							return;
-						startMeasure(AppResourceManager.getResource().getString("KInitMsgOS"));
-					}
-				}
-				break;
-            case GWConst.KOximeterNon:
-				currentDeviceHandler = new NoninOximeter(this, m);
-				startMeasure(AppResourceManager.getResource().getString("KInitMsgOS"));
-				break;
-			case GWConst.K8000GW:
-				currentDeviceHandler = new Contec8000GW(this, m);
-				startMeasure(AppResourceManager.getResource().getString("KInitMsgECG"));
-				break;
-			case GWConst.KPC300SpotCheck:
-				currentDeviceHandler = new GIMAPC300SpotCheck(this, m);
-				startMeasure(AppResourceManager.getResource().getString("KInitMsgTC"));
-				break;
-		}
-	}
+        DeviceHandler.OperationType op;
+        if (isConfig)
+            op = DeviceHandler.OperationType.Config;
+        else if (pairingMode)
+            op = DeviceHandler.OperationType.Pair;
+        else
+            op = DeviceHandler.OperationType.Measure;
 
-	private boolean isConfig() {
-		return isConfig;
+        currentDeviceHandler.start(op, currentDevice, btSearcherListener);
 	}
 
     private void setConfig(boolean isConfig) {
 		this.isConfig = isConfig;
-	}
-
-	private void startMeasure(String msg) throws Exception {
-		Log.d(TAG, "startMeasure " + msg);
-		if (currentDevice.getBtAddress()!= null && 
-				currentDevice.getBtAddress().length() > 0) {
-			notifyToUi(msg);
-			
-			Log.d(TAG, "search by address: " + currentDevice.getBtAddress());
-		    // search by address			
-			currentDeviceHandler.start(currentDevice.getBtAddress(), pairingMode);
-		} else {
-			Log.d(TAG, "search by user");
-		    // search by user
-			currentDeviceHandler.start(btSearcherListener, pairingMode);
-		}	
 	}
 
 	public void stopDeviceOperation(int selected) {
@@ -392,16 +311,5 @@ public class DeviceManager implements DeviceListener {
 
 	public boolean isOperationRunning() {
 		return operationRunning;
-	}
-
-	public void finalizeMeasure() {
-
-		Log.d(TAG, "finalizeMeasure()");
-		try {
-			currentDeviceHandler.stop();
-		} catch (Exception e) {
-			showError(AppResourceManager.getResource().getString(
-			"EGWNurseBtDeviceDisconnError"));
-		}
 	}
 }

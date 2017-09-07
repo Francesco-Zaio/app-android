@@ -27,6 +27,7 @@ import com.ti.app.telemed.core.common.Measure;
 import com.ti.app.telemed.core.common.Patient;
 import com.ti.app.telemed.core.btmodule.DeviceHandler;
 import com.ti.app.telemed.core.btmodule.DeviceListener;
+import com.ti.app.telemed.core.common.User;
 import com.ti.app.telemed.core.common.UserDevice;
 import com.ti.app.telemed.core.usermodule.UserManager;
 import com.ti.app.telemed.core.xmlmodule.XmlManager;
@@ -93,6 +94,7 @@ public class MIRSpirodoc implements DeviceHandler,
 
     // Indicates that the current request is not a measure but a connection request
     private boolean iPairingMode = false;
+    private UserDevice iUserDevice = null;
 
 	// State of the active object
     private TState iState;
@@ -114,8 +116,6 @@ public class MIRSpirodoc implements DeviceHandler,
 	// scheduler or it can be changed, so we take this value from the searcher
 	// after the device finding)
 	private String iBTAddress;
-
-    private Measure iMeasure;
 
     private Vector<BluetoothDevice> deviceList;
     private int currentPos;
@@ -155,23 +155,8 @@ public class MIRSpirodoc implements DeviceHandler,
 		return spirodocType == TSpirodocType.DEV_STANDARD;
 	}
 
-	public MIRSpirodoc(DeviceListener aScheduler, Measure m, int aMsrType) {
-
+	public MIRSpirodoc(DeviceListener aScheduler) {
         iScheduler = aScheduler;
-        iMeasure = m;
-				
-		switch (aMsrType) {
-			case 1:
-				iCommand = TTypeCommand.DATA_CONF;
-				break;
-			case 2:
-				iCommand = TTypeCommand.DATA_TEST_SPIRO;
-				break;
-			case 3:
-				iCommand = TTypeCommand.DATA_TEST_OXY;
-				break;
-		}
-
 		iState = TState.EWaitingToGetDevice;
 		iScheduler = aScheduler;
 		deviceSearchCompleted = false;
@@ -217,84 +202,42 @@ public class MIRSpirodoc implements DeviceHandler,
     }
 
     @Override
-	public void start(String deviceInfo, boolean pairingMode) {
+    public void start(OperationType ot, UserDevice ud, BTSearcherEventListener btSearchListener) {
+        if (iState == TState.EWaitingToGetDevice) {
+            iUserDevice = ud;
+            scanActivityListener = btSearchListener;
+            iBtDevAddr = iUserDevice.getBtAddress();
 
-        iBtDevAddr = deviceInfo;
-        iPairingMode = pairingMode;
-        iCmdCode = TCmd.ECmdConnByAddr;
+            iPairingMode = false;
+            switch (ot) {
+                case Pair:
+                    iPairingMode = true;
+                    break;
+                case Measure:
+                    if (GWConst.KMsrOss.equals(ud.getMeasure()))
+                        iCommand = TTypeCommand.DATA_TEST_OXY;
+                    else if (GWConst.KMsrSpir.equals(ud.getMeasure()))
+                        iCommand = TTypeCommand.DATA_TEST_SPIRO;
+                    break;
+                case Config:
+                    iCommand = TTypeCommand.DATA_CONF;
+                    break;
+            }
 
-		if (iState == TState.EWaitingToGetDevice) {
-			// it changes state
-			iState = TState.EGettingDevice;
-			iServiceSearcher.addBTSearcherEventListener(this);
-			iServiceSearcher.setSearchType(iCmdCode);
-			// it launch the automatic procedures for the manual device search
-			iServiceSearcher.startSearchDevices();
-		}
-	}
-
-    @Override
-	public void start(BTSearcherEventListener listener, boolean pairingMode) {
-        iCmdCode = TCmd.ECmdConnByUser;
-        iPairingMode = pairingMode;
-		if (iState == TState.EWaitingToGetDevice) {
-			// it changes state
-			iState = TState.EGettingDevice;
-			scanActivityListener = listener;
-			// in questo caso ci sono 2 listener... uno è DeviceScanActivity,
-			// l'altro è la classe stessa
-			iServiceSearcher.addBTSearcherEventListener(listener);
-			iServiceSearcher.addBTSearcherEventListener(this);
-			iServiceSearcher.setSearchType(iCmdCode);
-			// it launch the automatic procedures for the manual device search
-			iServiceSearcher.startSearchDevices();
-		}
-	}
-
-	@Override
-	public void reset() {
-		iBTAddress = null;
-		deviceSearchCompleted = false;
-		serverOpenFailed = false;
-		// this class object must return to the initial state
-		iState = TState.EWaitingToGetDevice;
-	}
-
-    @Override
-	public void stop()  {
-		if (iState == TState.EGettingDevice) {
-			iServiceSearcher.stopSearchDevices(-1);
-			iServiceSearcher.removeBTSearcherEventListener(this);
-			if (scanActivityListener != null) {
-				iServiceSearcher.removeBTSearcherEventListener(scanActivityListener);
-			}
-			iServiceSearcher.close();
-			// we advise the scheduler of the end of the activity on the device
-			iScheduler.operationCompleted();
-		} else if (iState == TState.EGettingService) {
-			iServiceSearcher.close();
-			// we advise the scheduler of the end of the activity on the device
-			iScheduler.operationCompleted();
-		} else if (iState == TState.EDisconnectingFromUser) {
-			iMIRSpiroDocSocket.close();
-			runBTSocket();
-			// we advise the scheduler of the end of the activity on the device
-			iScheduler.operationCompleted();
-		} else if (iState == TState.EDisconnectingOK) {
-			iMIRSpiroDocSocket.close();
-			iMIRSpiroDocSocket.removeBTSocketEventListener(this);
-			iState = TState.EWaitingToGetDevice;
-			//makeResultData();
-		} else {
-			if (!serverOpenFailed) {
-				// cancels all outstanding operations on socket
-				iMIRSpiroDocSocket.close();
-				iMIRSpiroDocSocket.removeBTSocketEventListener(this);
-			}
-			// we advise the scheduler of the end of the activity on the device
-			iScheduler.operationCompleted();
-		}
-	}
+            iServiceSearcher.clearBTSearcherEventListener();
+            iServiceSearcher.addBTSearcherEventListener(this);
+            if (iBtDevAddr != null && !iBtDevAddr.isEmpty()) {
+                iCmdCode = TCmd.ECmdConnByAddr;
+            } else {
+                iCmdCode = TCmd.ECmdConnByUser;
+                iServiceSearcher.addBTSearcherEventListener(scanActivityListener);
+            }
+            iState = TState.EGettingDevice;
+            iServiceSearcher.setSearchType(iCmdCode);
+            // it launch the automatic procedures for the manual device search
+            iServiceSearcher.startSearchDevices();
+        }
+    }
 
     @Override
 	public void stopDeviceOperation(int selected) {
@@ -312,6 +255,50 @@ public class MIRSpirodoc implements DeviceHandler,
 			iServiceSearcher.stopSearchDevices(selected);
 		}
 	}
+
+
+    public void reset() {
+        iBTAddress = null;
+        deviceSearchCompleted = false;
+        serverOpenFailed = false;
+        // this class object must return to the initial state
+        iState = TState.EWaitingToGetDevice;
+    }
+
+    public void stop()  {
+        if (iState == TState.EGettingDevice) {
+            iServiceSearcher.stopSearchDevices(-1);
+            iServiceSearcher.removeBTSearcherEventListener(this);
+            if (scanActivityListener != null) {
+                iServiceSearcher.removeBTSearcherEventListener(scanActivityListener);
+            }
+            iServiceSearcher.close();
+            // we advise the scheduler of the end of the activity on the device
+            iScheduler.operationCompleted();
+        } else if (iState == TState.EGettingService) {
+            iServiceSearcher.close();
+            // we advise the scheduler of the end of the activity on the device
+            iScheduler.operationCompleted();
+        } else if (iState == TState.EDisconnectingFromUser) {
+            iMIRSpiroDocSocket.close();
+            runBTSocket();
+            // we advise the scheduler of the end of the activity on the device
+            iScheduler.operationCompleted();
+        } else if (iState == TState.EDisconnectingOK) {
+            iMIRSpiroDocSocket.close();
+            iMIRSpiroDocSocket.removeBTSocketEventListener(this);
+            iState = TState.EWaitingToGetDevice;
+            //makeResultData();
+        } else {
+            if (!serverOpenFailed) {
+                // cancels all outstanding operations on socket
+                iMIRSpiroDocSocket.close();
+                iMIRSpiroDocSocket.removeBTSocketEventListener(this);
+            }
+            // we advise the scheduler of the end of the activity on the device
+            iScheduler.operationCompleted();
+        }
+    }
 
 
 	// BTSearcherEventListener Interface Methods
@@ -1133,13 +1120,23 @@ public class MIRSpirodoc implements DeviceHandler,
         tmpVal.put(GWConst.EGwCode_1L, oxyFileName);  // filename
         tmpVal.put(GWConst.EGwCode_BATTERY, Integer.toString(batt)); // livello batteria
 
-        iMeasure.setMeasures(tmpVal);
-        iMeasure.setFile(textBuffer.array());
-        iMeasure.setFileType(XmlManager.MIR_OXY_FILE_TYPE);
-        iMeasure.setFailed(false);
-        iMeasure.setBtAddress(iBTAddress);
+        Measure m = new Measure();
+        User u = UserManager.getUserManager().getCurrentUser();
+        m.setMeasureType(iUserDevice.getMeasure());
+        m.setDeviceDesc(iUserDevice.getDevice().getDescription());
+        m.setTimestamp(XmlManager.getXmlManager().getTimestamp(null));
+        m.setFile(textBuffer.array());
+        m.setFileType(XmlManager.MIR_OXY_FILE_TYPE);
+        if (u != null) {
+            m.setIdUser(u.getId());
+            if (u.getIsPatient())
+                m.setIdPatient(u.getId());
+        }
+        m.setMeasures(tmpVal);
+        m.setFailed(false);
+        m.setBtAddress(iBTAddress);
 
-        iScheduler.showMeasurementResults(iMeasure);
+        iScheduler.showMeasurementResults(m);
 	}
 	
 	private void ReadDataSpiro() {
@@ -1268,12 +1265,23 @@ public class MIRSpirodoc implements DeviceHandler,
         tmpVal.put(GWConst.EGwCode_0M, spiroFileName);  // filename
         tmpVal.put(GWConst.EGwCode_BATTERY, Integer.toString(batt)); // livello batteria
 
-        iMeasure.setMeasures(tmpVal);
-        iMeasure.setFile(stream.array());
-        iMeasure.setFileType(XmlManager.MIR_SPIRO_FILE_TYPE);
-        iMeasure.setFailed(false);
+        Measure m = new Measure();
+        User u = UserManager.getUserManager().getCurrentUser();
+        m.setMeasureType(iUserDevice.getMeasure());
+        m.setDeviceDesc(iUserDevice.getDevice().getDescription());
+        m.setTimestamp(XmlManager.getXmlManager().getTimestamp(null));
+        m.setFile(stream.array());
+        m.setFileType(XmlManager.MIR_SPIRO_FILE_TYPE);
+        if (u != null) {
+            m.setIdUser(u.getId());
+            if (u.getIsPatient())
+                m.setIdPatient(u.getId());
+        }
+        m.setMeasures(tmpVal);
+        m.setFailed(false);
+        m.setBtAddress(iBTAddress);
 
-        iScheduler.showMeasurementResults(iMeasure);
+        iScheduler.showMeasurementResults(m);
 	}
 
 	private int getIntValue(byte a, byte b){

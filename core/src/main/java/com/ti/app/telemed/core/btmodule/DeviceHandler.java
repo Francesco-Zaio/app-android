@@ -1,6 +1,7 @@
 package com.ti.app.telemed.core.btmodule;
 
 import com.ti.app.telemed.core.btmodule.events.BTSearcherEventListener;
+import com.ti.app.telemed.core.common.UserDevice;
 
 public interface DeviceHandler {
 
@@ -11,18 +12,15 @@ public interface DeviceHandler {
 		ECmdConnByUser,
 		ECmdConnByAddr
 	}
-	
+
 	enum OperationType {
 		Measure,
 		Pair,
 		Config
 	}
 
-	void start(String btAddr, boolean pairingMode);
-	void start(BTSearcherEventListener listener, boolean pairingMode);
-	void confirmDialog();
-	void cancelDialog();
-	void stop();
+    void start(OperationType ot, UserDevice ud, BTSearcherEventListener btSearchListener);
 	void stopDeviceOperation(int selected);
-	void reset();
+    void confirmDialog();
+    void cancelDialog();
 }

@@ -20,11 +20,14 @@ import com.ti.app.telemed.core.btmodule.DeviceHandler;
 
 import com.ti.app.telemed.core.btmodule.DeviceListener;
 import com.ti.app.telemed.core.common.Measure;
+import com.ti.app.telemed.core.common.User;
 import com.ti.app.telemed.core.common.UserDevice;
+import com.ti.app.telemed.core.usermodule.UserManager;
 import com.ti.app.telemed.core.util.GWConst;
 
 import com.ihealth.communication.manager.iHealthDevicesCallback;
 import com.ihealth.communication.manager.iHealthDevicesManager;
+import com.ti.app.telemed.core.xmlmodule.XmlManager;
 
 
 public class IHealth extends Handler implements DeviceHandler {
@@ -40,12 +43,13 @@ public class IHealth extends Handler implements DeviceHandler {
 
     private String deviceModel;
     private DeviceListener deviceListener;
+    private UserDevice iUserDevice = null;
 
     private Vector<BluetoothDevice> deviceList;
     private Vector<String> deviceTypes;
     private BTSearcherEventListener scanActivityListener;
     // device iHealth PO3 doesn't require pairing
-    private TCmd iCmdCode = TCmd.ECmdConnByUser;
+    private TCmd iCmdCode;
 
     private TState iState;
     private int callbackId = -1;
@@ -68,27 +72,12 @@ public class IHealth extends Handler implements DeviceHandler {
         return false;
     }
 
-    public IHealth(DeviceListener aScheduler, Measure m, String deviceModel) {
+    public IHealth(DeviceListener aScheduler) {
         Log.d(TAG, "IHealth");
-        this.deviceModel = deviceModel;
         iState = TState.EWaitingToGetDevice;
         deviceListener = aScheduler;
         deviceList = new Vector<>();
         deviceTypes = new Vector<>();
-        switch (deviceModel) {
-            case GWConst.KPO3IHealth:
-                deviceController = new IHealthPO3(this, m);
-                break;
-            case GWConst.KBP5IHealth:
-                deviceController = new IHealthBP5(this, m);
-                break;
-            case GWConst.KHS4SIHealth:
-                deviceController = new IHealthHS4S(this, m);
-                break;
-            case GWConst.KBP550BTIHealth:
-                deviceController = new IHealthBP550BT(this, m);
-                break;
-        }
     }
 
 
@@ -98,19 +87,55 @@ public class IHealth extends Handler implements DeviceHandler {
     public void confirmDialog() {
         // Not used for this device
     }
+
     @Override
     public void cancelDialog(){
         // Not used for this device
     }
-    @Override
-    public void start(String btAddr, boolean pairingMode) {
-        Log.d(TAG, "start(String btAddr)");
-        iBTAddress = btAddr;
-        iPairingMode = pairingMode;
 
-        iCmdCode = TCmd.ECmdConnByAddr;
-        if (iState == TState.EWaitingToGetDevice) {
-            scanActivityListener = null;
+    @Override
+    public void start(OperationType ot, UserDevice ud, BTSearcherEventListener btSearchListener) {
+        if (iState == TState.EWaitingToGetDevice && ud != null) {
+            iPairingMode = (ot == OperationType.Pair);
+            iUserDevice = ud;
+            scanActivityListener = btSearchListener;
+            deviceModel = iUserDevice.getDevice().getModel();
+
+            iBTAddress = iUserDevice.getBtAddress();
+            if (iBTAddress != null && !iBTAddress.isEmpty())
+                iCmdCode = TCmd.ECmdConnByAddr;
+            else
+                iCmdCode = TCmd.ECmdConnByUser;
+
+            Measure m = new Measure();
+            User u = UserManager.getUserManager().getCurrentUser();
+            m.setMeasureType(iUserDevice.getMeasure());
+            m.setDeviceDesc(iUserDevice.getDevice().getDescription());
+            m.setTimestamp(XmlManager.getXmlManager().getTimestamp(null));
+            m.setFile(null);
+            m.setFileType(null);
+            if (u != null) {
+                m.setIdUser(u.getId());
+                if (u.getIsPatient())
+                    m.setIdPatient(u.getId());
+            }
+            m.setFailed(false);
+            m.setBtAddress(iBTAddress);
+
+            switch (deviceModel) {
+                case GWConst.KPO3IHealth:
+                    deviceController = new IHealthPO3(this, m);
+                    break;
+                case GWConst.KBP5IHealth:
+                    deviceController = new IHealthBP5(this, m);
+                    break;
+                case GWConst.KHS4SIHealth:
+                    deviceController = new IHealthHS4S(this, m);
+                    break;
+                case GWConst.KBP550BTIHealth:
+                    deviceController = new IHealthBP550BT(this, m);
+                    break;
+            }
 
             // Register Callback for iHealt library operations
             if (callbackId == -1) {
@@ -135,38 +160,27 @@ public class IHealth extends Handler implements DeviceHandler {
             iState = TState.EGettingDevice;
         }
     }
+
     @Override
-    public void start(BTSearcherEventListener listener, boolean pairingMode) {
-        Log.d(TAG, "start(BTSearcherEventListener listener)");
-        iPairingMode = pairingMode;
-        iCmdCode = TCmd.ECmdConnByUser;
-        if (iState == TState.EWaitingToGetDevice) {
-            scanActivityListener = listener;
+    public void stopDeviceOperation(int selected) {
+        Log.d(TAG, "stopDeviceOperation: selected=" + selected);
 
-            // Register Callback for iHealt library operations
-            if (callbackId == -1) {
-                iHealthDevicesManager.getInstance().init(MyApp.getContext());
-                callbackId = iHealthDevicesManager.getInstance().registerClientCallback(mainCallbackInstance);
-            }
-
-            switch(deviceModel) {
-                case GWConst.KBP550BTIHealth:
-                    iHealthDevicesManager.getInstance().startDiscovery(iHealthDevicesManager.DISCOVERY_BP550BT);
-                    break;
-                case GWConst.KBP5IHealth:
-                    iHealthDevicesManager.getInstance().startDiscovery(iHealthDevicesManager.DISCOVERY_BP5);
-                    break;
-                case GWConst.KPO3IHealth:
-                    iHealthDevicesManager.getInstance().startDiscovery(iHealthDevicesManager.DISCOVERY_PO3);
-                    break;
-                case GWConst.KHS4SIHealth:
-                    iHealthDevicesManager.getInstance().startDiscovery(iHealthDevicesManager.DISCOVERY_HS4S);
-                    break;
-            }
-            iState = TState.EGettingDevice;
+        // selected == -1 Normal end of operation
+        // selected == -2 Operation interrupted
+        // selected >= the user has selected the device at the 'selected' position in the list of discovered devices
+        if (selected < 0) {
+            resetTimer();
+            stop();
+        }  else {
+            iBTAddress = deviceList.elementAt(selected).getAddress();
+            deviceType = deviceTypes.elementAt(selected);
+            Message msg = new Message();
+            msg.what = HANDLER_DEVICE_SELECTED;
+            sendMessage(msg);
         }
     }
-    @Override
+
+
     public void stop() {
         Log.d(TAG, "stop");
 
@@ -188,29 +202,11 @@ public class IHealth extends Handler implements DeviceHandler {
 
         reset();
     }
-    @Override
-    public void stopDeviceOperation(int selected) {
-        Log.d(TAG, "stopDeviceOperation: selected=" + selected);
 
-        // selected == -1 Normal end of operation
-        // selected == -2 Operation interrupted
-        // selected >= the user has selected the device at the 'selected' position in the list of discovered devices
-        if (selected < 0) {
-            resetTimer();
-            stop();
-        }  else {
-            iBTAddress = deviceList.elementAt(selected).getAddress();
-            deviceType = deviceTypes.elementAt(selected);
-            Message msg = new Message();
-            msg.what = HANDLER_DEVICE_SELECTED;
-            sendMessage(msg);
-        }
-    }
-    @Override
     public void reset() {
         Log.d(TAG, "reset");
         iState = TState.EWaitingToGetDevice;
-        scanActivityListener = null;
+        iUserDevice = null;
         deviceList.clear();
         deviceTypes.clear();
     }
@@ -278,7 +274,7 @@ public class IHealth extends Handler implements DeviceHandler {
         @Override
         public void onScanFinish() {
             Log.d(TAG, "iHealthDevicesCallback:onScanFinish");
-            if (scanActivityListener != null)
+            if (iCmdCode == TCmd.ECmdConnByUser && scanActivityListener != null)
                 scanActivityListener.deviceSearchCompleted(new BTSearcherEvent(this));
             Message msg = new Message();
             msg.what = HANDLER_DISCOVERY_FINISH;

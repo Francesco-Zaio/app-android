@@ -20,7 +20,7 @@ public class BTSearcher {
 
     private static final String TAG = "BTSearcher";
 
-    private Vector<BTSearcherEventListener> btSearcherEventListeners = new Vector<BTSearcherEventListener>();
+    private Vector<BTSearcherEventListener> btSearcherEventListeners = new Vector<>();
 
     // Type of search the scheduler requires
     private DeviceHandler.TCmd searchType;
@@ -91,18 +91,6 @@ public class BTSearcher {
     public void startSearchDevices() {
         Thread t = new Thread(startSearchRunnable);
         t.start();
-//    	reset();
-//        Log.i(TAG, "Start searching devices");
-//
-//        registerReceiver();
-//
-//        // If we're already discovering, stop it
-//        if (mBtAdapter.isDiscovering()) {
-//            mBtAdapter.cancelDiscovery();
-//        }
-//
-//        // Request discover from BluetoothAdapter
-//        mBtAdapter.startDiscovery();
     }
 
     public void stopSearchDevices(int selected) {
@@ -116,15 +104,6 @@ public class BTSearcher {
 
         if (selected >= 0) {
             selectedDevice = selected;
-
-//            if (searchType == GWConst.TCmd.ECmdConnByUser) {
-//                // in case of ECmdConnByUser, the user can stop the search
-//                // or stop the search because he have found what we need:
-//                // when he find the device he wants and select it, we
-//                // call cancelInquiry() and we arrive here
-//            	fireManualDeviceSelected();
-//            }
-
             // in all case
             fireDeviceSelected();
         }
@@ -156,38 +135,22 @@ public class BTSearcher {
 
     // methods to add/remove event listeners
 
+
+    public synchronized void clearBTSearcherEventListener() {
+        btSearcherEventListeners.clear();
+    }
+
     public synchronized void addBTSearcherEventListener(BTSearcherEventListener listener) {
-        if (btSearcherEventListeners.contains(listener)) {
+        if (listener == null || btSearcherEventListeners.contains(listener)) {
             return;
         }
         btSearcherEventListeners.addElement(listener);
     }
 
     public synchronized void removeBTSearcherEventListener(BTSearcherEventListener listener) {
-        btSearcherEventListeners.removeElement(listener);
+        if (listener != null)
+            btSearcherEventListeners.removeElement(listener);
     }
-
-//	public synchronized void addBTSearcherManualEventListener(BTSearcherManualEventListener listener) {
-//        if (btSearcherManualEventListeners.contains(listener)) {
-//            return;
-//        }
-//        btSearcherManualEventListeners.addElement(listener);
-//    }
-//
-//    public synchronized void removeBTSearcherManualEventListener(BTSearcherManualEventListener listener) {
-//    	btSearcherManualEventListeners.removeElement(listener);
-//    }
-//
-//    public synchronized void addBTSearcherAutomaticEventListener(BTSearcherAutomaticEventListener listener) {
-//        if (btSearcherAutomaticEventListeners.contains(listener)) {
-//            return;
-//        }
-//        btSearcherAutomaticEventListeners.addElement(listener);
-//    }
-//
-//    public synchronized void removeBTSearcherAutomaticEventListener(BTSearcherAutomaticEventListener listener) {
-//    	btSearcherAutomaticEventListeners.removeElement(listener);
-//    }
 
     // methods to trigger events
 

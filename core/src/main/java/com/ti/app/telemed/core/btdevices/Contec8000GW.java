@@ -18,6 +18,7 @@ import com.ti.app.telemed.core.btmodule.events.BTSearcherEventListener;
 import com.ti.app.telemed.core.btmodule.events.BTSocketEvent;
 import com.ti.app.telemed.core.btmodule.events.BTSocketEventListener;
 import com.ti.app.telemed.core.common.Measure;
+import com.ti.app.telemed.core.common.UserDevice;
 import com.ti.app.telemed.core.devicesactivities.Contec8000GWActivity;
 
 
@@ -80,23 +81,12 @@ public class Contec8000GW extends BroadcastReceiver implements DeviceHandler, BT
     private BTSearcherEventListener scanActivityListener;
 
 
-    @Override
-    public void onReceive(Context context, Intent intent) {
-        int result = intent.getExtras().getInt(RESULT);
-        switch (result) {
-            case RESULT_ABORT:
-                reset();
-                iScheduler.notifyError(ResourceManager.getResource().getString("KNoNewMeasure"),"");
-                break;
-            case RESULT_ERROR:
-                reset();
-                iScheduler.notifyError(ResourceManager.getResource().getString("ECommunicationError"),"");
-                break;
-            case RESULT_OK:
-                iMeasure = (Measure)intent.getExtras().getSerializable(MEASURE_OBJECT);
-                iScheduler.showMeasurementResults(iMeasure);
-                break;
-        }
+    public static boolean needPairing(UserDevice userDevice) {
+        return true;
+    }
+
+    public static boolean needConfig(UserDevice userDevice) {
+        return false;
     }
 
     public Contec8000GW (DeviceListener aScheduler, Measure m) {
@@ -203,6 +193,9 @@ public class Contec8000GW extends BroadcastReceiver implements DeviceHandler, BT
         }
     }
 
+
+    // DeviceHandler interface Methods
+
     @Override
     public void confirmDialog() {
     }
@@ -243,11 +236,6 @@ public class Contec8000GW extends BroadcastReceiver implements DeviceHandler, BT
         }
     }
 
-    /**
-     * Cancel any outstanding requests. This is a reset of the class state and is used
-     * when the device scheduler disconnect the device because it has finished to do
-     * what had to do. To reuse this object, it has to come back to the initial state
-     */
     @Override
     public void reset() {
         iState = TState.EWaitingToGetDevice;
@@ -308,7 +296,8 @@ public class Contec8000GW extends BroadcastReceiver implements DeviceHandler, BT
         }
     }
 
-    // methods of BTSearchAutomaticEventListener interface
+
+    // methods of BTSearcherEventListener interface
 
     @Override
     public void deviceDiscovered(BTSearcherEvent evt,  Vector<BluetoothDevice> devList) {
@@ -372,4 +361,26 @@ public class Contec8000GW extends BroadcastReceiver implements DeviceHandler, BT
         runBTSocket();
     }
 
- }
+
+    // BroadcastReceiver Method
+
+    @Override
+    public void onReceive(Context context, Intent intent) {
+        int result = intent.getExtras().getInt(RESULT);
+        switch (result) {
+            case RESULT_ABORT:
+                reset();
+                iScheduler.notifyError(ResourceManager.getResource().getString("KNoNewMeasure"),"");
+                break;
+            case RESULT_ERROR:
+                reset();
+                iScheduler.notifyError(ResourceManager.getResource().getString("ECommunicationError"),"");
+                break;
+            case RESULT_OK:
+                iMeasure = (Measure)intent.getExtras().getSerializable(MEASURE_OBJECT);
+                iScheduler.showMeasurementResults(iMeasure);
+                break;
+        }
+    }
+
+}

@@ -11,6 +11,12 @@ public interface DeviceHandler {
 		ECmdConnByUser,
 		ECmdConnByAddr
 	}
+	
+	enum OperationType {
+		Measure,
+		Pair,
+		Config
+	}
 
 	void start(String btAddr, boolean pairingMode);
 	void start(BTSearcherEventListener listener, boolean pairingMode);

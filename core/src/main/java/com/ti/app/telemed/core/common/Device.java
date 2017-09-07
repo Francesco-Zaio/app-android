@@ -5,7 +5,8 @@ public class Device implements Cloneable {
 	private String measure;
 	private String model;
 	private String description;
-    private boolean needCfg;
+    private boolean isBTDevice;
+	private String className;
 
 	public Integer getId() {
 		return id;
@@ -39,12 +40,20 @@ public class Device implements Cloneable {
 		this.description = description;
 	}
 
-	public void setNeedCfg(boolean needCfg) {
-        this.needCfg = needCfg;
+	public void setIsBTDevice(boolean isBTDevice) {
+        this.isBTDevice = isBTDevice;
     }
 
-    public boolean needCfg() {
-        return needCfg;
+    public boolean isBTDevice() {
+        return isBTDevice;
+    }
+
+    public String getClassName() {
+        return className;
+    }
+
+    public void setClassName(String className) {
+        this.className = className;
     }
 
 	@Override
@@ -56,7 +65,7 @@ public class Device implements Cloneable {
 			newDevice.setModel(this.model);
 			newDevice.setDescription(this.description);
 			newDevice.setMeasure(this.measure);
-            newDevice.setNeedCfg(this.needCfg);
+            newDevice.setIsBTDevice(this.isBTDevice);
 			return newDevice;
 		} catch (CloneNotSupportedException e) {
 			e.printStackTrace();

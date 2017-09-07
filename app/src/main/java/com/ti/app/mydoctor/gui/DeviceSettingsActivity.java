@@ -312,7 +312,7 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
 						} else {
 							deviceManager.setCurrentDevice(null);
 						}
-                        if (ud.getDevice().needCfg())
+                        if (ud.getDevice().isBTDevice())
                             doScan();
                     }
 

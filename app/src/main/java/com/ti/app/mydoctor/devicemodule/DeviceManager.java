@@ -25,11 +25,11 @@ import com.ti.app.telemed.core.dbmodule.DbManager;
 import com.ti.app.telemed.core.util.GWConst;
 import com.ti.app.mydoctor.gui.DeviceScanActivity;
 import com.ti.app.mydoctor.util.AppConst;
-import com.ti.app.mydoctor.util.AppUtil;
 import com.ti.app.telemed.core.usermodule.UserManager;
 import com.ti.app.telemed.core.xmlmodule.XmlManager;
 
-import java.util.List;
+import java.lang.reflect.Method;
+
 
 public class DeviceManager implements DeviceListener {
 
@@ -49,7 +49,6 @@ public class DeviceManager implements DeviceListener {
 	public static final int ERROR_STATE = 3;
 	public static final int MEASURE_RESULT = 4;
 	public static final int CONFIG_READY = 5;
-
 	public static final int ASK_SOMETHING = 7;
     public static final int REFRESH_LIST = 10;
 
@@ -59,7 +58,45 @@ public class DeviceManager implements DeviceListener {
 	
 	public DeviceManager() {		
 	}
-	
+
+
+	// usa la reflection per invocare il metodo statico needPairing della classe che gestisce il device
+    public boolean needPairing(UserDevice ud) {
+        try {
+            Class<?> c = Class.forName("com.ti.app.telemed.core.btdevices." + ud.getDevice().getClassName());
+            Method m = c.getMethod("needPairing", UserDevice.class);
+            return (boolean) m.invoke(null, ud);
+        } catch (ClassNotFoundException e) {
+            Log.e(TAG,"Class Not Found!! : " + ud.getDevice().getClassName());
+            return false;
+        } catch (NoSuchMethodException e) {
+            Log.e(TAG,"Method Not Found!! : " + ud.getDevice().getClassName());
+            return false;
+        } catch (Exception e) {
+            Log.e(TAG,"Method Invocation Exception! : " + ud.getDevice().getClassName());
+            return false;
+        }
+    }
+
+    // usa la reflection per invocare il metodo statico needCfg della classe che gestisce il device
+    public boolean needCfg(UserDevice ud) {
+        try {
+            Class<?> c = Class.forName("com.ti.app.telemed.core.btdevices." + ud.getDevice().getClassName());
+            Method m = c.getMethod("needConfig", UserDevice.class);
+            return (boolean) m.invoke(null, ud);
+        } catch (ClassNotFoundException e) {
+            Log.e(TAG,"Class Not Found!! : " + ud.getDevice().getClassName());
+            return false;
+        } catch (NoSuchMethodException e) {
+            Log.e(TAG,"Method Not Found!! : " + ud.getDevice().getClassName());
+            return false;
+        } catch (Exception e) {
+            Log.e(TAG,"Method Invocation Exception! : " + ud.getDevice().getClassName());
+            return false;
+        }
+    }
+
+
 	public void setHandler(Handler handler){
 		this.handler = handler;
 	}
@@ -77,7 +114,7 @@ public class DeviceManager implements DeviceListener {
 	
 	public void startMeasure() {		
 		if(!operationRunning){
-            pairingMode = AppUtil.isEmptyString(currentDevice.getBtAddress());
+            pairingMode = currentDevice.getBtAddress() == null || currentDevice.getBtAddress().isEmpty();
 			setConfig(false);
 			startOperation();
 		} else {

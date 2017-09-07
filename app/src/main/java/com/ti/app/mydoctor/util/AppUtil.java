@@ -171,11 +171,6 @@ public class AppUtil {
 	    editor.apply();
 	}
 
-	
-	public static boolean isEmptyString(String s) {
-		return s == null || s.equals("");
-	}
-
 	public static byte[] hexStringToByteArray(String s) {
 
 		int len = s.length();

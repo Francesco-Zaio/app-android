@@ -16,6 +16,7 @@ import com.ti.app.telemed.core.btmodule.events.BTSocketEventListener;
 import com.ti.app.telemed.core.btmodule.DeviceHandler;
 import com.ti.app.telemed.core.btmodule.DeviceListener;
 import com.ti.app.telemed.core.common.Measure;
+import com.ti.app.telemed.core.common.UserDevice;
 import com.ti.app.telemed.core.util.GWConst;
 import com.ti.app.telemed.core.util.Util;
 
@@ -185,28 +186,18 @@ public class RocheProthrombineTimeClient implements DeviceHandler,
 	private BTSearcherEventListener scanActivityListener;
 	private boolean demoMode = false;
 
-	private class TimerExpired extends TimerTask {
-		@Override
-		public void run() {
-			isTimerExpired = true;
-			if (iState == TState.EWaitingAckHS) {
-				Log.i(TAG, "TIMER SCADUTO");
-				iState = TState.ESendingHS;
-
-				makeSendData(TTypeControl.getVal(TTypeControl.kT_CAN));
-				sendCmd();
-			} else {
-				Log.i(TAG, "TIMER SCADUTO disconnectProtocolError");
-				disconnectProtocolError();
-			}
-		}
-	}
-
 	private static final String TAG = "RocheProthrombineClient";
 
-	/**
-	 *
-	 */
+
+	public static boolean needPairing(UserDevice userDevice) {
+		return false;
+	}
+
+	public static boolean needConfig(UserDevice userDevice) {
+		return false;
+	}
+
+
 	public RocheProthrombineTimeClient(DeviceListener aScheduler, Measure m) {
 		
 		demoMode  = Util.isDemoRocheMode();
@@ -246,18 +237,6 @@ public class RocheProthrombineTimeClient implements DeviceHandler,
 		iPTRSocket = BTSocket.getBTSocket();
 	}
 
-	/**
-	 *
-	 */
-	private void connectToServer() throws IOException {
-		// this function is called when we are in EGettingService state and
-		// we are going to EGettingConnection state
-		iBTAddress = iServiceSearcher.getCurrBTDevice().getAddress();
-		// iPTRSocket is an RSocket in the Symbian version
-		iPTRSocket.addBTSocketEventListener(this);
-		iPTRSocket.connect(iServiceSearcher.getCurrBTDevice());
-	}
-
 
 	// methods of DeviceListener interface
 
@@ -270,10 +249,12 @@ public class RocheProthrombineTimeClient implements DeviceHandler,
         iState = TState.ESendingHS;
         sendCmd();
     }
+
     @Override
     public void cancelDialog(){
         stop();
     }
+
 	@Override
 	public void reset() {
 		if (timer != null) {
@@ -312,6 +293,7 @@ public class RocheProthrombineTimeClient implements DeviceHandler,
 		// this class object must return to the initial state
 		iState = TState.EWaitingToGetDevice;
 	}
+
 	@Override
 	public void start(String deviceInfo, boolean pairingMode) {
         iPairingMode = pairingMode;
@@ -326,6 +308,7 @@ public class RocheProthrombineTimeClient implements DeviceHandler,
 			iServiceSearcher.startSearchDevices();
 		}
 	}
+
 	@Override
     public void start(BTSearcherEventListener listener, boolean pairingMode) {
         iPairingMode = pairingMode;
@@ -343,6 +326,7 @@ public class RocheProthrombineTimeClient implements DeviceHandler,
 			iServiceSearcher.startSearchDevices();
 		}
 	}
+
 	@Override
 	public void stop() {
 		Log.i(TAG, "PTR: stop");
@@ -400,6 +384,7 @@ public class RocheProthrombineTimeClient implements DeviceHandler,
 		}
 		iServiceSearcher.removeBTSearcherEventListener(this);
 	}
+
 	@Override
 	public void stopDeviceOperation(int selected) {
 		if (selected == -1) {
@@ -427,6 +412,7 @@ public class RocheProthrombineTimeClient implements DeviceHandler,
         iState = TState.EGettingService;
         runBTSearcher();
     }
+
     @Override
 	public void deviceDiscovered(BTSearcherEvent evt, Vector<BluetoothDevice> devList) {
 		deviceList = devList;
@@ -434,6 +420,7 @@ public class RocheProthrombineTimeClient implements DeviceHandler,
 		// to check if it is the device we want
 		runBTSearcher();
 	}
+
     @Override
 	public void deviceSearchCompleted(BTSearcherEvent evt) {
 		deviceSearchCompleted = true;
@@ -484,14 +471,17 @@ public class RocheProthrombineTimeClient implements DeviceHandler,
 			break;
 		}
 	}
+
 	@Override
 	public void openDone(BTSocketEvent evt) {
 		runBTSocket();
 	}
+
 	@Override
 	public void readDone(BTSocketEvent evt) {
 		runBTSocket();
 	}
+
 	@Override
 	public void writeDone(BTSocketEvent evt) {
 		runBTSocket();
@@ -587,9 +577,6 @@ public class RocheProthrombineTimeClient implements DeviceHandler,
 		iPTRSocket.write(iSendDataCmd);
 	}
 
-	/**
-	 * Lettura ACK
-	 */
 	private void readAck() {
 		try {
 			timerExpired = new TimerExpired();
@@ -603,9 +590,6 @@ public class RocheProthrombineTimeClient implements DeviceHandler,
 		}
 	}
 
-	/**
-	 * Lettura dei dati
-	 */
 	private void readData() {
 		timerExpired = new TimerExpired();
 		timer = new Timer();
@@ -717,9 +701,15 @@ public class RocheProthrombineTimeClient implements DeviceHandler,
 		sendCmd();
 	}
 
-	/**
-* 
-*/
+    private void connectToServer() throws IOException {
+        // this function is called when we are in EGettingService state and
+        // we are going to EGettingConnection state
+        iBTAddress = iServiceSearcher.getCurrBTDevice().getAddress();
+        // iPTRSocket is an RSocket in the Symbian version
+        iPTRSocket.addBTSocketEventListener(this);
+        iPTRSocket.connect(iServiceSearcher.getCurrBTDevice());
+    }
+
 	private void runBTSearcher() {
 		switch (iState) {
 		case EGettingDevice:
@@ -1558,5 +1548,23 @@ public class RocheProthrombineTimeClient implements DeviceHandler,
 				(iDataReceived.charAt(5) == 0x30) && 
 				(iDataReceived.charAt(6) == 0x30) &&
 				(iDataReceived.charAt(7) == 0x30));
+	}
+
+
+	private class TimerExpired extends TimerTask {
+		@Override
+		public void run() {
+			isTimerExpired = true;
+			if (iState == TState.EWaitingAckHS) {
+				Log.i(TAG, "TIMER SCADUTO");
+				iState = TState.ESendingHS;
+
+				makeSendData(TTypeControl.getVal(TTypeControl.kT_CAN));
+				sendCmd();
+			} else {
+				Log.i(TAG, "TIMER SCADUTO disconnectProtocolError");
+				disconnectProtocolError();
+			}
+		}
 	}
 }

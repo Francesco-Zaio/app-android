@@ -20,6 +20,7 @@ import com.ti.app.telemed.core.btmodule.DeviceHandler;
 
 import com.ti.app.telemed.core.btmodule.DeviceListener;
 import com.ti.app.telemed.core.common.Measure;
+import com.ti.app.telemed.core.common.UserDevice;
 import com.ti.app.telemed.core.util.GWConst;
 
 import com.ihealth.communication.manager.iHealthDevicesCallback;
@@ -59,6 +60,13 @@ public class IHealth extends Handler implements DeviceHandler {
     private static final int KTimeOut = 20 * 1000; // milliseconds (20 sec)
     private Timer timer;
 
+    public static boolean needPairing(UserDevice userDevice) {
+        return false;
+    }
+
+    public static boolean needConfig(UserDevice userDevice) {
+        return false;
+    }
 
     public IHealth(DeviceListener aScheduler, Measure m, String deviceModel) {
         Log.d(TAG, "IHealth");
@@ -317,69 +325,69 @@ public class IHealth extends Handler implements DeviceHandler {
     private static final int HANDLER_ERROR = 104;
     private static final int HANDLER_DISCOVERY_FINISH = 105;
 
-        @Override
-        public void handleMessage(Message msg) {
-            super.handleMessage(msg);
-            switch (msg.what) {
-                case HANDLER_DEVICE_SELECTED:
-                    String mac = iBTAddress.replace(":", "");
-                    Log.d(TAG, "iHealthDevicesManager.getInstance().connectDevice: " + "MAC=" + mac);
-                    boolean req = iHealthDevicesManager.getInstance().connectDevice("", mac, deviceType);
-                    if (!req) {
-                        resetTimer();
-                        Log.e(TAG, "iHealthDevicesManager.getInstance().connectDevice: ERROR");
-                        String message = ResourceManager.getResource().getString("EBtDeviceConnError");
-                        deviceListener.notifyError(DeviceListener.CONNECTION_ERROR, message);
-                        stop();
-                        break;
-                    }
-                    iState = TState.EGettingConnection;
-                    scheduleTimer();
-                    switch (deviceModel) {
-                        case GWConst.KPO3IHealth:
-                            String message = ResourceManager.getResource().getString("KConnectingDev");
-                            deviceListener.notifyWaitToUi(message);
-                            break;
-                        case GWConst.KBP5IHealth:
-                            deviceListener.notifyWaitToUi(ResourceManager.getResource().getString("KConnectingDev"));
-                            break;
-                        default:
-                            deviceListener.notifyWaitToUi(ResourceManager.getResource().getString("KConnectingDev"));
-                            break;
-                    }
-                    break;
-                case HANDLER_CONNECTED:
-                    deviceListener.setBtMAC(iBTAddress);
-                    if (iPairingMode) {
-                        iState = TState.EDisconnecting;
-                        iHealthDevicesManager.getInstance().disconnectDevice(iBTAddress.replace(":", ""), deviceType);
-                    } else {
-                        iState = TState.EConnected;
-                        deviceController.startMeasure(iBTAddress);
-                        deviceListener.notifyToUi(deviceController.getStartMeasureMessage());
-                    }
-                    break;
-                case HANDLER_DISCONNECTED:
-                    if (iPairingMode) {
-                        deviceListener.configReady(ResourceManager.getResource().getString("KPairingMsgDone"));
-                        stop();
-                    }
-                    break;
-                case HANDLER_DISCOVERY_FINISH:
-                    if (iState == TState.EGettingDevice && iCmdCode == TCmd.ECmdConnByAddr) {
-                        // Bluetooth discovery finished without finding the device
-                        String message = ResourceManager.getResource().getString("EDeviceNotFound");
-                        deviceListener.notifyError(DeviceListener.DEVICE_NOT_FOUND_ERROR, message);
-                        stop();
-                    }
-                    break;
-                case HANDLER_ERROR:
-                    String message = ResourceManager.getResource().getString("ECommunicationError");
-                    deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR,message);
+    @Override
+    public void handleMessage(Message msg) {
+        super.handleMessage(msg);
+        switch (msg.what) {
+            case HANDLER_DEVICE_SELECTED:
+                String mac = iBTAddress.replace(":", "");
+                Log.d(TAG, "iHealthDevicesManager.getInstance().connectDevice: " + "MAC=" + mac);
+                boolean req = iHealthDevicesManager.getInstance().connectDevice("", mac, deviceType);
+                if (!req) {
+                    resetTimer();
+                    Log.e(TAG, "iHealthDevicesManager.getInstance().connectDevice: ERROR");
+                    String message = ResourceManager.getResource().getString("EBtDeviceConnError");
+                    deviceListener.notifyError(DeviceListener.CONNECTION_ERROR, message);
                     stop();
                     break;
-            }
+                }
+                iState = TState.EGettingConnection;
+                scheduleTimer();
+                switch (deviceModel) {
+                    case GWConst.KPO3IHealth:
+                        String message = ResourceManager.getResource().getString("KConnectingDev");
+                        deviceListener.notifyWaitToUi(message);
+                        break;
+                    case GWConst.KBP5IHealth:
+                        deviceListener.notifyWaitToUi(ResourceManager.getResource().getString("KConnectingDev"));
+                        break;
+                    default:
+                        deviceListener.notifyWaitToUi(ResourceManager.getResource().getString("KConnectingDev"));
+                        break;
+                }
+                break;
+            case HANDLER_CONNECTED:
+                deviceListener.setBtMAC(iBTAddress);
+                if (iPairingMode) {
+                    iState = TState.EDisconnecting;
+                    iHealthDevicesManager.getInstance().disconnectDevice(iBTAddress.replace(":", ""), deviceType);
+                } else {
+                    iState = TState.EConnected;
+                    deviceController.startMeasure(iBTAddress);
+                    deviceListener.notifyToUi(deviceController.getStartMeasureMessage());
+                }
+                break;
+            case HANDLER_DISCONNECTED:
+                if (iPairingMode) {
+                    deviceListener.configReady(ResourceManager.getResource().getString("KPairingMsgDone"));
+                    stop();
+                }
+                break;
+            case HANDLER_DISCOVERY_FINISH:
+                if (iState == TState.EGettingDevice && iCmdCode == TCmd.ECmdConnByAddr) {
+                    // Bluetooth discovery finished without finding the device
+                    String message = ResourceManager.getResource().getString("EDeviceNotFound");
+                    deviceListener.notifyError(DeviceListener.DEVICE_NOT_FOUND_ERROR, message);
+                    stop();
+                }
+                break;
+            case HANDLER_ERROR:
+                String message = ResourceManager.getResource().getString("ECommunicationError");
+                deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR,message);
+                stop();
+                break;
         }
+    }
 
     private class TimerExpired extends TimerTask {
         @Override

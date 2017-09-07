@@ -22,6 +22,7 @@ import com.ti.app.telemed.core.btmodule.events.BTSocketEventListener;
 import com.ti.app.telemed.core.btmodule.DeviceHandler;
 import com.ti.app.telemed.core.btmodule.DeviceListener;
 import com.ti.app.telemed.core.common.Measure;
+import com.ti.app.telemed.core.common.UserDevice;
 import com.ti.app.telemed.core.util.GWConst;
 import com.ti.app.telemed.core.xmlmodule.XmlManager;
 
@@ -168,40 +169,16 @@ public class EcgProtocol implements DeviceHandler,
     private Timer timer;
     private BTSearcherEventListener scanActivityListener;
 
-    private class TimerExpired extends TimerTask {
-        @Override
-        public void run(){
-            Log.i(TAG, "ECG: timer scaduto");
-            if ( iEcgBuffer == null ) {
-                //Si disconnette
-                disconnectProtocolError();
-            } else {
-                //Nel buffer è presente un Ecg
-                //Chiude la connessione
-
-                //Controlla se il file è stato letto completamente
-                //altrimenti chiude la connessione segnalando che non ci sono dati
-                if (dataFound) {
-                    iState = TState.EDisconnectingOK;
-                    try {
-                        stop();
-                    } catch (Exception e) {
-                        String msg = ResourceManager.getResource().getString("EBtDeviceDisconnError");
-                        iScheduler.notifyError(msg, msg);
-                    }
-                } else {
-                    iState = TState.EDisconnecting;
-                    operationDeleted = true;
-                    String msg = ResourceManager.getResource().getString("EBtDeviceDisconnError");
-                    iScheduler.notifyError(msg,msg);
-                    runBTSocket();
-                    reset();
-                }
-            }
-        }
-    }
 
     private static final String TAG = "EcgProtocol";
+
+    public static boolean needPairing(UserDevice userDevice) {
+        return false;
+    }
+
+    public static boolean needConfig(UserDevice userDevice) {
+        return false;
+    }
 
     public EcgProtocol(DeviceListener aScheduler, Measure m) {
         iState = TState.EWaitingToGetDevice;
@@ -241,9 +218,6 @@ public class EcgProtocol implements DeviceHandler,
         iECGSocket = BTSocket.getBTSocket();
     }
 
-    /**
-     *
-     */
     private void connectToServer() throws IOException {
         // this function is called when we are in EGettingService state and
         // we are going to EGettingConnection state
@@ -254,9 +228,6 @@ public class EcgProtocol implements DeviceHandler,
         iECGSocket.connect(iServiceSearcher.getCurrBTDevice());
     }
 
-    /**
-     *
-     */
     private void disconnectProtocolError() {
         operationDeleted = true;
         iECGSocket.removeBTSocketEventListener(this);
@@ -277,18 +248,13 @@ public class EcgProtocol implements DeviceHandler,
     public void cancelDialog(){
         // Not used for this device
     }
-    /**
-     * Cancel any outstanding requests. This is a reset of the class state and is used
-     * when the device scheduler disconnect the device because it has finished to do
-     * what had to do. To reuse this object, it has to come back to the initial state
-     */
+
     @Override
     public void reset() {
         Log.i(TAG, "-----------------ECG reset");
         if (timer!=null) {
             timer.cancel();
         }
-
         // we free all buffer, descriptor and array
         deviceSearchCompleted = false;
         dataFound = false;
@@ -311,19 +277,14 @@ public class EcgProtocol implements DeviceHandler,
         iHeader = new byte[4];
         iBody = new byte[KMaximumMessageLengthECG];
         iBodyFirstMsg = new byte[KFirstMessageLengthECG];
-
         // there isn't battery information
         iBattery = -1;
-
         operationDeleted = false;
         serverOpenFailed = false;
         // this class object must return to the initial state
         iState = TState.EWaitingToGetDevice;
     }
 
-    /**
-     * Trig the operation of this thread launching process of device searching
-     */
     @Override
     public void start(String deviceInfo, boolean pairingMode) {
         iPairingMode = pairingMode;
@@ -356,9 +317,6 @@ public class EcgProtocol implements DeviceHandler,
         }
     }
 
-    /**
-     * Disconnect from remote machine
-     */
     @Override
     public void stop() {
         if (iState == TState.EGettingDevice) {
@@ -397,9 +355,6 @@ public class EcgProtocol implements DeviceHandler,
         }
     }
 
-    /**
-     * Termina eventual operazioni in corso
-     */
     @Override
     public void stopDeviceOperation(int selected) {
         if (selected == -1) {
@@ -417,10 +372,9 @@ public class EcgProtocol implements DeviceHandler,
         }
     }
 
-    // methods of BTSearchAutomaticEventListener interface
-    /**
-     *
-     */
+
+    // methods of BTSearchEventListener interface
+
     @Override
     public void deviceDiscovered(BTSearcherEvent evt, Vector<BluetoothDevice> devList) {
         deviceList = devList;
@@ -428,19 +382,24 @@ public class EcgProtocol implements DeviceHandler,
         // to check if it is the device we want
         runBTSearcher();
     }
-    /**
-     * Called by bt searcher when the device search is finished
-     */
+
     @Override
     public void deviceSearchCompleted(BTSearcherEvent evt) {
         deviceSearchCompleted = true;
         currentPos = 0;
     }
 
+    @Override
+    public void deviceSelected(BTSearcherEvent evt){
+        Log.i(TAG, "ECG: deviceSelected");
+        // we change status
+        iState = TState.EGettingService;
+        runBTSearcher();
+    }
+
+
     // methods of BTSocketEventListener interface
-    /**
-     * Called by bt socket when finds an error in bt operations
-     */
+
     @Override
     public void errorThrown(BTSocketEvent evt, int type, String description) {
         Log.e(TAG, "ECG errorThrown");
@@ -480,7 +439,6 @@ public class EcgProtocol implements DeviceHandler,
         }
     }
 
-
     @Override
     public void openDone(BTSocketEvent evt) {
         runBTSocket();
@@ -496,16 +454,6 @@ public class EcgProtocol implements DeviceHandler,
         runBTSocket();
     }
 
-
-    // methods of BTSearchEventListener interface
-
-    @Override
-    public void deviceSelected(BTSearcherEvent evt){
-        Log.i(TAG, "ECG: deviceSelected");
-        // we change status
-        iState = TState.EGettingService;
-        runBTSearcher();
-    }
 
     // methods for parsing data
 
@@ -627,8 +575,8 @@ public class EcgProtocol implements DeviceHandler,
         return crc;
     }
 
-    // methods for socket
 
+    // methods for socket
 
     /**
      * Read the data from server.
@@ -711,6 +659,7 @@ public class EcgProtocol implements DeviceHandler,
         waiting();
         iECGSocket.write( iMessageToSend );
     }
+
 
     // methods for checking data received
 
@@ -814,9 +763,6 @@ public class EcgProtocol implements DeviceHandler,
         iScheduler.showMeasurementResults(iMeasure);
     }
 
-    /**
-     *
-     */
     private void runBTSearcher(){
         switch (iState){
             case EGettingDevice:
@@ -892,9 +838,6 @@ public class EcgProtocol implements DeviceHandler,
         }
     }
 
-    /**
-     *
-     */
     private void runBTSocket() {
 
         final int KTimeOut = 3 /*sec*/ * 1000;
@@ -1275,4 +1218,36 @@ public class EcgProtocol implements DeviceHandler,
         } while ((t1-t0)< 200);
     }
 
+    private class TimerExpired extends TimerTask {
+        @Override
+        public void run(){
+            Log.i(TAG, "ECG: timer scaduto");
+            if ( iEcgBuffer == null ) {
+                //Si disconnette
+                disconnectProtocolError();
+            } else {
+                //Nel buffer è presente un Ecg
+                //Chiude la connessione
+
+                //Controlla se il file è stato letto completamente
+                //altrimenti chiude la connessione segnalando che non ci sono dati
+                if (dataFound) {
+                    iState = TState.EDisconnectingOK;
+                    try {
+                        stop();
+                    } catch (Exception e) {
+                        String msg = ResourceManager.getResource().getString("EBtDeviceDisconnError");
+                        iScheduler.notifyError(msg, msg);
+                    }
+                } else {
+                    iState = TState.EDisconnecting;
+                    operationDeleted = true;
+                    String msg = ResourceManager.getResource().getString("EBtDeviceDisconnError");
+                    iScheduler.notifyError(msg,msg);
+                    runBTSocket();
+                    reset();
+                }
+            }
+        }
+    }
 }

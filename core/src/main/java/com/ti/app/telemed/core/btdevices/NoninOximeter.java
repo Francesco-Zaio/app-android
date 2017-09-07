@@ -7,7 +7,6 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.Vector;
@@ -22,6 +21,7 @@ import com.ti.app.telemed.core.btmodule.events.BTSocketEventListener;
 import com.ti.app.telemed.core.ResourceManager;
 import com.ti.app.telemed.core.btmodule.DeviceListener;
 import com.ti.app.telemed.core.common.Measure;
+import com.ti.app.telemed.core.common.UserDevice;
 import com.ti.app.telemed.core.util.GWConst;
 import com.ti.app.telemed.core.xmlmodule.XmlManager;
 import com.ti.app.telemed.core.btmodule.DeviceHandler;
@@ -126,35 +126,24 @@ public class NoninOximeter implements DeviceHandler,
 
     private Timer timer;
 	private BTSearcherEventListener scanActivityListener;
-    
-    private class TimerExpired extends TimerTask {
-        @Override
-		public void run(){
-        	Log.i(TAG, "Timer scaduto");
-        	if ( iState.equals(TState.EGettingConnection) && iBufferAck[0] == 0x00 ) {
-        		//Ack non ricevuto --> Si disconnette
-        		Log.i(TAG, "Current state EGettingConnection - ACK not received - disconnecting");
-        		disconnectProtocolError();        			
-        	} else if ( iState.equals(TState.EConnected) && iBufferData[0] == 0x00 ) {
-        		//Dati non ricevuti --> Si disconnette
-        		Log.i(TAG, "Current state EConnected - DATA not received - disconnecting");
-        		disconnectProtocolError();        			
-        	} 
-        }
-    }
-    
+
+
+	public static boolean needPairing(UserDevice userDevice) {
+		return false;
+	}
+
+	public static boolean needConfig(UserDevice userDevice) {
+		return false;
+	}
+
 	public NoninOximeter(DeviceListener aScheduler, Measure m) {
-		
 		iState = TState.EWaitingToGetDevice;
     	iScheduler = aScheduler;
         iMeasure = m;
     	deviceSearchCompleted = false;
-        
         serverOpenFailed = false;
-        
         iServiceSearcher = new BTSearcher();        
         iNoninOxySocket = BTSocket.getBTSocket();
-        
         initVar();
 	}
 	
@@ -195,25 +184,7 @@ public class NoninOximeter implements DeviceHandler,
 		iT90 = iT89 = iT88 = iT87 = 0; 
 		iT40 = iT120 = 0;
 	}
-    
-	private void connectToServer() throws IOException {
-        // this function is called when we are in EGettingService state and
-		// we are going to EGettingConnection state
-    	Log.i(TAG, "NoninOximeter: connectToServer");
-		iBTAddress = iServiceSearcher.getCurrBTDevice().getAddress();
-		// iCGBloodPressureSocket is an RSocket in the Symbian version
-		iNoninOxySocket.addBTSocketEventListener(this);
-		iNoninOxySocket.connect(iServiceSearcher.getCurrBTDevice());
-    }
-    
-	private void disconnectProtocolError() {
-    	iNoninOxySocket.removeBTSocketEventListener(this);
-		iNoninOxySocket.close();
-		reset();
-    	iScheduler.notifyError(ResourceManager.getResource().getString("ECommunicationError"),"");
-	}
 
-	
 	// methods of DeviceHandler interface
 
 	@Override
@@ -258,12 +229,6 @@ public class NoninOximeter implements DeviceHandler,
         }
     }
 
-	/**
-	 * Cancel any outstanding requests. This is a reset of the class state and
-	 * is used when the device scheduler disconnect the device because it has
-	 * finished to do what had to do. To reuse this object, it has to come back
-	 * to the initial state
-	 */
 	@Override
 	public void reset() {
 		Log.i(TAG, "----------------- NoninOximeter reset");
@@ -339,7 +304,7 @@ public class NoninOximeter implements DeviceHandler,
 		}
 	}
 
-	// methods of BTSearchAutomaticEventListener interface
+	// methods of BTSearchEventListener interface
     
 	@Override
 	public void deviceDiscovered(BTSearcherEvent evt,  Vector<BluetoothDevice> devList) {
@@ -360,11 +325,68 @@ public class NoninOximeter implements DeviceHandler,
         Log.i(TAG, "NoninOximeter: deviceSelected");
         // we change status
         iState = TState.EGettingService;
-
         runBTSearcher();
     }
 
-	private void runBTSearcher() {
+
+    // Methods of BTSocketEventListener interface
+
+    @Override
+    public void errorThrown(BTSocketEvent evt, int type, String description) {
+        Log.e(TAG, "NoninOximeter errorThrown " + type + " " + description);
+        switch (type) {
+            case 0: //thread interrupted
+            case 4: //bluetooth close error
+                reset();
+                iScheduler.notifyError(description,"");
+                break;
+            case 1: //bluetooth open error
+                serverOpenFailed = true;
+            case 2: //bluetooth read error
+            case 3: //bluetooth write error
+                iState = TState.EDisconnecting;
+                runBTSocket();
+                reset();
+                iScheduler.notifyError(ResourceManager.getResource().getString("ECommunicationError"),"");
+                break;
+        }
+    }
+
+    @Override
+    public void openDone(BTSocketEvent evt) {
+        runBTSocket();
+    }
+
+    @Override
+    public void readDone(BTSocketEvent evt) {
+        runBTSocket();
+    }
+
+    @Override
+    public void writeDone(BTSocketEvent evt) {
+        runBTSocket();
+    }
+
+
+    private void connectToServer() throws IOException {
+        // this function is called when we are in EGettingService state and
+        // we are going to EGettingConnection state
+        Log.i(TAG, "NoninOximeter: connectToServer");
+        iBTAddress = iServiceSearcher.getCurrBTDevice().getAddress();
+        // iCGBloodPressureSocket is an RSocket in the Symbian version
+        iNoninOxySocket.addBTSocketEventListener(this);
+        iNoninOxySocket.connect(iServiceSearcher.getCurrBTDevice());
+    }
+
+    private void disconnectProtocolError() {
+        iNoninOxySocket.removeBTSocketEventListener(this);
+        iNoninOxySocket.close();
+        reset();
+        iScheduler.notifyError(ResourceManager.getResource().getString("ECommunicationError"),"");
+    }
+
+
+    private void runBTSearcher() {
 		switch (iState) {
 		case EGettingDevice:			
 			// we have found a device (not necessarily the device that we need)
@@ -608,44 +630,6 @@ public class NoninOximeter implements DeviceHandler,
     }
 
 
-    // Methods of BTSocketEventListener interface
-
-    @Override
-	public void errorThrown(BTSocketEvent evt, int type, String description) {
-        Log.e(TAG, "NoninOximeter errorThrown " + type + " " + description);
-		switch (type) {
-    	case 0: //thread interrupted
-        case 4: //bluetooth close error
-    		reset();
-    		iScheduler.notifyError(description,"");
-    		break;
-    	case 1: //bluetooth open error
-            serverOpenFailed = true;
-    	case 2: //bluetooth read error
-        case 3: //bluetooth write error
-    		iState = TState.EDisconnecting;
-			runBTSocket(); 
-			reset();
-			iScheduler.notifyError(ResourceManager.getResource().getString("ECommunicationError"),"");
-    		break;
-		}		
-	}
-
-	@Override
-	public void openDone(BTSocketEvent evt) {
-		runBTSocket();
-	}
-
-	@Override
-	public void readDone(BTSocketEvent evt) {
-		runBTSocket();
-	}
-
-	@Override
-	public void writeDone(BTSocketEvent evt) {
-		runBTSocket();
-	}
-	
 	private void addNewSample(int aSpO2, int aHR) {
 		
 		if (aSpO2<iSpO2Min)
@@ -923,5 +907,21 @@ public class NoninOximeter implements DeviceHandler,
 		if (timer!=null) {
 			timer.cancel();
 		}		
+	}
+
+	private class TimerExpired extends TimerTask {
+		@Override
+		public void run(){
+			Log.i(TAG, "Timer scaduto");
+			if ( iState.equals(TState.EGettingConnection) && iBufferAck[0] == 0x00 ) {
+				//Ack non ricevuto --> Si disconnette
+				Log.i(TAG, "Current state EGettingConnection - ACK not received - disconnecting");
+				disconnectProtocolError();
+			} else if ( iState.equals(TState.EConnected) && iBufferData[0] == 0x00 ) {
+				//Dati non ricevuti --> Si disconnette
+				Log.i(TAG, "Current state EConnected - DATA not received - disconnecting");
+				disconnectProtocolError();
+			}
+		}
 	}
 }

@@ -18,6 +18,7 @@ import com.ti.app.telemed.core.btmodule.events.BTSocketEventListener;
 import com.ti.app.telemed.core.btmodule.DeviceHandler;
 import com.ti.app.telemed.core.btmodule.DeviceListener;
 import com.ti.app.telemed.core.common.Measure;
+import com.ti.app.telemed.core.common.UserDevice;
 import com.ti.app.telemed.core.util.GWConst;
 
 import android.bluetooth.BluetoothDevice;
@@ -112,32 +113,15 @@ public class ForaThermometerClient implements DeviceHandler,
     private Timer timer;
     private final static int kTimeOut = 1000;
 
-    private class TimerExpired extends TimerTask {
-        public void run(){
-        	logger.log(Level.INFO, "TIMER SCADUTO iState = "+iState);        	        	
-        	if(iState == TState.EWaitingLastMeasure){    
-        		logger.log(Level.INFO, "re-sending request for last measure");        
-	        	//Device connected, re-sending request for last measure        	
-        		waitforAck = false;
-				iState = TState.ESendingReqLast;
-				messageToSend = new byte[8];
-				messageToSend[0] = TTypeCommand.getVal(TTypeCommand.kT_init);
-				messageToSend[1] = TTypeCommand.getVal(TTypeCommand.kT_25);
-				messageToSend[2] = 0x00;
-				messageToSend[3] = 0x00;
-				messageToSend[4] = 0x00;
-				messageToSend[5] = 0x00;
-				messageToSend[6] = TTypeCommand.getVal(TTypeCommand.kT_end);
-				messageToSend[7] = checkSumCalc( messageToSend );
-	
-				waitforAck = false;
-				
-				sendCmd();
-        	}        	
-        }
-    }
-    
     private Logger logger = Logger.getLogger(ForaThermometerClient.class.getName());
+
+	public static boolean needPairing(UserDevice userDevice) {
+		return false;
+	}
+
+	public static boolean needConfig(UserDevice userDevice) {
+		return false;
+	}
 
     public ForaThermometerClient(DeviceListener aScheduler, Measure m) {
     	iState = TState.EWaitingToGetDevice;
@@ -158,12 +142,200 @@ public class ForaThermometerClient implements DeviceHandler,
         iForaThermometerSocket = BTSocket.getBTSocket();
     }
 
+
+    // methods of DeviceHandler interface
+
     @Override
     public void confirmDialog() {
     }
+
     @Override
     public void cancelDialog(){
     }
+
+    @Override
+    public void start(String deviceInfo, boolean pairingMode) {
+        iBtDevAddr = deviceInfo;
+        iPairingMode = pairingMode;
+        iCmdCode = TCmd.ECmdConnByAddr;
+        if (iState == TState.EWaitingToGetDevice) {
+            // it changes state
+            iState = TState.EGettingDevice;
+            iServiceSearcher.addBTSearcherEventListener(this);
+            iServiceSearcher.setSearchType(iCmdCode);
+            // it launch the automatic procedures for the manual device search
+            iServiceSearcher.startSearchDevices();
+        }
+    }
+
+    @Override
+    public void start(BTSearcherEventListener listener, boolean pairingMode) {
+        iCmdCode = TCmd.ECmdConnByUser;
+        iPairingMode = pairingMode;
+        if (iState == TState.EWaitingToGetDevice) {
+            // it changes state
+            iState = TState.EGettingDevice;
+            //in questo caso ci sono 2 listener... uno è DeviceScanActivity, l'altro è la classe stessa
+            iServiceSearcher.addBTSearcherEventListener(listener);
+            iServiceSearcher.addBTSearcherEventListener(this);
+            iServiceSearcher.setSearchType(iCmdCode);
+            // it launch the automatic procedures for the manual device search
+            iServiceSearcher.startSearchDevices();
+        }
+    }
+
+    @Override
+    public void reset() {
+        // we free all buffer, descriptor and array
+        iBTAddress = null;
+        deviceSearchCompleted = false;
+        dataFound = false;
+        operationDeleted = false;
+        serverOpenFailed = false;
+
+        messageReceived = new byte[8];
+
+        waitforAck = true;
+
+        // this class object must return to the initial state
+        iState = TState.EWaitingToGetDevice;
+    }
+
+    @Override
+    public void stop() {
+        if (iState == TState.EGettingDevice) {
+            iServiceSearcher.stopSearchDevices(-1);
+            iServiceSearcher.removeBTSearcherEventListener(this);
+            iServiceSearcher.close();
+            // we advise the scheduler of the end of the activity on the device
+            iScheduler.operationCompleted();
+        } else if (iState == TState.EGettingService) {
+            iServiceSearcher.close();
+            // we advise the scheduler of the end of the activity on the device
+            iScheduler.operationCompleted();
+        } else if (iState == TState.EDisconnectingOK) {
+            if(iCmdCode.equals(TCmd.ECmdConnByUser)){
+                iScheduler.setBtMAC(iBTAddress);
+            }
+            iForaThermometerSocket.close();
+            iForaThermometerSocket.removeBTSocketEventListener(this);
+            iState = TState.EWaitingToGetDevice;
+            makeResultData();
+            currentPos = 0;
+        } else if (iState == TState.EDisconnectingPairing) {
+            iForaThermometerSocket.close();
+            iForaThermometerSocket.removeBTSocketEventListener(this);
+            runBTSocket();
+            // we advise the scheduler of the end of the activity on the device
+            iScheduler.operationCompleted();
+        } else {
+            if (!serverOpenFailed) {
+                // cancels all outstanding operations on socket
+                iForaThermometerSocket.close();
+                iForaThermometerSocket.removeBTSocketEventListener(this);
+            }
+            // we advise the scheduler of the end of the activity on the device
+            iScheduler.operationCompleted();
+        }
+    }
+
+    @Override
+    public void stopDeviceOperation(int selected) {
+        if (selected == -1) {
+            stop();
+        } else if (selected == -2) {
+            iServiceSearcher.stopSearchDevices(-1);
+            iServiceSearcher.removeBTSearcherEventListener(this);
+            if (iState != TState.EGettingDevice) {
+                // we advise the scheduler of the end of the activity on the device
+                iScheduler.operationCompleted();
+            }
+        } else {
+            iServiceSearcher.stopSearchDevices(selected);
+        }
+    }
+
+
+    // methods of BTSearchEventListener interface
+
+    @Override
+    public void deviceDiscovered(BTSearcherEvent evt, Vector<BluetoothDevice> devList) {
+        deviceList = devList;
+        // we recall runBTSearcher, because every time we find a device, we have
+        // to check if it is the device we want
+        runBTSearcher();
+    }
+
+    @Override
+    public void deviceSearchCompleted(BTSearcherEvent evt) {
+        deviceSearchCompleted = true;
+        currentPos = 0;
+    }
+
+    @Override
+    public void deviceSelected(BTSearcherEvent evt){
+        logger.log(Level.INFO, "CGE2C: deviceSelected");
+        // we change status
+        iState = TState.EGettingService;
+
+        runBTSearcher();
+    }
+
+
+    // methods of BTSocketEventListener interface
+
+    @Override
+    public void openDone(BTSocketEvent evt){
+        runBTSocket();
+    }
+
+    @Override
+    public void readDone(BTSocketEvent evt){
+        logger.log(Level.INFO, "ack received: "+toHexString(messageReceived));
+        runBTSocket();
+    }
+
+    @Override
+    public void writeDone(BTSocketEvent evt){
+        logger.log(Level.INFO, "command sent"+toHexString(messageToSend));
+        runBTSocket();
+    }
+
+    @Override
+    public void errorThrown(BTSocketEvent evt, int type, String description){
+        Log.e(TAG,  description);
+        switch (type) {
+            case 0: //thread interrupted
+                reset();
+                iScheduler.notifyError(description,"");
+                break;
+            case 1: //bluetooth open error
+                if (iState == TState.EConnected) {
+                    // if we don't receive any message from the blood pressure at this state
+                    // means that we have to do the pairing
+                    iState = TState.EDisconnecting;
+                    operationDeleted = true;
+                    serverOpenFailed = true;
+                    runBTSocket();
+                }
+                reset();
+                iScheduler.notifyError(ResourceManager.getResource().getString("ECommunicationError"), "");
+                break;
+            case 2: //bluetooth read error
+            case 3: //bluetooth write error
+                iState = TState.EDisconnecting;
+                operationDeleted = true;
+                runBTSocket();
+                reset();
+                iScheduler.notifyError(ResourceManager.getResource().getString("ECommunicationError"), "");
+                break;
+            case 4: //bluetooth close error
+                reset();
+                iScheduler.notifyError(ResourceManager.getResource().getString("ECommunicationError"), "");
+                break;
+        }
+    }
+
 
     private void connectToServer() throws IOException {
         // this function is called when we are in EGettingService state and
@@ -240,205 +412,7 @@ public class ForaThermometerClient implements DeviceHandler,
 		String temp = String.valueOf(temperature);
 		return temp.substring(0,2)+","+temp.substring(2);
 	}
-    
-    /**
-     * Trig the operation of this thread launching process of device searching
-     */
-    @Override
-    public void start(String deviceInfo, boolean pairingMode) {
-        iBtDevAddr = deviceInfo;
-        iPairingMode = pairingMode;
-        iCmdCode = TCmd.ECmdConnByAddr;
-        if (iState == TState.EWaitingToGetDevice) {
-            // it changes state
-            iState = TState.EGettingDevice;
-            iServiceSearcher.addBTSearcherEventListener(this);
-    		iServiceSearcher.setSearchType(iCmdCode);
-            // it launch the automatic procedures for the manual device search 
-            iServiceSearcher.startSearchDevices();
-        }
-    }
-    @Override
-    public void start(BTSearcherEventListener listener, boolean pairingMode) {
-        iCmdCode = TCmd.ECmdConnByUser;
-        iPairingMode = pairingMode;
-        if (iState == TState.EWaitingToGetDevice) {
-            // it changes state
-            iState = TState.EGettingDevice;
-            //in questo caso ci sono 2 listener... uno è DeviceScanActivity, l'altro è la classe stessa
-            iServiceSearcher.addBTSearcherEventListener(listener);
-            iServiceSearcher.addBTSearcherEventListener(this);
-    		iServiceSearcher.setSearchType(iCmdCode);
-            // it launch the automatic procedures for the manual device search 
-            iServiceSearcher.startSearchDevices();
-        }
-    }
-    
-    /**
-     * Cancel any outstanding requests. This is a reset of the class state and is used
-     * when the device scheduler disconnect the device because it has finished to do
-     * what had to do. To reuse this object, it has to come back to the initial state
-     */
-    @Override
-    public void reset() {
-		// we free all buffer, descriptor and array
-    	iBTAddress = null;
-		deviceSearchCompleted = false;
-        dataFound = false;
-        operationDeleted = false;
-        serverOpenFailed = false;
-        
-        messageReceived = new byte[8];
-        
-        waitforAck = true;
-        
-		// this class object must return to the initial state
-		iState = TState.EWaitingToGetDevice;
-    }
-    
-    /** 
-     * Disconnect from remote machine
-     */
-    @Override
-    public void stop() {
-    	if (iState == TState.EGettingDevice) {        	
-            iServiceSearcher.stopSearchDevices(-1);
-            iServiceSearcher.removeBTSearcherEventListener(this);
-            iServiceSearcher.close();
-            // we advise the scheduler of the end of the activity on the device
-            iScheduler.operationCompleted();
-        } else if (iState == TState.EGettingService) {
-            iServiceSearcher.close();
-            // we advise the scheduler of the end of the activity on the device
-            iScheduler.operationCompleted();
-        } else if (iState == TState.EDisconnectingOK) {
-        	if(iCmdCode.equals(TCmd.ECmdConnByUser)){
-    			iScheduler.setBtMAC(iBTAddress);
-    		}
-        	iForaThermometerSocket.close();
-        	iForaThermometerSocket.removeBTSocketEventListener(this);
-        	iState = TState.EWaitingToGetDevice;
-        	makeResultData();
-        	currentPos = 0;
-        } else if (iState == TState.EDisconnectingPairing) {
-        	iForaThermometerSocket.close();
-        	iForaThermometerSocket.removeBTSocketEventListener(this);
-        	runBTSocket();
-        	// we advise the scheduler of the end of the activity on the device
-            iScheduler.operationCompleted();
-        } else {
-        	if (!serverOpenFailed) {        		
-        		// cancels all outstanding operations on socket
-        		iForaThermometerSocket.close();
-        		iForaThermometerSocket.removeBTSocketEventListener(this);
-        	}
-        	// we advise the scheduler of the end of the activity on the device
-            iScheduler.operationCompleted();
-        }    	
-    }
-    
-    @Override
-    public void stopDeviceOperation(int selected) {
-    	if (selected == -1) {
-			stop();						
-		} else if (selected == -2) {
-			iServiceSearcher.stopSearchDevices(-1);
-			iServiceSearcher.removeBTSearcherEventListener(this);
-			if (iState != TState.EGettingDevice) {	            
-	            // we advise the scheduler of the end of the activity on the device
-	            iScheduler.operationCompleted();
-			}
-		} else {
-			iServiceSearcher.stopSearchDevices(selected);		
-		}
-    }
 
-    @Override
-    public void deviceDiscovered(BTSearcherEvent evt, Vector<BluetoothDevice> devList) {
-        deviceList = devList;
-        // we recall runBTSearcher, because every time we find a device, we have
-        // to check if it is the device we want
-        runBTSearcher();
-    }
-    
-    /**
-     * Called by bt searcher when the device search is finished
-     */
-    @Override
-    public void deviceSearchCompleted(BTSearcherEvent evt) {
-        deviceSearchCompleted = true;
-        currentPos = 0;
-    }
-    
-    // methods of BTSearchEventListener interface
-    
-    @Override
-    public void deviceSelected(BTSearcherEvent evt){
-    	logger.log(Level.INFO, "CGE2C: deviceSelected");
-    	// we change status
-    	iState = TState.EGettingService;
-    	
-    	runBTSearcher();                
-    }
-    
-		
-	// methods of BTSocketEventListener interface    
-
-    @Override
-    public void openDone(BTSocketEvent evt){
-    	runBTSocket();
-    }
-
-    @Override
-	public void readDone(BTSocketEvent evt){
-		logger.log(Level.INFO, "ack received: "+toHexString(messageReceived));
-		runBTSocket();
-	}
-
-	@Override
-	public void writeDone(BTSocketEvent evt){
-		logger.log(Level.INFO, "command sent"+toHexString(messageToSend));
-		runBTSocket();
-	}
-	
-	/**
-	 * Called by bt socket when finds an error in bt operations
-     */
-	@Override
-	public void errorThrown(BTSocketEvent evt, int type, String description){
-        Log.e(TAG,  description);
-        switch (type) {
-    	case 0: //thread interrupted
-    		reset();
-    		iScheduler.notifyError(description,"");
-    		break;
-    	case 1: //bluetooth open error
-    		if (iState == TState.EConnected) {
-    			// if we don't receive any message from the blood pressure at this state
-    			// means that we have to do the pairing
-    			iState = TState.EDisconnecting;
-    			operationDeleted = true;
-    			serverOpenFailed = true;
-    			runBTSocket();    			
-    		}    		
-    		reset();
-			iScheduler.notifyError(ResourceManager.getResource().getString("ECommunicationError"), "");
-    		break;
-    	case 2: //bluetooth read error
-        case 3: //bluetooth write error
-    		iState = TState.EDisconnecting;
-			operationDeleted = true;
-			runBTSocket(); 
-			reset();
-            iScheduler.notifyError(ResourceManager.getResource().getString("ECommunicationError"), "");
-    		break;
-    	case 4: //bluetooth close error
-    		reset();
-            iScheduler.notifyError(ResourceManager.getResource().getString("ECommunicationError"), "");
-    		break;
-		}	
-	}
-	
     private void runBTSearcher(){
     	switch (iState){
     	case EGettingDevice:
@@ -685,6 +659,31 @@ public class ForaThermometerClient implements DeviceHandler,
 			}
     		break;
     	}
-    }      
+    }
+
+	private class TimerExpired extends TimerTask {
+		public void run(){
+			logger.log(Level.INFO, "TIMER SCADUTO iState = "+iState);
+			if(iState == TState.EWaitingLastMeasure){
+				logger.log(Level.INFO, "re-sending request for last measure");
+				//Device connected, re-sending request for last measure
+				waitforAck = false;
+				iState = TState.ESendingReqLast;
+				messageToSend = new byte[8];
+				messageToSend[0] = TTypeCommand.getVal(TTypeCommand.kT_init);
+				messageToSend[1] = TTypeCommand.getVal(TTypeCommand.kT_25);
+				messageToSend[2] = 0x00;
+				messageToSend[3] = 0x00;
+				messageToSend[4] = 0x00;
+				messageToSend[5] = 0x00;
+				messageToSend[6] = TTypeCommand.getVal(TTypeCommand.kT_end);
+				messageToSend[7] = checkSumCalc( messageToSend );
+
+				waitforAck = false;
+
+				sendCmd();
+			}
+		}
+	}
 }
 

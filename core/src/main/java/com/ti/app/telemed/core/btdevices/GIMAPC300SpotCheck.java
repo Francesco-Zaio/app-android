@@ -16,6 +16,7 @@ import com.ti.app.telemed.core.btmodule.DeviceListener;
 import com.ti.app.telemed.core.btmodule.events.BTSearcherEvent;
 import com.ti.app.telemed.core.btmodule.events.BTSearcherEventListener;
 import com.ti.app.telemed.core.common.Measure;
+import com.ti.app.telemed.core.common.UserDevice;
 import com.ti.app.telemed.core.util.GWConst;
 
 import java.io.IOException;
@@ -93,6 +94,14 @@ public class GIMAPC300SpotCheck
     // Indicates that the current request is not a measure but a connection request
     private boolean iPairingMode = false;
 
+
+    public static boolean needPairing(UserDevice userDevice) {
+        return true;
+    }
+
+    public static boolean needConfig(UserDevice userDevice) {
+        return false;
+    }
 
     public GIMAPC300SpotCheck(DeviceListener aScheduler, Measure m) {
         deviceList = new Vector<>();
@@ -329,6 +338,7 @@ public class GIMAPC300SpotCheck
     @Override
     public void confirmDialog() {
     }
+
     @Override
     public void cancelDialog(){
     }
@@ -493,6 +503,9 @@ public class GIMAPC300SpotCheck
         }
     }
 
+
+    // Temperature Measure metohds
+
     private void makeTemperatureResultData() {
         if (!GWConst.KMsrTemp.equals(iMeasure.getMeasureType())) {
             deviceListener.notifyError(DeviceListener.MEASURE_PROCEDURE_ERROR,ResourceManager.getResource().getString("KWrongMeasure"));
@@ -509,6 +522,9 @@ public class GIMAPC300SpotCheck
         }
         stop();
     }
+
+
+    // Oximetry Measure metohds and data
 
     private static final int NUMBER_OF_MEASUREMENTS = 300; // = 5 min, 1 measure every sec
     private static final int MIN_SAMPLES = 6;

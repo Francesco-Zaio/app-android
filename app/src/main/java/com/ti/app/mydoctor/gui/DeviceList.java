@@ -1,7 +1,6 @@
 package com.ti.app.mydoctor.gui;
 
 import android.Manifest;
-import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -69,7 +68,6 @@ import android.widget.Toast;
 import com.ti.app.mydoctor.R;
 import com.ti.app.mydoctor.AppResourceManager;
 import com.ti.app.mydoctor.util.AppUtil;
-import com.ti.app.telemed.core.btdevices.MIRSpirodoc;
 import com.ti.app.telemed.core.common.Measure;
 import com.ti.app.telemed.core.common.MeasureDetail;
 import com.ti.app.telemed.core.common.Patient;
@@ -96,11 +94,9 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.Vector;
 
 
-// @SuppressWarnings("deprecation")
 public class DeviceList extends AppCompatActivity implements OnChildClickListener, DeviceListFragmentListener {
 	private static final String TAG = "DeviceList";
 
@@ -188,9 +184,8 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	private Bundle startMeasureBundle;
 	private Bundle userDataBundle;
 
-	private HashMap<String, UserDevice> deviceMap;
-	private List<String> measureList;
-	private HashMap<String, List<UserDevice>> measureModelsMap;
+	private List<String> measureList; // list of enabled measures types of the current User
+	private HashMap<String, List<UserDevice>> userDevicesMap; // list of UserDevices for every measure type of the current User
 
 	private boolean runningConfig;
 
@@ -219,33 +214,12 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
   	//Spinner per attesa gestione dispositivi
   	private LinearLayout linlaHeaderProgress;
 
-	@SuppressLint("NewApi")
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
 		this.setTheme(R.style.Theme_MyDoctorAtHome_Light);
 		setContentView(R.layout.device_list_main_activity);
-
-		Intent intent = getIntent();
-
-		if (intent != null) {
-			Log.d(TAG, "onCreate() intent=" + intent);
-			Log.d(TAG, "onCreate() flags=" + intent.getFlags());
-			Log.d(TAG, "onCreate() action=" + intent.getAction());
-			Log.d(TAG, "onCreate() package=" + intent.getPackage());
-
-			Bundle extra = intent.getExtras();
-			if (extra != null) {
-				Log.d(TAG, "onCreate() extra()");
-
-				Set<String> keys = extra.keySet();
-				for (String k : keys) {
-
-					Log.d(TAG, "onCreate() extra.key=" + k + " value=" + intent.getExtras().getByte(k));
-				}
-			}
-		}
 
 		//La tastiera viene aperta solo quando viene selezionata una edittext
 		getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
@@ -831,24 +805,20 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	}
 	/** FINE GESTIONE NAVIGATION DRAWER	 */
 
-	private void initDeviceMap() throws DbException {
-		deviceMap = new HashMap<>();
-		List<UserDevice> dList = DbManager.getDbManager().getCurrentUserDevices();
-		for (UserDevice pDevice : dList) {
-			UserDevice tmpDev = deviceMap.get(pDevice.getMeasure());
-			if(tmpDev == null || pDevice.isActive()){
-				deviceMap.put(pDevice.getMeasure(), pDevice);
-			}
+	private void initMeasureModelsMap() throws DbException {
+		userDevicesMap = new HashMap<>();
+		for (String measure : measureList) {
+			List<UserDevice> modelList = DbManager.getDbManager().getModelsForMeasure(measure, UserManager.getUserManager().getCurrentUser().getId());
+			userDevicesMap.put(measure, modelList);
 		}
 	}
 
-	private void initMeasureModelsMap(User currentUser) throws DbException {
-		measureModelsMap = new HashMap<>();
-		for (String measure : measureList) {
-			List<UserDevice> modelList = DbManager.getDbManager().getModelsForMeasure(measure, currentUser.getId());
-			measureModelsMap.put(measure, modelList);
-		}
-	}
+	private UserDevice getActiveUserDevice(String measureType) {
+        for (UserDevice ud : userDevicesMap.get(measureType))
+            if (ud.isActive())
+                return ud;
+        return null;
+    }
 
 	private void setupView() {
 		if( isGrid ) {
@@ -865,7 +835,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 
 		fillMaps = new ArrayList<>();
 		for (String measureType : measureList) {
-
 			HashMap<String, String> map = setFieldsMap(measureType);
 			fillMaps.add(map);
 		}
@@ -877,21 +846,15 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                 Log.i(TAG, "position: " + position);
                 Log.i(TAG, "parent.getItemAtPosition: " + parent.getItemAtPosition(position));
 
-                try {
-                    initDeviceMap();
-                } catch (DbException e) {
-                    Log.e(TAG, e.getMessage());
-                }
-
                 sentMeasures = 0;
                 receivedMeasures = 0;
                 if (!deviceManager.isOperationRunning()) {
                     selectedMeasureType = measureList.get(position);
                     selectedMeasurePosition = position;
-                    if (!deviceMap.get(selectedMeasureType).isActive()) {
+                    if (getActiveUserDevice(selectedMeasureType) == null) {
                         showSelectModelDialog();
                     } else {
-                        setCurrentDevice();
+                        deviceManager.setCurrentDevice(getActiveUserDevice(selectedMeasureType));
                         selectPatient();
                     }
                 } else {
@@ -978,21 +941,15 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 				Log.i(TAG, "position: "+position);
 				Log.i(TAG, "parent.getItemAtPosition: "+parent.getItemAtPosition(position));
 
-				try {
-					initDeviceMap();
-				} catch (DbException e) {
-                    e.printStackTrace();
-				}
-
 				sentMeasures = 0;
 				receivedMeasures = 0;
 				if(!deviceManager.isOperationRunning()){
 					selectedMeasureType = measureList.get(position);
 					selectedMeasurePosition = position;
-					if(!deviceMap.get(selectedMeasureType).isActive()){
+					if(getActiveUserDevice(selectedMeasureType) == null){
 						showSelectModelDialog();
 					} else {
-						setCurrentDevice();
+                        deviceManager.setCurrentDevice(getActiveUserDevice(selectedMeasureType));
 						selectPatient();
 					}
 				} else {
@@ -1031,12 +988,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 			}
 		}
 		else {
-			if(measureEnabled(deviceMap.get(selectedMeasureType))){
-                try {
-                    initDeviceMap();
-                } catch (DbException e) {
-                    e.printStackTrace();
-                }
+			if(measureEnabled(getActiveUserDevice(selectedMeasureType))){
                 doMeasure();
 			} else {
                 doScan();
@@ -1052,8 +1004,8 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 			map.put(KEY_ICON, "" + AppUtil.getIconId(measureType));
 		}
 		map.put(KEY_LABEL, AppResourceManager.getResource().getString("measureType." + measureType));
-		UserDevice pd = deviceMap.get(measureType);
-		if(pd.isActive()){
+		UserDevice pd = getActiveUserDevice(measureType);
+		if(pd != null){
 			map.put(KEY_MODEL, pd.getDevice().getDescription());
 		} else {
 			map.put(KEY_MODEL, getString(R.string.selectDevice));
@@ -1119,68 +1071,57 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 		AdapterContextMenuInfo info = (AdapterContextMenuInfo) menuInfo;
 		selectedMeasureType = measureList.get(info.position);
 		selectedMeasurePosition = info.position;
-		try {
-			initDeviceMap();
-			UserDevice pd = deviceMap.get(selectedMeasureType);
 
-			//MenuInflater inflater = getSupportMenuInflater();
-			android.view.MenuInflater inflater = getMenuInflater();
+        UserDevice pd = getActiveUserDevice(selectedMeasureType);
 
-            inflater.inflate(R.menu.context_menu_device_list, menu);
-            menu.setHeaderTitle(AppResourceManager.getResource().getString("measureType." + selectedMeasureType));
-            menu.setHeaderIcon(AppUtil.getSmallIconId(selectedMeasureType));
+        //MenuInflater inflater = getSupportMenuInflater();
+        android.view.MenuInflater inflater = getMenuInflater();
 
-            //Visibiltà voce "Mostra misure"
-            if (userManager.getCurrentPatient() != null) {
-                ArrayList<Measure> patientMeasures = measureManager.getMeasureData(userManager.getCurrentUser().getId(), null, null, selectedMeasureType, userManager.getCurrentPatient().getId(), MeasureManager.BooleanFilter.ignore);
-                if (patientMeasures != null && patientMeasures.size() > 0) {
-                    MenuItem mi = menu.findItem(R.id.show_measure);
-                    mi.setVisible(true);
-                }
+        inflater.inflate(R.menu.context_menu_device_list, menu);
+        menu.setHeaderTitle(AppResourceManager.getResource().getString("measureType." + selectedMeasureType));
+        menu.setHeaderIcon(AppUtil.getSmallIconId(selectedMeasureType));
+
+        //Visibiltà voce "Mostra misure"
+        if (userManager.getCurrentPatient() != null) {
+            ArrayList<Measure> patientMeasures = measureManager.getMeasureData(userManager.getCurrentUser().getId(), null, null, selectedMeasureType, userManager.getCurrentPatient().getId(), MeasureManager.BooleanFilter.ignore);
+            if (patientMeasures != null && patientMeasures.size() > 0) {
+                MenuItem mi = menu.findItem(R.id.show_measure);
+                mi.setVisible(true);
             }
+        }
 
-            //Visibiltà voce "Seleziona Modello"
-            if(measureModelsMap.get(selectedMeasureType).size() > 1){
-                MenuItem mi = menu.findItem(R.id.select_model);
+        //Visibiltà voce "Seleziona Modello"
+        if(userDevicesMap.get(selectedMeasureType).size() > 1){
+            MenuItem mi = menu.findItem(R.id.select_model);
+            mi.setVisible(true);
+        }
+
+        if (pd != null && pd.getDevice().isBTDevice()) {
+            boolean needPairing = MyDoctorApp.getDeviceManager().needPairing(pd);
+            boolean needCfg = MyDoctorApp.getDeviceManager().needCfg(pd);
+			MenuItem mi;
+
+            //Visibiltà voce Configura"
+            if (needCfg) {
+                mi = menu.findItem(R.id.config);
                 mi.setVisible(true);
             }
 
-            // Visibiltà voci "Associa", "Associa e misura", "Nuova associazione"
-            MenuItem mi;
-            switch (pd.getDevice().getModel()) {
-                case GWConst.KPO3IHealth:
-                case GWConst.KBP5IHealth:
-                case GWConst.KBP550BTIHealth:
-                case GWConst.KHS4SIHealth:
-                case GWConst.KEcgMicro:
-                case GWConst.KFORATherm:
-                case GWConst.KCcxsRoche:
-                case GWConst.KOximeterNon:
-                    mi = menu.findItem(R.id.pair_and_measure);
+            //Visibiltà voci Associa, Associa e Misura, Nuova Associazione"
+            if (needPairing) {
+                String btAddr = pd.getBtAddress();
+                if (btAddr!=null && !btAddr.isEmpty()) {
+                    mi = menu.findItem(R.id.new_device_only_association);
                     mi.setVisible(true);
-                    break;
-                case GWConst.KSpirodoc:
-
-				case GWConst.K8000GW:
-				case GWConst.KPC300SpotCheck:
+                } else {
                     mi = menu.findItem(R.id.pair);
                     mi.setVisible(true);
-                    break;
+                }
+            } else {
+                mi = menu.findItem(R.id.pair_and_measure);
+                mi.setVisible(true);
             }
-
-            // Visibiltà voce "Configura"
-            switch (pd.getDevice().getModel()) {
-                case GWConst.KSpirodoc:
-                    if (MIRSpirodoc.isStandardModel(pd.getBtAddress())) {
-                            mi = menu.findItem(R.id.config);
-                            mi.setVisible(true);
-                        }
-                    break;
-            }
-		} catch (DbException e) {
-			e.printStackTrace();
-			showErrorDialog(AppResourceManager.getResource().getString("errorDb"));
-		}
+        }
 	}
 
 	@Override
@@ -1226,7 +1167,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 			deviceListFragment.getListView().setSelection(info.position);
 		}
 
-    	setCurrentDevice();
+        deviceManager.setCurrentDevice(getActiveUserDevice(selectedMeasureType));
 
 	    switch (item.getItemId()) {
 		    case R.id.pair:
@@ -1420,8 +1361,8 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	}
 
 	private void doMeasure() {
-		UserDevice uDevice = deviceMap.get(selectedMeasureType);
-		if(uDevice != null && measureEnabled(uDevice)){
+		UserDevice uDevice = getActiveUserDevice(selectedMeasureType);
+		if(measureEnabled(uDevice)){
 			if(AppUtil.isManualMeasure(uDevice.getDevice())){
                 startManualMeasure();
 			} else {
@@ -1465,11 +1406,13 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 
 	private void startNewDevice() {
 		//Occorre annullare il BT address per forzare lo scouting dei dispositivi
-		UserDevice ud = deviceMap.get(selectedMeasureType);
-		UserDevice tmpUd = (UserDevice) ud.clone();
-		tmpUd.setBtAddress(null);
-		deviceManager.setCurrentDevice(tmpUd);
-		startScan();
+		UserDevice ud = getActiveUserDevice(selectedMeasureType);
+        if (ud != null) {
+            UserDevice tmpUd = (UserDevice) ud.clone();
+            tmpUd.setBtAddress(null);
+            deviceManager.setCurrentDevice(tmpUd);
+            startScan();
+        }
 	}
 
 	private void showMeasures(int position) {
@@ -1566,7 +1509,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 					}
 					else if (startMeasureBundle != null && startMeasureBundle.getBoolean(START_MEASURE, false)) {
 						Log.d(TAG, "Inizio la misura di " + p.getName() + " " + p.getSurname());
-						if(measureEnabled(deviceMap.get(selectedMeasureType))){
+						if(measureEnabled(getActiveUserDevice(selectedMeasureType))){
 							doMeasure();
 						} else {
 							doScan();
@@ -1645,7 +1588,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	}
 
     private void showSelectModelDialog() {
-		final List<UserDevice> userDevices = measureModelsMap.get(selectedMeasureType);
+		final List<UserDevice> userDevices = userDevicesMap.get(selectedMeasureType);
 
 		final SparseIntArray mapPosition = new SparseIntArray(userDevices.size());
  		List<String> nal = new ArrayList<>();
@@ -1688,12 +1631,11 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 			    		userDevices.get(i).setActive(false);
 					}
 			    	selectedUserDevice.setActive(true);
-			    	deviceMap.put(selectedMeasureType, selectedUserDevice);
-			    	//DbManager.getDbManager().updateUserDeviceModel(selectedMeasureType, selectedUserDevice.getDevice().getId());
 
 			    	try {
 			    		DbManager.getDbManager().updateUserDeviceModel(selectedMeasureType, selectedUserDevice.getDevice().getId());
-					} catch (DbException e) {
+                        initMeasureModelsMap();
+                    } catch (DbException e) {
                         Log.e(TAG, e.getMessage());
 					}
 
@@ -1955,8 +1897,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 			deviceManager.setCurrentUser(currentUser);
 
             measureList = DbManager.getDbManager().getMeasureTypesForUser();
-			initDeviceMap();
-			initMeasureModelsMap(currentUser);
+			initMeasureModelsMap();
 
 			patientList = DbManager.getDbManager().getUserPatients(currentUser.getId());
 			if (patientList == null || patientList.size() == 0) {
@@ -2404,14 +2345,14 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	};
 
 	private void startManualMeasure() {
-		if(UserManager.getUserManager().getCurrentPatient() != null){
-			UserDevice uDevice = deviceMap.get(selectedMeasureType);
-			//We set the current device in device Manager
-			deviceManager.setCurrentDevice(uDevice);
-			if(uDevice.getMeasure().equalsIgnoreCase(GWConst.KMsrTemp)){
-				Intent intent = new Intent( DeviceList.this, ManualTemperatureActivity.class );
-				startActivityForResult( intent, MANUAL_MEASURE_ENTRY );
-			}
+        UserDevice uDevice = getActiveUserDevice(selectedMeasureType);
+		if(UserManager.getUserManager().getCurrentPatient() != null && uDevice != null){
+            //We set the current device in device Manager
+            deviceManager.setCurrentDevice(uDevice);
+            if (uDevice.getMeasure().equalsIgnoreCase(GWConst.KMsrTemp)) {
+                Intent intent = new Intent(DeviceList.this, ManualTemperatureActivity.class);
+                startActivityForResult(intent, MANUAL_MEASURE_ENTRY);
+            }
 		}
 	}
 
@@ -2432,12 +2373,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	}
 
 	private void setCurrentDevice() {
-		UserDevice ud = deviceMap.get(selectedMeasureType);
-		if(ud.isActive()){
-			deviceManager.setCurrentDevice(ud);
-		} else {
-			deviceManager.setCurrentDevice(null);
-		}
+        deviceManager.setCurrentDevice(getActiveUserDevice(selectedMeasureType));
 	}
 
 	private void setOperationCompleted(){
@@ -2459,8 +2395,8 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	}
 
 	private boolean measureEnabled(UserDevice device) {
-		return (device.getBtAddress()!= null && device.getBtAddress().length() > 0)
-				|| AppUtil.isManualMeasure(device.getDevice());
+		return device != null && ((device.getBtAddress()!= null && device.getBtAddress().length() > 0)
+				|| AppUtil.isManualMeasure(device.getDevice()));
 	}
 
 	private class ProgressDialogClickListener implements DialogInterface.OnClickListener {

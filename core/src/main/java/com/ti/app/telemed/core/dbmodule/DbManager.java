@@ -45,7 +45,7 @@ public class DbManager {
 
     // Versione del DB: incrementare il nr se vi sono modifiche allo schema ed inserire le modifice
     // nel metoto onUpgrade
-    private static final int DATABASE_VERSION = 15;
+    private static final int DATABASE_VERSION = 16;
     // versione DB minima richiesta per cui è possibile effettuare un upgrade del DB senza
     // dover droppare e ricreare tutte le tabelle (vedi metodo onUpgrade)
     private static final int MIN_OLD_VERSION = 10;
@@ -115,7 +115,8 @@ public class DbManager {
 		+ "MEASURE text, " 
 		+ "MODEL text, "
 		+ "DESCRIPTION text, "
-        + "NEED_CFG integer)";
+        + "NEED_CFG integer, "
+        + "CLASS_NAME text )";
     
     private static final String CREATE_USER_DEVICE_TBL = "CREATE table USER_DEVICE ("
             + "ID integer primary key autoincrement, "
@@ -229,6 +230,8 @@ public class DbManager {
                         db.execSQL("ALTER TABLE DEVICE ADD COLUMN NEED_CFG integer");
                     case 14:
                         // rimossa colonna DEVICE_TYPE da MEASURE non serve fare nulla
+                    case 15:
+                        db.execSQL("ALTER TABLE DEVICE ADD COLUMN CLASS_NAME text");
                 }
             }
         }
@@ -308,12 +311,13 @@ public class DbManager {
 	public void insertDevice(Device d) throws DbException {
         synchronized (this) {
             try{
-                ContentValues initialValues = new ContentValues();
-                initialValues.put("MEASURE", d.getMeasure());
-                initialValues.put("MODEL", d.getModel());
-                initialValues.put("DESCRIPTION", d.getDescription());
-                initialValues.put("NEED_CFG", d.needCfg()? 1:0);
-                mDb.insert("DEVICE", null, initialValues);
+                ContentValues values = new ContentValues();
+                values.put("MEASURE", d.getMeasure());
+                values.put("MODEL", d.getModel());
+                values.put("DESCRIPTION", d.getDescription());
+                values.put("NEED_CFG", d.isBTDevice()? 1:0);
+                values.put("CLASS_NAME", d.getClassName());
+                mDb.insert("DEVICE", null, values);
                 logger.log(Level.INFO, "Device inserted: "+ d.toString());
             } catch (Exception sqle) {
                 logger.log(Level.SEVERE, sqle.getMessage());
@@ -328,7 +332,8 @@ public class DbManager {
             try{
                 ContentValues values = new ContentValues();
                 values.put("DESCRIPTION", d.getDescription());
-                values.put("NEED_CFG", d.needCfg()? 1:0);
+                values.put("NEED_CFG", d.isBTDevice()? 1:0);
+                values.put("CLASS_NAME", d.getClassName());
                 String[] args = new String[]{d.getMeasure(), d.getModel()};
                 mDb.update("DEVICE", values, "MEASURE = ? AND MODEL =  ? ", args);
                 logger.log(Level.INFO, "Device updated: "+ d.toString());
@@ -391,7 +396,8 @@ public class DbManager {
             ret.setMeasure(c.getString(c.getColumnIndex("MEASURE")));
             ret.setModel(c.getString(c.getColumnIndex("MODEL")));
             ret.setDescription(c.getString(c.getColumnIndex("DESCRIPTION")));
-            ret.setNeedCfg(c.getInt(c.getColumnIndex("NEED_CFG")) == 1);
+            ret.setIsBTDevice(c.getInt(c.getColumnIndex("NEED_CFG")) == 1);
+            ret.setClassName(c.getString(c.getColumnIndex("CLASS_NAME")));
             return ret;
         }
     }
@@ -1837,14 +1843,6 @@ public class DbManager {
             String whereClause = "ID in (select UD.ID from USER_DEVICE AS UD JOIN DEVICE AS D ON UD.ID_DEVICE=D.ID AND D.MODEL = ? AND UD.ID_USER = ?)";
             int n = mDb.update("USER_DEVICE", values, whereClause, args);
             Log.i(TAG, "updateBtAddressDevice " + n + " records updated");
-
-            /*
-            Log.i(TAG, "updateBtAddressDevice");
-            ContentValues values = new ContentValues();
-            values.put("BTADDRESS", ud.getBtAddress());
-            String[] args = new String[]{"" + ud.getId()};
-            mDb.update("USER_DEVICE", values, "ID = ? ", args);
-            */
 
             // Aggiorno i dati sulla tabella current_device
             try {

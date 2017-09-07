@@ -27,6 +27,7 @@ import com.ti.app.telemed.core.common.Measure;
 import com.ti.app.telemed.core.common.Patient;
 import com.ti.app.telemed.core.btmodule.DeviceHandler;
 import com.ti.app.telemed.core.btmodule.DeviceListener;
+import com.ti.app.telemed.core.common.UserDevice;
 import com.ti.app.telemed.core.usermodule.UserManager;
 import com.ti.app.telemed.core.xmlmodule.XmlManager;
 import com.ti.app.telemed.core.util.GWConst;
@@ -129,11 +130,30 @@ public class MIRSpirodoc implements DeviceHandler,
 
     public static boolean isStandardModel(String btAddr) {
         TSpirodocType spirodocType = TSpirodocType.DEV_SIMPLE;
-        String typeString = Util.getRegistryValue(REGKEY+btAddr);
-        if (typeString.length() > 0)
-            spirodocType = TSpirodocType.valueOf(typeString);
+		if (btAddr != null && !btAddr.isEmpty()) {
+			String typeString = Util.getRegistryValue(REGKEY + btAddr);
+			if (typeString.length() > 0)
+				spirodocType = TSpirodocType.valueOf(typeString);
+		}
         return spirodocType == TSpirodocType.DEV_STANDARD;
     }
+
+	public static boolean needPairing(UserDevice userDevice) {
+		return true;
+	}
+
+	public static boolean needConfig(UserDevice userDevice) {
+		TSpirodocType spirodocType = TSpirodocType.DEV_SIMPLE;
+		if (userDevice != null) {
+			String btAddr = userDevice.getBtAddress();
+			if (btAddr != null && !btAddr.isEmpty()) {
+				String typeString = Util.getRegistryValue(REGKEY + btAddr);
+				if (typeString.length() > 0)
+					spirodocType = TSpirodocType.valueOf(typeString);
+			}
+		}
+		return spirodocType == TSpirodocType.DEV_STANDARD;
+	}
 
 	public MIRSpirodoc(DeviceListener aScheduler, Measure m, int aMsrType) {
 

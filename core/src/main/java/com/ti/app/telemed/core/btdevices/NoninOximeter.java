@@ -323,16 +323,18 @@ public class NoninOximeter implements DeviceHandler,
             case 0: //thread interrupted
             case 4: //bluetooth close error
                 reset();
-                iScheduler.notifyError(description,"");
+                iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
                 break;
             case 1: //bluetooth open error
                 serverOpenFailed = true;
+                iScheduler.notifyError(DeviceListener.CONNECTION_ERROR, ResourceManager.getResource().getString("EBtDeviceConnError"));
+                break;
             case 2: //bluetooth read error
             case 3: //bluetooth write error
                 iState = TState.EDisconnecting;
                 runBTSocket();
                 reset();
-                iScheduler.notifyError(ResourceManager.getResource().getString("ECommunicationError"),"");
+                iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
                 break;
         }
     }
@@ -367,7 +369,7 @@ public class NoninOximeter implements DeviceHandler,
         iNoninOxySocket.removeBTSocketEventListener(this);
         iNoninOxySocket.close();
         reset();
-        iScheduler.notifyError(ResourceManager.getResource().getString("ECommunicationError"),"");
+        iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
     }
 
 
@@ -446,7 +448,7 @@ public class NoninOximeter implements DeviceHandler,
 			try {
 				connectToServer();
 			} catch (IOException e) {
-				iScheduler.notifyError(ResourceManager.getResource().getString("EBtDeviceConnError"),"");
+                iScheduler.notifyError(DeviceListener.CONNECTION_ERROR, ResourceManager.getResource().getString("EBtDeviceConnError"));
 			}
 			break;
 

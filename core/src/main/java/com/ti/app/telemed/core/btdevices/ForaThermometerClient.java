@@ -244,7 +244,7 @@ public class ForaThermometerClient implements DeviceHandler,
         switch (type) {
             case 0: //thread interrupted
                 reset();
-                iScheduler.notifyError(description,"");
+                iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
                 break;
             case 1: //bluetooth open error
                 if (iState == TState.EConnected) {
@@ -256,7 +256,7 @@ public class ForaThermometerClient implements DeviceHandler,
                     runBTSocket();
                 }
                 reset();
-                iScheduler.notifyError(ResourceManager.getResource().getString("ECommunicationError"), "");
+                iScheduler.notifyError(DeviceListener.CONNECTION_ERROR, ResourceManager.getResource().getString("EBtDeviceConnError"));
                 break;
             case 2: //bluetooth read error
             case 3: //bluetooth write error
@@ -264,11 +264,11 @@ public class ForaThermometerClient implements DeviceHandler,
                 operationDeleted = true;
                 runBTSocket();
                 reset();
-                iScheduler.notifyError(ResourceManager.getResource().getString("ECommunicationError"), "");
+                iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
                 break;
             case 4: //bluetooth close error
                 reset();
-                iScheduler.notifyError(ResourceManager.getResource().getString("ECommunicationError"), "");
+                iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
                 break;
         }
     }
@@ -403,7 +403,7 @@ public class ForaThermometerClient implements DeviceHandler,
             iScheduler.showMeasurementResults(m);
         } else {
         	Log.e(TAG,  "Dati non trovati");
-        	iScheduler.notifyError(ResourceManager.getResource().getString("ENoMeasuresFound"),"");
+        	iScheduler.notifyError(DeviceListener.NO_MEASURES_FOUND, ResourceManager.getResource().getString("ENoMeasuresFound"));
         }
     }
     
@@ -476,7 +476,7 @@ public class ForaThermometerClient implements DeviceHandler,
             try {
             	connectToServer();
 			} catch (IOException e) {
-				iScheduler.notifyError(ResourceManager.getResource().getString("EBtDeviceConnError"), "");
+				iScheduler.notifyError(DeviceListener.CONNECTION_ERROR, ResourceManager.getResource().getString("EBtDeviceConnError"));
 			}
             break;
     	
@@ -549,7 +549,7 @@ public class ForaThermometerClient implements DeviceHandler,
     					iForaThermometerSocket.removeBTSocketEventListener(this);
     					iForaThermometerSocket.close();
     					reset();
-    	            	iScheduler.notifyError(ResourceManager.getResource().getString("ENoMeasuresFound"), "");
+                        iScheduler.notifyError(DeviceListener.NO_MEASURES_FOUND, ResourceManager.getResource().getString("ENoMeasuresFound"));
     				} else {
     					//Correct, sending request for data measure
     					iState = TState.ESendingReqLast;
@@ -572,7 +572,7 @@ public class ForaThermometerClient implements DeviceHandler,
     				iForaThermometerSocket.removeBTSocketEventListener(this);
     				iForaThermometerSocket.close();
 					reset();
-	            	iScheduler.notifyError(ResourceManager.getResource().getString("ECommunicationError"),"");
+                    iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
     			}
     			break;
     		case 0x26:
@@ -601,7 +601,7 @@ public class ForaThermometerClient implements DeviceHandler,
     				iForaThermometerSocket.removeBTSocketEventListener(this);
     				iForaThermometerSocket.close();
 					reset();
-	            	iScheduler.notifyError(ResourceManager.getResource().getString("ECommunicationError"),"");
+                    iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
     			}
     			break;
     			
@@ -610,7 +610,7 @@ public class ForaThermometerClient implements DeviceHandler,
 				iForaThermometerSocket.removeBTSocketEventListener(this);
 				iForaThermometerSocket.close();
 				reset();
-				iScheduler.notifyError(ResourceManager.getResource().getString("ECommunicationError"),"");
+                iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
     			break;
     		}
     		break;

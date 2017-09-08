@@ -423,10 +423,16 @@ public class WebManager implements Runnable, WebSocketTransactionEventListener {
                         fireWebOperationFailed(XmlErrorCode.USER_BLOCKED);
                         fireWebOperationFailedSending(XmlErrorCode.USER_BLOCKED);
                         break;
+                    case 408:
+                    case -1:
+                        // Connection problem
+                        fireWebOperationFailed(XmlErrorCode.CONNECTION_ERROR);
+                        fireWebOperationFailedSending(XmlErrorCode.CONNECTION_ERROR);
+                        break;
                     default:
                         // these are all other cases of http errors
-                        fireWebOperationFailed(resultCode);
-                        fireWebOperationFailedSending(resultCode);
+                        fireWebOperationFailed(XmlErrorCode.PLATFORM_ERROR);
+                        fireWebOperationFailedSending(XmlErrorCode.PLATFORM_ERROR);
                         break;
                 }
             }

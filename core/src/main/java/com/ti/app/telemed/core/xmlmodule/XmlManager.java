@@ -45,6 +45,7 @@ public class XmlManager extends DefaultHandler {
 		BAD_SEQUENCE_NUMBER (33),
 		RESPONSE_FORMAT_ERROR (55),        
         PLATFORM_ERROR (99),
+        CONNECTION_ERROR (100),
         PASSWORD_WRONG_TOO_MANY_TIMES (423),
         USER_BLOCKED (403);
 
@@ -90,6 +91,8 @@ public class XmlManager extends DefaultHandler {
         			return RESPONSE_FORMAT_ERROR;
 				case 99:
 					return PLATFORM_ERROR;
+                case 100:
+                    return CONNECTION_ERROR;
 				case 423:
 					return PASSWORD_WRONG_TOO_MANY_TIMES;
 				case 403:

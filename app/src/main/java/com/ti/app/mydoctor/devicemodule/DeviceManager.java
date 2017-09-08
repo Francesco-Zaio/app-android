@@ -7,14 +7,6 @@ import android.os.Message;
 import android.util.Log;
 
 import com.ti.app.mydoctor.AppResourceManager;
-import com.ti.app.telemed.core.btdevices.Contec8000GW;
-import com.ti.app.telemed.core.btdevices.EcgProtocol;
-import com.ti.app.telemed.core.btdevices.ForaThermometerClient;
-import com.ti.app.telemed.core.btdevices.GIMAPC300SpotCheck;
-import com.ti.app.telemed.core.btdevices.IHealth;
-import com.ti.app.telemed.core.btdevices.NoninOximeter;
-import com.ti.app.telemed.core.btdevices.RocheProthrombineTimeClient;
-import com.ti.app.telemed.core.btdevices.MIRSpirodoc;
 import com.ti.app.telemed.core.btmodule.events.BTSearcherEventListener;
 import com.ti.app.telemed.core.btmodule.DeviceHandler;
 import com.ti.app.telemed.core.btmodule.DeviceListener;
@@ -25,8 +17,6 @@ import com.ti.app.telemed.core.dbmodule.DbManager;
 import com.ti.app.telemed.core.util.GWConst;
 import com.ti.app.mydoctor.gui.DeviceScanActivity;
 import com.ti.app.mydoctor.util.AppConst;
-import com.ti.app.telemed.core.usermodule.UserManager;
-import com.ti.app.telemed.core.xmlmodule.XmlManager;
 
 import java.lang.reflect.Method;
 

@@ -319,7 +319,7 @@ public class RocheProthrombineTimeClient implements DeviceHandler,
             Log.d(TAG, "iLastMeasure [48]=" + iLastMeasure.charAt(48) + " ? " + 0x31);
             if (!demoMode && iLastMeasure.charAt(48) == 0x31) {
                 String msg = ResourceManager.getResource().getString("KNoNewMeasure");
-                iScheduler.notifyError(msg,msg);
+                iScheduler.notifyError(DeviceListener.NO_MEASURES_FOUND,msg);
             }
             else {
                 makeResultData();
@@ -415,11 +415,13 @@ public class RocheProthrombineTimeClient implements DeviceHandler,
 
 	@Override
 	public void errorThrown(BTSocketEvent evt, int type, String description) {
+        String msg;
 		switch (type) {
 		case 0: // thread interrupted
 			reset();
 			Log.e(TAG, description);
-			iScheduler.notifyError(description,description);
+            msg = ResourceManager.getResource().getString("ECommunicationError");
+            iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR, msg);
 			break;
 		case 1: // bluetooth open error
 			Log.e(TAG, description);
@@ -433,8 +435,8 @@ public class RocheProthrombineTimeClient implements DeviceHandler,
 				runBTSocket();
 			}
 			reset();
-            String msg = ResourceManager.getResource().getString("ECommunicationError");
-			iScheduler.notifyError(msg,msg);
+            msg = ResourceManager.getResource().getString("EBtDeviceConnError");
+            iScheduler.notifyError(DeviceListener.CONNECTION_ERROR, msg);
 			break;
 		case 2: // bluetooth read error
         case 3: // bluetooth write error
@@ -444,13 +446,13 @@ public class RocheProthrombineTimeClient implements DeviceHandler,
 			runBTSocket();
 			reset();
             msg = ResourceManager.getResource().getString("ECommunicationError");
-			iScheduler.notifyError(msg,msg);
+            iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR, msg);
 			break;
 		case 4: // bluetooth close error
 			Log.e(TAG, description);
 			reset();
             msg = ResourceManager.getResource().getString("ECommunicationError");
-            iScheduler.notifyError(msg,msg);
+            iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR, msg);
 			break;
 		}
 	}
@@ -770,7 +772,7 @@ public class RocheProthrombineTimeClient implements DeviceHandler,
 				connectToServer();
 			} catch (IOException e) {
                 String msg = ResourceManager.getResource().getString("EBtDeviceConnError");
-				iScheduler.notifyError(msg,msg);
+                iScheduler.notifyError(DeviceListener.CONNECTION_ERROR, msg);
 			}
 			break;
 
@@ -1094,7 +1096,7 @@ public class RocheProthrombineTimeClient implements DeviceHandler,
 						iPTRSocket.removeBTSocketEventListener(this);
 						iState = TState.EWaitingToGetDevice;
                         String msg = ResourceManager.getResource().getString("ECommunicationError");
-						iScheduler.notifyError(msg,msg);
+                        iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR, msg);
 					}
 				} else {
 					if (iDataReceived == null) {

@@ -146,7 +146,7 @@ public class Contec8000GW extends BroadcastReceiver implements DeviceHandler, BT
                         startActivity();
                     }
                 } catch (IOException e) {
-                    iScheduler.notifyError(ResourceManager.getResource().getString("EBtDeviceConnError"),"");
+                    iScheduler.notifyError(DeviceListener.CONNECTION_ERROR, ResourceManager.getResource().getString("EBtDeviceConnError"));
                 }
                 break;
         }
@@ -325,16 +325,18 @@ public class Contec8000GW extends BroadcastReceiver implements DeviceHandler, BT
             case 0: //thread interrupted
             case 4: //bluetooth close error
                 reset();
-                iScheduler.notifyError(description,"");
+                iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR,ResourceManager.getResource().getString("ECommunicationError"));
                 break;
             case 1: //bluetooth open error
                 serverOpenFailed = true;
+                iScheduler.notifyError(DeviceListener.CONNECTION_ERROR,ResourceManager.getResource().getString("EBtDeviceConnError"));
+                break;
             case 2: //bluetooth read error
             case 3: //bluetooth write error
                 iState = TState.EDisconnecting;
                 runBTSocket();
                 reset();
-                iScheduler.notifyError(ResourceManager.getResource().getString("ECommunicationError"),"");
+                iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR,ResourceManager.getResource().getString("ECommunicationError"));
                 break;
         }
     }
@@ -363,11 +365,11 @@ public class Contec8000GW extends BroadcastReceiver implements DeviceHandler, BT
         switch (result) {
             case RESULT_ABORT:
                 reset();
-                iScheduler.notifyError(ResourceManager.getResource().getString("KNoNewMeasure"),"");
+                iScheduler.notifyError(DeviceListener.NO_MEASURES_FOUND, ResourceManager.getResource().getString("KNoNewMeasure"));
                 break;
             case RESULT_ERROR:
                 reset();
-                iScheduler.notifyError(ResourceManager.getResource().getString("ECommunicationError"),"");
+                iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
                 break;
             case RESULT_OK:
                 iMeasure = (Measure)intent.getExtras().getSerializable(MEASURE_OBJECT);

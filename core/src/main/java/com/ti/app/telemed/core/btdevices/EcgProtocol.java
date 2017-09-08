@@ -234,7 +234,7 @@ public class EcgProtocol implements DeviceHandler,
         iECGSocket.close();
         reset();
         String msg = ResourceManager.getResource().getString("ECommunicationError");
-        iScheduler.notifyError(msg,msg);
+        iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR,msg);
     }
 
 
@@ -390,10 +390,12 @@ public class EcgProtocol implements DeviceHandler,
     public void errorThrown(BTSocketEvent evt, int type, String description) {
         Log.e(TAG, "ECG errorThrown");
         Log.e(TAG, "ECG errorThrown " + type + ": " + description);
+        String msg;
         switch (type) {
             case 0: //thread interrupted
                 reset();
-                iScheduler.notifyError(description,description);
+                msg = ResourceManager.getResource().getString("ECommunicationError");
+                iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR,msg);
                 break;
             case 1: //bluetooth open error
                 if (iState == TState.EConnected) {
@@ -405,8 +407,8 @@ public class EcgProtocol implements DeviceHandler,
                     runBTSocket();
                 }
                 reset();
-                String msg = ResourceManager.getResource().getString("ECommunicationError");
-                iScheduler.notifyError(msg,msg);
+                msg = ResourceManager.getResource().getString("EBtDeviceConnError");
+                iScheduler.notifyError(DeviceListener.CONNECTION_ERROR,msg);
                 break;
             case 2: //bluetooth read error
             case 3: //bluetooth write error
@@ -415,12 +417,12 @@ public class EcgProtocol implements DeviceHandler,
                 runBTSocket();
                 reset();
                 msg = ResourceManager.getResource().getString("ECommunicationError");
-                iScheduler.notifyError(msg,msg);
+                iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR,msg);
                 break;
             case 4: //bluetooth close error
                 reset();
                 msg = ResourceManager.getResource().getString("ECommunicationError");
-                iScheduler.notifyError(msg,msg);
+                iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR,msg);
                 break;
         }
     }
@@ -823,7 +825,7 @@ public class EcgProtocol implements DeviceHandler,
                     connectToServer();
                 } catch (IOException e) {
                     String msg = ResourceManager.getResource().getString("EBtDeviceConnError");
-                    iScheduler.notifyError(msg,msg);
+                    iScheduler.notifyError(DeviceListener.CONNECTION_ERROR,msg);
                 }
                 break;
         }
@@ -845,7 +847,7 @@ public class EcgProtocol implements DeviceHandler,
                         stop();
                     } catch (InterruptedException e) {
                         String msg = ResourceManager.getResource().getString("EBtDeviceDisconnError");
-                        iScheduler.notifyError(msg,msg);
+                        iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR,msg);
                     }
                 }  else {
                     if(iCmdCode.equals(DeviceHandler.TCmd.ECmdConnByUser)){
@@ -1003,7 +1005,7 @@ public class EcgProtocol implements DeviceHandler,
                             iECGSocket.close();
                             reset();
                             String msg = ResourceManager.getResource().getString("ECommunicationError");
-                            iScheduler.notifyError(msg,msg);
+                            iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR,msg);
                         }
                     }
                 } else {//CRC failure
@@ -1036,7 +1038,7 @@ public class EcgProtocol implements DeviceHandler,
                         iECGSocket.close();
                         reset();
                         String msg = ResourceManager.getResource().getString("ECommunicationError");
-                        iScheduler.notifyError(msg,msg);
+                        iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR,msg);
                   }
                 }
                 break;
@@ -1142,7 +1144,7 @@ public class EcgProtocol implements DeviceHandler,
                         iECGSocket.close();
                         reset();
                         String msg = ResourceManager.getResource().getString("ECommunicationError");
-                        iScheduler.notifyError(msg,msg);
+                        iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR,msg);
                     }
                 }
                 break;
@@ -1228,13 +1230,13 @@ public class EcgProtocol implements DeviceHandler,
                         stop();
                     } catch (Exception e) {
                         String msg = ResourceManager.getResource().getString("EBtDeviceDisconnError");
-                        iScheduler.notifyError(msg, msg);
+                        iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR, msg);
                     }
                 } else {
                     iState = TState.EDisconnecting;
                     operationDeleted = true;
-                    String msg = ResourceManager.getResource().getString("EBtDeviceDisconnError");
-                    iScheduler.notifyError(msg,msg);
+                    String msg = ResourceManager.getResource().getString("ECommunicationError");
+                    iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR,msg);
                     runBTSocket();
                     reset();
                 }

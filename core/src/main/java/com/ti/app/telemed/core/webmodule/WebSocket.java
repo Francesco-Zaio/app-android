@@ -322,7 +322,7 @@ public class WebSocket implements Runnable {
                         	Log.i(TAG, "Exception");
                         	String msg = ex.getMessage();
                             logger.log(Level.SEVERE, "httpengine send error " + ex.getClass().getName() + ": " + msg);
-                            fireTransactionFailed(404);
+                            fireTransactionFailed(-1);
                             close();
                         }
                         break;
@@ -394,15 +394,15 @@ public class WebSocket implements Runnable {
 	                                /* Parsing has finished. */
 	                                
 	                                ParsedResponseHandlerDataSet parsedResponseHandlerDataSet = responseBodyHandler.getParsedData();
-	                                Log.i(TAG, "ResponseCode: " + parsedResponseHandlerDataSet.getExtractedInt());
-	                                Log.i(TAG, "ResponseMessage: " + parsedResponseHandlerDataSet.getExtractedString());
-	                                
+
 	                                if(parsedResponseHandlerDataSet.getExtractedInt() != 0) {
 	                                	currentOpOn = Op.IDLE;
 		                        		receiveCompleted = false;
 		                        		firstTime = true;
                                         resultCode = XmlManager.XmlErrorCode.convertTo(parsedResponseHandlerDataSet.getExtractedInt());
-                                        fireTransactionFailed(-1);
+                                        Log.e(TAG, "ResponseCode: " + parsedResponseHandlerDataSet.getExtractedInt());
+                                        Log.e(TAG, "ResponseMessage: " + parsedResponseHandlerDataSet.getExtractedString());
+                                        fireTransactionFailed(-2);
 	                                }
 	                                else {
 	                                	// output the response	                            	

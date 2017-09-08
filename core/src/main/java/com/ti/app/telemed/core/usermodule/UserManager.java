@@ -281,8 +281,10 @@ public class UserManager implements Runnable, WebManagerResultEventListener {
 		if(code!=null){
 			logger.log(Level.INFO, code.toString());
             if(code.equals(XmlErrorCode.PLATFORM_ERROR))
-            	//
                 sendMessage(ERROR_OCCURED, ResourceManager.getResource().getString("errorPlatform"));
+			else if(code.equals(XmlErrorCode.CONNECTION_ERROR))
+				// Troppi tentativi di autenticazione falliti, utente temporaneamente bloccato
+				sendMessage(ERROR_OCCURED, ResourceManager.getResource().getString("errorHttp"));
             else if(code.equals(XmlErrorCode.PASSWORD_WRONG_TOO_MANY_TIMES))
             	// Troppi tentativi di autenticazione falliti, utente temporaneamente bloccato
                 sendMessage(USER_LOCKED, ResourceManager.getResource().getString("passwordWrongLock"));

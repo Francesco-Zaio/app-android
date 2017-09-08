@@ -352,7 +352,7 @@ public class MIRSpirodoc implements DeviceHandler,
 		case 0: // thread interrupted
 			reset();
 			Log.e(TAG, description);
-			iScheduler.notifyError(description,"");
+			iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
 			break;
 		case 1: // bluetooth open error
 			Log.e(TAG, description);
@@ -365,26 +365,26 @@ public class MIRSpirodoc implements DeviceHandler,
 				runBTSocket();
 			}
 			reset();
-			iScheduler.notifyError(ResourceManager.getResource().getString("ECommunicationError"),"");
+            iScheduler.notifyError(DeviceListener.CONNECTION_ERROR, ResourceManager.getResource().getString("EBtDeviceConnError"));
 			break;
 		case 2: // bluetooth read error
 			Log.e(TAG, description);
 			iState = TState.EDisconnecting;
 			runBTSocket();
 			reset();
-			iScheduler.notifyError(ResourceManager.getResource().getString("ECommunicationError"),"");
+            iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
 			break;
 		case 3: // bluetooth write error
 			Log.e(TAG, description);
 			iState = TState.EDisconnecting;
 			runBTSocket();
 			reset();
-			iScheduler.notifyError(ResourceManager.getResource().getString("ECommunicationError"),"");
+            iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
 			break;
 		case 4: // bluetooth close error
 			Log.e(TAG, description);
 			reset();
-			iScheduler.notifyError(ResourceManager.getResource().getString("ECommunicationError"),"");
+            iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
 			break;
 		}
 	}
@@ -482,7 +482,7 @@ public class MIRSpirodoc implements DeviceHandler,
 					Log.e(TAG, "Risorsa non disponibile");
 				}
 			} catch (IOException e) {
-				iScheduler.notifyError(ResourceManager.getResource().getString("EBtDeviceConnError"),"");
+                iScheduler.notifyError(DeviceListener.CONNECTION_ERROR, ResourceManager.getResource().getString("EBtDeviceConnError"));
 			}
 			break;
 		default:
@@ -772,23 +772,22 @@ public class MIRSpirodoc implements DeviceHandler,
 				iState = TState.EDisconnecting;
 				DisconnectFromServerL();
 
-				String MessageLoader;
+				String msg;
 
 				switch (iErrorCode) {
 				case EMyDoctorErrNoMeasure:
-					MessageLoader = ResourceManager.getResource().getString("KNoNewMeasure"); //"StringLoader::LoadLC( R_MYDOCTOR_NO_NEW_MEASURE_SPIRODOC )";
+					msg = ResourceManager.getResource().getString("KNoNewMeasure"); //"StringLoader::LoadLC( R_MYDOCTOR_NO_NEW_MEASURE_SPIRODOC )";
+                    iScheduler.notifyError(DeviceListener.NO_MEASURES_FOUND, msg);
 					break;
 				case EMyDoctorErrWrongData:
-					MessageLoader = ResourceManager.getResource().getString("EDataReadError"); //"StringLoader::LoadLC( R_MYDOCTOR_WRONG_DATA )";
+					msg = ResourceManager.getResource().getString("EDataReadError"); //"StringLoader::LoadLC( R_MYDOCTOR_WRONG_DATA )";
+                    iScheduler.notifyError(DeviceListener.DEVICE_DATA_ERROR, msg);
 					break;
 				default:
-					MessageLoader = ResourceManager.getResource().getString("ECommunicationError"); //"StringLoader::LoadLC( R_MYDOCTOR_ERROR_COMM )";
+					msg = ResourceManager.getResource().getString("ECommunicationError"); //"StringLoader::LoadLC( R_MYDOCTOR_ERROR_COMM )";
+                    iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR, msg);
 					break;
 				}
-
-				iScheduler.notifyError(MessageLoader,"");
-				// CleanupStack::PopAndDestroy();
-
 			}
 			break;
 		case ESendingConf:
@@ -797,60 +796,53 @@ public class MIRSpirodoc implements DeviceHandler,
 			break;
 		case EWaitingControlPacket: // puo' contenere il pacchetto di controllo
 									// oppure la parte iniziale del InfoPatient
-		{
 			Log.d(TAG, " RunL EWaitingControlPacket");
 			// Util::PrintBuffer Pacchetto di controllo inviato dallo
 			// spirossimetro al cellulare:"),iControlPacket);
-			String MessageLoader;
+			String msg;
 			
 			int ccp = CheckControlPacket();
 			Log.d(TAG, "CheckControlPacket=" + ccp);
 			switch (ccp) {
-			case 0: // no terminatore, c'e' misura da prelevare
-				iState = TState.EWaitingInfoPatientPacket;
-				Fill(iInfoPatientPacket, 0, KInfoPatientPacketLen);
-				RequestData();
-				break;
-			case 1: // Configurazione corretta
-				Log.d(TAG, " Configurazione CORRETTA SetConfState a 1");
-				// Chiude la connessione
-				iState = TState.EDisconnectingOK;
-				DisconnectFromServerL();
-				break;
-			case 2: // Dati configurazione errati
-				iState = TState.EDisconnecting;
-				DisconnectFromServerL();
-
-				iErrorCode = TMyDoctorErrorCode.EMyDoctorErrConfigWrong;
-				MessageLoader = ResourceManager.getResource().getString("EWrongConfiguration"); // "StringLoader::LoadLC( R_MYDOCTOR_WRONG_CONFIG )";
-				iScheduler.notifyError(MessageLoader,"");
-				break;
-			case 3: // cf errato
-				iState = TState.EDisconnecting;
-				DisconnectFromServerL();
-
-				iErrorCode = TMyDoctorErrorCode.EMyDoctorErrConfigWrong;
-				MessageLoader = ResourceManager.getResource().getString("EWrongUser"); // "StringLoader::LoadLC( R_MYDOCTOR_WRONG_CF )";
-                iScheduler.notifyError(MessageLoader,"");
-				break;
-			case 4: // Memoria piena
-				iState = TState.EDisconnecting;
-				DisconnectFromServerL();
-
-				iErrorCode = TMyDoctorErrorCode.EMyDoctorErrMemoryFull;
-				MessageLoader = ResourceManager.getResource().getString("EMemoryExhausted"); // "StringLoader::LoadLC( R_MYDOCTOR_NO_MEMORY )";
-                iScheduler.notifyError(MessageLoader,"");
-				break;
-			default: // Errore generale
-				iState = TState.EDisconnecting;
-				DisconnectFromServerL();
-
-				iErrorCode = TMyDoctorErrorCode.EMyDoctorErrWrongData;
-				MessageLoader = ResourceManager.getResource().getString("ECommunicationError"); // "StringLoader::LoadLC( R_MYDOCTOR_WRONG_GEN )";
-                iScheduler.notifyError(MessageLoader,"");
+                case 0: // no terminatore, c'e' misura da prelevare
+                    iState = TState.EWaitingInfoPatientPacket;
+                    Fill(iInfoPatientPacket, 0, KInfoPatientPacketLen);
+                    RequestData();
+                    break;
+                case 1: // Configurazione corretta
+                    Log.d(TAG, " Configurazione CORRETTA SetConfState a 1");
+                    // Chiude la connessione
+                    iState = TState.EDisconnectingOK;
+                    DisconnectFromServerL();
+                    break;
+                case 2: // Dati configurazione errati
+                    iState = TState.EDisconnecting;
+                    DisconnectFromServerL();
+                    iErrorCode = TMyDoctorErrorCode.EMyDoctorErrConfigWrong;
+                    msg = ResourceManager.getResource().getString("EWrongConfiguration"); // "StringLoader::LoadLC( R_MYDOCTOR_WRONG_CONFIG )";
+                    iScheduler.notifyError(DeviceListener.DEVICE_CFG_ERROR, msg);
+                    break;
+                case 3: // cf errato
+                    iState = TState.EDisconnecting;
+                    DisconnectFromServerL();
+                    iErrorCode = TMyDoctorErrorCode.EMyDoctorErrConfigWrong;
+                    msg = ResourceManager.getResource().getString("EWrongUser"); // "StringLoader::LoadLC( R_MYDOCTOR_WRONG_CF )";
+                    iScheduler.notifyError(DeviceListener.USER_CFG_ERROR, msg);
+                    break;
+                case 4: // Memoria piena
+                    iState = TState.EDisconnecting;
+                    DisconnectFromServerL();
+                    iErrorCode = TMyDoctorErrorCode.EMyDoctorErrMemoryFull;
+                    msg = ResourceManager.getResource().getString("EMemoryExhausted"); // "StringLoader::LoadLC( R_MYDOCTOR_NO_MEMORY )";
+                    iScheduler.notifyError(DeviceListener.DEVICE_MEMORY_EXHAUSTED, msg);
+                    break;
+                default: // Errore generale
+                    iState = TState.EDisconnecting;
+                    DisconnectFromServerL();
+                    iErrorCode = TMyDoctorErrorCode.EMyDoctorErrWrongData;
+                    msg = ResourceManager.getResource().getString("ECommunicationError"); // "StringLoader::LoadLC( R_MYDOCTOR_WRONG_GEN )";
+                    iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR, msg);
 			}
-
-		}
 			break;
 		case EWaitingInfoPatientPacket:
 			Log.d(TAG, " RunL EWaitingInfoPatient");
@@ -969,9 +961,8 @@ public class MIRSpirodoc implements DeviceHandler,
 			if (iErrorCode != TMyDoctorErrorCode.KErrNone) {
 				iState = TState.EDisconnecting;
 				DisconnectFromServerL();
-
-				String MessageLoader = ResourceManager.getResource().getString("ECommunicationError"); // "StringLoader::LoadLC( R_MYDOCTOR_WRONG_GEN )";
-				iScheduler.notifyError(MessageLoader, "");
+				msg = ResourceManager.getResource().getString("ECommunicationError"); // "StringLoader::LoadLC( R_MYDOCTOR_WRONG_GEN )";
+                iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR, msg);
 			}
 
 			break;
@@ -990,8 +981,8 @@ public class MIRSpirodoc implements DeviceHandler,
 				DisconnectFromServerL();
 
 				iErrorCode = TMyDoctorErrorCode.EMyDoctorErrWrongData;
-				String MessageLoader = ResourceManager.getResource().getString("ECommunicationError"); // "StringLoader::LoadLC( R_MYDOCTOR_WRONG_GEN )";
-				iScheduler.notifyError(MessageLoader, "");
+				msg = ResourceManager.getResource().getString("ECommunicationError"); // "StringLoader::LoadLC( R_MYDOCTOR_WRONG_GEN )";
+                iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR, msg);
 				// CleanupStack::PopAndDestroy();
 
 			}
@@ -1702,9 +1693,7 @@ public class MIRSpirodoc implements DeviceHandler,
 		case ESendingReady:
 		case ESendingStartCmd:
 			iMIRSpiroDocSocket.write(iCmd);
-
 			break;
-
 		case ESendingConf:
 			switch (iDeviceType) {
 			case DEV_STANDARD:
@@ -1719,7 +1708,7 @@ public class MIRSpirodoc implements DeviceHandler,
 			break;
 		default:
 			// errore di programmazione uscire dall'applicazione
-			iScheduler.notifyError("Error", "");
+            iScheduler.notifyError(DeviceListener.MEASUREMENT_ERROR, "");
 			break;
 		}
 	}
@@ -1814,8 +1803,8 @@ public class MIRSpirodoc implements DeviceHandler,
 			Log.d(TAG, "RequestData (default)");
 			
 			iErrorCode = TMyDoctorErrorCode.EMyDoctorErrCommunicationError;
-			String MessageLoader = ResourceManager.getResource().getString("ECommunicationError"); // "StringLoader::LoadLC( R_MYDOCTOR_ERROR_COMM )";
-			iScheduler.notifyError(MessageLoader,"");
+			String msg = ResourceManager.getResource().getString("ECommunicationError"); // "StringLoader::LoadLC( R_MYDOCTOR_ERROR_COMM )";
+            iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR, msg);
 			// CleanupStack::PopAndDestroy();
 
 			iState = TState.EDisconnecting;

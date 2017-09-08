@@ -2360,16 +2360,14 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 		User currentUser = UserManager.getUserManager().getCurrentUser();
 
 		//La richiesta di conferma deve essere visualizzata se l'utente � un nurse, se il nurse ha pi� di un paziente e se la misura da effettuare � una spirometria
-		if(!DbManager.getDbManager().getIsPatient(currentUser.getId()) && selectedMeasureType.equalsIgnoreCase(GWConst.KMsrSpir)) {
+		if(!currentUser.getIsPatient() && selectedMeasureType.equalsIgnoreCase(GWConst.KMsrSpir)) {
 			List<UserPatient> userPatients = DbManager.getDbManager().getUserPatients(currentUser.getId());
 			if (userPatients != null && userPatients.size() != 1){
 				myShowDialog(CONFIRM_PATIENT_DIALOG);
-			} else {
-                deviceManager.startMeasure();
+                return;
 			}
-		} else {
-            deviceManager.startMeasure();
 		}
+        deviceManager.startMeasure();
 	}
 
 	private void setCurrentDevice() {

@@ -196,7 +196,7 @@ class IHealthBP550BT extends Handler implements IHealtDevice{
             if (info.has(BpProfile.HISTORICAL_DATA_BP)) {
                 JSONArray array = info.getJSONArray(BpProfile.HISTORICAL_DATA_BP);
                 if (array.length() <= 0) {
-                    iHealth.notifyError(DeviceListener.NO_HISTORICAL_DATA, ResourceManager.getResource().getString("ENoMeasuresFound"));
+                    iHealth.notifyError(DeviceListener.NO_MEASURES_FOUND, ResourceManager.getResource().getString("ENoMeasuresFound"));
                     return;
                 }
                 JSONObject obj = array.getJSONObject(0);
@@ -217,7 +217,7 @@ class IHealthBP550BT extends Handler implements IHealtDevice{
                 }
 
             } else {
-                iHealth.notifyError(DeviceListener.NO_HISTORICAL_DATA, ResourceManager.getResource().getString("ENoMeasuresFound"));
+                iHealth.notifyError(DeviceListener.NO_MEASURES_FOUND, ResourceManager.getResource().getString("ENoMeasuresFound"));
                 return;
             }
         } catch (JSONException e) {

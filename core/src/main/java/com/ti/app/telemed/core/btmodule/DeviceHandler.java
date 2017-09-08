@@ -19,6 +19,14 @@ public interface DeviceHandler {
 		Config
 	}
 
+	// NB !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    // DeviceHandler Classes MUST IMPLEMENT also the following two static methods
+    // (Not added to the Interface because static interface methods are not supported in Java 7)
+    /*
+    static boolean needPairing(UserDevice userDevice);
+    static boolean needConfig(UserDevice userDevice);
+    */
+
     void start(OperationType ot, UserDevice ud, BTSearcherEventListener btSearchListener);
 	void stopDeviceOperation(int selected);
     void confirmDialog();

@@ -68,6 +68,7 @@ import android.widget.Toast;
 import com.ti.app.mydoctor.R;
 import com.ti.app.mydoctor.AppResourceManager;
 import com.ti.app.mydoctor.util.AppUtil;
+import com.ti.app.telemed.core.common.ECGDrawData;
 import com.ti.app.telemed.core.common.Measure;
 import com.ti.app.telemed.core.common.MeasureDetail;
 import com.ti.app.telemed.core.common.Patient;
@@ -145,19 +146,13 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	private static final int SIMPLE_DIALOG = 14;
 	private static final int PRECOMPILED_LOGIN_DIALOG = 16;
 	private static final int CONFIRM_CLOSE_DIALOG = 18;
+
     
     private GWTextView titleTV;
     private EditText loginET;
     private EditText pwdET;
     private LinearLayout currentPatientLL;
     private Menu mActionBarMenu;
-	
-    private boolean isPairing;
-    private boolean isConfig;    
-    private boolean isManualMeasure;
-    
-    int sentMeasures;
-    int receivedMeasures;
 
     private UserManager userManager;
     private MeasureManager measureManager;
@@ -169,7 +164,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 
 	private String selectedMeasureType;
 	private int selectedMeasurePosition;
-	
 	private int selectedModelPosition = -1;
 
 	private DeviceListAdapter listAdapter;
@@ -213,6 +207,14 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
   	
   	//Spinner per attesa gestione dispositivi
   	private LinearLayout linlaHeaderProgress;
+
+    private enum DeviceListOperationType {
+        none,
+        pair,
+        config,
+        measure
+    }
+    private DeviceListOperationType operationType = DeviceListOperationType.none;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -271,14 +273,17 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 
         	private boolean isClosed = true;
 
+            @Override
             public void onDrawerClosed(View view) {
             	selectedMenuItemAction();
             }
 
+            @Override
             public void onDrawerOpened(View drawerView) {
             	supportInvalidateOptionsMenu(); // creates call to onPrepareOptionsMenu()
             }
 
+            @Override
             public void onDrawerStateChanged (int newState) {
             	switch (newState) {
             	case DrawerLayout.STATE_IDLE:
@@ -846,8 +851,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                 Log.i(TAG, "position: " + position);
                 Log.i(TAG, "parent.getItemAtPosition: " + parent.getItemAtPosition(position));
 
-                sentMeasures = 0;
-                receivedMeasures = 0;
                 if (!deviceManager.isOperationRunning()) {
                     selectedMeasureType = measureList.get(position);
                     selectedMeasurePosition = position;
@@ -855,6 +858,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                         showSelectModelDialog();
                     } else {
                         deviceManager.setCurrentDevice(getActiveUserDevice(selectedMeasureType));
+                        operationType = DeviceListOperationType.measure;
                         selectPatient();
                     }
                 } else {
@@ -941,8 +945,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 				Log.i(TAG, "position: "+position);
 				Log.i(TAG, "parent.getItemAtPosition: "+parent.getItemAtPosition(position));
 
-				sentMeasures = 0;
-				receivedMeasures = 0;
 				if(!deviceManager.isOperationRunning()){
 					selectedMeasureType = measureList.get(position);
 					selectedMeasurePosition = position;
@@ -950,6 +952,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 						showSelectModelDialog();
 					} else {
                         deviceManager.setCurrentDevice(getActiveUserDevice(selectedMeasureType));
+                        operationType = DeviceListOperationType.measure;
 						selectPatient();
 					}
 				} else {
@@ -970,12 +973,10 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 				int counter = 0;
 				for (UserPatient up : patientList) {
 					Patient p;
-
 					p = DbManager.getDbManager().getPatientData(up.getIdPatient());
 					patients[counter++] = "[" + p.getId() + "] " + p.getSurname() + " " + p.getName();
 				}
 			}
-
 			if (patients == null || patients.length == 0) {
 				dataBundle = new Bundle();
 				dataBundle.putString(AppConst.MESSAGE, getString(R.string.noPatient));
@@ -988,21 +989,13 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 			}
 		}
 		else {
-			if(measureEnabled(getActiveUserDevice(selectedMeasureType))){
-                doMeasure();
-			} else {
-                doScan();
-			}
+            executeOperation();
 		}
 	}
 
 	private HashMap<String, String> setFieldsMap(String measureType) {
 		HashMap<String, String> map = new HashMap<>();
-		if(deviceManager.isOperationRunning() && !isConfig && !isPairing){
-			map.put(KEY_ICON, "" + AppUtil.getIconRunningId(measureType));
-		} else {
-			map.put(KEY_ICON, "" + AppUtil.getIconId(measureType));
-		}
+		map.put(KEY_ICON, "" + AppUtil.getIconId(measureType));
 		map.put(KEY_LABEL, AppResourceManager.getResource().getString("measureType." + measureType));
 		UserDevice pd = getActiveUserDevice(measureType);
 		if(pd != null){
@@ -1097,8 +1090,8 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
         }
 
         if (pd != null && pd.getDevice().isBTDevice()) {
-            boolean needPairing = MyDoctorApp.getDeviceManager().needPairing(pd);
-            boolean needCfg = MyDoctorApp.getDeviceManager().needCfg(pd);
+            boolean needPairing = deviceManager.needPairing(pd);
+            boolean needCfg = deviceManager.needCfg(pd);
 			MenuItem mi;
 
             //Visibiltà voce Configura"
@@ -1108,19 +1101,15 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
             }
 
             //Visibiltà voci Associa, Associa e Misura, Nuova Associazione"
-            if (needPairing) {
-                String btAddr = pd.getBtAddress();
-                if (btAddr!=null && !btAddr.isEmpty()) {
-                    mi = menu.findItem(R.id.new_device_only_association);
-                    mi.setVisible(true);
-                } else {
-                    mi = menu.findItem(R.id.pair);
-                    mi.setVisible(true);
-                }
+            String btAddr = pd.getBtAddress();
+            if (btAddr!=null && !btAddr.isEmpty()) {
+                mi = menu.findItem(R.id.new_pairing);
+                mi.setVisible(true);
             } else {
-                mi = menu.findItem(R.id.pair_and_measure);
+                mi = menu.findItem(R.id.pair);
                 mi.setVisible(true);
             }
+
         }
 	}
 
@@ -1171,14 +1160,12 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 
 	    switch (item.getItemId()) {
 		    case R.id.pair:
-                doScan();
+            case R.id.new_pairing:
+                operationType = DeviceListOperationType.pair;
+                executeOperation();
 		    	return true;
 		    case R.id.config:
-		    	doConfig();
-		    	return true;
-		    case R.id.pair_and_measure:
-			case R.id.new_device_only_association:
-		    	doNewDevice();
+                executeOperation();
 		    	return true;
 		    case R.id.show_measure:
 		    	if(patientNameTV.getText().toString().trim().equals(getText(R.string.selectPatient))) {
@@ -1334,65 +1321,40 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
         }
 	}
 
-	private void doScan() {
-		// If BT is not on, request that it be enabled.
-		// startScan() will then be called during onActivityResult
-		if (!BluetoothAdapter.getDefaultAdapter().isEnabled()) {
-			isPairing = true;
-			isConfig = false;
-			isManualMeasure = false;
-		    requestEnableBT();
-		} else {
-			startScan();
-		}
-	}
-
-	private void doNewDevice() {
-		// If BT is not on, request that it be enabled.
-		// startNewDevice() will then be called during onActivityResult
-		if (!BluetoothAdapter.getDefaultAdapter().isEnabled()) {
-			isPairing = true;
-			isConfig = false;
-			isManualMeasure = false;
-		    requestEnableBT();
-		} else {
-			startNewDevice();
-		}
-	}
-
-	private void doMeasure() {
-		UserDevice uDevice = getActiveUserDevice(selectedMeasureType);
-		if(measureEnabled(uDevice)){
-			if(AppUtil.isManualMeasure(uDevice.getDevice())){
-                startManualMeasure();
-			} else {
-				isPairing = false;
-				isConfig = false;
-				isManualMeasure = false;
-
-				if (!BluetoothAdapter.getDefaultAdapter().isEnabled()) {
-					// If BT is not on, request that it be enabled.
-					// startDeviceMeasure() will then be called during onActivityResult
-					requestEnableBT();
-				} else {
-                    startDeviceMeasure();
-				}
-			}
-		}
-	}
-
-	private void doConfig() {
-		isPairing = false;
-		isConfig = true;
-		isManualMeasure = false;
-		//requestDiscoverability();
-		if (!BluetoothAdapter.getDefaultAdapter().isEnabled()) {
-			// If BT is not on, request that it be enabled.
-			// startConfig() will then be called during onActivityResult
-			requestEnableBT();
-		} else {
-            deviceManager.startConfig();
-		}
+	private void executeOperation() {
+        if (!BluetoothAdapter.getDefaultAdapter().isEnabled()) {
+            requestEnableBT();
+        } else {
+            UserDevice ud = getActiveUserDevice(selectedMeasureType);
+            if (ud == null)
+                return;
+            switch (operationType) {
+                case pair:
+                    UserDevice tmpUd = (UserDevice) ud.clone();
+                    tmpUd.setBtAddress(null);
+                    deviceManager.setCurrentDevice(tmpUd);
+                    deviceManager.setPairingMode(true);
+                    startScan();
+                    break;
+                case measure:
+                    if(measureEnabled(getActiveUserDevice(selectedMeasureType))){
+                        if(AppUtil.isManualMeasure(ud.getDevice())){
+                            startManualMeasure();
+                        } else {
+                            deviceManager.setPairingMode(false);
+                            startDeviceMeasure();
+                        }
+                    } else {
+                        deviceManager.setPairingMode(deviceManager.needPairing(ud));
+                        startScan();
+                    }
+                    break;
+                case config:
+                    deviceManager.setPairingMode(false);
+                    deviceManager.startConfig();
+                    break;
+            }
+        }
 	}
 
 	private void startScan() {
@@ -1404,16 +1366,36 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 		}
 	}
 
-	private void startNewDevice() {
-		//Occorre annullare il BT address per forzare lo scouting dei dispositivi
-		UserDevice ud = getActiveUserDevice(selectedMeasureType);
-        if (ud != null) {
-            UserDevice tmpUd = (UserDevice) ud.clone();
-            tmpUd.setBtAddress(null);
-            deviceManager.setCurrentDevice(tmpUd);
-            startScan();
+    private void startDeviceMeasure() {
+        User currentUser = UserManager.getUserManager().getCurrentUser();
+
+        //La richiesta di conferma deve essere visualizzata se l'utente � un nurse, se il nurse ha pi� di un paziente e se la misura da effettuare � una spirometria
+        if(!currentUser.getIsPatient() && selectedMeasureType.equalsIgnoreCase(GWConst.KMsrSpir)) {
+            List<UserPatient> userPatients = DbManager.getDbManager().getUserPatients(currentUser.getId());
+            if (userPatients != null && userPatients.size() != 1){
+                myShowDialog(CONFIRM_PATIENT_DIALOG);
+                return;
+            }
         }
-	}
+        deviceManager.startMeasure();
+    }
+
+    private void startManualMeasure() {
+        UserDevice uDevice = getActiveUserDevice(selectedMeasureType);
+        if(UserManager.getUserManager().getCurrentPatient() != null && uDevice != null){
+            //We set the current device in device Manager
+            deviceManager.setCurrentDevice(uDevice);
+            if (uDevice.getMeasure().equalsIgnoreCase(GWConst.KMsrTemp)) {
+                Intent intent = new Intent(DeviceList.this, ManualTemperatureActivity.class);
+                startActivityForResult(intent, MANUAL_MEASURE_ENTRY);
+            }
+        }
+    }
+
+    private boolean measureEnabled(UserDevice device) {
+        return device != null && ((device.getBtAddress()!= null && device.getBtAddress().length() > 0)
+                || AppUtil.isManualMeasure(device.getDevice()));
+    }
 
 	private void showMeasures(int position) {
 		Intent myIntent = new Intent(DeviceList.this, ShowMeasure.class);
@@ -1452,7 +1434,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 		Log.d(TAG, "onActivityResult requestCode=" + requestCode + " resultCode=" + resultCode);
 
     	switch(requestCode) {
-
     	case USER_LIST:
     		if(resultCode == RESULT_OK){
                 User user = null;
@@ -1465,7 +1446,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
     			showErrorDialog(AppResourceManager.getResource().getString("errorDb"));
     		}
     	    break;
-
     	case USER_SELECTION:
     		if(resultCode == RESULT_OK){
 	    		if(data != null){
@@ -1509,11 +1489,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 					}
 					else if (startMeasureBundle != null && startMeasureBundle.getBoolean(START_MEASURE, false)) {
 						Log.d(TAG, "Inizio la misura di " + p.getName() + " " + p.getSurname());
-						if(measureEnabled(getActiveUserDevice(selectedMeasureType))){
-							doMeasure();
-						} else {
-							doScan();
-						}
+                        executeOperation();
 					}
     			}
     		}
@@ -1533,19 +1509,10 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
     		}
     		myShowDialog(MEASURE_RESULT_DIALOG);
     		break;
-
     	case REQUEST_ENABLE_BT:
             // When the request to enable Bluetooth returns
             if (resultCode == Activity.RESULT_OK) {
-            	if(isPairing){
-            		startScan();
-            	} else if(isConfig){
-					deviceManager.startConfig();
-            	} else if(isManualMeasure){
-            		startManualMeasure();
-            	} else {
-            		startDeviceMeasure();
-            	}
+                executeOperation();
             } else {
             	// User did not enable Bluetooth or an error occured
                 Log.d(TAG, "BT not enabled");
@@ -1560,14 +1527,11 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
     			stopDeviceOperation(-2);
     		}
     		break;
-
     	case MANUAL_MEASURE_ENTRY:
     		if(resultCode == RESULT_OK){
-
     	         String pkg = getPackageName();
     	         String measure = data.getExtras().getString( pkg + ".measure" );
     	         ArrayList<String> values = data.getStringArrayListExtra( pkg + ".values" );
-
     	         sendManualMeasure(measure, values);
     	     }
     	     if (resultCode == RESULT_CANCELED) {
@@ -1691,7 +1655,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 
 		@Override
 		public void onClick(View v) {
-
 			User currentUser = DbManager.getDbManager().getActiveUser();
 			if(currentUser != null) {
 				Log.d(TAG, "Utente corrente: " + currentUser.getName() + " " + currentUser.getSurname());
@@ -1706,14 +1669,11 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 					int counter = 0;
 					for (UserPatient up : patientList) {
 						Patient p;
-
 						p = DbManager.getDbManager().getPatientData(up.getIdPatient());
 						patients[counter++] = "[" + p.getId() + "] " + p.getSurname() + " " + p.getName();
 					}
-
 					viewMeasureBundle = null;
 					startMeasureBundle = null;
-
 					if(patients == null || patients.length == 0) {
 						dataBundle = new Bundle();
 						dataBundle.putString(AppConst.MESSAGE, getString(R.string.noPatient));
@@ -1728,9 +1688,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	};
 
 	private void startSelectPatientActivity() {
-
 		Log.d(TAG, "startSelectPatientActivity()");
-
 		User currentUser = DbManager.getDbManager().getActiveUser();
 		Intent selectPatientIntent = new Intent(DeviceList.this, SelectPatient.class);
 		selectPatientIntent.putExtra(SelectPatient.USER_ID, currentUser.getId());
@@ -1738,7 +1696,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	}
 
 	private String getMeasureMessage(Measure data) {
-
         String msg = "";
         Vector<MeasureDetail> mdv = MeasureDetail.getMeasureDetails(data, false);
         for (MeasureDetail md: mdv) {
@@ -1785,14 +1742,17 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 
                     break;
                 case DeviceManager.MEASURE_RESULT:
-                    activity.receivedMeasures++;
                     activity.refreshList();
                     activity.myRemoveDialog(PROGRESS_DIALOG);
+                    if (ECGDrawActivity.getInstance() != null)
+                        ECGDrawActivity.getInstance().finish();
                     activity.measureData = (Measure) msg.getData().getSerializable(DeviceManager.MEASURE);// MeasureManager.getMeasureManager().saveMeasureData(measureData);
                     activity.myShowDialog(MEASURE_RESULT_DIALOG);
                     break;
                 case DeviceManager.ERROR_STATE:
                     activity.myRemoveDialog(PROGRESS_DIALOG);
+                    if (ECGDrawActivity.getInstance() != null)
+                        ECGDrawActivity.getInstance().finish();
                     activity.myShowDialog(ALERT_DIALOG);
                     break;
                 case DeviceManager.CONFIG_READY:
@@ -1800,6 +1760,11 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                     activity.myRemoveDialog(PROGRESS_DIALOG);
                     activity.myShowDialog(ALERT_DIALOG);
                     break;
+				case DeviceManager.START_ECG_DRAW:
+                    activity.myRemoveDialog(PROGRESS_DIALOG);
+                    Intent ecgDrawIntent = new Intent(activity, ECGDrawActivity.class);
+                    activity.startActivity(ecgDrawIntent);
+					break;
             }
         }
     }
@@ -1979,138 +1944,138 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
         CheckBox pwdCB;
 
 		switch (id) {
-		case LIST_OR_NEW_USER_DIALOG:
-			builder.setTitle(R.string.new_user_title);
-			if (DbManager.getDbManager().getNotLoggedUsers().size() != 0)
-				builder.setItems(new String[] {getString(R.string.newUser), getString(R.string.users_title)}, list_or_new_user_dialog_click_listener);
-			else
-				builder.setItems(new String[] {getString(R.string.newUser)}, list_or_new_user_dialog_click_listener);
-			return builder.create();
-		case MEASURE_RESULT_DIALOG:
-			Log.i(TAG, "Visualizzo dialog MEASURE_RESULT_DIALOG");
-            return createMeasureResultDialog(measureData);
-        case PROGRESS_DIALOG:
-        	return createProgressDialog(dataBundle);
-        case ALERT_DIALOG:
-			builder.setMessage(dataBundle.getString(AppConst.MESSAGE));
-			builder.setPositiveButton("Ok", new AlertDialogClickListener());
-			builder.setTitle(null);
-			beep();
-			return builder.create();
-        case PRECOMPILED_LOGIN_DIALOG:
-        	builder.setTitle(R.string.authentication);
-        	View login_dialog_v = inflater.inflate(R.layout.new_user, null);
-        	loginET = (EditText) login_dialog_v.findViewById(R.id.login);
-        	pwdET = (EditText) login_dialog_v.findViewById(R.id.password);
+            case LIST_OR_NEW_USER_DIALOG:
+                builder.setTitle(R.string.new_user_title);
+                if (DbManager.getDbManager().getNotLoggedUsers().size() != 0)
+                    builder.setItems(new String[] {getString(R.string.newUser), getString(R.string.users_title)}, list_or_new_user_dialog_click_listener);
+                else
+                    builder.setItems(new String[] {getString(R.string.newUser)}, list_or_new_user_dialog_click_listener);
+                return builder.create();
+            case MEASURE_RESULT_DIALOG:
+                Log.i(TAG, "Visualizzo dialog MEASURE_RESULT_DIALOG");
+                return createMeasureResultDialog(measureData);
+            case PROGRESS_DIALOG:
+                return createProgressDialog(dataBundle);
+            case ALERT_DIALOG:
+                builder.setMessage(dataBundle.getString(AppConst.MESSAGE));
+                builder.setPositiveButton("Ok", new AlertDialogClickListener());
+                builder.setTitle(null);
+                beep();
+                return builder.create();
+            case PRECOMPILED_LOGIN_DIALOG:
+                builder.setTitle(R.string.authentication);
+                View login_dialog_v = inflater.inflate(R.layout.new_user, null);
+                loginET = (EditText) login_dialog_v.findViewById(R.id.login);
+                pwdET = (EditText) login_dialog_v.findViewById(R.id.password);
 
-			if( userDataBundle != null ) {
-				loginET.setText(userDataBundle.getString("LOGIN"));
-				if (!userDataBundle.getBoolean("CHANGEABLE"))
-					loginET.setEnabled(false);
-				else
-					loginET.setEnabled(true);
-			} else {
-				loginET.setText("");
-			}
+                if( userDataBundle != null ) {
+                    loginET.setText(userDataBundle.getString("LOGIN"));
+                    if (!userDataBundle.getBoolean("CHANGEABLE"))
+                        loginET.setEnabled(false);
+                    else
+                        loginET.setEnabled(true);
+                } else {
+                    loginET.setText("");
+                }
 
-        	pwdCB = (CheckBox) login_dialog_v.findViewById(R.id.passwordCheckBox);
-        	pwdCB.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                pwdCB = (CheckBox) login_dialog_v.findViewById(R.id.passwordCheckBox);
+                pwdCB.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
 
-				@Override
-				public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-					// Controlla se rendere visibile o meno la password
-					if( isChecked ) {
-						pwdET.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
-					} else {
-						pwdET.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
-					}
+                    @Override
+                    public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                        // Controlla se rendere visibile o meno la password
+                        if( isChecked ) {
+                            pwdET.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
+                        } else {
+                            pwdET.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+                        }
 
-					pwdET.setSelection(pwdET.getText().length());
-				}
-			});
+                        pwdET.setSelection(pwdET.getText().length());
+                    }
+                });
 
-        	//Controlla se ci sono altri utente registrati
-        	if((DbManager.getDbManager().getNotLoggedUsers()).size() != 0) {
-        		//Abilita il button per la lista utenti
-        		ImageButton iv = (ImageButton) login_dialog_v.findViewById(R.id.user_list_button);
-        		iv.setVisibility(View.VISIBLE);
+                //Controlla se ci sono altri utente registrati
+                if((DbManager.getDbManager().getNotLoggedUsers()).size() != 0) {
+                    //Abilita il button per la lista utenti
+                    ImageButton iv = (ImageButton) login_dialog_v.findViewById(R.id.user_list_button);
+                    iv.setVisibility(View.VISIBLE);
 
-        		iv.setOnClickListener( new OnClickListener() {
+                    iv.setOnClickListener( new OnClickListener() {
 
-					@Override
-					public void onClick(View v) {
-						showUserDialog();
-					}
-				});
-        	}
+                        @Override
+                        public void onClick(View v) {
+                            showUserDialog();
+                        }
+                    });
+                }
 
-        	builder.setView(login_dialog_v);
-        	builder.setPositiveButton(R.string.okButton, login_dialog_click_listener);
-        	builder.setNegativeButton(R.string.cancelButton, login_dialog_click_listener);
-        	beep();
-        	return builder.create();
-        case LOGIN_DIALOG:
-        	builder.setTitle(R.string.authentication);
-        	View login_dialog_view = inflater.inflate(R.layout.new_user, null);
-        	loginET = (EditText) login_dialog_view.findViewById(R.id.login);
-        	pwdET = (EditText) login_dialog_view.findViewById(R.id.password);
+                builder.setView(login_dialog_v);
+                builder.setPositiveButton(R.string.okButton, login_dialog_click_listener);
+                builder.setNegativeButton(R.string.cancelButton, login_dialog_click_listener);
+                beep();
+                return builder.create();
+            case LOGIN_DIALOG:
+                builder.setTitle(R.string.authentication);
+                View login_dialog_view = inflater.inflate(R.layout.new_user, null);
+                loginET = (EditText) login_dialog_view.findViewById(R.id.login);
+                pwdET = (EditText) login_dialog_view.findViewById(R.id.password);
 
-        	pwdCB = (CheckBox) login_dialog_view.findViewById(R.id.passwordCheckBox);
-        	pwdCB.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                pwdCB = (CheckBox) login_dialog_view.findViewById(R.id.passwordCheckBox);
+                pwdCB.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
 
-				@Override
-				public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-					// Controlla se rendere visibile o meno la password
-					if( isChecked ) {
-						pwdET.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
-					} else {
-						pwdET.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
-					}
+                    @Override
+                    public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                        // Controlla se rendere visibile o meno la password
+                        if( isChecked ) {
+                            pwdET.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
+                        } else {
+                            pwdET.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+                        }
 
-					pwdET.setSelection(pwdET.getText().length());
-				}
-			});
+                        pwdET.setSelection(pwdET.getText().length());
+                    }
+                });
 
-        	//Controlla se ci sono altri utente registrati
-        	if((DbManager.getDbManager().getNotLoggedUsers()).size() != 0) {
-        		//Abilita il button per la lista utenti
-        		ImageButton iv = (ImageButton) login_dialog_view.findViewById(R.id.user_list_button);
-        		iv.setVisibility(View.VISIBLE);
+                //Controlla se ci sono altri utente registrati
+                if((DbManager.getDbManager().getNotLoggedUsers()).size() != 0) {
+                    //Abilita il button per la lista utenti
+                    ImageButton iv = (ImageButton) login_dialog_view.findViewById(R.id.user_list_button);
+                    iv.setVisibility(View.VISIBLE);
 
-        		iv.setOnClickListener( new OnClickListener() {
+                    iv.setOnClickListener( new OnClickListener() {
 
-					@Override
-					public void onClick(View v) {
-						showUserDialog();
-					}
-				});
-        	}
+                        @Override
+                        public void onClick(View v) {
+                            showUserDialog();
+                        }
+                    });
+                }
 
-        	builder.setView(login_dialog_view);
-        	builder.setPositiveButton(R.string.okButton, login_dialog_click_listener);
-        	builder.setNegativeButton(R.string.cancelButton, login_dialog_click_listener);
-        	beep();
-        	return builder.create();
-        case CONFIRM_CLOSE_DIALOG:
-        	builder.setTitle(R.string.app_name);
-        	builder.setMessage(AppResourceManager.getResource().getString("MainGUI.menu.fileMenu.exitMsg"));
-        	builder.setPositiveButton(AppResourceManager.getResource().getString("okButton"), confirm_close_dialog_click_listener);
-        	builder.setNegativeButton(AppResourceManager.getResource().getString("cancelButton"), confirm_close_dialog_click_listener);
-        	return builder.create();
-        case CONFIRM_PATIENT_DIALOG:
-        	return createConfirmPatientDialog();
-        case ERROR_EXIT_APP_DIALOG:
-        	builder.setMessage(dataBundle.getString(AppConst.MESSAGE));
-        	builder.setNeutralButton("Ok", error_exit_app_dialog_click_listener);
-        	beep();
-        	return builder.create();
-        case SIMPLE_DIALOG:
-        	builder.setMessage(dataBundle.getString(AppConst.MESSAGE));
-        	builder.setNeutralButton("Ok", simple_dialog_click_listener);
-        	beep();
-        	return builder.create();
-        default:
-            return null;
+                builder.setView(login_dialog_view);
+                builder.setPositiveButton(R.string.okButton, login_dialog_click_listener);
+                builder.setNegativeButton(R.string.cancelButton, login_dialog_click_listener);
+                beep();
+                return builder.create();
+            case CONFIRM_CLOSE_DIALOG:
+                builder.setTitle(R.string.app_name);
+                builder.setMessage(AppResourceManager.getResource().getString("MainGUI.menu.fileMenu.exitMsg"));
+                builder.setPositiveButton(AppResourceManager.getResource().getString("okButton"), confirm_close_dialog_click_listener);
+                builder.setNegativeButton(AppResourceManager.getResource().getString("cancelButton"), confirm_close_dialog_click_listener);
+                return builder.create();
+            case CONFIRM_PATIENT_DIALOG:
+                return createConfirmPatientDialog();
+            case ERROR_EXIT_APP_DIALOG:
+                builder.setMessage(dataBundle.getString(AppConst.MESSAGE));
+                builder.setNeutralButton("Ok", error_exit_app_dialog_click_listener);
+                beep();
+                return builder.create();
+            case SIMPLE_DIALOG:
+                builder.setMessage(dataBundle.getString(AppConst.MESSAGE));
+                builder.setNeutralButton("Ok", simple_dialog_click_listener);
+                beep();
+                return builder.create();
+            default:
+                return null;
 		}
 	}
 
@@ -2344,36 +2309,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 		}
 	};
 
-	private void startManualMeasure() {
-        UserDevice uDevice = getActiveUserDevice(selectedMeasureType);
-		if(UserManager.getUserManager().getCurrentPatient() != null && uDevice != null){
-            //We set the current device in device Manager
-            deviceManager.setCurrentDevice(uDevice);
-            if (uDevice.getMeasure().equalsIgnoreCase(GWConst.KMsrTemp)) {
-                Intent intent = new Intent(DeviceList.this, ManualTemperatureActivity.class);
-                startActivityForResult(intent, MANUAL_MEASURE_ENTRY);
-            }
-		}
-	}
-
-	private void startDeviceMeasure() {
-		User currentUser = UserManager.getUserManager().getCurrentUser();
-
-		//La richiesta di conferma deve essere visualizzata se l'utente � un nurse, se il nurse ha pi� di un paziente e se la misura da effettuare � una spirometria
-		if(!currentUser.getIsPatient() && selectedMeasureType.equalsIgnoreCase(GWConst.KMsrSpir)) {
-			List<UserPatient> userPatients = DbManager.getDbManager().getUserPatients(currentUser.getId());
-			if (userPatients != null && userPatients.size() != 1){
-				myShowDialog(CONFIRM_PATIENT_DIALOG);
-                return;
-			}
-		}
-        deviceManager.startMeasure();
-	}
-
-	private void setCurrentDevice() {
-        deviceManager.setCurrentDevice(getActiveUserDevice(selectedMeasureType));
-	}
-
 	private void setOperationCompleted(){
 		//imposto il current device a null per segnalare al DeviceManager
 		//che la misura corrente � terminata (eventualmente inviata e/o salvata su DB)
@@ -2388,14 +2323,9 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 		if(position < 0){
 			myRemoveDialog(PROGRESS_DIALOG);
 		}
-
 		refreshList();
 	}
 
-	private boolean measureEnabled(UserDevice device) {
-		return device != null && ((device.getBtAddress()!= null && device.getBtAddress().length() > 0)
-				|| AppUtil.isManualMeasure(device.getDevice()));
-	}
 
 	private class ProgressDialogClickListener implements DialogInterface.OnClickListener {
 		public void onClick(DialogInterface dialog, int which) {

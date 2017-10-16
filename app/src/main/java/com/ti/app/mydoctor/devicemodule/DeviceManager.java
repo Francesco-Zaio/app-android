@@ -1,5 +1,7 @@
 package com.ti.app.mydoctor.devicemodule;
 
+import java.lang.reflect.Method;
+
 import android.bluetooth.BluetoothAdapter;
 import android.os.Bundle;
 import android.os.Handler;
@@ -17,8 +19,6 @@ import com.ti.app.telemed.core.dbmodule.DbManager;
 import com.ti.app.telemed.core.util.GWConst;
 import com.ti.app.mydoctor.gui.DeviceScanActivity;
 import com.ti.app.mydoctor.util.AppConst;
-
-import java.lang.reflect.Method;
 
 
 public class DeviceManager implements DeviceListener {
@@ -40,6 +40,8 @@ public class DeviceManager implements DeviceListener {
 	public static final int MEASURE_RESULT = 4;
 	public static final int CONFIG_READY = 5;
 	public static final int ASK_SOMETHING = 7;
+    public static final int START_ECG_DRAW = 8;
+
     public static final int REFRESH_LIST = 10;
 
     public static final String MEASURE = "MEASURE";
@@ -48,7 +50,6 @@ public class DeviceManager implements DeviceListener {
 	
 	public DeviceManager() {		
 	}
-
 
 	// usa la reflection per invocare il metodo statico needPairing della classe che gestisce il device
     public boolean needPairing(UserDevice ud) {
@@ -91,10 +92,13 @@ public class DeviceManager implements DeviceListener {
 		this.handler = handler;
 	}
 
+	public void setPairingMode(Boolean pairingMode) {
+        this.pairingMode = pairingMode;
+    }
+
 	public void startDiscovery(DeviceScanActivity listener){
 		if(!operationRunning){
-	        pairingMode = true;
-			setConfig(false);
+			isConfig = false;
 	        setBtSearcherListener(listener);
 	        startOperation();	
 		} else {
@@ -104,8 +108,7 @@ public class DeviceManager implements DeviceListener {
 	
 	public void startMeasure() {		
 		if(!operationRunning){
-            pairingMode = currentDevice.getBtAddress() == null || currentDevice.getBtAddress().isEmpty();
-			setConfig(false);
+			isConfig = false;
 			startOperation();
 		} else {
 			Log.i(TAG, "Operation already RUNNING");
@@ -115,7 +118,7 @@ public class DeviceManager implements DeviceListener {
 	public void startConfig() {	
 		if(!operationRunning){
             pairingMode = false;
-			setConfig(true);
+			isConfig = true;
 			startOperation();
 		} else {
 			Log.i(TAG, "Operation already RUNNING");
@@ -158,10 +161,6 @@ public class DeviceManager implements DeviceListener {
             op = DeviceHandler.OperationType.Measure;
 
         currentDeviceHandler.start(op, currentDevice, btSearcherListener);
-	}
-
-    private void setConfig(boolean isConfig) {
-		this.isConfig = isConfig;
 	}
 
 	public void stopDeviceOperation(int selected) {
@@ -252,17 +251,22 @@ public class DeviceManager implements DeviceListener {
 		Log.i(TAG, "notifyWaitToUi: "+msg);
 		sendMessageToHandler(msg, MESSAGE_STATE_WAIT, AppConst.MESSAGE);
     }
+
     @Override
     public void askSomething(String messageText, String positiveText, String negativeText) {
-
         Message message = handler.obtainMessage(ASK_SOMETHING);
         Bundle bundle = new Bundle();
         bundle.putBoolean(AppConst.MESSAGE_CANCELLABLE, false);
         bundle.putString(AppConst.ASK_MESSAGE, messageText);
         bundle.putString(AppConst.ASK_POSITIVE, positiveText);
         bundle.putString(AppConst.ASK_NEGATIVE, negativeText);
-
         message.setData(bundle);
+        handler.sendMessage(message);
+    }
+
+    @Override
+    public void startEcgDraw() {
+        Message message = handler.obtainMessage(START_ECG_DRAW);
         handler.sendMessage(message);
     }
 
@@ -273,7 +277,6 @@ public class DeviceManager implements DeviceListener {
     public void cancelDialog() {
         currentDeviceHandler.cancelDialog();
     }
-
 
 
     private void showError(String msg) {

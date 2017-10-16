@@ -88,8 +88,10 @@ public class DeviceScanActivity extends Activity implements BTSearcherEventListe
 		BluetoothDevice dev = devList.lastElement();
 		if(dev.getName()!= null){
 			mNewDevicesArrayAdapter.add(dev.getName());
-		} else {
+		} else if(dev.getAddress()!= null){
 			mNewDevicesArrayAdapter.add(dev.getAddress());
+		} else {
+			mNewDevicesArrayAdapter.add("Test Device");
 		}
 	}
 

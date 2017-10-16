@@ -1,0 +1,62 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:windowFullscreen="true"
+    android:windowBackground="@null"
+    android:windowNoTitle="true"
+    android:windowIsFloating="false">
+
+    <LinearLayout
+        android:id="@+id/below_linear_layout"
+        android:layout_alignParentBottom="true"
+        android:layout_width="fill_parent"
+        android:background="@drawable/gw_utility_bottom_label_background_color"
+        android:gravity="center_vertical"
+        android:layout_height="55dip" >
+
+        <Button
+            android:id="@+id/confirm_button"
+            android:layout_width="0dp"
+            android:layout_height="fill_parent"
+            android:layout_weight="1"
+            android:layout_margin="5dp"
+            android:text="@string/okButton"
+            android:background="@drawable/custom_button" />
+
+        <Button
+            android:id="@+id/cancel_button"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="fill_parent"
+            android:layout_margin="5dp"
+            android:text="@string/cancelButton"
+            android:background="@drawable/custom_button" />
+    </LinearLayout>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_above="@+id/below_linear_layout">
+
+        <com.ti.app.mydoctor.gui.ECGBackgroudView
+            android:id="@+id/ecg_view_bg"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <com.ti.app.mydoctor.gui.ECGDrawView
+            android:id="@+id/ecg_view_draw"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" >
+
+            <TextView
+                android:id="@+id/realplay_pc300_tv_msg"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"/>
+        </RelativeLayout>
+    </FrameLayout>
+</RelativeLayout>

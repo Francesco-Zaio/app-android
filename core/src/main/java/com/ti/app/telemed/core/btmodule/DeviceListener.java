@@ -2,7 +2,10 @@ package com.ti.app.telemed.core.btmodule;
 
 import com.ti.app.telemed.core.common.Measure;
 
+import java.util.List;
+
 public interface DeviceListener {
+
     String CONNECTION_ERROR = "E01";
     String DEVICE_NOT_FOUND_ERROR = "E02";
     String COMMUNICATION_ERROR = "E03";
@@ -22,4 +25,5 @@ public interface DeviceListener {
     void showMeasurementResults(Measure m);
     void configReady(String msg);
     void operationCompleted();
+    void startEcgDraw();
 }

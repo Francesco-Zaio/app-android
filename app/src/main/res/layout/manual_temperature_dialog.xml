@@ -33,11 +33,12 @@
 					android:layout_weight="1"
 					android:layout_height="fill_parent"
 					android:text="Invia" />
+
 			<Button
-					android:id="@+id/cancelButton"
-					android:layout_width="0dp"
-					android:layout_weight="1"
-					android:layout_height="fill_parent"
-					android:text="Annulla"/>		
+				android:id="@+id/cancelButton"
+				android:layout_width="0dp"
+				android:layout_height="fill_parent"
+				android:layout_weight="1"
+				android:text="Annulla" />
 		</LinearLayout>
 </RelativeLayout>

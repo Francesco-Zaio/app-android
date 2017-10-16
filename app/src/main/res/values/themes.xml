@@ -4,17 +4,6 @@
 		<item name="android:windowTitleSize">50dp</item>
 		<item name="android:buttonStyle">@style/MyButtonStyle</item>
 	</style>
-	
-	<!-- <style name="Theme.MyDoctorAtHome.Light" parent="Theme.Sherlock.Light">
-         <item name="textColorPrimary">@color/gw_black</item>
-        <item name="textColorPrimaryDisableOnly">@color/gw_black</item> 
-        <item name="android:alertDialogStyle">@style/GwCustomAlertDialogTheme</item>
-    </style> -->
-    
-	<!-- <style name="Theme.MyDoctorAtHome.Light" parent="Theme.Sherlock.Light">
-        <item name="textColorPrimary">@color/gw_black</item>
-        <item name="textColorPrimaryDisableOnly">@color/gw_black</item>        
-    </style> -->
     
 	<style name="Theme.MyDoctorAtHome.Light" parent="Theme.AppCompat.Light">                
     </style>

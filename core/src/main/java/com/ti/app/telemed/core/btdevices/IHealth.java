@@ -396,7 +396,6 @@ public class IHealth extends Handler implements DeviceHandler {
     }
 
     void scheduleTimer() {
-        Log.d(TAG, "scheduleTimer");
         resetTimer();
         TimerExpired timerExpired = new TimerExpired();
         timer = new Timer();
@@ -405,7 +404,6 @@ public class IHealth extends Handler implements DeviceHandler {
 
     void resetTimer() {
         if (timer!=null) {
-            Log.d(TAG, "resetTimer");
             timer.cancel();
         }
     }

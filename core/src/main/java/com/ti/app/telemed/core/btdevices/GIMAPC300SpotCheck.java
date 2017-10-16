@@ -9,6 +9,7 @@ import android.util.Log;
 
 import com.creative.base.InputStreamReader;
 import com.creative.base.OutputStreamSender;
+import com.creative.SpotCheck.SpotSendCMDThread;
 import com.ti.app.telemed.core.MyApp;
 import com.ti.app.telemed.core.ResourceManager;
 import com.ti.app.telemed.core.btmodule.DeviceHandler;
@@ -96,7 +97,6 @@ public class GIMAPC300SpotCheck
     // Indicates that the current request is not a measure but a connection request
     private boolean iPairingMode = false;
 
-
     public static boolean needPairing(UserDevice userDevice) {
         return true;
     }
@@ -177,32 +177,49 @@ public class GIMAPC300SpotCheck
 
     @Override
     public void OnGetDeviceID(final String sDeviceID) {
-        Log.d(TAG, "OnGetDeviceID->"+sDeviceID);
+        Log.d(TAG, "OnGetDeviceID: sDeviceID="+sDeviceID);
     }
 
     @Override
     public void OnGetDeviceVer(int nHWMajor, int nHWMinor, int nSWMajor, int nSWMinor, int nPower, int nBattery) {
+        Log.d(TAG, "OnGetDeviceVer: nHWMajor="+nHWMajor);
         obtainMessage(MSG_DATA_BATTERY, nPower, nBattery).sendToTarget();
     }
 
     @Override
     public void OnGetECGAction(int status) {
         Log.d(TAG, "OnGetECGAction->"+status);
+        if(status==1) {
+            // misura avviata
+            // TODO
+        } else if (status == 2) {
+            // misura interrotta
+            sendEmptyMessage(MSG_DATA_DISCON);
+            // TODO
+        }
     }
 
     @Override
     public void OnGetECGRealTime(ECGData waveData, int nHR, boolean bLeadoff, int nMax) {
-        Log.d(TAG, "OnGetECGRealTime");
+        int flag = 0;
+        for (int i=0; i<waveData.data.size();i++)
+            if (waveData.data.get(i).flag!=0) {
+                flag=waveData.data.get(i).flag;
+                break;
+            }
+
+        Log.d(TAG, "OnGetECGRealTime: nHR="+nHR+" nMax="+nMax+" OK="+(bLeadoff?"true":"false")+"frame# "+waveData.frameNum+" flag="+flag+" L="+waveData.data.size());
     }
 
     @Override
     public void onGetECGGain(int arg0, int arg1) {
-        Log.d(TAG, "onGetECGGain");
+        Log.d(TAG, "onGetECGGain: arg0="+arg0+" arg1="+arg1);
     }
 
     @Override
     public void OnGetECGResult(int nResult, int nHR) {
-        Log.d(TAG, "OnGetECGResult");
+        Log.d(TAG, "OnGetECGResult: nResult="+nResult+" nHR="+nHR);
+        sendEmptyMessage(MSG_DATA_DISCON);
     }
 
     @Override
@@ -478,19 +495,23 @@ public class GIMAPC300SpotCheck
             spotCheck = new SpotCheck(reader, sender, this);
             spotCheck.Start();
             spotCheck.QueryDeviceVer();
-            deviceListener.notifyToUi(ResourceManager.getResource().getString("DoMeasureTC"));
         } catch (IOException e) {
             deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR,ResourceManager.getResource().getString("ECommunicationError"));
             stop();
         }
         if (GWConst.KMsrOss.equalsIgnoreCase(iUserDevice.getMeasure()))
             initOxyData();
+        else if (GWConst.KMsrEcg.equalsIgnoreCase(iUserDevice.getMeasure()))
+            SpotSendCMDThread.Send12BitECG();
         switch (iUserDevice.getMeasure()) {
             case GWConst.KMsrTemp:
                 deviceListener.notifyToUi(ResourceManager.getResource().getString("DoMeasureTC"));
                 break;
             case GWConst.KMsrOss:
                 deviceListener.notifyToUi(ResourceManager.getResource().getString("DoMeasureOS"));
+                break;
+            case GWConst.KMsrEcg:
+                deviceListener.notifyToUi(ResourceManager.getResource().getString("DoMeasureECG"));
                 break;
         }
     }

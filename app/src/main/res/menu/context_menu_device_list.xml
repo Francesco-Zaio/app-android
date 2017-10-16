@@ -8,14 +8,7 @@
         android:textSize="15sp">
     </item>
 
-    <item android:id="@+id/pair_and_measure"
-        android:visible="false"
-        android:icon="@drawable/ic_menu_bluetooth_pairing"
-        android:title="@string/new_device_first_run"
-        android:textSize="15sp">
-    </item>
-
-    <item android:id="@+id/new_device_only_association"
+    <item android:id="@+id/new_pairing"
         android:visible="false"
         android:icon="@drawable/ic_menu_bluetooth_pairing"
         android:title="@string/new_device"

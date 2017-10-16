@@ -42,15 +42,11 @@ import com.ti.app.mydoctor.util.AppConst;
 import com.ti.app.mydoctor.AppResourceManager;
 import com.ti.app.mydoctor.util.AppUtil;
 import com.ti.app.telemed.core.common.Measure;
-import com.ti.app.telemed.core.common.MeasureDetail;
 import com.ti.app.telemed.core.dbmodule.DbManager;
 import com.ti.app.telemed.core.measuremodule.MeasureManager;
-import com.ti.app.telemed.core.scmodule.ServerCertificateManager;
 import com.ti.app.telemed.core.syncmodule.SendMeasuresService;
 import com.ti.app.telemed.core.usermodule.UserManager;
 import com.ti.app.telemed.core.util.GWConst;
-import com.ti.app.telemed.core.xmlmodule.XmlManager;
-import com.ti.app.telemed.core.exceptions.XmlException;
 import com.ti.app.mydoctor.gui.customview.ActionBarListActivity;
 import com.ti.app.mydoctor.gui.customview.DragSortController.Direction;
 import com.ti.app.mydoctor.gui.customview.DragSortListView;
@@ -429,18 +425,6 @@ public class ShowMeasure extends ActionBarListActivity{
 			}
 		}
 	}
-	
-	private final Handler serverCertificateManagerHandler = new Handler() {
-		@Override
-		public void handleMessage(Message msg) {
-			switch (msg.what) {
-			case ServerCertificateManager.ADD_CERTIFICATE_FAILURE:
-				Log.i(TAG, "Errore nel salvataggio del certificato");
-				createAlertDialog(AppResourceManager.getResource().getString("warningTitle"), AppResourceManager.getResource().getString("saveServerCertFailure"));
-				break;
-			}
-		}
-	};
 	
 	/**
 	 * Listener per i click sulla dialog SIMPLE_DIALOG

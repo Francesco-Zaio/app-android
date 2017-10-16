@@ -242,7 +242,6 @@ public class Contec8000GWActivity extends Activity {
                 finish();
             }
         }
-
     }
 
 	private TextView textHR;

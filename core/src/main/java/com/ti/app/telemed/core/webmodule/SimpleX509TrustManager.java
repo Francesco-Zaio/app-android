@@ -10,14 +10,9 @@ import java.util.ArrayList;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
-
-import com.ti.app.telemed.core.common.ServerCertificate;
-import com.ti.app.telemed.core.scmodule.ServerCertificateManager;
-import com.ti.app.telemed.core.usermodule.UserManager;
 
 
 public class SimpleX509TrustManager implements X509TrustManager{

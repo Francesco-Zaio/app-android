@@ -16,3 +16,5 @@ OS, NONIN4100, Onyx II - Nonin, 1, NoninOximeter
 EC, 8000GW, 8000GW - Contec, 1, Contec8000GW
 TC, PC300, PC-300 - GIMA, 1, GIMAPC300SpotCheck
 OS, PC300, PC-300 - GIMA, 1, GIMAPC300SpotCheck
+EC, PC300, PC-300 - GIMA, 1, GIMAPC300SpotCheck
+EC, ECGTest, ECGTest, 1, ECGTest

@@ -213,7 +213,7 @@ public class IHealth extends Handler implements DeviceHandler {
 
     void notifyIncomingMeasures(String message) {
         iState = TState.EGettingMeasures;
-        deviceListener.notifyToUi(message);
+        deviceListener.notifyWaitToUi(message);
     }
 
     void notifyError(String errorCode, String errorMessage) {
@@ -339,18 +339,7 @@ public class IHealth extends Handler implements DeviceHandler {
                 }
                 iState = TState.EGettingConnection;
                 scheduleTimer();
-                switch (deviceModel) {
-                    case GWConst.KPO3IHealth:
-                        String message = ResourceManager.getResource().getString("KConnectingDev");
-                        deviceListener.notifyWaitToUi(message);
-                        break;
-                    case GWConst.KBP5IHealth:
-                        deviceListener.notifyWaitToUi(ResourceManager.getResource().getString("KConnectingDev"));
-                        break;
-                    default:
-                        deviceListener.notifyWaitToUi(ResourceManager.getResource().getString("KConnectingDev"));
-                        break;
-                }
+                deviceListener.notifyToUi(ResourceManager.getResource().getString("KConnectingDev"));
                 break;
             case HANDLER_CONNECTED:
                 deviceListener.setBtMAC(iBTAddress);

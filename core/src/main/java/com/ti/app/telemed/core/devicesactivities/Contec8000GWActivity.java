@@ -187,39 +187,11 @@ public class Contec8000GWActivity extends Activity {
         finish();
     }
 
-    public boolean zipFile(String inputFile, String outputFile) {
-        final int BUFFER = 2048;
-
-        try {
-            BufferedInputStream origin;
-            FileOutputStream dest = new FileOutputStream(outputFile);
-            ZipOutputStream out = new ZipOutputStream(new BufferedOutputStream(dest));
-
-            byte data[] = new byte[BUFFER];
-            String[] l = inputFile.split(File.separator);
-            String relativePath = l[l.length-1];
-            FileInputStream fi = new FileInputStream(inputFile);
-            origin = new BufferedInputStream(fi, BUFFER);
-            ZipEntry entry = new ZipEntry(relativePath);
-            out.putNextEntry(entry);
-            int count;
-            while ((count = origin.read(data, 0, BUFFER)) != -1) {
-                out.write(data, 0, count);
-            }
-            origin.close();
-            out.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
-        return true;
-    }
-
     private void makeResultData() {
         int ret = data.ecgDataToAECG(
                 filePath + "/" + fileName + ".c8k",
                 filePath + fileName + ".xml");
-        if (zipFile( filePath + fileName + ".xml", filePath + fileName + ".zip" )) {
+        if (Util.zipFile( filePath + fileName + ".xml", filePath + fileName + ".zip" )) {
             try {
                 File file = new File(filePath + fileName + ".zip");
                 byte[] fileData = new byte[(int) file.length()];

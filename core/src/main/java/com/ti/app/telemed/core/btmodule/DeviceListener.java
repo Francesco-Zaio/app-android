@@ -5,7 +5,6 @@ import com.ti.app.telemed.core.common.Measure;
 import java.util.List;
 
 public interface DeviceListener {
-
     String CONNECTION_ERROR = "E01";
     String DEVICE_NOT_FOUND_ERROR = "E02";
     String COMMUNICATION_ERROR = "E03";
@@ -16,6 +15,7 @@ public interface DeviceListener {
     String DEVICE_CFG_ERROR = "E08";
     String DEVICE_MEMORY_EXHAUSTED = "E09";
     String USER_CFG_ERROR = "E10";
+    String INTERNAL_ERROR = "E11";
 
     void notifyError(String errorCode, String errorMessage);
     void notifyToUi(String message);

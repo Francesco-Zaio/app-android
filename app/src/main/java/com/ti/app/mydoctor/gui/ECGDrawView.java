@@ -11,10 +11,10 @@ import android.graphics.Paint;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
 import android.view.WindowManager;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 
 import com.ti.app.telemed.core.common.ECGDrawData;
-
-import java.util.Arrays;
 
 public class ECGDrawView extends View implements Runnable {
 
@@ -25,7 +25,9 @@ public class ECGDrawView extends View implements Runnable {
     private boolean stop = false;
     private boolean pause = false;
 
-    private int progress = 0;
+    private TextView tv;
+    private String msg = "";
+    private ProgressBar pb;
 
     /** Salva una serie di dati a schermo intero */
     private int[][] data2draw;
@@ -47,7 +49,7 @@ public class ECGDrawView extends View implements Runnable {
     private int npoints = 1;
     private int maxVal = 4095;
     private int baseline = 2048;
-    private int leadDrawHeigth = 0;
+    private int leadDrawHeigth = 100;
     private int sleepInterval;
 
     private Paint paint;
@@ -56,8 +58,6 @@ public class ECGDrawView extends View implements Runnable {
 
     /** Guadagno di forma d'onda corrente */
     private int gain = 1;
-
-    private String msg;
 
     //private final List<int[]> ecgData = new ArrayList<>();
     private Path path = new Path();
@@ -95,11 +95,15 @@ public class ECGDrawView extends View implements Runnable {
         nlead = ECGDrawData.nLead < MAX_LEAD_NR ? ECGDrawData.nLead:MAX_LEAD_NR;
         baseline = ECGDrawData.baseline;
         maxVal = ECGDrawData.maxVal;
-        sleepInterval = 1000/ECGDrawData.samplingRate;
+        if (ECGDrawData.samplingRate > 0 && ECGDrawData.samplingRate < 500)
+            sleepInterval = 1000/ECGDrawData.samplingRate;
+        else
+            sleepInterval = 10;
         stepx = dm.density;
         npoints = (int)(w/stepx);
 
-        leadDrawHeigth = height/nlead;
+        if (nlead>0)
+            leadDrawHeigth = height/nlead;
         if(isInEditMode()){
             return;
         }
@@ -107,9 +111,9 @@ public class ECGDrawView extends View implements Runnable {
         yOffset = new int[nlead];
         data2draw = new int[npoints][nlead];
         for (int j = 0; j < nlead; j++) {
-            yOffset[j] = height*(j+1)/nlead;
+            yOffset[j] = height*j/nlead+leadDrawHeigth/2;
             for (int i = 0; i < npoints; i++) {
-                data2draw[i][j] = yOffset[j]-leadDrawHeigth/2;
+                data2draw[i][j] = yOffset[j];
             }
         }
         if (drawThread == null) {
@@ -118,11 +122,15 @@ public class ECGDrawView extends View implements Runnable {
         }
     }
 
-    /**
-     * Impostare il guadagno della forma d'onda
-     *
-     * @param gain
-     */
+
+    public void setProgressBar(ProgressBar pb) {
+        this.pb = pb;
+    }
+
+    public void setTextViev(TextView tv) {
+        this.tv = tv;
+    }
+
     public void setGain(int gain) {
         this.gain = gain == 0 ? 1 : gain;
     }
@@ -161,8 +169,11 @@ public class ECGDrawView extends View implements Runnable {
             return;
         }
 
-        if (msg != null && !msg.equals(""))
-            drawMsg(canvas);
+        if (tv != null && !ECGDrawData.message.equals(msg)) {
+            msg = ECGDrawData.message;
+            tv.setText(msg);
+            //drawMsg(canvas);
+        }
         for (int j=0; j<nlead; j++) {
             path.rewind();
             //path.reset();
@@ -178,6 +189,10 @@ public class ECGDrawView extends View implements Runnable {
             paint.setColor(Color.WHITE);
             paint.setStrokeWidth(dm.density*3);
             canvas.drawLine(arraycnt*stepx , j*leadDrawHeigth+1, arraycnt*stepx, (j+1)*leadDrawHeigth-1, paint);
+        }
+        if (pb != null) {
+            pb.setProgress(ECGDrawData.progress);
+            //pb.invalidate();
         }
     }
 
@@ -200,6 +215,7 @@ public class ECGDrawView extends View implements Runnable {
                     }
                     int size = ECGDrawData.size();
                     if (size > 0) {
+                        gain = ECGDrawData.gain;
                         addData(ECGDrawData.popData());
                     }
                     if (size <= 1)
@@ -219,10 +235,10 @@ public class ECGDrawView extends View implements Runnable {
      * Aggiungere i dati che devono essere disegnati nell'array
      */
     public void addData(int[] data) {
-        progress = ECGDrawData.progress;
         if (data2draw != null && data != null && data.length == nlead) {
             for (int j=0; j<nlead;j++) {
-                data2draw[arraycnt][j] = yOffset[j] - leadDrawHeigth*data[j]/maxVal;
+                int v = (data[j] - baseline)*gain;
+                data2draw[arraycnt][j] = yOffset[j] - leadDrawHeigth*v/maxVal;
             }
             //System.arraycopy(data, 0, data2draw[arraycnt], 0, data.length);
             arraycnt = (arraycnt + 1) % data2draw.length;
@@ -240,7 +256,7 @@ public class ECGDrawView extends View implements Runnable {
             return;
         arraycnt = 0;
         for (i = 0; i < data2draw.length; i++) {
-            for (j=0; j<MAX_LEAD_NR; j++)
+            for (j=0; j<nlead; j++)
             data2draw[i][j] = -1;
         }
         postInvalidate();

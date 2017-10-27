@@ -6,7 +6,6 @@ import java.util.Vector;
 import com.ti.app.telemed.core.MyApp;
 import com.ti.app.telemed.core.btmodule.events.BTSearcherEvent;
 import com.ti.app.telemed.core.btmodule.events.BTSearcherEventListener;
-import com.ti.app.telemed.core.util.GWConst;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -35,7 +34,7 @@ public class BTSearcher {
 
     public BTSearcher() {
         selectedDevice = -1;
-        foundDevices = new Vector<BluetoothDevice>();
+        foundDevices = new Vector<>();
 
         // Get the local Bluetooth adapter
         mBtAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -115,11 +114,9 @@ public class BTSearcher {
     public void deviceSearchCompleted() {
         fireDeviceSearchCompleted();
         unregisterReceiver();
-        if (searchType == DeviceHandler.TCmd.ECmdConnByAddr) {
-            if (selectedDevice == -1) {
-                startSearchDevices();
-            }
-        }
+        if (searchType == DeviceHandler.TCmd.ECmdConnByAddr && selectedDevice == -1)
+            startSearchDevices();
+
     }
 
     public void close() {
@@ -134,7 +131,6 @@ public class BTSearcher {
     }
 
     // methods to add/remove event listeners
-
 
     public synchronized void clearBTSearcherEventListener() {
         btSearcherEventListeners.clear();
@@ -169,78 +165,6 @@ public class BTSearcher {
             listener.deviceSelected(event);
         }
     }
-
-//    private void fireManualDeviceDiscovered(Vector<String> devList) {
-//    	// we work on a copy of the vector, so if change we don't have problem
-//    	Vector<BTSearcherManualEventListener> copy;
-//        synchronized (this) {
-//            copy = (Vector<BTSearcherManualEventListener>) btSearcherManualEventListeners.clone();
-//        }
-//        int size = copy.size();
-//        if (size == 0) {
-//        	// there aren't listeners
-//            return;
-//        }
-//        BTSearcherManualEvent event = new BTSearcherManualEvent(this);
-//        for (int i = 0; i < size; ++i) {
-//        	BTSearcherManualEventListener listener = (BTSearcherManualEventListener) copy.elementAt(i);
-//            listener.manualDeviceDiscovered(event, devList);
-//        }
-//    }
-//
-//    private void fireManualDeviceDiscovered(Vector<String> devList, Vector<String> devClassList) {
-//    	// we work on a copy of the vector, so if change we don't have problem
-//    	Vector<BTSearcherManualEventListener> copy;
-//        synchronized (this) {
-//            copy = (Vector<BTSearcherManualEventListener>) btSearcherManualEventListeners.clone();
-//        }
-//        int size = copy.size();
-//        if (size == 0) {
-//        	// there aren't listeners
-//            return;
-//        }
-//        BTSearcherManualEvent event = new BTSearcherManualEvent(this);
-//        for (int i = 0; i < size; ++i) {
-//        	BTSearcherManualEventListener listener = (BTSearcherManualEventListener) copy.elementAt(i);
-//            listener.manualDeviceDiscovered(event, devList, devClassList);
-//        }
-//    }
-//
-//    private void fireManualDeviceSearchCompleted() {
-//    	// we work on a copy of the vector, so if change we don't have problem
-//        Vector<BTSearcherManualEventListener> copy;
-//        synchronized (this) {
-//            copy = (Vector<BTSearcherManualEventListener>) btSearcherManualEventListeners.clone();
-//        }
-//        int size = copy.size();
-//        if (size == 0) {
-//        	// there aren't listeners
-//            return;
-//        }
-//        BTSearcherManualEvent event = new BTSearcherManualEvent(this);
-//        for (int i = 0; i < size; ++i) {
-//        	BTSearcherManualEventListener listener = (BTSearcherManualEventListener) copy.elementAt(i);
-//            listener.manualDeviceSearchCompleted(event);
-//        }
-//    }
-//
-//	private void fireManualDeviceSelected() {
-//    	// we work on a copy of the vector, so if change we don't have problem
-//        Vector<BTSearcherManualEventListener> copy;
-//        synchronized (this) {
-//            copy = (Vector<BTSearcherManualEventListener>) btSearcherManualEventListeners.clone();
-//        }
-//        int size = copy.size();
-//        if (size == 0) {
-//        	// there aren't listeners
-//            return;
-//        }
-//        BTSearcherManualEvent event = new BTSearcherManualEvent(this);
-//        for (int i = 0; i < size; ++i) {
-//        	BTSearcherManualEventListener listener = (BTSearcherManualEventListener) copy.elementAt(i);
-//            listener.manualDeviceSelected(event);
-//        }
-//    }
 
     private void fireDeviceDiscovered(Vector<BluetoothDevice> devList) {
         BTSearcherEvent event = new BTSearcherEvent(this);

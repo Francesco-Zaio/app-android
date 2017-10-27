@@ -94,7 +94,7 @@
 
 		<activity
 			android:name=".gui.ECGDrawActivity"
-			android:theme="@style/Theme.AppCompat.Light"
+            android:theme="@style/Theme.AppCompat.Light"
 			android:screenOrientation="portrait"
 			android:windowSoftInputMode="stateAlwaysHidden" >
 		</activity>

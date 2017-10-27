@@ -119,6 +119,7 @@ public interface GWConst {
 	String EGwCode_Q2 = "Q2";
 	String EGwCode_D0 = "D0";
 	String EGwCode_D1 = "D1";
+	String EGwCode_EA = "EA"; // Risultato analisi ECG
 	String EGwCode_BATTERY = "A0";
 
 	//Constants for Message Bundles

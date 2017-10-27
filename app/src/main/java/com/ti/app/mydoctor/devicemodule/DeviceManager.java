@@ -9,6 +9,7 @@ import android.os.Message;
 import android.util.Log;
 
 import com.ti.app.mydoctor.AppResourceManager;
+import com.ti.app.telemed.core.ResourceManager;
 import com.ti.app.telemed.core.btmodule.events.BTSearcherEventListener;
 import com.ti.app.telemed.core.btmodule.DeviceHandler;
 import com.ti.app.telemed.core.btmodule.DeviceListener;
@@ -160,6 +161,7 @@ public class DeviceManager implements DeviceListener {
         else
             op = DeviceHandler.OperationType.Measure;
 
+        notifyToUi(AppResourceManager.getResource().getString("KSearchingDev"));
         currentDeviceHandler.start(op, currentDevice, btSearcherListener);
 	}
 

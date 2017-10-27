@@ -3,14 +3,21 @@ package com.ti.app.mydoctor.gui;
 import android.app.Activity;
 import android.os.Bundle;
 import android.widget.Button;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 
 import com.ti.app.mydoctor.R;
+import com.ti.app.telemed.core.common.ECGDrawData;
 
 
 public class ECGDrawActivity extends Activity {
     private ECGDrawView drawRunnable;
 
     private static ECGDrawActivity activity;
+
+    private ProgressBar pb;
+    private TextView tv;
+
 
     public static ECGDrawActivity getInstance() {
         return activity;
@@ -25,7 +32,12 @@ public class ECGDrawActivity extends Activity {
 
         Button okButton = (Button) findViewById(R.id.okButton);
         Button cancelButton = (Button) findViewById(R.id.cancelButton);
+        pb = (ProgressBar) findViewById(R.id.ecgProgressBar);
+        tv = (TextView) findViewById(R.id.ecg_tv_msg);
+        pb.setProgress(0);
         drawRunnable = (ECGDrawView) findViewById(R.id.ecg_view_draw);
+        drawRunnable.setProgressBar(pb);
+        drawRunnable.setTextViev(tv);
         /*
         okButton.setOnClickListener(listener);
         cancelButton.setOnClickListener(listener);

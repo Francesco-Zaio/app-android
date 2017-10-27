@@ -47,13 +47,13 @@ public class ECGTest extends Handler implements DeviceHandler {
 
     private static final int BASELINE = 2048;
     private static final int MAXVAL = 4095;
-    private static final int NLEAD = 12;
+    private static final int NLEAD = 3;
     private static final String[] LABELS = new String[]{"I", "II", "III", "aVR", "aVL", "aVF", "V1", "V2", "V3", "V3", "V4", "V5", "V6"};
-    private static final int SAMPLING_RATE = 300; // Hz
+    private static final int SAMPLING_RATE = 150; // Hz
     private static final int BULK_SAMPLES = 25;
     private static final int NUM_SAMPLES = SAMPLING_RATE*10; // num samples for 10 sec measure
     private static final int KTimeOut = BULK_SAMPLES * 1000 / SAMPLING_RATE; // samples send timeout msec
-    private double x = 0;
+    private int x = 0;
     private Timer timer;
 
     public static boolean needPairing(UserDevice userDevice) {
@@ -147,10 +147,11 @@ public class ECGTest extends Handler implements DeviceHandler {
                     deviceListener.notifyToUi(ResourceManager.getResource().getString("DoMeasureECG"));
                     ECGDrawData.baseline = BASELINE;
                     ECGDrawData.maxVal = MAXVAL;
+                    ECGDrawData.gain = 1;
                     ECGDrawData.nLead = NLEAD;
                     ECGDrawData.samplingRate = SAMPLING_RATE;
                     ECGDrawData.lables = LABELS;
-                    ECGDrawData.progress = 0;
+                    ECGDrawData.setProgress(0);
                     sleep(1000);
                     deviceListener.startEcgDraw();
                     x = 0;
@@ -181,6 +182,12 @@ public class ECGTest extends Handler implements DeviceHandler {
                 l.add(lead);
             }
             ECGDrawData.addData(l);
+            int p = 100*x/NUM_SAMPLES;
+            ECGDrawData.progress=p;
+            if (p > 20 && p < 80)
+                ECGDrawData.message = "Prova";
+            else
+                ECGDrawData.message = "";
             if (x >= NUM_SAMPLES) {
                 resetTimer();
                 synchronized (thread) {

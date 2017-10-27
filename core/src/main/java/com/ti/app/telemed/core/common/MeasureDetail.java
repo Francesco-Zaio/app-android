@@ -21,6 +21,8 @@ public class MeasureDetail {
     private static final String[] PT_Detail = {GWConst.EGwCode_0Z,GWConst.EGwCode_0X,GWConst.EGwCode_0V,GWConst.EGwCode_BATTERY};
     private static final String[] SP_Short = {GWConst.EGwCode_08,GWConst.EGwCode_09,GWConst.EGwCode_0A,GWConst.EGwCode_0C,GWConst.EGwCode_0L};
     private static final String[] SP_Detail = {GWConst.EGwCode_08,GWConst.EGwCode_09,GWConst.EGwCode_0A,GWConst.EGwCode_0C,GWConst.EGwCode_0D,GWConst.EGwCode_0L,GWConst.EGwCode_BATTERY};
+    private static final String[] GL_Short = {GWConst.EGwCode_0E,GWConst.EGwCode_0T,};
+    private static final String[] GL_Detail = {GWConst.EGwCode_0E,GWConst.EGwCode_0T,GWConst.EGwCode_BATTERY};
     // utilizzato per gruppi misura che non prevedono la visualizzazione delle misure (es.ECG)
     private static final String[] NoShow = {};
 
@@ -66,6 +68,12 @@ public class MeasureDetail {
                     toShow = SP_Detail;
                 else
                     toShow = SP_Short;
+                break;
+            case GWConst.KMsrGlic:
+                if (detailed)
+                    toShow = GL_Detail;
+                else
+                    toShow = GL_Short;
                 break;
 
             default:

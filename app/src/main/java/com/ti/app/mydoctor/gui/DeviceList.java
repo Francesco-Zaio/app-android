@@ -1165,6 +1165,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                 executeOperation();
 		    	return true;
 		    case R.id.config:
+				operationType = DeviceListOperationType.config;
                 executeOperation();
 		    	return true;
 		    case R.id.show_measure:
@@ -2397,6 +2398,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                     myRemoveDialog(PROGRESS_DIALOG);
                     myRemoveDialog(MEASURE_RESULT_DIALOG);
                     if(action.equals(SAVE_ACTION)){
+                        // reimposto il paziente che potrebbeessere stato modificato dall'utente (vedi sotto: case DialogInterface.BUTTON_NEUTRAL)
                         Patient p = UserManager.getUserManager().getCurrentPatient();
                         if (p != null)
                             measureData.setIdPatient(p.getId());

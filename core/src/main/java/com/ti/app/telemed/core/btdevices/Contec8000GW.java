@@ -217,7 +217,6 @@ public class Contec8000GW extends BroadcastReceiver implements DeviceHandler, BT
                     iMeasure.setIdPatient(u.getId());
             }
             iMeasure.setFailed(false);
-            iMeasure.setBtAddress(iBTAddress);
 
             iServiceSearcher.clearBTSearcherEventListener();
             iServiceSearcher.addBTSearcherEventListener(this);
@@ -308,7 +307,7 @@ public class Contec8000GW extends BroadcastReceiver implements DeviceHandler, BT
 
     @Override
     public void deviceSelected(BTSearcherEvent evt) {
-        Log.i(TAG, "NoninOximeter: deviceSelected");
+        Log.i(TAG, "deviceSelected");
         // we change status
         iState = TState.EGettingService;
 

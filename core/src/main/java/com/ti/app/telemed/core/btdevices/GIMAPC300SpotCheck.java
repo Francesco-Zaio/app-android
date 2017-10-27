@@ -329,26 +329,6 @@ public class GIMAPC300SpotCheck
         Log.d(TAG, "OnGetTMPAction");
     }
 
-    @Override
-    public void onIAP_version(int hardVer, int softVer, byte response) {
-        Log.d(TAG, "onIAP_version");
-    }
-
-    @Override
-    public void OnGetUA(float fUA, int unit) {
-        Log.d(TAG, "OnGetUA");
-    }
-
-    @Override
-    public void OnGetCHOL(float fCHOL, int unit) {
-        Log.d(TAG, "OnGetCHOL");
-    }
-
-    @Override
-    public void OnGetGLU_DeviceType(int type) {
-        Log.d(TAG, "OnGetGLU_DeviceType");
-    }
-
 
     // DeviceHandler Methods
 

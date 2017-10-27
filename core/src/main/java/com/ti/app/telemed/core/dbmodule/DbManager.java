@@ -21,7 +21,6 @@ import com.ti.app.telemed.core.common.User;
 import com.ti.app.telemed.core.common.UserDevice;
 import com.ti.app.telemed.core.common.UserMeasure;
 import com.ti.app.telemed.core.common.UserPatient;
-import com.ti.app.telemed.core.exceptions.DbException;
 import com.ti.app.telemed.core.util.GWConst;
 import com.ti.app.telemed.core.util.Util;
 
@@ -279,14 +278,14 @@ public class DbManager {
 
     public static DbManager getDbManager(){
         if(dbManager == null){
-            dbManager = new  DbManager();
+            dbManager = new DbManager();
             dbManager.open();
         }
         return dbManager;
     }
 
     // Device methods
-	public Device getDeviceWhereMeasureModel(String measure, String model) throws DbException {
+	public Device getDeviceWhereMeasureModel(String measure, String model) {
         synchronized (this) {
             Device ret = null;
             Cursor c = null;
@@ -297,9 +296,6 @@ public class DbManager {
                         ret = getDeviceObject(c);
                     }
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
-                throw new DbException();
             } finally {
                 if (c != null)
                     c.close();
@@ -308,63 +304,45 @@ public class DbManager {
         }
 	}
 
-	public void insertDevice(Device d) throws DbException {
+	public void insertDevice(Device d) {
         synchronized (this) {
-            try{
-                ContentValues values = new ContentValues();
-                values.put("MEASURE", d.getMeasure());
-                values.put("MODEL", d.getModel());
-                values.put("DESCRIPTION", d.getDescription());
-                values.put("NEED_CFG", d.isBTDevice()? 1:0);
-                values.put("CLASS_NAME", d.getClassName());
-                mDb.insert("DEVICE", null, values);
-                logger.log(Level.INFO, "Device inserted: "+ d.toString());
-            } catch (Exception sqle) {
-                logger.log(Level.SEVERE, sqle.getMessage());
-                sqle.printStackTrace();
-                throw new DbException();
-            }
+            ContentValues values = new ContentValues();
+            values.put("MEASURE", d.getMeasure());
+            values.put("MODEL", d.getModel());
+            values.put("DESCRIPTION", d.getDescription());
+            values.put("NEED_CFG", d.isBTDevice()? 1:0);
+            values.put("CLASS_NAME", d.getClassName());
+            mDb.insert("DEVICE", null, values);
+            logger.log(Level.INFO, "Device inserted: "+ d.toString());
         }
 	}
 	
-	public void updateDevice(Device d) throws DbException {
+	public void updateDevice(Device d) {
         synchronized (this) {
-            try{
-                ContentValues values = new ContentValues();
-                values.put("DESCRIPTION", d.getDescription());
-                values.put("NEED_CFG", d.isBTDevice()? 1:0);
-                values.put("CLASS_NAME", d.getClassName());
-                String[] args = new String[]{d.getMeasure(), d.getModel()};
-                mDb.update("DEVICE", values, "MEASURE = ? AND MODEL =  ? ", args);
-                logger.log(Level.INFO, "Device updated: "+ d.toString());
-            } catch (Exception sqle) {
-                logger.log(Level.SEVERE, sqle.getMessage());
-                sqle.printStackTrace();
-                throw new DbException();
-            }
+            ContentValues values = new ContentValues();
+            values.put("DESCRIPTION", d.getDescription());
+            values.put("NEED_CFG", d.isBTDevice()? 1:0);
+            values.put("CLASS_NAME", d.getClassName());
+            String[] args = new String[]{d.getMeasure(), d.getModel()};
+            mDb.update("DEVICE", values, "MEASURE = ? AND MODEL =  ? ", args);
+            logger.log(Level.INFO, "Device updated: "+ d.toString());
         }
 	}
 	
-	public void deleteUnusedDevice(List<Device> newDeviceList) throws DbException {
+	public void deleteUnusedDevice(List<Device> newDeviceList) {
         synchronized (this) {
-            try{
-                List<Device> currentDevices = getAllDevices();
-                for(Device d : currentDevices){
-                    if(!newDeviceList.contains(d)){
-                        int rows = mDb.delete("DEVICE", "MEASURE = ? AND MODEL = ?", new String[]{d.getMeasure(), d.getModel()});
-                        logger.log(Level.INFO, "deleteUnusedDevice deleted rows = "+rows);
-                        checkSingleModelForMeasure(d.getMeasure());
-                    }
+            List<Device> currentDevices = getAllDevices();
+            for(Device d : currentDevices){
+                if(!newDeviceList.contains(d)){
+                    int rows = mDb.delete("DEVICE", "MEASURE = ? AND MODEL = ?", new String[]{d.getMeasure(), d.getModel()});
+                    logger.log(Level.INFO, "deleteUnusedDevice deleted rows = "+rows);
+                    checkSingleModelForMeasure(d.getMeasure());
                 }
-            } catch (Exception sqle) {
-                logger.log(Level.SEVERE, sqle.getMessage());
-                sqle.printStackTrace();
-                throw new DbException();
             }
         }
 	}
 	
-	public Vector<Device> getAllDevices() throws DbException {
+	public Vector<Device> getAllDevices() {
         synchronized (this) {
             Vector<Device> ret = new Vector<>();
             Device tmpDv;
@@ -377,9 +355,6 @@ public class DbManager {
                         ret.addElement(tmpDv);
                     }
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
-                throw new DbException();
             } finally {
                 if (c != null)
                     c.close();
@@ -402,43 +377,31 @@ public class DbManager {
         }
     }
 
-    private void insertCurrentDevice(String measure, String idDevice, String btAddress) throws DbException {
+    private void insertCurrentDevice(String measure, String idDevice, String btAddress) {
         synchronized (this) {
-            try{
-                ContentValues initialValues = new ContentValues();
-                initialValues.put("MEASURE", measure);
-                initialValues.put("ID_DEVICE", idDevice);
-                initialValues.put("BTADDRESS", btAddress);
-                mDb.insert("CURRENT_DEVICE", null, initialValues);
-                logger.log(Level.INFO, "new record inserted in CURRENT_DEVICE: "
-                        + measure + " - " + idDevice + " - " + btAddress);
-            } catch (Exception sqle) {
-                logger.log(Level.SEVERE, sqle.getMessage());
-                sqle.printStackTrace();
-                throw new DbException();
-            }
+            ContentValues initialValues = new ContentValues();
+            initialValues.put("MEASURE", measure);
+            initialValues.put("ID_DEVICE", idDevice);
+            initialValues.put("BTADDRESS", btAddress);
+            mDb.insert("CURRENT_DEVICE", null, initialValues);
+            logger.log(Level.INFO, "new record inserted in CURRENT_DEVICE: "
+                    + measure + " - " + idDevice + " - " + btAddress);
         }
     }
 
-    private void updateCurrentDevice(String measure, String idDevice, String btAddress) throws DbException {
+    private void updateCurrentDevice(String measure, String idDevice, String btAddress) {
         synchronized (this) {
-            try{
-                ContentValues values = new ContentValues();
-                values.put("ID_DEVICE", idDevice);
-                values.put("BTADDRESS", btAddress);
-                String[] args = new String[]{measure};
-                mDb.update("CURRENT_DEVICE", values, "MEASURE = ? ", args);
-                logger.log(Level.INFO, "record updated in CURRENT_DEVICE: "
-                        + measure + " - " + idDevice + " - " + btAddress);
-            } catch (Exception sqle) {
-                logger.log(Level.SEVERE, sqle.getMessage());
-                sqle.printStackTrace();
-                throw new DbException();
-            }
+            ContentValues values = new ContentValues();
+            values.put("ID_DEVICE", idDevice);
+            values.put("BTADDRESS", btAddress);
+            String[] args = new String[]{measure};
+            mDb.update("CURRENT_DEVICE", values, "MEASURE = ? ", args);
+            logger.log(Level.INFO, "record updated in CURRENT_DEVICE: "
+                    + measure + " - " + idDevice + " - " + btAddress);
         }
     }
 
-    private String getCurrentDeviceBt(String idUser, String idDevice) throws DbException {
+    private String getCurrentDeviceBt(String idUser, String idDevice) {
         synchronized (this) {
             String btAddress = "";
             Cursor c = null;
@@ -451,22 +414,17 @@ public class DbManager {
                         btAddress = c.getString(nameColumnIndex);
                     }
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
-                throw new DbException();
             } finally {
                 if (c != null)
                     c.close();
             }
-
             return btAddress;
         }
     }
 
-    private void storeCurrentDeviceData(String measure, String idDevice, String btAddress) throws DbException {
+    private void storeCurrentDeviceData(String measure, String idDevice, String btAddress) {
         synchronized (this) {
             Cursor c = null;
-
             try {
                 c = mDb.rawQuery("select * from CURRENT_DEVICE where MEASURE = ? ", new String[]{measure});
                 if (c != null) {
@@ -478,9 +436,6 @@ public class DbManager {
                         insertCurrentDevice(measure, idDevice, btAddress);
                     }
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
-                throw new DbException();
             } finally {
                 if (c != null)
                     c.close();
@@ -548,7 +503,7 @@ public class DbManager {
 
 
     // ServerConf methods
-    public ServerConf getServerConf() throws DbException {
+    public ServerConf getServerConf() {
         synchronized (this) {
             ServerConf ret = null;
             Cursor c = null;
@@ -559,9 +514,6 @@ public class DbManager {
                         ret = getServerConfObject(c);
                     }
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
-                throw new DbException();
             } finally {
                 if (c != null)
                     c.close();
@@ -570,44 +522,33 @@ public class DbManager {
         }
 	}		
 	
-	public void insertServerConf(ServerConf sc) throws DbException {
+	public void insertServerConf(ServerConf sc) {
         synchronized (this) {
-            try {
-                ContentValues values = new ContentValues();
-                values.put("IP", sc.getIp());
-                values.put("PROTOCOL",  sc.getProtocol());
-                values.put("PORT", sc.getPort());
-                values.put("TARGETCFG", sc.getTargetCfg());
-                values.put("TARGETSEND", sc.getTargetSend());
-                values.put("IP_DEF", sc.getIpDef());
-                values.put("PROTOCOL_DEF", sc.getProtocolDef());
-                values.put("PORT_DEF", sc.getPortDef());
-                values.put("TARGETCFG_DEF", sc.getTargetCfgDef());
-                values.put("TARGETSEND_DEF", sc.getTargetSendDef());
-                mDb.insert("SERVER_CONF", null, values);
-            } catch (Exception e) {
-                e.printStackTrace();
-                throw new DbException();
-            }
+            ContentValues values = new ContentValues();
+            values.put("IP", sc.getIp());
+            values.put("PROTOCOL",  sc.getProtocol());
+            values.put("PORT", sc.getPort());
+            values.put("TARGETCFG", sc.getTargetCfg());
+            values.put("TARGETSEND", sc.getTargetSend());
+            values.put("IP_DEF", sc.getIpDef());
+            values.put("PROTOCOL_DEF", sc.getProtocolDef());
+            values.put("PORT_DEF", sc.getPortDef());
+            values.put("TARGETCFG_DEF", sc.getTargetCfgDef());
+            values.put("TARGETSEND_DEF", sc.getTargetSendDef());
+            mDb.insert("SERVER_CONF", null, values);
         }
 	}
 	
-	public void updateServerConf(ServerConf sc) throws DbException {
+	public void updateServerConf(ServerConf sc) {
         synchronized (this) {
-            try{
-                ContentValues values = new ContentValues();
-                values.put("IP", sc.getIp());
-                values.put("PROTOCOL",  sc.getProtocol());
-                values.put("PORT", sc.getPort());
-                values.put("TARGETCFG", sc.getTargetCfg());
-                values.put("TARGETSEND", sc.getTargetSend());
-                mDb.update("SERVER_CONF", values, null, null);
-                logger.log(Level.INFO, "ServerConf updated");
-            } catch (Exception sqle) {
-                logger.log(Level.SEVERE, sqle.getMessage());
-                sqle.printStackTrace();
-                throw new DbException();
-            }
+            ContentValues values = new ContentValues();
+            values.put("IP", sc.getIp());
+            values.put("PROTOCOL",  sc.getProtocol());
+            values.put("PORT", sc.getPort());
+            values.put("TARGETCFG", sc.getTargetCfg());
+            values.put("TARGETSEND", sc.getTargetSend());
+            mDb.update("SERVER_CONF", values, null, null);
+            logger.log(Level.INFO, "ServerConf updated");
         }
 	}
 	
@@ -615,7 +556,7 @@ public class DbManager {
 	 * Metodo che permette di ottenere le impostazioni di default della configurazione del server
 	 * @return ServerConf
 	 */
-	public ServerConf getDefaultServerConf() throws DbException {
+	public ServerConf getDefaultServerConf() {
         synchronized (this) {
             ServerConf sc = null;
             Cursor c = null;
@@ -636,10 +577,6 @@ public class DbManager {
 
                     sc = new ServerConf(ip, protocol, port, targetCfg, targetSend);
                 }
-            } catch (Exception e) {
-                logger.log(Level.SEVERE, e.getMessage());
-                e.printStackTrace();
-                throw new DbException();
             } finally {
                 if (c != null)
                     c.close();
@@ -651,22 +588,16 @@ public class DbManager {
 	/**
 	 * Metodo che permette di ripristinare le impostazioni del server ai valori iniziali
 	 */
-	public void resetServerConf() throws DbException {
+	public void resetServerConf() {
         synchronized (this) {
-            try {
-                ServerConf defaultSC = getDefaultServerConf();
-                ContentValues values = new ContentValues();
-                values.put("IP", defaultSC.getIpDef());
-                values.put("PORT", defaultSC.getPortDef());
-                values.put("PROTOCOL", defaultSC.getProtocolDef());
-                values.put("TARGETCFG", defaultSC.getTargetCfgDef());
-                values.put("TARGETSEND", defaultSC.getTargetSendDef());
-                mDb.update("SERVER_CONF", values, null, null);
-            } catch (Exception e) {
-                logger.log(Level.SEVERE, e.getMessage());
-                e.printStackTrace();
-                throw new DbException();
-            }
+            ServerConf defaultSC = getDefaultServerConf();
+            ContentValues values = new ContentValues();
+            values.put("IP", defaultSC.getIpDef());
+            values.put("PORT", defaultSC.getPortDef());
+            values.put("PROTOCOL", defaultSC.getProtocolDef());
+            values.put("TARGETCFG", defaultSC.getTargetCfgDef());
+            values.put("TARGETSEND", defaultSC.getTargetSendDef());
+            mDb.update("SERVER_CONF", values, null, null);
         }
 	}
 
@@ -689,7 +620,7 @@ public class DbManager {
     }
 
     // public MeasureProtocolCfg methods
-    public MeasureProtocolCfg getMeasureProtocolCfg() throws DbException {
+    public MeasureProtocolCfg getMeasureProtocolCfg() {
         synchronized (this) {
             MeasureProtocolCfg ret = null;
             Cursor c = null;
@@ -700,9 +631,6 @@ public class DbManager {
                         ret = getMeasureProtocolCfgObject(c);
                     }
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
-                throw new DbException();
             } finally {
                 if (c != null)
                     c.close();
@@ -711,43 +639,32 @@ public class DbManager {
         }
     }
 
-    public void insertMeasureProtocolCfg(MeasureProtocolCfg sc) throws DbException {
+    public void insertMeasureProtocolCfg(MeasureProtocolCfg sc) {
         synchronized (this) {
-            try {
-                ContentValues values = new ContentValues();
-                values.put("UPDATE_INTERVAL", sc.getUpdateInterval());
-                values.put("SILENT_START",  sc.getSilentStart());
-                values.put("SILENT_END", sc.getSilentEnd());
-                values.put("LATE_REMIND_DELAY", sc.getLateRemindDelay());
-                values.put("LATE_MAX_REMINDS", sc.getLateMaxReminds());
-                values.put("STD_TIMEOUT", sc.getStandardProtocolTimeOut());
-                values.put("STD_REMINDS", sc.getStandardProtocolReminds());
-                mDb.insert("MEASURE_PROTOCOL_CFG", null, values);
-            } catch (Exception e) {
-                e.printStackTrace();
-                throw new DbException();
-            }
+            ContentValues values = new ContentValues();
+            values.put("UPDATE_INTERVAL", sc.getUpdateInterval());
+            values.put("SILENT_START",  sc.getSilentStart());
+            values.put("SILENT_END", sc.getSilentEnd());
+            values.put("LATE_REMIND_DELAY", sc.getLateRemindDelay());
+            values.put("LATE_MAX_REMINDS", sc.getLateMaxReminds());
+            values.put("STD_TIMEOUT", sc.getStandardProtocolTimeOut());
+            values.put("STD_REMINDS", sc.getStandardProtocolReminds());
+            mDb.insert("MEASURE_PROTOCOL_CFG", null, values);
         }
     }
 
-    public void updateMeasureProtocolCfg(MeasureProtocolCfg sc) throws DbException {
+    public void updateMeasureProtocolCfg(MeasureProtocolCfg sc) {
         synchronized (this) {
-            try{
-                ContentValues values = new ContentValues();
-                values.put("UPDATE_INTERVAL", sc.getUpdateInterval());
-                values.put("SILENT_START",  sc.getSilentStart());
-                values.put("SILENT_END", sc.getSilentEnd());
-                values.put("LATE_REMIND_DELAY", sc.getLateRemindDelay());
-                values.put("LATE_MAX_REMINDS", sc.getLateMaxReminds());
-                values.put("STD_TIMEOUT", sc.getStandardProtocolTimeOut());
-                values.put("STD_REMINDS", sc.getStandardProtocolReminds());
-                mDb.update("MEASURE_PROTOCOL_CFG", values, null, null);
-                logger.log(Level.INFO, "MeasureProtocolCfg updated");
-            } catch (Exception sqle) {
-                logger.log(Level.SEVERE, sqle.getMessage());
-                sqle.printStackTrace();
-                throw new DbException();
-            }
+            ContentValues values = new ContentValues();
+            values.put("UPDATE_INTERVAL", sc.getUpdateInterval());
+            values.put("SILENT_START",  sc.getSilentStart());
+            values.put("SILENT_END", sc.getSilentEnd());
+            values.put("LATE_REMIND_DELAY", sc.getLateRemindDelay());
+            values.put("LATE_MAX_REMINDS", sc.getLateMaxReminds());
+            values.put("STD_TIMEOUT", sc.getStandardProtocolTimeOut());
+            values.put("STD_REMINDS", sc.getStandardProtocolReminds());
+            mDb.update("MEASURE_PROTOCOL_CFG", values, null, null);
+            logger.log(Level.INFO, "MeasureProtocolCfg updated");
         }
     }
 
@@ -766,115 +683,52 @@ public class DbManager {
         }
     }
 
-
-    /**
-	 * Ottengo i certificato di sicurezza del server dalla tabella CERTIFICATES
-	 * @param idUser variabile di tipo {@code String} che contiene l'identificatore dell'utente
-	 * @return array di oggetti di tipo {@code ServerCertificate} che contengono la chiave pubblica associata al certificato accettato
-	 */
-	public ArrayList<ServerCertificate> getServerCertificate(String idUser) throws DbException {
+    public void  updateConfiguration(Vector<Object> dataContainer) {
         synchronized (this) {
-            ArrayList<ServerCertificate> certList = null;
-            ServerCertificate cert;
-            Cursor c = null;
-
-            try {
-                c = mDb.query("CERTIFICATES", null, "ID_USER = ?", new String[]{idUser}, null, null, null);
-                if (c != null) {
-                    if (c.moveToFirst()) {
-                        do {
-                            cert = getServerCertificateObject(c);
-                            if (certList == null)
-                                certList = new ArrayList<>();
-                            certList.add(cert);
-                        } while (c.moveToNext());
-                    }
+            Enumeration<Object> en = dataContainer.elements();
+            Object tmp;
+            List<String> associatedMeasures = new ArrayList<>();
+            while (en.hasMoreElements()) {
+                tmp = en.nextElement();
+                if (tmp instanceof User) {
+                    setUser((User) tmp);
+                    setCurrentUser((User) tmp);
+                    deleteUserPatientByIdUser(getCurrentUser().getId());
+                } else if (tmp instanceof Patient) {
+                    Patient p = (Patient) tmp;
+                    setPatient(p);
+                    setUserPatient(p);
+                } else if (tmp instanceof MeasureProtocolCfg) {
+                    if (getMeasureProtocolCfg() == null)
+                        insertMeasureProtocolCfg((MeasureProtocolCfg)tmp);
+                    else
+                        updateMeasureProtocolCfg((MeasureProtocolCfg)tmp);
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
-                throw new DbException();
-            } finally {
-                if (c != null)
-                    c.close();
-            }
+                else if (tmp instanceof UserMeasure) {
+                    UserMeasure um = (UserMeasure) tmp;
+                    setUserMeasure(um);
+                    List<Device> dList = getDeviceByMeasure(um.getMeasure());
 
-            return certList;
-        }
-	}
-	
-	/**
-	 * Metodo che rimuove il certificato memorizzato all'interno della tabella {@code CERTIFICATES}
-	 */
-	public void removeServerCertificates() throws DbException {
-		//Rimuovo tutte le entry dalla tabella dei certificati del server
-        synchronized (this) {
-            mDb.delete("CERTIFICATES", null, null);
-        }
-	}
-
-	private ServerCertificate getServerCertificateObject(Cursor c) {
-        synchronized (this) {
-            ServerCertificate sc = new ServerCertificate();
-            int hostNameColumnIndex = c.getColumnIndexOrThrow("HOSTNAME");
-            int pkColumnIndex = c.getColumnIndexOrThrow("PUBLIC_KEY");
-            sc.setHostname(c.getString(hostNameColumnIndex));
-            sc.setPublicKey(c.getBlob(pkColumnIndex));
-            return sc;
-        }
-	}
-
-    public void  updateConfiguration(Vector<Object> dataContainer) throws DbException  {
-        synchronized (this) {
-            try {
-                Enumeration<Object> en = dataContainer.elements();
-                Object tmp;
-                List<String> associatedMeasures = new ArrayList<>();
-                while (en.hasMoreElements()) {
-                    tmp = en.nextElement();
-                    if (tmp instanceof User) {
-                        setUser((User) tmp);
-                        setCurrentUser((User) tmp);
-                        deleteUserPatientByIdUser(getCurrentUser().getId());
-                    } else if (tmp instanceof Patient) {
-                        Patient p = (Patient) tmp;
-                        setPatient(p);
-                        setUserPatient(p);
-                    } else if (tmp instanceof MeasureProtocolCfg) {
-                        if (getMeasureProtocolCfg() == null)
-                            insertMeasureProtocolCfg((MeasureProtocolCfg)tmp);
-                        else
-                            updateMeasureProtocolCfg((MeasureProtocolCfg)tmp);
-                    }
-                    else if (tmp instanceof UserMeasure) {
-                        UserMeasure um = (UserMeasure) tmp;
-                        setUserMeasure(um);
-                        List<Device> dList = getDeviceByMeasure(um.getMeasure());
-
-                        if(dList.size() > 0){
-                            // Se la size è 0 significa che non c'è nessun modello gestito per quel tipo di misura
-                            // quindi non faccio nulla
-                            if(dList.size() == 1){
-                                //Se c'è un solo modello per quel tipo di misura
-                                //associo all'utente quel preciso strumento ponendo il flag ACTIVE = true
-                                Device dev = dList.get(0);
-                                setUserDevice(dev, true);
-                            } else {
-                                for (Device dev : dList) {
-                                    //Se ci sono più modelli per quel tipo di misura
-                                    //inserisco quelli che non sono già presenti ma ponendo il flag ACTIVE = false
-                                    setUserDevice(dev, false);
-                                }
+                    if(dList.size() > 0){
+                        // Se la size è 0 significa che non c'è nessun modello gestito per quel tipo di misura
+                        // quindi non faccio nulla
+                        if(dList.size() == 1){
+                            //Se c'è un solo modello per quel tipo di misura
+                            //associo all'utente quel preciso strumento ponendo il flag ACTIVE = true
+                            Device dev = dList.get(0);
+                            setUserDevice(dev, true);
+                        } else {
+                            for (Device dev : dList) {
+                                //Se ci sono più modelli per quel tipo di misura
+                                //inserisco quelli che non sono già presenti ma ponendo il flag ACTIVE = false
+                                setUserDevice(dev, false);
                             }
-                            associatedMeasures.add(um.getMeasure());
                         }
+                        associatedMeasures.add(um.getMeasure());
                     }
                 }
-                deleteOldUserDeviceData(associatedMeasures);
-            } catch (Exception sqle) {
-                logger.log(Level.SEVERE, sqle.getMessage());
-                sqle.printStackTrace();
-                throw new DbException();
             }
+            deleteOldUserDeviceData(associatedMeasures);
         }
 	}
     
@@ -884,7 +738,7 @@ public class DbManager {
         }
 	}
 
-	public void setCurrentUser(User currentUser) throws DbException {
+	public void setCurrentUser(User currentUser) {
         synchronized (this) {
             this.currentUser = currentUser;
             if (currentUser != null)
@@ -892,7 +746,7 @@ public class DbManager {
         }
 	}
     
-	public void setUser(User n) throws DbException {
+	public void setUser(User n) {
         synchronized (this) {
             if (getUser(n.getId()) == null) {
                 insertUser(n);
@@ -902,7 +756,7 @@ public class DbManager {
         }
 	}
 
-    public User createDefaultUser() throws DbException {
+    public User createDefaultUser() {
         Vector<Object> dataContainer = new Vector<>();
 
         User defaultUser = new User();
@@ -958,7 +812,7 @@ public class DbManager {
         }
     }
 
-    public User getUser(String login, String password) throws DbException {
+    public User getUser(String login, String password) {
         synchronized (this) {
             User ret = null;
             Cursor c = null;
@@ -970,9 +824,6 @@ public class DbManager {
                         ret = getUserObject(c);
                     }
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
-                throw new DbException();
             } finally {
                 if (c != null)
                     c.close();
@@ -994,19 +845,15 @@ public class DbManager {
 
     public void resetActiveUser(String userId) {
         synchronized (this) {
-            try {
-                int count;
-                ContentValues values = new ContentValues();
-                values.put("ACTIVE", 0);
-                count = mDb.update("USER", values, "ID = ? ", new String[]{userId});
-                logger.log(Level.INFO, count + "active user reset");
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            int count;
+            ContentValues values = new ContentValues();
+            values.put("ACTIVE", 0);
+            count = mDb.update("USER", values, "ID = ? ", new String[]{userId});
+            logger.log(Level.INFO, count + "active user reset");
         }
     }
 
-    public void updateActiveUser(User u) throws DbException {
+    public void updateActiveUser(User u) {
         synchronized (this) {
             int count;
             ContentValues values = new ContentValues();
@@ -1075,7 +922,7 @@ public class DbManager {
         }
     }
 
-    public List<User> getUsers() throws DbException{
+    public List<User> getUsers() {
         List<User> ret = new ArrayList<>();
         Cursor c = null;
         try {
@@ -1091,32 +938,24 @@ public class DbManager {
                         ret.add(u);
                 }
             }
-        } catch(Exception e){
-            e.printStackTrace();
-            throw new DbException();
         } finally {
-            c.close();
+            if (c != null)
+                c.close();
         }
         return ret;
     }
 
-    public void deleteUser(String idUser) throws DbException {
+    public void deleteUser(String idUser) {
         synchronized (this) {
-            try {
-                // on delete cascade clause ensures all related rows are also removed.
-                // Only Patient table should be checked due to the many to many relationship
-                int rows = mDb.delete("USER", "ID = ?", new String[] {idUser});
-                rows += mDb.delete("PATIENT", "ID NOT IN (SELECT ID_PATIENT FROM USER_PATIENT)", null);
-                Log.i(TAG, "Eliminate " + rows + " righe dell utente " + idUser + " dal db");
-            } catch (Exception e) {
-                e.printStackTrace();
-                logger.log(Level.SEVERE, e.getMessage());
-                throw new DbException();
-            }
+            // on delete cascade clause ensures all related rows are also removed.
+            // Only Patient table should be checked due to the many to many relationship
+            int rows = mDb.delete("USER", "ID = ?", new String[] {idUser});
+            rows += mDb.delete("PATIENT", "ID NOT IN (SELECT ID_PATIENT FROM USER_PATIENT)", null);
+            Log.i(TAG, "Eliminate " + rows + " righe dell utente " + idUser + " dal db");
         }
     }
 
-    public User getUser(String id) throws DbException {
+    public User getUser(String id) {
         synchronized (this) {
             User ret = null;
             Cursor c = null;
@@ -1128,9 +967,6 @@ public class DbManager {
                         ret = getUserObject(c);
                     }
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
-                throw new DbException();
             } finally {
                 if (c != null)
                     c.close();
@@ -1139,7 +975,7 @@ public class DbManager {
         }
 	}
 	
-	private void insertUser(User u) throws SQLException {
+	private void insertUser(User u) {
         synchronized (this) {
             ContentValues values = new ContentValues();
             values.put("ID", u.getId());
@@ -1154,7 +990,7 @@ public class DbManager {
         }
 	}
 	
-	private void updateUser(User u) throws SQLException {
+	private void updateUser(User u) {
         synchronized (this) {
             ContentValues values = new ContentValues();
             values.put("CF", u.getCf());
@@ -1214,7 +1050,7 @@ public class DbManager {
     }
 
 
-    private void setPatient(Patient pa) throws DbException {
+    private void setPatient(Patient pa) {
         synchronized (this) {
             if (getPatient(pa.getId()) == null) {
                 insertPatient(pa);
@@ -1224,7 +1060,7 @@ public class DbManager {
         }
 	}
 	
-	private Patient getPatient(String id) throws DbException {
+	private Patient getPatient(String id) {
         synchronized (this) {
             Patient ret = null;
             Cursor c = null;
@@ -1236,9 +1072,6 @@ public class DbManager {
                         ret = getPatientObject(c);
                     }
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
-                throw new DbException();
             } finally {
                 if (c != null)
                     c.close();
@@ -1247,7 +1080,7 @@ public class DbManager {
         }
 	}
 	
-	private Patient getPatientObject(Cursor c) throws SQLException {
+	private Patient getPatientObject(Cursor c) {
         synchronized (this) {
             Patient tempPat = new Patient();
             tempPat.setId(c.getString(c.getColumnIndex("ID")));
@@ -1266,7 +1099,7 @@ public class DbManager {
         }
 	}
 	
-	private void insertPatient(Patient p) throws SQLException {
+	private void insertPatient(Patient p) {
         synchronized (this) {
             ContentValues values = new ContentValues();
             values.put("ID", p.getId());
@@ -1287,7 +1120,7 @@ public class DbManager {
         }
 	}
 	
-	private void updatePatient(Patient p) throws SQLException {
+	private void updatePatient(Patient p) {
         synchronized (this) {
             ContentValues values = new ContentValues();
             values.put("CF", p.getCf());
@@ -1307,7 +1140,7 @@ public class DbManager {
         }
 	}
 	
-	private void setUserPatient(Patient patient) throws DbException {
+	private void setUserPatient(Patient patient) {
         synchronized (this) {
 
             UserPatient up = getUserPatient(getCurrentUser().getId(), patient.getId());
@@ -1326,7 +1159,7 @@ public class DbManager {
         }
 	}
 
-	private UserPatient getUserPatient(String idUser, String idPatient) throws DbException {
+	private UserPatient getUserPatient(String idUser, String idPatient) {
         synchronized (this) {
             UserPatient ret = null;
             Cursor c = null;
@@ -1338,9 +1171,6 @@ public class DbManager {
                         ret = getUserPatientObject(c);
                     }
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
-                throw new DbException();
             } finally {
                 if (c != null)
                     c.close();
@@ -1358,21 +1188,24 @@ public class DbManager {
         synchronized (this) {
             List<UserPatient> patients = null;
             UserPatient p;
-            Cursor c;
+            Cursor c = null;
 
-            c = mDb.query("USER_PATIENT", null, "ID_USER = ?", new String[]{idUser}, null, null, null);
-            if (c != null) {
-                if (c.moveToFirst()) {
-                    do {
-                        p = getUserPatientObject(c);
-                        if (patients == null)
-                            patients = new ArrayList<>();
-                        patients.add(p);
-                    } while (c.moveToNext());
-                }
-                c.close();
+            try {
+                c = mDb.query("USER_PATIENT", null, "ID_USER = ?", new String[]{idUser}, null, null, null);
+                if (c != null) {
+                    if (c.moveToFirst()) {
+                        do {
+                            p = getUserPatientObject(c);
+                            if (patients == null)
+                                patients = new ArrayList<>();
+                            patients.add(p);
+                        } while (c.moveToNext());
+                    }
+               }
+            } finally {
+                if (c != null)
+                    c.close();
             }
-
             return patients;
         }
 	}
@@ -1394,7 +1227,7 @@ public class DbManager {
         }
 	}
 
-	public List<UserMeasure> getUserMeasures (String userId) throws DbException {
+	public List<UserMeasure> getUserMeasures (String userId) {
         synchronized (this) {
             Vector<UserMeasure> ret = new Vector<>();
             Cursor c = null;
@@ -1405,9 +1238,6 @@ public class DbManager {
                         ret.add(getUserMeasureObject(c));
                     }
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
-                throw new DbException();
             } finally {
                 if (c != null)
                     c.close();
@@ -1415,7 +1245,7 @@ public class DbManager {
             return ret;
         }
 	}
-    public List<UserMeasure> getBiometricUserMeasures (String userId) throws DbException {
+    public List<UserMeasure> getBiometricUserMeasures (String userId) {
         synchronized (this) {
             Vector<UserMeasure> ret = new Vector<>();
             Cursor c = null;
@@ -1426,9 +1256,6 @@ public class DbManager {
                         ret.add(getUserMeasureObject(c));
                     }
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
-                throw new DbException();
             } finally {
                 if (c != null)
                     c.close();
@@ -1437,7 +1264,7 @@ public class DbManager {
         }
     }
 
-	public UserMeasure getUserMeasure (String userId, String measure) throws DbException {
+	public UserMeasure getUserMeasure (String userId, String measure) {
         synchronized (this) {
             UserMeasure ret = null;
             Cursor c = null;
@@ -1448,9 +1275,6 @@ public class DbManager {
                         ret = getUserMeasureObject(c);
                     }
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
-                throw new DbException();
             } finally {
                 if (c != null)
                     c.close();
@@ -1459,69 +1283,50 @@ public class DbManager {
         }
 	}
 
-	private void insertUserMeasureData(UserMeasure um) throws DbException {
+	private void insertUserMeasureData(UserMeasure um) {
         synchronized (this) {
-            try {
-                ContentValues values = new ContentValues();
-                values.put("ID_USER", getCurrentUser().getId());
-                values.put("MEASURE", um.getMeasure());
-                // Configuration values
-                values.put("FAMILY", um.getFamily().getValue());
-                values.put("SCHEDULE", um.getSchedule());
-                values.put("THRESHOLDS", new JSONObject(um.getThresholds()).toString());
-                // Status Values
-                values.put("OUT_OF_RANGE", um.isOutOfRange() ? 1 : 0);
-                values.put("LAST_DAY", um.getLastDay().getTime());
-                values.put("NR_LAST_DAY", um.getNrLastDay());
-                mDb.insert("USER_MEASURE", null, values);
-                logger.log(Level.INFO, "UserMeasure inserted: " + um.toString());
-            } catch (Exception sqle) {
-                logger.log(Level.SEVERE, sqle.getMessage());
-                Log.i(TAG, "Exception insertUserMeasure: " + sqle.getMessage());
-                sqle.printStackTrace();
-                throw new DbException();
-            }
+            ContentValues values = new ContentValues();
+            values.put("ID_USER", getCurrentUser().getId());
+            values.put("MEASURE", um.getMeasure());
+            // Configuration values
+            values.put("FAMILY", um.getFamily().getValue());
+            values.put("SCHEDULE", um.getSchedule());
+            values.put("THRESHOLDS", new JSONObject(um.getThresholds()).toString());
+            // Status Values
+            values.put("OUT_OF_RANGE", um.isOutOfRange() ? 1 : 0);
+            values.put("LAST_DAY", um.getLastDay().getTime());
+            values.put("NR_LAST_DAY", um.getNrLastDay());
+            mDb.insert("USER_MEASURE", null, values);
+            logger.log(Level.INFO, "UserMeasure inserted: " + um.toString());
         }
 	}
 
-	private void updateUserMeasureCfg(UserMeasure um) throws DbException {
+	private void updateUserMeasureCfg(UserMeasure um) {
         synchronized (this) {
-            try{
-                ContentValues values = new ContentValues();
-                values.put("SCHEDULE", um.getSchedule());
-                values.put("THRESHOLDS", new JSONObject(um.getThresholds()).toString());
-                values.put("FAMILY", um.getFamily().getValue());
-                String[] args = new String[]{ um.getIdUser(), um.getMeasure() };
-                mDb.update("USER_MEASURE", values, " ID_USER = ? AND MEASURE = ? ", args);
-                logger.log(Level.INFO, "UserMeasure cfg updated: "+ um.toString());
-            } catch (Exception sqle) {
-                logger.log(Level.SEVERE, sqle.getMessage());
-                sqle.printStackTrace();
-                throw new DbException();
-            }
+            ContentValues values = new ContentValues();
+            values.put("SCHEDULE", um.getSchedule());
+            values.put("THRESHOLDS", new JSONObject(um.getThresholds()).toString());
+            values.put("FAMILY", um.getFamily().getValue());
+            String[] args = new String[]{ um.getIdUser(), um.getMeasure() };
+            mDb.update("USER_MEASURE", values, " ID_USER = ? AND MEASURE = ? ", args);
+            logger.log(Level.INFO, "UserMeasure cfg updated: "+ um.toString());
         }
 	}
 
-	public void updateUserMeasureStatus(UserMeasure um) throws DbException {
+	public void updateUserMeasureStatus(UserMeasure um) {
         synchronized (this) {
-            try{
-                ContentValues values = new ContentValues();
-                values.put("OUT_OF_RANGE", um.isOutOfRange()?1:0);
-                values.put("LAST_DAY", um.getLastDay().getTime());
-                values.put("NR_LAST_DAY", um.getNrLastDay());
-                String[] args = new String[]{ um.getIdUser(), um.getMeasure() };
-                mDb.update("USER_MEASURE", values, " ID_USER = ? AND MEASURE = ? ", args);
-                logger.log(Level.INFO, "UserMeasure status updated: "+ um.toString());
-            } catch (Exception sqle) {
-                logger.log(Level.SEVERE, sqle.getMessage());
-                sqle.printStackTrace();
-                throw new DbException();
-            }
+            ContentValues values = new ContentValues();
+            values.put("OUT_OF_RANGE", um.isOutOfRange()?1:0);
+            values.put("LAST_DAY", um.getLastDay().getTime());
+            values.put("NR_LAST_DAY", um.getNrLastDay());
+            String[] args = new String[]{ um.getIdUser(), um.getMeasure() };
+            mDb.update("USER_MEASURE", values, " ID_USER = ? AND MEASURE = ? ", args);
+            logger.log(Level.INFO, "UserMeasure status updated: "+ um.toString());
         }
 	}
 
 	// UserDevice methods
-	private void setUserMeasure(UserMeasure um) throws DbException {
+	private void setUserMeasure(UserMeasure um) {
         synchronized (this) {
             UserMeasure dbud = getUserMeasure(um.getIdUser(), um.getMeasure());
             if (dbud == null)
@@ -1531,7 +1336,7 @@ public class DbManager {
         }
 	}
 
-	private int getUserMeasureId (String idUser, String measure) throws DbException {
+	private int getUserMeasureId (String idUser, String measure) {
         synchronized (this) {
             Cursor c = null;
             int ret = -1;
@@ -1542,9 +1347,6 @@ public class DbManager {
                         ret = c.getInt(c.getColumnIndex("ID"));
                     }
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
-                throw new DbException();
             } finally {
                 if (c != null)
                     c.close();
@@ -1570,7 +1372,7 @@ public class DbManager {
 	}
 
     // UserDevice methods
-	private void setUserDevice(Device device, boolean active) throws DbException {
+	private void setUserDevice(Device device, boolean active) {
         synchronized (this) {
             UserDevice ud = getUserDevice(getCurrentUser().getId(), device.getMeasure(), device.getModel());
             if (ud == null) {
@@ -1584,7 +1386,7 @@ public class DbManager {
         }
 	}
 
-	private void insertUserDeviceData(UserDevice ud) throws DbException {
+	private void insertUserDeviceData(UserDevice ud) {
         synchronized (this) {
             ContentValues values = new ContentValues();
             values.put("ID_USER", getCurrentUser().getId());
@@ -1598,7 +1400,7 @@ public class DbManager {
         }
 	}
 
-    public UserDevice getUserDevice(String idUser, String measure, String model) throws DbException {
+    public UserDevice getUserDevice(String idUser, String measure, String model) {
         synchronized (this) {
             UserDevice ret = null;
             Cursor c = null;
@@ -1609,9 +1411,6 @@ public class DbManager {
                         ret = getUserDeviceObject(c);
                     }
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
-                throw new DbException();
             } finally {
                 if (c != null)
                     c.close();
@@ -1634,7 +1433,7 @@ public class DbManager {
         }
 	}
 
-	private void deleteOldUserDeviceData(List<String> associatedMeasures) throws SQLException {
+	private void deleteOldUserDeviceData(List<String> associatedMeasures) {
         synchronized (this) {
             if (associatedMeasures != null && associatedMeasures.size() > 0) {
                 String measureList = "";
@@ -1656,7 +1455,7 @@ public class DbManager {
 	}
 
     //////////////////////////////////////////////
-    private void alignActiveUserToCurrentDevices() throws DbException {
+    private void alignActiveUserToCurrentDevices() {
         synchronized (this) {
             Cursor c = null;
             try {
@@ -1686,9 +1485,6 @@ public class DbManager {
                     }
                 }
                 logger.log(Level.INFO, "User devices aligned to current devices");
-            } catch(Exception e){
-                e.printStackTrace();
-                throw new DbException();
             } finally {
                 if (c != null)
                     c.close();
@@ -1697,7 +1493,7 @@ public class DbManager {
     }
     /////////////////////////////////////////////
 
-    public List<UserDevice> getCurrentUserDevices() throws DbException {
+    public List<UserDevice> getCurrentUserDevices() {
         synchronized (this) {
             List<UserDevice> ret = new ArrayList<>();
             Cursor c = null;
@@ -1708,9 +1504,6 @@ public class DbManager {
                         ret.add(getUserDeviceObject(c));
                     }
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
-                throw new DbException();
             } finally {
                 if (c != null)
                     c.close();
@@ -1719,7 +1512,7 @@ public class DbManager {
         }
 	}
 	
-	public List<UserDevice> getCurrentUserDevicesActives(String userId) throws DbException {
+	public List<UserDevice> getCurrentUserDevicesActives(String userId) {
         synchronized (this) {
             List<UserDevice> ret = new ArrayList<>();
             Cursor c = null;
@@ -1732,9 +1525,6 @@ public class DbManager {
                             ret.add(ud);
                     }
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
-                throw new DbException();
             } finally {
                 if (c != null)
                     c.close();
@@ -1743,7 +1533,7 @@ public class DbManager {
         }
 	}
 	
-	public List<UserDevice> getModelsForMeasure(String measure, String userId) throws DbException {
+	public List<UserDevice> getModelsForMeasure(String measure, String userId) {
         synchronized (this) {//SELECT * from USER_DEVICE where MEASURE = ? AND ID_USER = ?
             List<UserDevice> ret = new ArrayList<>();
             Cursor c = null;
@@ -1763,7 +1553,7 @@ public class DbManager {
         }
 	}
 	
-	public void updateUserDeviceModel(String measure, Integer idDevice) throws DbException {
+	public void updateUserDeviceModel(String measure, Integer idDevice) {
         synchronized (this) {
             //Prima metto tutti i flag a N
             ContentValues values = new ContentValues();
@@ -1779,21 +1569,15 @@ public class DbManager {
             }
 
             //In fine aggiorno l'idDevice per la misura sulla tabella current device
-            try {
-                String btAddress;
-                if (idDevice != null) {
-                    btAddress = getCurrentDeviceBt(getCurrentUser().getId(), "" + idDevice);
-                    storeCurrentDeviceData(measure, "" + idDevice, btAddress);
-                }
-            } catch (Exception sqle) {
-                logger.log(Level.SEVERE, sqle.getMessage());
-                sqle.printStackTrace();
-                throw new DbException();
+           String btAddress;
+            if (idDevice != null) {
+                btAddress = getCurrentDeviceBt(getCurrentUser().getId(), "" + idDevice);
+                storeCurrentDeviceData(measure, "" + idDevice, btAddress);
             }
         }
 	}
 
-	public List<String> getCfgMeasureTypes() throws DbException {
+	public List<String> getCfgMeasureTypes() {
         List<String> ret = new ArrayList<>();
         Cursor c = null;
         try {
@@ -1810,7 +1594,7 @@ public class DbManager {
         return ret;
     }
 
-	public List<String> getMeasureTypesForUser() throws DbException {
+	public List<String> getMeasureTypesForUser() {
         synchronized (this) {
             //select distinct measure from user_device where id_user= ?
             List<String> ret = new ArrayList<>();
@@ -1856,17 +1640,12 @@ public class DbManager {
 	
 	public void cleanBtAddressDevice(UserDevice ud) {
         synchronized (this) {
-            try {
-                Log.i(TAG, "cleanBtAddressDevice");
-                ContentValues values = new ContentValues();
-                values.putNull("BTADDRESS");
-                String[] args = new String[]{"" + ud.getId()};
-                mDb.update("USER_DEVICE", values, "ID = ? ", args);
-                mDb.delete("CURRENT_DEVICE", "MEASURE = ?", new String[] {ud.getMeasure()});
-            } catch (Exception e) {
-                e.printStackTrace();
-                logger.log(Level.SEVERE, e.getMessage());
-            }
+            Log.i(TAG, "cleanBtAddressDevice");
+            ContentValues values = new ContentValues();
+            values.putNull("BTADDRESS");
+            String[] args = new String[]{"" + ud.getId()};
+            mDb.update("USER_DEVICE", values, "ID = ? ", args);
+            mDb.delete("CURRENT_DEVICE", "MEASURE = ?", new String[] {ud.getMeasure()});
         }
 	}
 
@@ -1907,7 +1686,7 @@ public class DbManager {
      * @param failed {@code int} 0 solo misure valide, 1 solo misure fallite, qualsiasi altro valore per non filtrare
 	 * @return oggetto di tipo {@code List<Measure>} che contiene la lista delle misure associate all'utente
 	 */
-	public List<Measure> getMeasureData(String idUser, String dateFrom, String dateTo, String measureType, String idPatient, int failed) throws DbException {
+	public List<Measure> getMeasureData(String idUser, String dateFrom, String dateTo, String measureType, String idPatient, int failed) {
         synchronized (this) {
             ArrayList<Measure> listaMisure = new ArrayList<>();
             Cursor c = null;
@@ -1951,10 +1730,6 @@ public class DbManager {
                         listaMisure.add(getMeasureObject(c));
                     }
                 }
-            }catch (Exception e) {
-                e.printStackTrace();
-                logger.log(Level.SEVERE, e.getMessage());
-                throw new DbException();
             } finally {
                 if (c != null)
                     c.close();
@@ -1964,54 +1739,47 @@ public class DbManager {
         }
 	}
 	
-	public void insertMeasure(Measure measure) throws DbException {
+	public boolean insertMeasure(Measure measure) {
         synchronized (this) {
-            try {
-                ContentValues values = new ContentValues();
+            ContentValues values = new ContentValues();
 
-                values.put("TIMESTAMP", measure.getTimestamp());
-                values.put("MEASURE_TYPE", measure.getMeasureType());
-                values.put("STANDARD", measure.getStandardProtocol()? 1:0);
-                values.put("DEVICE_DESC", measure.getDeviceDesc());
-                values.put("BTADDRESS", measure.getBtAddress());
-                values.put("SENT", measure.getSent()? 1:0);
-                values.put("FILE", measure.getFile());
-                values.put("FILE_TYPE", measure.getFileType());
-                values.put("ID_USER", measure.getIdUser());
-                values.put("ID_PATIENT", measure.getIdPatient());
-                values.put("FAILED", measure.getFailed()? 1:0);
-                values.put("FAILURE_CODE", measure.getFailureCode());
-                values.put("FAILURE_MESSAGE", measure.getFailureMessage());
-                values.put("SEND_FAIL_COUNT", measure.getSendFailCount());
-                values.put("SEND_FAIL_REASON", measure.getSendFailReason());
-                // if there are measures, add also the corresponding actual thresholds
-                HashMap<String,String> map = new HashMap<>();
-                if (measure.getMeasures() != null) {
-                    if (measure.getThresholds() == null) {
-                        UserMeasure um = getUserMeasure(measure.getIdUser(), measure.getMeasureType());
-                        if (um != null) {
-                            for (Map.Entry<String, String> entry : measure.getMeasures().entrySet())
-                                if (um.getThresholds().containsKey(entry.getKey()))
-                                    map.put(entry.getKey(), um.getThresholds().get(entry.getKey()));
-                        }
-                        measure.setThresholds(map);
+            values.put("TIMESTAMP", measure.getTimestamp());
+            values.put("MEASURE_TYPE", measure.getMeasureType());
+            values.put("STANDARD", measure.getStandardProtocol()? 1:0);
+            values.put("DEVICE_DESC", measure.getDeviceDesc());
+            values.put("BTADDRESS", measure.getBtAddress());
+            values.put("SENT", measure.getSent()? 1:0);
+            values.put("FILE", measure.getFile());
+            values.put("FILE_TYPE", measure.getFileType());
+            values.put("ID_USER", measure.getIdUser());
+            values.put("ID_PATIENT", measure.getIdPatient());
+            values.put("FAILED", measure.getFailed()? 1:0);
+            values.put("FAILURE_CODE", measure.getFailureCode());
+            values.put("FAILURE_MESSAGE", measure.getFailureMessage());
+            values.put("SEND_FAIL_COUNT", measure.getSendFailCount());
+            values.put("SEND_FAIL_REASON", measure.getSendFailReason());
+            // if there are measures, add also the corresponding actual thresholds
+            HashMap<String,String> map = new HashMap<>();
+            if (measure.getMeasures() != null) {
+                if (measure.getThresholds() == null) {
+                    UserMeasure um = getUserMeasure(measure.getIdUser(), measure.getMeasureType());
+                    if (um != null) {
+                        for (Map.Entry<String, String> entry : measure.getMeasures().entrySet())
+                            if (um.getThresholds().containsKey(entry.getKey()))
+                                map.put(entry.getKey(), um.getThresholds().get(entry.getKey()));
                     }
-                    values.put("MEASURES", new JSONObject(measure.getMeasures()).toString());
-                    values.put("THRESHOLDS", new JSONObject(measure.getThresholds()).toString());
-                } else{
-                    // map is empty
-                    values.put("MEASURES", new JSONObject(map).toString());
-                    values.put("THRESHOLDS", new JSONObject(map).toString());
+                    measure.setThresholds(map);
                 }
-
-                long num = mDb.insert("MEASURE", null, values);
-                Log.i(TAG, "Inserita misura con rowId: " + num);
-            } catch (Exception sqle) {
-                logger.log(Level.SEVERE, sqle.getMessage());
-                Log.i(TAG, "Exception insertMeasure: " + sqle.getMessage());
-                sqle.printStackTrace();
-                throw new DbException();
+                values.put("MEASURES", new JSONObject(measure.getMeasures()).toString());
+                values.put("THRESHOLDS", new JSONObject(measure.getThresholds()).toString());
+            } else{
+                // map is empty
+                values.put("MEASURES", new JSONObject(map).toString());
+                values.put("THRESHOLDS", new JSONObject(map).toString());
             }
+
+            return (mDb.insert("MEASURE", null, values) >=0 );
+
         }
 	}
 
@@ -2021,16 +1789,10 @@ public class DbManager {
      * @param timestamp il timestamp della misura da eliminare
      * @param measureType il tipo di misura della misura da eliminare
      */
-    public void deleteMeasure(String idUser, String timestamp, String measureType) throws DbException {
+    public void deleteMeasure(String idUser, String timestamp, String measureType) {
         synchronized (this) {
-            try {
-                int rows = mDb.delete("MEASURE", "ID_USER = ? AND TIMESTAMP = ? AND MEASURE_TYPE = ?", new String[] {idUser, timestamp, measureType});
-                Log.i(TAG, "Eliminate " + rows + " misure dal db");
-            } catch (Exception e) {
-                e.printStackTrace();
-                logger.log(Level.SEVERE, e.getMessage());
-                throw new DbException();
-            }
+            int rows = mDb.delete("MEASURE", "ID_USER = ? AND TIMESTAMP = ? AND MEASURE_TYPE = ?", new String[] {idUser, timestamp, measureType});
+            Log.i(TAG, "Eliminate " + rows + " misure dal db");
         }
     }
 
@@ -2039,61 +1801,47 @@ public class DbManager {
 	 * @param idUser l'identificativo dell'utente attuale
 	 * @param idPatient l'identificativo del paziente. null o "" per non inidcarlo
 	 * @param measureType quali tipi di misure devono essere cancellate. null o "" per non indicarla
-	 * @throws DbException
 	 */
-	public void deleteMeasures(String idUser, String idPatient, String measureType) throws DbException {
+	public void deleteMeasures(String idUser, String idPatient, String measureType) {
         synchronized (this) {
-            try {
-                int n = 1
-                        + ((idPatient == null) || idPatient.isEmpty()? 0 : 1)
-                        + ((measureType == null) || measureType.isEmpty()? 0 : 1);
-                String[] values = new String[n];
+            int n = 1
+                    + ((idPatient == null) || idPatient.isEmpty()? 0 : 1)
+                    + ((measureType == null) || measureType.isEmpty()? 0 : 1);
+            String[] values = new String[n];
 
-                String where = "ID_USER = ?";
-                values[0] = idUser;
+            String where = "ID_USER = ?";
+            values[0] = idUser;
 
-                n = 1;
-                if ((idPatient != null) && !idPatient.isEmpty()) {
-                    where = where + " AND ID_PATIENT = ?";
-                    values [n++] = idPatient;
-                }
-                if ((measureType != null) && !measureType.isEmpty()) {
-                    where = where + " AND MEASURE_TYPE = ?";
-                    values[n] = measureType;
-                }
-                int rows = mDb.delete("MEASURE", where, values);
-                Log.i(TAG, "Eliminate " + rows + " misure dal db");
-            } catch (Exception e) {
-                e.printStackTrace();
-                logger.log(Level.SEVERE, e.getMessage());
-                throw new DbException();
+            n = 1;
+            if ((idPatient != null) && !idPatient.isEmpty()) {
+                where = where + " AND ID_PATIENT = ?";
+                values [n++] = idPatient;
             }
+            if ((measureType != null) && !measureType.isEmpty()) {
+                where = where + " AND MEASURE_TYPE = ?";
+                values[n] = measureType;
+            }
+            int rows = mDb.delete("MEASURE", where, values);
+            Log.i(TAG, "Eliminate " + rows + " misure dal db");
         }
 	}
 
 	/**
 	 * Metodo che permette di aggiornare i valori di una misura all'interno del db
 	 * @param m variabile di tipo {@code Measure} che contiene i valori della misura da aggiornare
-	 * @throws DbException
 	 */
-	public void updateSentMeasure(Measure m) throws DbException{
+	public void updateSentMeasure(Measure m) {
         synchronized (this) {
-            try {
-                ContentValues values = new ContentValues();
-                if (m.getSent()) {
-                    values.put("SENT", 1);
-                } else {
-                    values.put("SENT", 0);
-                    values.put("SEND_FAIL_TIMESTAMP", System.currentTimeMillis()/1000);
-                    values.put("SEND_FAIL_COUNT", m.getSendFailCount());
-                    values.put("SEND_FAIL_REASON", m.getSendFailReason());
-                }
-                mDb.update("MEASURE", values, "ID_USER = ? AND TIMESTAMP = ? AND MEASURE_TYPE = ?", new String[]{m.getIdUser(), m.getTimestamp(), m.getMeasureType()});
-            } catch (Exception e) {
-                e.printStackTrace();
-                logger.log(Level.SEVERE, e.getMessage());
-                throw new DbException();
+            ContentValues values = new ContentValues();
+            if (m.getSent()) {
+                values.put("SENT", 1);
+            } else {
+                values.put("SENT", 0);
+                values.put("SEND_FAIL_TIMESTAMP", System.currentTimeMillis()/1000);
+                values.put("SEND_FAIL_COUNT", m.getSendFailCount());
+                values.put("SEND_FAIL_REASON", m.getSendFailReason());
             }
+            mDb.update("MEASURE", values, "ID_USER = ? AND TIMESTAMP = ? AND MEASURE_TYPE = ?", new String[]{m.getIdUser(), m.getTimestamp(), m.getMeasureType()});
         }
 	}
 
@@ -2113,9 +1861,6 @@ public class DbManager {
             });
             c.moveToFirst();
             count = c.getInt(0);
-        } catch (Exception e) {
-            e.printStackTrace();
-            logger.log(Level.SEVERE, e.getMessage());
         } finally {
             if (c != null)
                 c.close();
@@ -2128,7 +1873,7 @@ public class DbManager {
 	 * @param idUser variabile di tipo {@code String} che contiene l'identificatore dell'utente
 	 * @return ArrayList<Measure>
 	 */
-	public ArrayList<Measure> getNotSentMeasures(String idUser) throws DbException{
+	public ArrayList<Measure> getNotSentMeasures(String idUser) {
         synchronized (this) {
             ArrayList<Measure> listaMisure = new ArrayList<>();
             Cursor c = null;
@@ -2145,10 +1890,6 @@ public class DbManager {
                         listaMisure.add(getMeasureObject(c));
                     }
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
-                logger.log(Level.SEVERE, e.getMessage());
-                throw new DbException();
             } finally {
                 if (c != null)
                     c.close();
@@ -2173,52 +1914,7 @@ public class DbManager {
             return ret;
         }
     }
-	
-	/**
-	 * Metodo che permette di inserire un certificato all'interno della tabella {@code CERTIFICATES}
-	 * @param sc oggetto di tipo {@code ServerCertificate} che contiene il certificato del server da accettare
-	 * @throws DbException
-	 */
-	public void insertServerCertificate(String idUser, ServerCertificate sc) throws DbException {
-		//Inserisco il certificato del server nella tabella
-        synchronized (this) {
-            try {
-                Log.i(TAG, "insertServerCertificate: aggiungo certificato " + idUser);
-                ContentValues values = new ContentValues();
-                values.put("ID_USER", idUser);
-                values.put("HOSTNAME", " ");
-                values.put("PUBLIC_KEY", sc.getPublicKey());
-                long columnid = mDb.insert("CERTIFICATES", null, values);
-                logger.log(Level.INFO, "Inserimento del certificato in posizione " + columnid);
-                Log.i(TAG, "Certificato inserito in posizione " + columnid);
-            } catch (Exception e) {
-                e.printStackTrace();
-                Log.e(TAG, "insertServerCertificate: " + e.getMessage());
-                throw new DbException();
-            }
-        }
-	}
-	
-	/**
-	 * Metodo che permette di eliminare tutti i certificati associati ad un utente
-	 * @param idUser variabile di tipo {@code String} che contiene l'identificatore dell'utente
-	 * @throws DbException
-	 */
-	public void deleteAllServerCerts(String idUser) throws DbException {
-        synchronized (this) {
-            Log.i(TAG, "Elimino tutti i certificati di " + idUser);
-            try {
-                int rows = mDb.delete("CERTIFICATES", "ID_USER = ?", new String[] {idUser});
-                Log.i(TAG, "Numero di certificati di " + idUser + " eliminati: "  + rows);
-            } catch (Exception e) {
-                e.printStackTrace();
-                logger.log(Level.SEVERE, e.getMessage());
-                Log.e(TAG, "deleteAllServerCerts: " + e.getMessage());
-                throw new DbException();
-            }
-        }
-	}
-	
+
 	/**
 	 * Metodo che permette di verificare se l'utente corrente è un paziente
 	 * @param idUser variabile di tipo {@code String} che contiene l'identificatore dell'utente
@@ -2226,11 +1922,16 @@ public class DbManager {
 	 */
 	public boolean getIsPatient(String idUser) {
         synchronized (this) {
-            boolean status;
-            Cursor c = mDb.query("USER", new String[]{"IS_PATIENT"}, "ID = ?", new String[]{idUser}, null, null, null);
-            c.moveToFirst();
-            status = c.getInt(c.getColumnIndex("IS_PATIENT")) == 1;
-            c.close();
+            Cursor c = null;
+            boolean status = false;
+            try {
+                c = mDb.query("USER", new String[]{"IS_PATIENT"}, "ID = ?", new String[]{idUser}, null, null, null);
+                c.moveToFirst();
+                status = c.getInt(c.getColumnIndex("IS_PATIENT")) == 1;
+            } finally {
+                if (c!=null)
+                    c.close();
+            }
             return status;
         }
 	}

@@ -28,9 +28,12 @@ import com.ti.app.telemed.core.util.GWConst;
 import com.ti.app.telemed.core.util.Util;
 import com.ti.app.telemed.core.xmlmodule.XmlManager;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Vector;
 
 
@@ -93,7 +96,6 @@ public class AgamatrixJazz extends Handler implements
     }
 
     public AgamatrixJazz(DeviceListener aScheduler) {
-        Log.d(TAG, "IHealth");
         iState = TState.EWaitingToGetDevice;
         scanActivityListener = null;
         iServiceSearcher = new BTSearcher();
@@ -324,8 +326,7 @@ public class AgamatrixJazz extends Handler implements
                 if (msg.arg1 > 1)
                     mClient.getGlucoseMeasurementsStartingAt(lastSequenceNr, this);
                 else {
-                    String message = ResourceManager.getResource().getString("KNoNewMeasure");
-                    deviceListener.notifyError(DeviceListener.NO_MEASURES_FOUND, message);
+                    deviceListener.notifyError("",ResourceManager.getResource().getString("KNoNewMeasure"));
                     stop();
                 }
                 break;
@@ -334,8 +335,7 @@ public class AgamatrixJazz extends Handler implements
                     measurements = (ArrayList<?>) msg.obj;
                     measureIndex = 0;
                     if (measurements.size() == 0) {
-                        String message = ResourceManager.getResource().getString("KNoNewMeasure");
-                        deviceListener.notifyError(DeviceListener.NO_MEASURES_FOUND, message);
+                        deviceListener.notifyError("",ResourceManager.getResource().getString("KNoNewMeasure"));
                         stop();
                     } else {
                         askMeasure();
@@ -359,16 +359,19 @@ public class AgamatrixJazz extends Handler implements
         if (measurements.get(measureIndex) instanceof GlucoseMeasurement) {
             GlucoseMeasurement glm = (GlucoseMeasurement)measurements.get(measureIndex);
             String message;
-            Calendar cal = Calendar.getInstance();
-            cal.setTime(glm.getTimestamp());
             int val = (int)(glm.getGlucoseConcentration()*conversionFactor);
+            Date d = glm.getTimestamp();
+            String date = new SimpleDateFormat("d MMM yyyy", Locale.getDefault()).format(d);
+            String time = new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(d);
 
             message = ResourceManager.getResource().getString("KPrePostMsg").concat("\n\n");
 
-            message = message.concat(ResourceManager.getResource().getString("MeasureTimeStamp")).concat(": ");
-            message = message.concat(XmlManager.getXmlManager().getTimestamp(cal)).concat("\n");
+            message = message.concat(ResourceManager.getResource().getString("KDate")).concat(": ");
+            message = message.concat(date).concat("\n");
+            message = message.concat(ResourceManager.getResource().getString("KTime")).concat(": ");
+            message = message.concat(time).concat("\n");
 
-            message = message.concat(ResourceManager.getResource().getString("Glycemia") + ": ");
+            message = message.concat(ResourceManager.getResource().getString("Glycemia")).concat(": ");
             message = message.concat(Integer.toString(val)).concat(" ");
             message = message.concat(ResourceManager.getResource().getString("GlycemiaUnit"));
 

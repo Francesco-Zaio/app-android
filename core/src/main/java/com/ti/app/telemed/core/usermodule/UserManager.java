@@ -234,7 +234,7 @@ public class UserManager implements Runnable, WebManagerResultEventListener {
 							selectUser(user, true);
 						else
 							reset();
-					} catch (DbException e) {
+					} catch (Exception e) {
 						logger.log(Level.SEVERE, "Failed to load current user from login and password");
 					}
 				}
@@ -348,7 +348,7 @@ public class UserManager implements Runnable, WebManagerResultEventListener {
 							} else {
 								selectUser(user);
 							}							
-						} catch (DbException e) {
+						} catch (Exception e) {
 							logger.log(Level.SEVERE, "database error UserManager run");
 							sendMessage(ERROR_OCCURED, e.getMessage());
 						} finally {

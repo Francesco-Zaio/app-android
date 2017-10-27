@@ -43,7 +43,16 @@ public class AppUtil {
 		}
     	return tmp;
     }
-	
+
+	public static byte[] hexStringToByteArray(String s) {
+		int len = s.length();
+		byte[] data = new byte[len / 2];
+		for (int i = 0; i < len; i += 2) {
+			data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4) + Character
+					.digit(s.charAt(i + 1), 16));
+		}
+		return data;
+	}
 	
 	public static String toHexString(byte[] array){
     	String tmp = "";
@@ -61,14 +70,8 @@ public class AppUtil {
     	return tmp;
     }
 	
-	public static String getString(int id){
-		return MyDoctorApp.getContext().getResources().getString(id);
-	}
-	
 	public static boolean isCamera(Device device) {
-		return  (
-				(device.getModel() != null && device.getModel().equalsIgnoreCase(GWConst.KCAMERA))
-				);
+		return ((device.getModel() != null && device.getModel().equalsIgnoreCase(GWConst.KCAMERA)));
 	}
 
 	public static int getIconId(String measure) {
@@ -169,63 +172,6 @@ public class AppUtil {
 		SharedPreferences.Editor editor = sp.edit();
 	    editor.putBoolean(keyValue, stringValue);
 	    editor.apply();
-	}
-
-	public static byte[] hexStringToByteArray(String s) {
-
-		int len = s.length();
-		byte[] data = new byte[len / 2];
-		for (int i = 0; i < len; i += 2) {
-			data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4) + Character
-					.digit(s.charAt(i + 1), 16));
-		}
-		return data;
-	}
-
-	public static void storeFile(String fileName, byte[] buffer) {
-		
-		String folderName = Environment.getExternalStorageDirectory().toString() + "/bgw-log/";
-		File folderFile = new File(folderName);
-		
-		try {
-			folderFile.mkdirs();
-		} catch (Exception e) {
-			e.printStackTrace();
-			Log.d(TAG, "storeFile mkdirs: " + e);
-		}
-		
-		try {
-			Log.d(TAG, "Store file " + fileName + " in " + folderName);
-			File file = new File(folderFile, fileName);
-			file.createNewFile();
-			FileOutputStream fos = new FileOutputStream(file);
-			fos.write(buffer);
-			fos.close();			
-		}
-		catch (Exception e) {
-			e.printStackTrace();
-			Log.d(TAG, "storeFile Error: " + e);
-		}
-	}
-	
-	public static boolean isDemoMode() {
-		boolean demoMode = false;
-		
-		try {		
-			String baseDir = Environment.getExternalStorageDirectory().getAbsolutePath();
-			String fileName = "tlm.demo";
-			
-			File f = new File(baseDir + File.separator + fileName);
-			Log.d(TAG, "exists? " + f.toString());
-			
-			demoMode = f.exists();
-		}
-		catch (Exception e) {
-			demoMode = false;
-		}		
-		Log.i(TAG, "isDemoRocheMode=" + demoMode);
-		
-		return demoMode;
 	}
 
 	public static int getDiffHours(long t1, long t2) {

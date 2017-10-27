@@ -71,9 +71,9 @@ public class MeasureManager {
 		synchronized (this) {
 			Log.i(TAG, "saveMeasureData: ");
             try {
-                DbManager.getDbManager().insertMeasure(m);
+                boolean result = DbManager.getDbManager().insertMeasure(m);
                 MyApp.getContext().startService(new Intent(MyApp.getContext(), SendMeasuresService.class));
-                return true;
+                return result;
             } catch (Exception sqle) {
                 logger.log(Level.SEVERE,"ERROR SAVE MEASURE DB " + sqle);
                 return false;

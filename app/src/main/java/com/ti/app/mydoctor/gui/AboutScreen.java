@@ -52,7 +52,7 @@ public class AboutScreen extends AppCompatActivity {
 
 				MenuInflater inflater = getMenuInflater();
 				inflater.inflate(R.menu.show_advanced_settings_menu, menu);
-			} catch (DbException e) {
+			} catch (Exception e) {
 				e.printStackTrace();
 			}
 		}

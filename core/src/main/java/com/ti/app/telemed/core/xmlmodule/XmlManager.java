@@ -11,7 +11,10 @@ import org.xml.sax.helpers.DefaultHandler;
 
 import java.io.ByteArrayInputStream;
 import java.nio.CharBuffer;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.Locale;
 import java.util.Map;
@@ -163,7 +166,8 @@ public class XmlManager extends DefaultHandler {
     
     // for timestamp format
     final static private String KTimestamp = "%04d%02d%02d%02d%02d%02d";
-    
+    final static private String TIMESTAMPFORMAT = "yyyyMMddHHmmss";
+
     private SAXParser parser; 
 
     // sequence number
@@ -237,11 +241,13 @@ public class XmlManager extends DefaultHandler {
     }
 
     public String getTimestamp(Calendar calendar) {
-        int year, month, day, hour, minute, second;
 
         if (calendar == null)
             calendar = new GregorianCalendar();
+        return new SimpleDateFormat(TIMESTAMPFORMAT, Locale.ENGLISH).format(calendar.getTime());
 
+        /*
+        int year, month, day, hour, minute, second;
         year = calendar.get(GregorianCalendar.YEAR);
         // MONTH begin from 0 to 11, so we need add 1 to use it in the timestamp
         month = calendar.get(GregorianCalendar.MONTH) + 1;
@@ -251,6 +257,17 @@ public class XmlManager extends DefaultHandler {
         second = calendar.get(GregorianCalendar.SECOND);
 
         return String.format(Locale.ENGLISH, KTimestamp, year, month, day, hour, minute, second);
+        */
+    }
+
+    public Date parseDate(String dateString) {
+        try {
+            if (dateString != null && ! dateString.isEmpty())
+                return new SimpleDateFormat(TIMESTAMPFORMAT, Locale.ENGLISH).parse(dateString);
+        } catch (ParseException e) {
+            Log.e(TAG, "parseDate: ParseException");
+        }
+        return null;
     }
 
     // Create XML message for failed measure

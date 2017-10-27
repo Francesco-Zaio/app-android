@@ -756,7 +756,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                     //Non ci sono utenti registrati, quindi crea l'utente di default
                     try {
                         DbManager.getDbManager().createDefaultUser();
-                    } catch (DbException e) {
+                    } catch (Exception e) {
                         e.printStackTrace();
                         showErrorDialog(AppResourceManager.getResource().getString("errorDb"));
                     }
@@ -1317,7 +1317,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 		UserManager.getUserManager().setCurrentPatient(null);
 		try {
             DbManager.getDbManager().setCurrentUser(null);
-        } catch (DbException e) {
+        } catch (Exception e) {
             Log.e(TAG, "DbManager.getDbManager().setCurrentUser(null): Error");
         }
 	}
@@ -1958,8 +1958,8 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
             case PROGRESS_DIALOG:
                 return createProgressDialog(dataBundle);
             case ALERT_DIALOG:
-                builder.setMessage(dataBundle.getString(AppConst.MESSAGE));
                 builder.setPositiveButton("Ok", new AlertDialogClickListener());
+                builder.setMessage(dataBundle.getString(AppConst.MESSAGE));
                 builder.setTitle(null);
                 beep();
                 return builder.create();
@@ -2402,8 +2402,12 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                         Patient p = UserManager.getUserManager().getCurrentPatient();
                         if (p != null)
                             measureData.setIdPatient(p.getId());
-                        measureManager.saveMeasureData(measureData);
                         setOperationCompleted();
+                        if (!measureManager.saveMeasureData(measureData)) {
+                            String msg = AppResourceManager.getResource().getString("KMsgSaveMeasureError");
+                            dataBundle.putString(AppConst.MESSAGE, msg);
+                            myShowDialog(ALERT_DIALOG);
+                        }
                     }
                     break;
                 case DialogInterface.BUTTON_NEGATIVE:

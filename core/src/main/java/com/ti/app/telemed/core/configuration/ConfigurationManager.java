@@ -131,11 +131,7 @@ public class ConfigurationManager {
         } catch (IOException ioe) {
         	logger.log(Level.SEVERE,"ERROR READING FILE "+ getDeviceFilename() + " " + ioe.getMessage());
             throw ioe;
-        } catch (DbException e) {
-        	logger.log(Level.SEVERE,"ERROR checking devices "+ e.getMessage());
-			e.printStackTrace();
-			throw e;
-		}
+        }
 	}
 
     private void readConfigurations() throws  IOException, DbException {

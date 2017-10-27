@@ -123,7 +123,7 @@ public class ShowUtilitySettings extends ActionBarActivity {
 			portEt.setText(sc.getPort());
 			quizEt.setText(AppUtil.getRegistryValue(AppUtil.KEY_URL_QUIZ, AppUtil.URL_QUIZ_DEFAULT));
             demoRocheSw.setChecked(Util.isDemoRocheMode());
-        } catch (DbException e) {
+        } catch (Exception e) {
 			showDialog(ShowUtilitySettings.ERROR_DIALOG);
 		}
 	}

@@ -1,9 +1,8 @@
 package com.ti.app.mydoctor.gui;
 
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.StringTokenizer;
+import java.util.Locale;
 import java.util.Vector;
 
 import com.ti.app.mydoctor.R;
@@ -15,7 +14,7 @@ import com.ti.app.telemed.core.common.Patient;
 import com.ti.app.telemed.core.dbmodule.DbManager;
 import com.ti.app.mydoctor.gui.listadapter.MeasureDetailsListAdapter;
 import com.ti.app.mydoctor.util.AppUtil;
-import com.ti.app.telemed.core.util.GWConst;
+import com.ti.app.telemed.core.xmlmodule.XmlManager;
 
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -74,8 +73,9 @@ public class MeasureDetails extends ListActivity {
 			patientNameTV.setText(patientName);
 			
 			//Setta la data
-			String date = getDate(currentMeasure.getTimestamp());
-			String hour = getHour(currentMeasure.getTimestamp());
+			Date d = XmlManager.getXmlManager().parseDate(currentMeasure.getTimestamp());
+			String date = getDate(d);
+			String hour = getHour(d);
 			TextView dateText = (TextView)findViewById(R.id.dataValue);
 			dateText.setText(date + " " + hour);
 
@@ -180,38 +180,24 @@ public class MeasureDetails extends ListActivity {
 	};
 	
 	/**
-	 * Metodo che restituisce la data in forma dd MMMMM yyyy
-	 * @param timestamp  variabile di tipo {@code String} che contiene la stringa da convertire
+	 * Metodo che restituisce la data in forma dd MMM yyyy
+	 * @param data  variabile di tipo {@code Date} che contiene la data da convertire
 	 * @return variabile di tipo {@code String} che contiene la stringa convertita
 	 */
-	private String getDate(String timestamp) {
-		SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
-		try {
-			Date data = sdf.parse(timestamp);
-			sdf = new SimpleDateFormat("dd MMM yyyy");
-			return sdf.format(data);
-		} catch (ParseException e) {
-			e.printStackTrace();
-			showDialog(ERROR_DIALOG);
-			return null;
-		}
+	private String getDate(Date data) {
+		if (data == null) return "";
+		SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault());
+		return sdf.format(data);
 	}
 	
 	/**
 	 * Metodo che restituisce l'orario in forma HH:mm"
-	 * @param timestamp variabile di tipo {@code String} che contiene la stringa da convertire in ora
+	 * @param data variabile di tipo {@code Date} che contiene la data da convertire in ora
 	 * @return variabile di tipo {@code String} che contiene la stringa convertita
 	 */
-	private String getHour(String timestamp) {	
-		SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
-		try {
-			Date data = sdf.parse(timestamp);
-			sdf = new SimpleDateFormat("HH:mm:ss");
-			return sdf.format(data);
-		} catch (ParseException e) {
-			e.printStackTrace();
-			showDialog(ERROR_DIALOG);
-			return null;
-		}
+	private String getHour(Date data) {
+		if (data == null) return "";
+		SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
+		return sdf.format(data);
 	}
 }

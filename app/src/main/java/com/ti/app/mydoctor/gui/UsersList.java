@@ -30,6 +30,8 @@ import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+
+import com.ti.app.mydoctor.MyDoctorApp;
 import com.ti.app.mydoctor.R;
 import com.ti.app.mydoctor.AppResourceManager;
 import com.ti.app.mydoctor.util.AppUtil;
@@ -207,7 +209,7 @@ public class UsersList extends ActionBarListActivity {
 		if ( (info.position != users.size()) && enableDeleteUserMenu ) {
 			android.view.MenuInflater inflater = getMenuInflater();
 			inflater.inflate(R.menu.users_context_menu, menu);
-			menu.setHeaderTitle(AppUtil.getString(R.string.user_title));
+			menu.setHeaderTitle(MyDoctorApp.getContext().getResources().getString(R.string.user_title));
 		}
 		else
 			Log.e(TAG, "Selezionato utente corrente. Non faccio nulla");
@@ -313,7 +315,7 @@ public class UsersList extends ActionBarListActivity {
 			}
 			else
 				showDialog(PASSWORD_ERROR_DIALOG);
-		} catch (DbException e) {
+		} catch (Exception e) {
 			AlertDialog.Builder builder = new AlertDialog.Builder(UsersList.this);
 			builder.setMessage(e.getMessage());
 			builder.setPositiveButton(AppResourceManager.getResource().getString("EGwnurseOk"),

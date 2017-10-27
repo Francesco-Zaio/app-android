@@ -166,8 +166,6 @@ public class SendMeasuresService extends Service implements Runnable, WebManager
                     }
                 } catch (InterruptedException ie) {
                     logger.log(Level.SEVERE, "Thread interrotto");
-                } catch (DbException dbe) {
-                    Log.e(TAG, "DbException: " + dbe.toString());
                 }
             }
         }
@@ -208,8 +206,6 @@ public class SendMeasuresService extends Service implements Runnable, WebManager
                 currentMeasure.setSendFailCount(currentMeasure.getSendFailCount()+1);
             }
             DbManager.getDbManager().updateSentMeasure(currentMeasure);
-        } catch (DbException e) {
-            logger.log(Level.SEVERE, "aggiornamento misura fallito"+e.getMessage());
         } finally {
             currentMeasure = null;
         }

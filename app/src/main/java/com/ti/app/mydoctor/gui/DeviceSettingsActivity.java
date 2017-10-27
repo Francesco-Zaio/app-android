@@ -382,7 +382,7 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
 			    	
 			    	try {
 			    		DbManager.getDbManager().updateUserDeviceModel(selectedMeasureType, selectedUserDevice.getDevice().getId());
-					} catch (DbException e) {
+					} catch (Exception e) {
                         e.printStackTrace();
 					}
 			    	

@@ -295,7 +295,7 @@ public class AgamatrixJazz extends Handler implements
                 deviceListener.setBtMAC(iBtDevAddr);
                 if (iPairingMode) {
                     iState = TState.EDisconnecting;
-                    Util.setRegistryValue(REGKEY+iBtDevAddr, 0);
+                    //Util.setRegistryValue(REGKEY+iBtDevAddr, 0);
                     mClient.disconnect();
                 } else {
                     iState = TState.EConnected;
@@ -316,15 +316,20 @@ public class AgamatrixJazz extends Handler implements
                     if (settings.getUnits() == MeterSettings.UNITS_MM_PER_L)
                         conversionFactor=18.;
                 }
-                mClient.getGlucoseMeasurementCountStartingAt(lastSequenceNr, this);
+                if (lastSequenceNr > 0)
+                    mClient.getGlucoseMeasurementCountStartingAt(lastSequenceNr, this);
+                else
+                    mClient.getGlucoseMeasurementCount(this);
                 iState = TState.EGettingMeasures;
                 break;
             case HANDLER_BATTERY:
                 batteryLevel = msg.arg1;
                 break;
             case HANDLER_MEASURES_COUNT:
-                if (msg.arg1 > 1)
+                if (lastSequenceNr > 0 && msg.arg1 > 1)
                     mClient.getGlucoseMeasurementsStartingAt(lastSequenceNr, this);
+                else if (lastSequenceNr == 0 && msg.arg1 > 0)
+                    mClient.getAllGlucoseMeasurements(this);
                 else {
                     deviceListener.notifyError("",ResourceManager.getResource().getString("KNoNewMeasure"));
                     stop();

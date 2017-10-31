@@ -31,11 +31,6 @@ public class MyApp extends Application {
     public static ConfigurationManager getConfigurationManager(){
         if(configurationManager == null) {
             configurationManager = new ConfigurationManager();
-            try {
-                configurationManager.init();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
         }
         return configurationManager;
     }

@@ -99,6 +99,8 @@ public class ConfigurationManager {
 	        // read file line by line
 	        String line;
 	        while ((line = br.readLine()) != null) {
+				if (line.startsWith("//"))
+					continue;
 	            if (line.length()>0) {
 	            	StringTokenizer st = new StringTokenizer(line, ",");
 	            	String measure = st.nextToken().trim();

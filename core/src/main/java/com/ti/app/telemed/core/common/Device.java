@@ -84,7 +84,7 @@ public class Device implements Cloneable {
 	}
 
 	private boolean equalsMeasureModel(Device d){
-		return d.getMeasure() != null && d.getModel() != null &&
+		return d != null && d.getMeasure() != null && d.getModel() != null &&
                 d.getMeasure().equalsIgnoreCase(measure)
                 && d.getModel().equalsIgnoreCase(model);
 	}

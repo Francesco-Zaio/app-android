@@ -15,7 +15,6 @@ import com.ti.app.telemed.core.common.MeasureProtocolCfg;
 import com.ti.app.telemed.core.common.Device;
 import com.ti.app.telemed.core.common.Measure;
 import com.ti.app.telemed.core.common.Patient;
-import com.ti.app.telemed.core.common.ServerCertificate;
 import com.ti.app.telemed.core.common.ServerConf;
 import com.ti.app.telemed.core.common.User;
 import com.ti.app.telemed.core.common.UserDevice;
@@ -312,8 +311,19 @@ public class DbManager {
             values.put("DESCRIPTION", d.getDescription());
             values.put("NEED_CFG", d.isBTDevice()? 1:0);
             values.put("CLASS_NAME", d.getClassName());
-            mDb.insert("DEVICE", null, values);
-            logger.log(Level.INFO, "Device inserted: "+ d.toString());
+            if (mDb.insert("DEVICE", null, values) > 0) {
+                logger.log(Level.INFO, "Device inserted: " + d.toString());
+                Device d2 = getDeviceWhereMeasureModel(d.getMeasure(), d.getModel());
+                List<UserMeasure> lum = getUserMeasuresByMeasure(d.getMeasure());
+                for (UserMeasure um : lum) {
+                    UserDevice ud = new UserDevice();
+                    ud.setIdUser(um.getIdUser());
+                    ud.setMeasure(d.getMeasure());
+                    ud.setDevice(d2);
+                    ud.setActive(false);
+                    insertUserDeviceData(ud);
+                }
+            }
         }
 	}
 	
@@ -1264,6 +1274,25 @@ public class DbManager {
         }
     }
 
+    public List<UserMeasure> getUserMeasuresByMeasure (String measure) {
+        synchronized (this) {
+            Vector<UserMeasure> ret = new Vector<>();
+            Cursor c = null;
+            try {
+                c = mDb.query("USER_MEASURE", null, "MEASURE = ? ", new String[]{measure}, null, null, null);
+                if (c != null) {
+                    while (c.moveToNext()) {
+                        ret.add(getUserMeasureObject(c));
+                    }
+                }
+            } finally {
+                if (c != null)
+                    c.close();
+            }
+            return ret;
+        }
+    }
+
 	public UserMeasure getUserMeasure (String userId, String measure) {
         synchronized (this) {
             UserMeasure ret = null;
@@ -1389,7 +1418,7 @@ public class DbManager {
 	private void insertUserDeviceData(UserDevice ud) {
         synchronized (this) {
             ContentValues values = new ContentValues();
-            values.put("ID_USER", getCurrentUser().getId());
+            values.put("ID_USER", ud.getIdUser());
             values.put("MEASURE", ud.getMeasure());
             values.put("BTADDRESS", ud.getBtAddress());
             values.put("ID_DEVICE", ud.getDevice().getId());

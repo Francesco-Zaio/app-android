@@ -402,11 +402,9 @@ class IHealthPO3 extends Handler implements IHealtDevice{
         tmpVal.put(GWConst.EGwCode_07, df.format(iSpO2Med).replace ('.', ','));  // O2 Med
         tmpVal.put(GWConst.EGwCode_1B, df.format(iSpO2Min).replace ('.', ','));  // O2 Min
         tmpVal.put(GWConst.EGwCode_1D, df.format(iSpO2Max).replace ('.', ','));  // O2 Max
-        tmpVal.put(GWConst.EGwCode_1F, "0");
         tmpVal.put(GWConst.EGwCode_0F, df.format(iHRMed).replace ('.', ','));  // HR Med
         tmpVal.put(GWConst.EGwCode_1A, df.format(iHRMin).replace ('.', ','));  // HR Min
         tmpVal.put(GWConst.EGwCode_1C, df.format(iHRMax).replace ('.', ','));  // HR Max
-        tmpVal.put(GWConst.EGwCode_1E, "0");
         tmpVal.put(GWConst.EGwCode_1G, durata);
         tmpVal.put(GWConst.EGwCode_1H, oxyFileName);  // filename
         tmpVal.put(GWConst.EGwCode_BATTERY, Integer.toString(batteryLevel)); // livello batteria

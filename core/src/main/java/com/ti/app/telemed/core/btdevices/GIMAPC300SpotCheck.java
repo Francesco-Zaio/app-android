@@ -7,6 +7,7 @@ import android.os.Message;
 import android.os.Handler;
 import android.util.Log;
 
+import com.creative.SpotCheck.StatusMsg;
 import com.creative.base.InputStreamReader;
 import com.creative.base.OutputStreamSender;
 import com.creative.SpotCheck.SpotSendCMDThread;
@@ -54,10 +55,14 @@ public class GIMAPC300SpotCheck
     private static final int MSG_DEVICE_CONNECTED = 0x12;
     private static final int MSG_DEVICE_ERROR = 0x13;
     private static final int MSG_DISCOVERY_FINISH = 0x14;
-    private static final int MSG_DATA_BATTERY = 0x20;
-    private static final int MSG_DATA_TEMP = 0x21;
-    private static final int MSG_DATA_DISCON = 0x22;
-    private static final int MSG_DATA_OXY = 0x23;
+    private static final int MSG_BATTERY = 0x20;
+    private static final int MSG_TEMPERATURE = 0x21;
+    private static final int MSG_DISCONN = 0x22;
+    private static final int MSG_OXY = 0x23;
+    private static final int MSG_BP = 0x24;
+    private static final int MSG_MEASURING = 0x25;
+    private static final int MSG_MEASURE_CANCELED = 0x26;
+    private static final int MSG_GLU = 0x27;
 
     private static final int[] battValues = {10,40,70,100};
 
@@ -172,7 +177,7 @@ public class GIMAPC300SpotCheck
     @Override
     public void OnConnectLose() {
         Log.d(TAG, "OnConnectLose");
-        sendEmptyMessage(MSG_DATA_DISCON);
+        sendEmptyMessage(MSG_DISCONN);
     }
 
     @Override
@@ -182,20 +187,17 @@ public class GIMAPC300SpotCheck
 
     @Override
     public void OnGetDeviceVer(int nHWMajor, int nHWMinor, int nSWMajor, int nSWMinor, int nPower, int nBattery) {
-        Log.d(TAG, "OnGetDeviceVer: nHWMajor="+nHWMajor);
-        obtainMessage(MSG_DATA_BATTERY, nPower, nBattery).sendToTarget();
+//        Log.d(TAG, "OnGetDeviceVer: nHWMajor="+nHWMajor+" nHWMinor="+nHWMinor+" nSWMajor="+nSWMajor+" nSWMinor="+nSWMinor+" nPower="+nPower+" nBattery="+nBattery);
+        obtainMessage(MSG_BATTERY, nPower, nBattery).sendToTarget();
     }
 
     @Override
     public void OnGetECGAction(int status) {
         Log.d(TAG, "OnGetECGAction->"+status);
         if(status==1) {
-            // misura avviata
-            // TODO
+            sendEmptyMessage(MSG_MEASURING);
         } else if (status == 2) {
-            // misura interrotta
-            sendEmptyMessage(MSG_DATA_DISCON);
-            // TODO
+            sendEmptyMessage(MSG_MEASURE_CANCELED);
         }
     }
 
@@ -207,7 +209,6 @@ public class GIMAPC300SpotCheck
                 flag=waveData.data.get(i).flag;
                 break;
             }
-
         Log.d(TAG, "OnGetECGRealTime: nHR="+nHR+" nMax="+nMax+" OK="+(bLeadoff?"true":"false")+"frame# "+waveData.frameNum+" flag="+flag+" L="+waveData.data.size());
     }
 
@@ -219,7 +220,7 @@ public class GIMAPC300SpotCheck
     @Override
     public void OnGetECGResult(int nResult, int nHR) {
         Log.d(TAG, "OnGetECGResult: nResult="+nResult+" nHR="+nHR);
-        sendEmptyMessage(MSG_DATA_DISCON);
+        sendEmptyMessage(MSG_DISCONN);
     }
 
     @Override
@@ -229,44 +230,71 @@ public class GIMAPC300SpotCheck
 
     @Override
     public void OnGetGlu(float nGlu, int nGluStatus, int unit) {
-        Log.d(TAG, "OnGetGlu");
+        Log.d(TAG, "OnGetGlu: nGlu="+nGlu+" nGluStatus="+nGluStatus+" unit="+unit);
+        Message msg = obtainMessage(MSG_GLU);
+        Bundle data = new Bundle();
+        data.putFloat("nGlu", nGlu);
+        data.putInt("nGluStatus", nGluStatus);
+        data.putInt("unit", unit);
+        msg.setData(data);
+        sendMessage(msg);
     }
 
     @Override
     public void OnGetGluStatus(int nStatus, int nHWMajor, int nHWMinor, int nSWMajor, int nSWMinor) {
-        Log.d(TAG, "OnGetGluStatus");
+        Log.d(TAG, "OnGetGluStatus: "+" nStatus="+nStatus+" nHWMajor="+nHWMajor+" nHWMinor="+nHWMinor+" nSWMajor="+nSWMajor+" nSWMinor="+nSWMinor);
     }
 
     @Override
     public void OnGetNIBPAction(int bStart) {
-        Log.d(TAG, "OnGetNIBPAction");
+        Log.d(TAG, "OnGetNIBPAction: bStart="+bStart);
+        if (bStart == 1)
+            sendEmptyMessage(MSG_MEASURING);
+        else if (bStart == 2)
+            sendEmptyMessage(MSG_MEASURE_CANCELED);
     }
 
     @Override
     public void OnGetNIBPRealTime(boolean bHeartbeat, int nBldPrs) {
-        Log.d(TAG, "OnGetNIBPRealTime");
+        Log.d(TAG, "OnGetNIBPRealTime: bHeartbeat="+(bHeartbeat?"true":"false")+" nBldPrs="+nBldPrs);
     }
 
     @Override
     public void OnGetNIBPResult(boolean bHR, int nPulse, int nMAP, int nSYS, int nDIA, int nGrade, int nBPErr) {
-        Log.d(TAG, "OnGetNIBPResult");
+        Log.d(TAG, "OnGetNIBPResult: bHR="+(bHR?"true":"false")+" nPulse="+nPulse+" nMAP="+nMAP+" nSYS="+nSYS+" nDIA="+nDIA+" nGrade="+nGrade+" nBPErr="+nBPErr);
+        Message msg = obtainMessage(MSG_BP);
+        Bundle data = new Bundle();
+        data.putBoolean("bHR", bHR);
+        data.putInt("nPulse", nPulse);
+        data.putInt("nMAP", nMAP);
+        data.putInt("nSYS", nSYS);
+        data.putInt("nDIA", nDIA);
+        data.putInt("nGrade", nGrade);
+        data.putInt("nBPErr", nBPErr);
+        msg.setData(data);
+        sendMessage(msg);
     }
 
     @Override
     public void OnGetNIBPStatus(int nStatus, int nHWMajor, int nHWMinor, int nSWMajor, int nSWMinor) {
-        Log.d(TAG, "OnGetNIBPStatus");
+        Log.d(TAG, "OnGetNIBPStatus: "+" nStatus="+nStatus+" nHWMajor="+nHWMajor+" nHWMinor="+nHWMinor+" nSWMajor="+nSWMajor+" nSWMinor="+nSWMinor);
+    }
+
+    @Override
+    public void OnGetNIBPMode(int arg0) {
+        Log.d(TAG, "OnGetNIBPMode: arg0="+arg0);
     }
 
     @Override
     public void OnGetPowerOff() { //bluetooth disconnect , call it first
         Log.d(TAG, "OnGetPowerOff");
-        sendEmptyMessage(MSG_DATA_DISCON);
+        sendEmptyMessage(MSG_DISCONN);
     }
 
     @Override
     public void OnGetSpO2Param(int nSpO2, int nPR, float nPI, boolean bProbe, int nMode) {
         Log.d(TAG, "OnGetSpO2Param");
-        Message msg = obtainMessage(MSG_DATA_OXY);
+        Message msg = obtainMessage(MSG_OXY);
         Bundle data = new Bundle();
         data.putInt("nSpO2", nSpO2);
         data.putInt("nPR", nPR);
@@ -288,7 +316,7 @@ public class GIMAPC300SpotCheck
     @Override
     public void OnGetTmp(boolean bManualStart, boolean bProbeOff, float nTmp, int nTmpStatus, int nResultStatus) {
         Log.d(TAG, "OnGetTmp");
-        Message msg = obtainMessage(MSG_DATA_TEMP);
+        Message msg = obtainMessage(MSG_TEMPERATURE);
         Bundle data = new Bundle();
         data.putBoolean("bManualStart", bManualStart);
         data.putBoolean("bProbeOff", bProbeOff);
@@ -304,14 +332,14 @@ public class GIMAPC300SpotCheck
         Log.d(TAG, "OnGetTmpStatus");
     }
 
-    @Override
-    public void OnGetNIBPMode(int arg0) {
-        Log.d(TAG, "OnGetNIBPMode");
-    }
 
     @Override
     public void OnGetSpO2Action(int action) {
-        Log.d(TAG, "OnGetSpO2Action");
+        Log.d(TAG, "OnGetSpO2Action: action="+action);
+        if (action == 1)
+            sendEmptyMessage(MSG_MEASURING);
+        else if (action >= 2)
+            sendEmptyMessage(MSG_MEASURE_CANCELED);
     }
 
     @Override
@@ -321,7 +349,11 @@ public class GIMAPC300SpotCheck
 
     @Override
     public void OnGetGLUAction(int status) {
-        Log.d(TAG, "OnGetGLUAction");
+        Log.d(TAG, "OnGetNIBPAction: status="+status);
+        if (status == 1)
+            sendEmptyMessage(MSG_MEASURING);
+        else if (status == 2)
+            sendEmptyMessage(MSG_MEASURE_CANCELED);
     }
 
     @Override
@@ -334,10 +366,14 @@ public class GIMAPC300SpotCheck
 
     @Override
     public void confirmDialog() {
+        prePrandial = true;
+        makeGLUResultData();
     }
 
     @Override
     public void cancelDialog(){
+        prePrandial = false;
+        makeGLUResultData();
     }
 
     @Override
@@ -385,10 +421,11 @@ public class GIMAPC300SpotCheck
         if (spotCheck != null)
             spotCheck.Stop();
 
-        if (devSocket != null) {
-            if (devSocket.isConnected())
+        if (bluetoothOper!=null)
+            bluetoothOper.stopDiscovery();
+
+        if (devSocket!=null && devSocket.isConnected())
                 bluetoothOper.disConnect(devSocket);
-        }
 
         reset();
         deviceListener.operationCompleted();
@@ -402,11 +439,26 @@ public class GIMAPC300SpotCheck
         super.handleMessage(msg);
         Bundle d;
         switch (msg.what) {
-            case MSG_DATA_BATTERY:
+            case MSG_BATTERY:
                 if (msg.arg1 >= 0 && msg.arg1 < 4)
                     iBattery = battValues[msg.arg1];
                 break;
-            case MSG_DATA_TEMP:
+            case MSG_MEASURING:
+                deviceListener.notifyWaitToUi(ResourceManager.getResource().getString("KMeasuring"));
+                break;
+            case MSG_MEASURE_CANCELED:
+                deviceListener.notifyError(DeviceListener.MEASUREMENT_ERROR, ResourceManager.getResource().getString("KAbortMeasure"));
+                stop();
+                break;
+            case MSG_GLU:
+                d = msg.getData();
+                askGLUMeasure(d);
+                break;
+            case MSG_BP:
+                d = msg.getData();
+                makeBPResultData(d);
+                break;
+            case MSG_TEMPERATURE:
                 d = msg.getData();
                 if (d.getInt("nResultStatus") == 0) {
                     iBodyTemperature = String.format(Locale.ITALY, "%.2f", msg.getData().getFloat("nTmp"));
@@ -417,7 +469,7 @@ public class GIMAPC300SpotCheck
                     stop();
                 }
                 break;
-            case MSG_DATA_OXY:
+            case MSG_OXY:
                 if (firstRead) {
                     deviceListener.notifyToUi(ResourceManager.getResource().getString("KMeasuring"));
                     firstRead = false;
@@ -425,7 +477,7 @@ public class GIMAPC300SpotCheck
                 d = msg.getData();
                 oxySample(d);
                 break;
-            case MSG_DATA_DISCON:
+            case MSG_DISCONN:
                 if (iState == TState.Connected) {
                     deviceListener.notifyError(DeviceListener.CONNECTION_ERROR, ResourceManager.getResource().getString("EBtDeviceConnError"));
                     stop();
@@ -451,7 +503,7 @@ public class GIMAPC300SpotCheck
                 // for some unknown reasons the discovered could notify the same device more times
                 if (iState == TState.GettingDevice) {
                     bluetoothOper.connect(selectedDevice);
-                    deviceListener.notifyWaitToUi(ResourceManager.getResource().getString("KConnectingDev"));
+                    deviceListener.notifyToUi(ResourceManager.getResource().getString("KConnectingDev"));
                     iState = TState.Connecting;
                 }
                 break;
@@ -461,6 +513,20 @@ public class GIMAPC300SpotCheck
                     deviceListener.configReady(ResourceManager.getResource().getString("KPairingMsgDone"));
                     stop();
                 } else {
+                    switch (iUserDevice.getMeasure()) {
+                        case GWConst.KMsrGlic:
+                            deviceListener.notifyToUi(ResourceManager.getResource().getString("DoMeasureGL"));
+                            break;
+                        case GWConst.KMsrTemp:
+                            deviceListener.notifyToUi(ResourceManager.getResource().getString("DoMeasureTC"));
+                            break;
+                        case GWConst.KMsrPres:
+                            deviceListener.notifyToUi(ResourceManager.getResource().getString("DoMeasurePR"));
+                            break;
+                        case GWConst.KMsrOss:
+                            deviceListener.notifyToUi(ResourceManager.getResource().getString("DoMeasureOS"));
+                            break;
+                    }
                     startDevice();
                 }
                 break;
@@ -484,6 +550,9 @@ public class GIMAPC300SpotCheck
         else if (GWConst.KMsrEcg.equalsIgnoreCase(iUserDevice.getMeasure()))
             SpotSendCMDThread.Send12BitECG();
         switch (iUserDevice.getMeasure()) {
+            case GWConst.KMsrPres:
+                deviceListener.notifyToUi(ResourceManager.getResource().getString("DoMeasurePR"));
+                break;
             case GWConst.KMsrTemp:
                 deviceListener.notifyToUi(ResourceManager.getResource().getString("DoMeasureTC"));
                 break;
@@ -495,6 +564,122 @@ public class GIMAPC300SpotCheck
                 break;
         }
     }
+
+
+    // GLU Measure methods
+
+    private int gluValue;
+    private boolean prePrandial;
+
+    private void askGLUMeasure(Bundle b) {
+        if (!GWConst.KMsrGlic.equals(iUserDevice.getMeasure())) {
+            deviceListener.notifyError(DeviceListener.MEASURE_PROCEDURE_ERROR,ResourceManager.getResource().getString("KWrongMeasure"));
+            stop();
+            return;
+        }
+
+        prePrandial = true;
+        int gluResutlStatus = b.getInt("nGluStatus");
+        if (gluResutlStatus != 0) {
+            deviceListener.notifyError(DeviceListener.MEASUREMENT_ERROR,ResourceManager.getResource().getString("KWrongMeasure"));
+            stop();
+            return;
+        }
+
+        int gluUnit = b.getInt("unit");
+        if (gluUnit != 1)
+            gluValue = (int)(b.getFloat("nGlu")*18./10.);
+        else
+            gluValue = (int)(b.getFloat("nGlu"));
+
+        String message;
+        message = ResourceManager.getResource().getString("KPrePostMsg").concat("\n\n");
+        message = message.concat(ResourceManager.getResource().getString("Glycemia")).concat(": ");
+        message = message.concat(Integer.toString(gluValue)).concat(" ");
+        message = message.concat(ResourceManager.getResource().getString("GlycemiaUnit"));
+
+        deviceListener.askSomething(message,
+                ResourceManager.getResource().getString("MeasureGlyPREBtn"),
+                ResourceManager.getResource().getString("MeasureGlyPOSTBtn"));
+    }
+
+    private void makeGLUResultData() {
+        Measure m = new Measure();
+        User u = UserManager.getUserManager().getCurrentUser();
+        m.setMeasureType(iUserDevice.getMeasure());
+        m.setDeviceDesc(iUserDevice.getDevice().getDescription());
+        m.setTimestamp(XmlManager.getXmlManager().getTimestamp(null));
+        m.setFile(null);
+        m.setFileType(null);
+        if (u != null) {
+            m.setIdUser(u.getId());
+            if (u.getIsPatient())
+                m.setIdPatient(u.getId());
+        }
+        HashMap<String, String> tmpVal = new HashMap<>();
+        if (prePrandial) {
+            tmpVal.put(GWConst.EGwCode_0E, Integer.toString(gluValue));  // glicemia Pre-prandiale
+        } else {
+            tmpVal.put(GWConst.EGwCode_0T, Integer.toString(gluValue));  // glicemia Post-prandiale
+        }
+        tmpVal.put(GWConst.EGwCode_BATTERY, Integer.toString(iBattery)); // livello batteria
+        m.setMeasures(tmpVal);
+        m.setFailed(false);
+        m.setBtAddress(iBtDevAddr);
+        deviceListener.showMeasurementResults(m);
+        stop();
+    }
+
+
+    // BP Measure metohds
+
+    private void makeBPResultData(Bundle b) {
+        if (!GWConst.KMsrPres.equals(iUserDevice.getMeasure())) {
+            deviceListener.notifyError(DeviceListener.MEASURE_PROCEDURE_ERROR,ResourceManager.getResource().getString("KWrongMeasure"));
+            stop();
+            return;
+        }
+        int result = b.getInt("nBPErr");
+        if (result != StatusMsg.NIBP_ERROR_NO_ERROR) {
+            deviceListener.notifyError(DeviceListener.MEASUREMENT_ERROR,ResourceManager.getResource().getString("KWrongMeasure"));
+            stop();
+            return;
+        }
+
+        HashMap<String, String> tmpVal = new HashMap<>();
+        tmpVal.put(GWConst.EGwCode_03, Integer.toString(b.getInt("nDIA"))); // pressione minima
+        tmpVal.put(GWConst.EGwCode_04, Integer.toString(b.getInt("nSYS"))); // pressione massima
+        tmpVal.put(GWConst.EGwCode_06, Integer.toString(b.getInt("nPulse"))); // freq cardiaca
+        tmpVal.put(GWConst.EGwCode_BATTERY, Integer.toString(iBattery)); // livello batteria
+/*
+        data.putBoolean("bHR", bHR);
+        data.putInt("nPulse", nPulse);
+        data.putInt("nMAP", nMAP);
+        data.putInt("nSYS", nSYS);
+        data.putInt("nDIA", nDIA);
+        data.putInt("nGrade", nGrade);
+        data.putInt("nBPErr", nBPErr);
+*/
+        Measure m = new Measure();
+        User u = UserManager.getUserManager().getCurrentUser();
+        m.setMeasureType(iUserDevice.getMeasure());
+        m.setDeviceDesc(iUserDevice.getDevice().getDescription());
+        m.setTimestamp(XmlManager.getXmlManager().getTimestamp(null));
+        m.setFile(null);
+        m.setFileType(null);
+        if (u != null) {
+            m.setIdUser(u.getId());
+            if (u.getIsPatient())
+                m.setIdPatient(u.getId());
+        }
+        m.setMeasures(tmpVal);
+        m.setFailed(false);
+        m.setBtAddress(iBtDevAddr);
+
+        deviceListener.showMeasurementResults(m);
+        stop();
+    }
+
 
 
     // Temperature Measure metohds
@@ -593,6 +778,12 @@ public class GIMAPC300SpotCheck
     }
 
     private void oxySample(Bundle b) {
+        if (!GWConst.KMsrOss.equals(iUserDevice.getMeasure())) {
+            deviceListener.notifyError(DeviceListener.MEASURE_PROCEDURE_ERROR, ResourceManager.getResource().getString("KWrongMeasure"));
+            stop();
+            return;
+        }
+
         int aSpO2 = b.getInt("nSpO2");
         int aHR = b.getInt("nPR");
         boolean fingerIn = b.getBoolean("bProbe");

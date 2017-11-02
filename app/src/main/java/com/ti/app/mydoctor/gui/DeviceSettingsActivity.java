@@ -195,8 +195,8 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
         }
     	
 	    switch (item.getItemId()) {
-		    case R.id.pair:			    	
-	    		doScan();		    	
+		    case R.id.pair:
+	    		doScan();
 		    	return true;
 		    case R.id.select_model:
 		    	showSelectModelDialog();
@@ -312,8 +312,9 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
 						} else {
 							deviceManager.setCurrentDevice(null);
 						}
-                        if (ud.getDevice().isBTDevice())
-                            doScan();
+                        if (ud.getDevice().isBTDevice()) {
+							doScan();
+						}
                     }
 
 				} else {
@@ -420,8 +421,8 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
 	private void doScan() {
 		// If BT is not on, request that it be enabled.
 		// startScan() will then be called during onActivityResult
+        isPairing = true;
 		if (!BluetoothAdapter.getDefaultAdapter().isEnabled()) {
-			isPairing = true;
 			requestEnableBT();
 		} else {
 			startScan();
@@ -440,6 +441,7 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
 		UserDevice tmpUd = (UserDevice) ud.clone();
 		tmpUd.setBtAddress(null);
 		deviceManager.setCurrentDevice(tmpUd);
+        deviceManager.setPairingMode(isPairing);
 		// Launch the DeviceScanActivity to see devices and do scan
 		Intent serverIntent = new Intent(this, DeviceScanActivity.class);
 		//startActivity(serverIntent);
@@ -502,30 +504,32 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
             if (activity == null)
                 return;
 
-        	Bundle dataBundle = msg.getData();        	
-        	
-        	Log.d(TAG, "DeviceManagerMessageHandler d=" + dataBundle);
+        	Bundle dataBundle = msg.getData();
+        	Log.d(TAG, "DeviceManagerMessageHandler what="+msg.what+" bundle=" + dataBundle);
         	
             switch (msg.what) {
-            case DeviceManager.MESSAGE_STATE:   
-            	dataBundle.putBoolean(AppConst.IS_MEASURE, true);
-            	if( progressDialog == null )
-                    activity.createProgressDialog(dataBundle);
-                //getActivity().showDialog(PROGRESS_DIALOG);
-                break;
-            case DeviceManager.MESSAGE_STATE_WAIT:
-            	dataBundle.putBoolean(AppConst.IS_MEASURE, true);
-            	if( progressDialog == null )
-                    activity.createProgressDialog(dataBundle);
-            	//getActivity().showDialog(PROGRESS_DIALOG);
-                break;
-            case DeviceManager.CONFIG_READY:
-
-                activity.refreshList();
-
-                activity.closeProgressDialog();
-                activity.createAlertDialog(dataBundle);
-	            break;
+				case DeviceManager.MESSAGE_STATE:
+					dataBundle.putBoolean(AppConst.IS_MEASURE, true);
+					if( progressDialog == null )
+						activity.createProgressDialog(dataBundle);
+					//getActivity().showDialog(PROGRESS_DIALOG);
+					break;
+				case DeviceManager.MESSAGE_STATE_WAIT:
+					dataBundle.putBoolean(AppConst.IS_MEASURE, true);
+					if( progressDialog == null )
+						activity.createProgressDialog(dataBundle);
+					//getActivity().showDialog(PROGRESS_DIALOG);
+					break;
+				case DeviceManager.CONFIG_READY:
+					activity.refreshList();
+					activity.closeProgressDialog();
+					activity.createAlertDialog(dataBundle);
+					break;
+				case DeviceManager.ERROR_STATE:
+					activity.refreshList();
+					activity.closeProgressDialog();
+					activity.createAlertDialog(dataBundle);
+					break;
             }
         }
     }

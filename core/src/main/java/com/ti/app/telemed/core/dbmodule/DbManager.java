@@ -1648,7 +1648,7 @@ public class DbManager {
         synchronized (this) {
 
             // In case the same device model manages more mesure types we need to update
-            // all entries of USER_DEVICE where device model and user id mach the given device
+            // all entries of USER_DEVICE where device model and user id matches the given device
             Log.i(TAG, "updateBtAddressDevice");
             ContentValues values = new ContentValues();
             values.put("BTADDRESS", ud.getBtAddress());

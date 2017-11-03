@@ -810,7 +810,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	}
 	/** FINE GESTIONE NAVIGATION DRAWER	 */
 
-	private void initMeasureModelsMap() throws DbException {
+	private void initMeasureModelsMap() {
 		userDevicesMap = new HashMap<>();
 		for (String measure : measureList) {
 			List<UserDevice> modelList = DbManager.getDbManager().getModelsForMeasure(measure, UserManager.getUserManager().getCurrentUser().getId());
@@ -1597,12 +1597,8 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 					}
 			    	selectedUserDevice.setActive(true);
 
-			    	try {
-			    		DbManager.getDbManager().updateUserDeviceModel(selectedMeasureType, selectedUserDevice.getDevice().getId());
-                        initMeasureModelsMap();
-                    } catch (DbException e) {
-                        Log.e(TAG, e.getMessage());
-					}
+					DbManager.getDbManager().updateUserDeviceModel(selectedMeasureType, selectedUserDevice.getDevice().getId());
+					initMeasureModelsMap();
 
 			    	refreshList();
 
@@ -1737,10 +1733,8 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                             dataBundle.getString(AppConst.ASK_POSITIVE),
                             dataBundle.getString(AppConst.ASK_NEGATIVE));
                     break;
-
                 case DeviceManager.REFRESH_LIST:
                     activity.refreshList();
-
                     break;
                 case DeviceManager.MEASURE_RESULT:
                     activity.refreshList();
@@ -1757,6 +1751,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                     activity.myShowDialog(ALERT_DIALOG);
                     break;
                 case DeviceManager.CONFIG_READY:
+					activity.initMeasureModelsMap();
                     activity.refreshList();
                     activity.myRemoveDialog(PROGRESS_DIALOG);
                     activity.myShowDialog(ALERT_DIALOG);

@@ -124,6 +124,7 @@ public class AgamatrixJazz extends Handler implements
     @Override
     public void start(OperationType ot, UserDevice ud, BTSearcherEventListener btSearchListener) {
         if (iState == TState.EWaitingToGetDevice && ud != null) {
+            Log.d(TAG,"start: iBtDevAddr="+ud.getBtAddress());
             iPairingMode = (ot == OperationType.Pair);
             iState = TState.EGettingMeasures;
             measurements = null;
@@ -167,17 +168,8 @@ public class AgamatrixJazz extends Handler implements
         // selected == -1 Normal end of operation
         // selected == -2 Operation interrupted
         // selected >= 0 the user has selected the device at the 'selected' position in the list of discovered devices
-        if (selected == -1) {
-            // L'utente ha premuto Annulla sulla finestra di dialogo
+        if (selected < 0) {
             stop();
-        } else if (selected == -2) {
-            // L'utente ha premuto back o ha chiuso la lista dei device trovati sena selezionarne nessuno
-            iServiceSearcher.stopSearchDevices(-1);
-            iServiceSearcher.removeBTSearcherEventListener(this);
-            if (iState != TState.EGettingDevice) {
-                // we advise the scheduler of the end of the activity on the device
-                deviceListener.operationCompleted();
-            }
         } else {
             device = deviceList.get(selected);
             iServiceSearcher.stopSearchDevices(selected);
@@ -189,14 +181,17 @@ public class AgamatrixJazz extends Handler implements
 
     @Override
     public void deviceDiscovered(BTSearcherEvent evt, Vector<BluetoothDevice> devList) {
+        Log.d(TAG,"deviceDiscovered: size="+devList.size());
         deviceList = devList;
         if (iCmdCode == TCmd.ECmdConnByAddr) {
-            if (iBtDevAddr.equalsIgnoreCase(deviceList.get(deviceList.size() - 1).getAddress())) {
-                device = deviceList.get(deviceList.size() - 1);
-                iServiceSearcher.stopSearchDevices(deviceList.size() - 1);
-            }
-        } else if (scanActivityListener != null)
+            for (int i=0; i<deviceList.size(); i++)
+                if (iBtDevAddr.equalsIgnoreCase(deviceList.get(i).getAddress())) {
+                    device = deviceList.get(i);
+                    iServiceSearcher.stopSearchDevices(i);
+                }
+        } else if (scanActivityListener != null) {
             scanActivityListener.deviceDiscovered(evt, deviceList);
+        }
     }
 
     @Override
@@ -207,7 +202,7 @@ public class AgamatrixJazz extends Handler implements
 
     @Override
     public void deviceSelected(BTSearcherEvent evt) {
-        Log.i(TAG, "deviceSelected");
+        Log.i(TAG, "deviceSelected: iBtDevAddr="+device.getAddress());
         iState = TState.EGettingConnection;
         iBtDevAddr = device.getAddress();
         mClient = AgaMatrixClient.getInstance(MyApp.getContext(), device);
@@ -221,13 +216,8 @@ public class AgamatrixJazz extends Handler implements
     // Device Library SDK callbacks
 
     @Override
-    public void onConnectionStateChange(int state, int status, String addr) {
-        /*
-        state - the current connection state.
-        status - the status code.
-        addr - the mac address of the device.
-        */
-        Log.d(TAG,"onConnectionStateChange: state="+state+" stauts="+status+"addr="+addr);
+    public void onConnectionStateChange(int state, int status, String macAddr) {
+        Log.d(TAG,"onConnectionStateChange: state="+state+" stauts="+status+"macAddr="+macAddr);
         if (state == Constants.AM_CONNECTION_STATE_CONNECTED)
             obtainMessage(HANDLER_DEVICE_CONNECTED).sendToTarget();
         else if (state == Constants.AM_CONNECTION_STATE_DISCONNECTED)
@@ -245,46 +235,44 @@ public class AgamatrixJazz extends Handler implements
         Log.d(TAG,"onBatteryStatusError: status="+status);
         obtainMessage(HANDLER_ERROR, status, 0).sendToTarget();
     }
-/*
-    @Override
-    public void onDeviceInformationAvailable(final DeviceInformation deviceInformation) {
-    }
 
     @Override
-    public void onDeviceInformationError(final int status) {
-        obtainMessage(HANDLER_ERROR, status, 0).sendToTarget();
-    }
-*/
-    @Override
     public void onSettingsReadComplete(final MeterSettings meterSettings) {
+        Log.d(TAG,"onSettingsReadComplete:");
         obtainMessage(HANDLER_SETTINGS,meterSettings).sendToTarget();
     }
 
     @Override
     public void onSettingsRead(int i, byte b) {
+        Log.d(TAG,"onSettingsRead: i="+i+" b="+b);
     }
 
     @Override
     public void onSettingsUpdateComplete() {
+        Log.d(TAG,"onSettingsUpdateComplete:");
     }
 
     @Override
     public void onSettingsError(final int status) {
+        Log.d(TAG,"onSettingsError: status"+status);
         obtainMessage(HANDLER_ERROR, status, 0).sendToTarget();
     }
 
     @Override
     public void onGlucoseMeasurementsCountAvailable(final int count) {
+        Log.d(TAG,"onGlucoseMeasurementsCountAvailable: count="+count);
         obtainMessage(HANDLER_MEASURES_COUNT,count,0).sendToTarget();
     }
 
     @Override
     public void onGlucoseMeasurementsAvailable(final ArrayList<GlucoseMeasurement> measurements) {
+        Log.d(TAG,"onGlucoseMeasurementsAvailable: nr="+measurements.size());
         obtainMessage(HANDLER_MEASURES,measurements).sendToTarget();
     }
 
     @Override
     public void onGlucoseMeasurementsError(final int status) {
+        Log.d(TAG,"onGlucoseMeasurementsError: status="+status);
         obtainMessage(HANDLER_ERROR, status, 0).sendToTarget();
     }
 
@@ -292,21 +280,11 @@ public class AgamatrixJazz extends Handler implements
     public void handleMessage(Message msg) {
         switch (msg.what) {
             case HANDLER_DEVICE_CONNECTED:
-                deviceListener.setBtMAC(iBtDevAddr);
-                if (iPairingMode) {
-                    iState = TState.EDisconnecting;
-                    //Util.setRegistryValue(REGKEY+iBtDevAddr, 0);
-                    mClient.disconnect();
-                } else {
-                    iState = TState.EConnected;
-                    lastSequenceNr = Util.getRegistryIntValue(REGKEY+iBtDevAddr);
-                    mClient.getMeterSettings(this);
-                    deviceListener.notifyWaitToUi(ResourceManager.getResource().getString("KMeasuring"));
-                }
                 break;
             case HANDLER_DEVICE_DISCONNECTED:
-                if (iPairingMode) {
-                    deviceListener.configReady(ResourceManager.getResource().getString("KPairingMsgDone"));
+                if (iState == TState.EConnected || iState == TState.EGettingMeasures){
+                    String message = ResourceManager.getResource().getString("ECommunicationError");
+                    deviceListener.notifyError(DeviceListener.CONNECTION_ERROR,message);
                     stop();
                 }
                 break;
@@ -323,7 +301,17 @@ public class AgamatrixJazz extends Handler implements
                 iState = TState.EGettingMeasures;
                 break;
             case HANDLER_BATTERY:
-                batteryLevel = msg.arg1;
+                deviceListener.setBtMAC(iBtDevAddr);
+                if (iPairingMode) {
+                    deviceListener.configReady(ResourceManager.getResource().getString("KPairingMsgDone"));
+                    stop();
+                } else {
+                    batteryLevel = msg.arg1;
+                    iState = TState.EConnected;
+                    lastSequenceNr = Util.getRegistryIntValue(REGKEY+iBtDevAddr);
+                    mClient.getMeterSettings(this);
+                    deviceListener.notifyWaitToUi(ResourceManager.getResource().getString("KMeasuring"));
+                }
                 break;
             case HANDLER_MEASURES_COUNT:
                 if (lastSequenceNr > 0 && msg.arg1 > 1)
@@ -426,12 +414,15 @@ public class AgamatrixJazz extends Handler implements
 
     public void stop() {
         Log.d(TAG, "stop");
+        if (iState == TState.EGettingDevice) {
+            iServiceSearcher.stopSearchDevices(-1);
+        }
         iServiceSearcher.stopSearchDevices(-1);
         iServiceSearcher.clearBTSearcherEventListener();
         iServiceSearcher.close();
         if (mClient != null) {
-            mClient.shutdown();
             iState = TState.EDisconnecting;
+            mClient.shutdown();
         }
         // we advise the scheduler of the end of the activity on the device
         deviceListener.operationCompleted();

@@ -121,7 +121,7 @@ public class IndexScroller {
 	public boolean onTouchEvent(MotionEvent ev) {
 		switch (ev.getAction()) {
 		case MotionEvent.ACTION_DOWN:
-			// If down event occurs inside index bar region, start indexing
+			// If down event occurs inside index bar region, startOperation indexing
 			if (mState != STATE_HIDDEN && contains(ev.getX(), ev.getY())) {
 				setState(STATE_SHOWN);
 

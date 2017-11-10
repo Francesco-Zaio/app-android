@@ -22,13 +22,11 @@ import com.ti.app.telemed.core.btmodule.events.BTSocketEventListener;
 import com.ti.app.telemed.core.btmodule.DeviceHandler;
 import com.ti.app.telemed.core.btmodule.DeviceListener;
 import com.ti.app.telemed.core.common.Measure;
-import com.ti.app.telemed.core.common.User;
 import com.ti.app.telemed.core.common.UserDevice;
-import com.ti.app.telemed.core.usermodule.UserManager;
 import com.ti.app.telemed.core.util.GWConst;
 import com.ti.app.telemed.core.xmlmodule.XmlManager;
 
-public class EcgProtocol implements DeviceHandler,
+public class EcgProtocol extends DeviceHandler implements
         BTSocketEventListener,
         BTSearcherEventListener  {
     /**
@@ -47,22 +45,7 @@ public class EcgProtocol implements DeviceHandler,
      * EDisconnecting disconnecting to a service on a remote machine
      * EDisconnected client not connected
      */
-    private enum TState {
-        EWaitingToGetDevice,
-        EGettingDevice,
-        EGettingService,
-        EConnected,
-        ESendingData,
-        EWaitingStartMessage,
-        EWaitingHeader,
-        EWaitingBody,
-        ECheckMessage,
-        EDisconnectingOK,
-        EDisconnectingPairing,
-        EDisconnectingFromUser,
-        EDisconnected,
-        EDisconnecting
-    }
+
 
     private enum TTypeMessage {
         kT_COPY ((byte)0x43),
@@ -83,7 +66,6 @@ public class EcgProtocol implements DeviceHandler,
         }
     }
 
-    private boolean iPairingMode = false;
 
     private final int KMaximumMessageLengthECG = 512; //2048;  // The maximum length of any message
     // that can be read
@@ -92,26 +74,12 @@ public class EcgProtocol implements DeviceHandler,
 
     private final int KMaxRetry = 10; // The maximum number of retransmissions
 
-    // State of the active object
-    private TState iState;
-    // Type of search the scheduler requires
-    private DeviceHandler.TCmd iCmdCode;
-
     // iServiceSearcher searches for service this client can
     // connect to (in symbian version the type was CBTUtil) and
     // substitutes RSocketServ and RSocket of symbian version too
     private BTSearcher iServiceSearcher;
     // iECGSocket is an RSocket in the Symbian version
     private BTSocket iECGSocket;
-
-    // BT address obtained from scheduler (in symbian version the
-    // type was TBTDevAddr)
-    private String iBtDevAddr;
-
-    // BT address of the found device (we can have not received bt address from
-    // scheduler or it can be changed, so we take this value from the searcher
-    // after the device finding)
-    private String iBTAddress;
 
     private Vector<BluetoothDevice> deviceList;
     private int currentPos;
@@ -159,11 +127,6 @@ public class EcgProtocol implements DeviceHandler,
     private boolean operationDeleted;
     private boolean serverOpenFailed;
 
-    // a pointer to scheduler
-    private DeviceListener iScheduler;
-    private BTSearcherEventListener iBTSearchListener;
-    private UserDevice iUserDevice;
-
     // Controlla il numero di tentativi di ritrasmissione di
     // un pacchetto errato
     private int iRetry;
@@ -181,14 +144,12 @@ public class EcgProtocol implements DeviceHandler,
         return false;
     }
 
-    public EcgProtocol(DeviceListener aScheduler) {
-        iState = TState.EWaitingToGetDevice;
-        iScheduler = aScheduler;
+    public EcgProtocol(DeviceListener listener, UserDevice ud) {
+        super(listener, ud);
+
         deviceSearchCompleted = false;
         dataFound = false;
 
-        //iLenRead = 0;
-        //iLenSend = 0;
         iID = 0;
         iSize = 0;
         iType = 0x00;
@@ -218,26 +179,6 @@ public class EcgProtocol implements DeviceHandler,
         iECGSocket = BTSocket.getBTSocket();
     }
 
-    private void connectToServer() throws IOException {
-        // this function is called when we are in EGettingService state and
-        // we are going to EGettingConnection state
-        Log.i(TAG, "ECG: connectToServer");
-        iBTAddress = iServiceSearcher.getCurrBTDevice().getAddress();
-        // iCGBloodPressureSocket is an RSocket in the Symbian version
-        iECGSocket.addBTSocketEventListener(this);
-        iECGSocket.connect(iServiceSearcher.getCurrBTDevice());
-    }
-
-    private void disconnectProtocolError() {
-        operationDeleted = true;
-        iECGSocket.removeBTSocketEventListener(this);
-        iECGSocket.close();
-        reset();
-        String msg = ResourceManager.getResource().getString("ECommunicationError");
-        iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR,msg);
-    }
-
-
     // methods of DeviceHandler interface
 
     @Override
@@ -250,77 +191,65 @@ public class EcgProtocol implements DeviceHandler,
     }
 
     @Override
-    public void start(OperationType ot, UserDevice ud, BTSearcherEventListener btSearchListener) {
-        if (iState == TState.EWaitingToGetDevice) {
-            iPairingMode = (ot == OperationType.Pair);
-            iUserDevice = ud;
-            iBTSearchListener = btSearchListener;
-            iBtDevAddr = iUserDevice.getBtAddress();
-            iServiceSearcher.clearBTSearcherEventListener();
-            iServiceSearcher.addBTSearcherEventListener(this);
-            if (iBtDevAddr != null && !iBtDevAddr.isEmpty()) {
-                iCmdCode = TCmd.ECmdConnByAddr;
-            } else {
-                iCmdCode = TCmd.ECmdConnByUser;
-                iServiceSearcher.addBTSearcherEventListener(iBTSearchListener);
-            }
-            iState = TState.EGettingDevice;
-            iServiceSearcher.setSearchType(iCmdCode);
-            // it launch the automatic procedures for the manual device search
-            iServiceSearcher.startSearchDevices();
-        }
-    }
+    public boolean startOperation(OperationType ot, BTSearcherEventListener btSearchListener) {
+        if (!startInit(ot, btSearchListener))
+            return false;
 
+        Log.d(TAG,"startOperation: iBtDevAddr="+iBtDevAddr + " iCmdCode="+iCmdCode.toString());
+        iServiceSearcher.clearBTSearcherEventListener();
+        if (iCmdCode == TCmd.ECmdConnByUser && iBTSearchListener != null)
+            iServiceSearcher.addBTSearcherEventListener(iBTSearchListener);
+        iServiceSearcher.addBTSearcherEventListener(this);
+        iServiceSearcher.setSearchType(iCmdCode);
+        iServiceSearcher.startSearchDevices();
+
+        return true;
+    }
 
     @Override
-    public void stopDeviceOperation(int selected) {
-        if (selected == -1) {
-            stop();
-        } else if (selected == -2) {
-            iServiceSearcher.stopSearchDevices(-1);
-            iServiceSearcher.removeBTSearcherEventListener(this);
-            if (iState != TState.EGettingDevice) {
-                // we advise the scheduler of the end of the activity on the device
-                iScheduler.operationCompleted();
-            }
-        } else {
-            iBTAddress = deviceList.elementAt(selected).getAddress();
-            iServiceSearcher.stopSearchDevices(selected);
-        }
+    public void abortOperation() {
+        Log.d(TAG, "abortOperation");
+        stop();
     }
 
+    @Override
+    public void selectDevice(int selected){
+        Log.d(TAG, "selectDevice: selected=" + selected);
+        iServiceSearcher.stopSearchDevices(selected);
+    }
+
+    private void connectToServer() throws IOException {
+        // this function is called when we are in EGettingService state and
+        // we are going to EGettingConnection state
+        Log.i(TAG, "ECG: connectToServer");
+        iBtDevAddr = iServiceSearcher.getCurrBTDevice().getAddress();
+        // iCGBloodPressureSocket is an RSocket in the Symbian version
+        iECGSocket.addBTSocketEventListener(this);
+        iECGSocket.connect(iServiceSearcher.getCurrBTDevice());
+    }
+
+    private void disconnectProtocolError() {
+        operationDeleted = true;
+        iECGSocket.removeBTSocketEventListener(this);
+        iECGSocket.close();
+        reset();
+        String msg = ResourceManager.getResource().getString("ECommunicationError");
+        deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR,msg);
+    }
 
     public void stop() {
-        if (iState == TState.EGettingDevice) {
-            iServiceSearcher.stopSearchDevices(-1);
-            iServiceSearcher.close();
-            // we advise the scheduler of the end of the activity on the device
-            iScheduler.operationCompleted();
-        } else if (iState == TState.EGettingService) {
-            iServiceSearcher.close();
-            // we advise the scheduler of the end of the activity on the device
-            iScheduler.operationCompleted();
-        } else if (iState == TState.EDisconnectingPairing) {
-            iECGSocket.close();
-            iECGSocket.removeBTSocketEventListener(this);
+        iServiceSearcher.stopSearchDevices(-1);
+        iServiceSearcher.clearBTSearcherEventListener();
+        iServiceSearcher.close();
+        iECGSocket.close();
+        iECGSocket.removeBTSocketEventListener(this);
+
+        if (iState == TState.EDisconnectingPairing) {
             runBTSocket();
-            // we advise the scheduler of the end of the activity on the device
-            iScheduler.operationCompleted();
         } else if (iState == TState.EDisconnectingOK) {
-            iECGSocket.close();
-            iECGSocket.removeBTSocketEventListener(this);
-            iState = TState.EWaitingToGetDevice;
             makeResultData();
-            currentPos = 0;
-        } else {
-            if (!serverOpenFailed) {
-                // cancels all outstanding operations on socket
-                iECGSocket.close();
-                iECGSocket.removeBTSocketEventListener(this);
-            }
-            // we advise the scheduler of the end of the activity on the device
-            iScheduler.operationCompleted();
         }
+        reset();
     }
 
     public void reset() {
@@ -377,7 +306,7 @@ public class EcgProtocol implements DeviceHandler,
 
     @Override
     public void deviceSelected(BTSearcherEvent evt){
-        Log.i(TAG, "ECG: deviceSelected");
+        Log.i(TAG, "ECG: selectDevice");
         // we change status
         iState = TState.EGettingService;
         runBTSearcher();
@@ -395,7 +324,7 @@ public class EcgProtocol implements DeviceHandler,
             case 0: //thread interrupted
                 reset();
                 msg = ResourceManager.getResource().getString("ECommunicationError");
-                iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR,msg);
+                deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR,msg);
                 break;
             case 1: //bluetooth open error
                 if (iState == TState.EConnected) {
@@ -408,7 +337,7 @@ public class EcgProtocol implements DeviceHandler,
                 }
                 reset();
                 msg = ResourceManager.getResource().getString("EBtDeviceConnError");
-                iScheduler.notifyError(DeviceListener.CONNECTION_ERROR,msg);
+                deviceListener.notifyError(DeviceListener.CONNECTION_ERROR,msg);
                 break;
             case 2: //bluetooth read error
             case 3: //bluetooth write error
@@ -417,12 +346,12 @@ public class EcgProtocol implements DeviceHandler,
                 runBTSocket();
                 reset();
                 msg = ResourceManager.getResource().getString("ECommunicationError");
-                iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR,msg);
+                deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR,msg);
                 break;
             case 4: //bluetooth close error
                 reset();
                 msg = ResourceManager.getResource().getString("ECommunicationError");
-                iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR,msg);
+                deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR,msg);
                 break;
         }
     }
@@ -652,7 +581,7 @@ public class EcgProtocol implements DeviceHandler,
     // methods for checking data received
 
     /**
-     * Check if the data received is start message
+     * Check if the data received is startOperation message
      */
     private boolean isStartMsg()
     {
@@ -743,23 +672,11 @@ public class EcgProtocol implements DeviceHandler,
         byte[] iEcgBufferTemp = new byte[iEcgBuffer.length -128];
         buf.get(iEcgBufferTemp);
 
-        Measure m = new Measure();
-        User u = UserManager.getUserManager().getCurrentUser();
-        m.setMeasureType(iUserDevice.getMeasure());
-        m.setDeviceDesc(iUserDevice.getDevice().getDescription());
-        m.setTimestamp(XmlManager.getXmlManager().getTimestamp(null));
+        Measure m = getMeasure();
         m.setFile(iEcgBufferTemp);
         m.setFileType(XmlManager.ECG_FILE_TYPE);
-        if (u != null) {
-            m.setIdUser(u.getId());
-            if (u.getIsPatient())
-                m.setIdPatient(u.getId());
-        }
         m.setMeasures(tmpVal);
-        m.setFailed(false);
-        m.setBtAddress(iBTAddress);
-
-        iScheduler.showMeasurementResults(m);
+        deviceListener.showMeasurementResults(m);
     }
 
     private void runBTSearcher(){
@@ -772,7 +689,7 @@ public class EcgProtocol implements DeviceHandler,
                 // user has activated and a device is found; but the device scheduler don't
                 // still know that bluetooth is active and so we must advice it with setting
                 // a new state of bluetooth
-                //iScheduler.BTActivated();
+                //deviceListener.BTActivated();
                 // the automatic search, find all available addresses and when we arrive
                 // here we must check if the found address is the same of the searched
                 // (in the case of search by name we must check if the device of found
@@ -814,7 +731,7 @@ public class EcgProtocol implements DeviceHandler,
                         // the selection done by user is managed in the ui class which
                         // implements BTSearcherEventListener interface, so here arrive
                         // when the selection is already done
-                        iScheduler.notifyWaitToUi(ResourceManager.getResource().getString("KConnectingDev"));
+                        deviceListener.notifyWaitToUi(ResourceManager.getResource().getString("KConnectingDev"));
                         break;
                 }
                 break;
@@ -825,7 +742,7 @@ public class EcgProtocol implements DeviceHandler,
                     connectToServer();
                 } catch (IOException e) {
                     String msg = ResourceManager.getResource().getString("EBtDeviceConnError");
-                    iScheduler.notifyError(DeviceListener.CONNECTION_ERROR,msg);
+                    deviceListener.notifyError(DeviceListener.CONNECTION_ERROR,msg);
                 }
                 break;
         }
@@ -839,22 +756,22 @@ public class EcgProtocol implements DeviceHandler,
         switch(iState) {
             case EConnected:
                 Log.i(TAG, "ECG: runBTSocket EConnected");
-                iScheduler.setBtMAC(iBTAddress);
-                if(iPairingMode){
+                deviceListener.setBtMAC(iBtDevAddr);
+                if(operationType == OperationType.Pair){
                     iState = TState.EDisconnectingPairing;
                     try {
                         Thread.sleep(250);
                         stop();
                     } catch (InterruptedException e) {
                         String msg = ResourceManager.getResource().getString("EBtDeviceDisconnError");
-                        iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR,msg);
+                        deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR,msg);
                     }
                 }  else {
                     if(iCmdCode.equals(DeviceHandler.TCmd.ECmdConnByUser)){
-                        Log.i(TAG, "iBTAddress: " + iBTAddress);
-                        iScheduler.setBtMAC(iBTAddress);
+                        Log.i(TAG, "iBTAddress: " + iBtDevAddr);
+                        deviceListener.setBtMAC(iBtDevAddr);
                     }
-                    iScheduler.notifyToUi(ResourceManager.getResource().getString("KConnSendMeas"));
+                    deviceListener.notifyToUi(ResourceManager.getResource().getString("KConnSendMeas"));
                     iState = TState.EWaitingStartMessage;
                     //All'inizio mi attendo un messaggio t_Copy
                     //di lunghezza 8 e identificativo = 0.
@@ -872,7 +789,7 @@ public class EcgProtocol implements DeviceHandler,
 
                 if ( isStartMsg() ) {
                     Log.i(TAG, "ECG: runBTSocket EWaitingStartMessage trovato");
-                    iScheduler.notifyToUi(ResourceManager.getResource().getString("KMeasuring"));
+                    deviceListener.notifyToUi(ResourceManager.getResource().getString("KMeasuring"));
                     //Ha trovato il primo ottetto
                     //Legge l'Header
                     if (dataFound) {
@@ -1005,7 +922,7 @@ public class EcgProtocol implements DeviceHandler,
                             iECGSocket.close();
                             reset();
                             String msg = ResourceManager.getResource().getString("ECommunicationError");
-                            iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR,msg);
+                            deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR,msg);
                         }
                     }
                 } else {//CRC failure
@@ -1038,7 +955,7 @@ public class EcgProtocol implements DeviceHandler,
                         iECGSocket.close();
                         reset();
                         String msg = ResourceManager.getResource().getString("ECommunicationError");
-                        iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR,msg);
+                        deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR,msg);
                   }
                 }
                 break;
@@ -1144,7 +1061,7 @@ public class EcgProtocol implements DeviceHandler,
                         iECGSocket.close();
                         reset();
                         String msg = ResourceManager.getResource().getString("ECommunicationError");
-                        iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR,msg);
+                        deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR,msg);
                     }
                 }
                 break;
@@ -1185,8 +1102,8 @@ public class EcgProtocol implements DeviceHandler,
                 Log.i(TAG, "ECG: runBTSocket EDisconnectingPairing");
                 //Pairing eseguito con successo. Salva il BT MAC
                 iECGSocket.removeBTSocketEventListener(this);
-                iScheduler.configReady(ResourceManager.getResource().getString("KPairingMsgDone"));
-                iScheduler.setBtMAC(iBTAddress);
+                deviceListener.configReady(ResourceManager.getResource().getString("KPairingMsgDone"));
+                deviceListener.setBtMAC(iBtDevAddr);
                 currentPos = 0;
                 break;
 
@@ -1230,13 +1147,13 @@ public class EcgProtocol implements DeviceHandler,
                         stop();
                     } catch (Exception e) {
                         String msg = ResourceManager.getResource().getString("EBtDeviceDisconnError");
-                        iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR, msg);
+                        deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR, msg);
                     }
                 } else {
                     iState = TState.EDisconnecting;
                     operationDeleted = true;
                     String msg = ResourceManager.getResource().getString("ECommunicationError");
-                    iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR,msg);
+                    deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR,msg);
                     runBTSocket();
                     reset();
                 }

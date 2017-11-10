@@ -18,16 +18,13 @@ import com.ti.app.telemed.core.btmodule.events.BTSocketEventListener;
 import com.ti.app.telemed.core.btmodule.DeviceHandler;
 import com.ti.app.telemed.core.btmodule.DeviceListener;
 import com.ti.app.telemed.core.common.Measure;
-import com.ti.app.telemed.core.common.User;
 import com.ti.app.telemed.core.common.UserDevice;
-import com.ti.app.telemed.core.usermodule.UserManager;
 import com.ti.app.telemed.core.util.GWConst;
-import com.ti.app.telemed.core.xmlmodule.XmlManager;
 
 import android.bluetooth.BluetoothDevice;
 import android.util.Log;
 
-public class ForaThermometerClient implements DeviceHandler,												  
+public class ForaThermometerClient extends DeviceHandler implements											  
 												BTSocketEventListener, 
 												BTSearcherEventListener {
 	
@@ -56,38 +53,12 @@ public class ForaThermometerClient implements DeviceHandler,
 		}
 	}
 
-    private enum TState {
-		EWaitingToGetDevice,
-        EGettingDevice,
-        EGettingService,            
-        EConnected,
-		ESendingReqLast,
-		EWaitingLastMeasure,
-		ESendingCmdOff,
-		EDisconnectingOK,
-		EDisconnectingPairing,
-		EDisconnecting,
-	}
-	
-	// State of the active object
-    private TState iState;
-    // Type of search the scheduler requires
-    private TCmd iCmdCode;
-
     // iServiceSearcher searches for service this client can
     // connect to (in symbian version the type was CBTUtil) and
     // substitutes RSocketServ and RSocket of symbian version too
     private BTSearcher iServiceSearcher;
     // iForaThermometerSocket is an RSocket in the Symbian version
     private BTSocket iForaThermometerSocket;
-
-    // BT address obtained from scheduler (in symbian version the
-    // type was TBTDevAddr)
-    private String iBtDevAddr;
-    // BT address of the found device (we can have not received bt address from
-    // scheduler or it can be changed, so we take this value from the searcher
-    // after the device finding)
-    private String iBTAddress;
 
     private Vector<BluetoothDevice> deviceList;
     private int currentPos;
@@ -105,12 +76,6 @@ public class ForaThermometerClient implements DeviceHandler,
     private boolean dataFound;
     private boolean operationDeleted;
     private boolean serverOpenFailed;
-    // a pointer to scheduler
-    private DeviceListener iScheduler;
-    private UserDevice iUserDevice;
-
-    // Indicates that the current request is not a measure but a connection request
-    private boolean iPairingMode = false;
 
     private boolean waitforAck;
     private Timer timer;
@@ -126,9 +91,9 @@ public class ForaThermometerClient implements DeviceHandler,
 		return false;
 	}
 
-    public ForaThermometerClient(DeviceListener deviceListener) {
-    	iState = TState.EWaitingToGetDevice;
-        iScheduler = deviceListener;
+    public ForaThermometerClient(DeviceListener listener, UserDevice ud) {
+        super(listener, ud);
+        
         deviceSearchCompleted = false;
         dataFound = false;
         
@@ -141,7 +106,6 @@ public class ForaThermometerClient implements DeviceHandler,
         waitforAck = true;
         
         iServiceSearcher = new BTSearcher();
-        iServiceSearcher.addBTSearcherEventListener(this);
         iForaThermometerSocket = BTSocket.getBTSocket();
     }
 
@@ -157,39 +121,30 @@ public class ForaThermometerClient implements DeviceHandler,
     }
 
     @Override
-    public void start(OperationType ot, UserDevice ud, BTSearcherEventListener btSearchListener) {
-        if (iState == TState.EWaitingToGetDevice) {
-            iPairingMode = ot == OperationType.Pair;
-            iUserDevice = ud;
-            iBtDevAddr = iUserDevice.getBtAddress();
-            iServiceSearcher.clearBTSearcherEventListener();
-            iServiceSearcher.addBTSearcherEventListener(this);
-            if (iBtDevAddr != null && !iBtDevAddr.isEmpty()) {
-                iCmdCode = TCmd.ECmdConnByAddr;
-            } else {
-                iCmdCode = TCmd.ECmdConnByUser;
-                iServiceSearcher.addBTSearcherEventListener(btSearchListener);
-            }
-            iState = TState.EGettingDevice;
-            iServiceSearcher.setSearchType(iCmdCode);
-            // it launch the automatic procedures for the manual device search
-            iServiceSearcher.startSearchDevices();
-        }
+    public boolean startOperation(OperationType ot, BTSearcherEventListener btSearchListener) {
+        if (!startInit(ot, btSearchListener))
+            return false;
+
+        Log.d(TAG,"startOperation: iBtDevAddr="+iBtDevAddr + " iCmdCode="+iCmdCode.toString());
+        iServiceSearcher.clearBTSearcherEventListener();
+        iServiceSearcher.addBTSearcherEventListener(this);
+        if (iCmdCode == TCmd.ECmdConnByUser)
+            iServiceSearcher.addBTSearcherEventListener(iBTSearchListener);
+        iServiceSearcher.setSearchType(iCmdCode);
+        iServiceSearcher.startSearchDevices();
+        return true;
     }
 
     @Override
-    public void stopDeviceOperation(int selected) {
-        if (selected == -1) {
-            stop();
-        } else if (selected == -2) {
-            iServiceSearcher.stopSearchDevices(-1);
-            if (iState != TState.EGettingDevice) {
-                // we advise the scheduler of the end of the activity on the device
-                iScheduler.operationCompleted();
-            }
-        } else {
-            iServiceSearcher.stopSearchDevices(selected);
-        }
+    public void abortOperation() {
+        Log.d(TAG, "abortOperation");
+        stop();
+    }
+
+    @Override
+    public void selectDevice(int selected){
+        Log.d(TAG, "selectDevice: selected=" + selected);
+        iServiceSearcher.stopSearchDevices(selected);
     }
 
 
@@ -211,7 +166,7 @@ public class ForaThermometerClient implements DeviceHandler,
 
     @Override
     public void deviceSelected(BTSearcherEvent evt){
-        logger.log(Level.INFO, "CGE2C: deviceSelected");
+        logger.log(Level.INFO, "CGE2C: selectDevice");
         // we change status
         iState = TState.EGettingService;
 
@@ -244,7 +199,7 @@ public class ForaThermometerClient implements DeviceHandler,
         switch (type) {
             case 0: //thread interrupted
                 reset();
-                iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
+                deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
                 break;
             case 1: //bluetooth open error
                 if (iState == TState.EConnected) {
@@ -256,7 +211,7 @@ public class ForaThermometerClient implements DeviceHandler,
                     runBTSocket();
                 }
                 reset();
-                iScheduler.notifyError(DeviceListener.CONNECTION_ERROR, ResourceManager.getResource().getString("EBtDeviceConnError"));
+                deviceListener.notifyError(DeviceListener.CONNECTION_ERROR, ResourceManager.getResource().getString("EBtDeviceConnError"));
                 break;
             case 2: //bluetooth read error
             case 3: //bluetooth write error
@@ -264,18 +219,18 @@ public class ForaThermometerClient implements DeviceHandler,
                 operationDeleted = true;
                 runBTSocket();
                 reset();
-                iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
+                deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
                 break;
             case 4: //bluetooth close error
                 reset();
-                iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
+                deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
                 break;
         }
     }
 
     public void reset() {
         // we free all buffer, descriptor and array
-        iBTAddress = null;
+        iBtDevAddr = null;
         deviceSearchCompleted = false;
         dataFound = false;
         operationDeleted = false;
@@ -291,46 +246,29 @@ public class ForaThermometerClient implements DeviceHandler,
 
 
     public void stop() {
-        if (iState == TState.EGettingDevice) {
-            iServiceSearcher.stopSearchDevices(-1);
-            iServiceSearcher.close();
-            // we advise the scheduler of the end of the activity on the device
-            iScheduler.operationCompleted();
-        } else if (iState == TState.EGettingService) {
-            iServiceSearcher.close();
-            // we advise the scheduler of the end of the activity on the device
-            iScheduler.operationCompleted();
-        } else if (iState == TState.EDisconnectingOK) {
+        iServiceSearcher.stopSearchDevices(-1);
+        iServiceSearcher.clearBTSearcherEventListener();
+        iServiceSearcher.close();
+        iForaThermometerSocket.close();
+        iForaThermometerSocket.removeBTSocketEventListener(this);
+
+        if (iState == TState.EDisconnectingOK) {
             if(iCmdCode.equals(TCmd.ECmdConnByUser)){
-                iScheduler.setBtMAC(iBTAddress);
+                deviceListener.setBtMAC(iBtDevAddr);
             }
-            iForaThermometerSocket.close();
-            iForaThermometerSocket.removeBTSocketEventListener(this);
-            iState = TState.EWaitingToGetDevice;
             makeResultData();
             currentPos = 0;
         } else if (iState == TState.EDisconnectingPairing) {
-            iForaThermometerSocket.close();
-            iForaThermometerSocket.removeBTSocketEventListener(this);
             runBTSocket();
-            // we advise the scheduler of the end of the activity on the device
-            iScheduler.operationCompleted();
-        } else {
-            if (!serverOpenFailed) {
-                // cancels all outstanding operations on socket
-                iForaThermometerSocket.close();
-                iForaThermometerSocket.removeBTSocketEventListener(this);
-            }
-            // we advise the scheduler of the end of the activity on the device
-            iScheduler.operationCompleted();
         }
+        reset();
     }
 
 
     private void connectToServer() throws IOException {
         // this function is called when we are in EGettingService state and
-		// we are going to EGettingConnection state
-		iBTAddress = iServiceSearcher.getCurrBTDevice().getAddress();
+		// we are connecting to the device
+		iBtDevAddr = iServiceSearcher.getCurrBTDevice().getAddress();
 		iForaThermometerSocket.addBTSocketEventListener(this);
 		iForaThermometerSocket.connect(iServiceSearcher.getCurrBTDevice());
     }
@@ -384,26 +322,14 @@ public class ForaThermometerClient implements DeviceHandler,
             HashMap<String,String> tmpVal = new HashMap<>();
             tmpVal.put(GWConst.EGwCode_0R, formatTemp(iBodyTemperature));
             tmpVal.put(GWConst.EGwCode_0U, formatTemp(iAmbientTemperature));
-            Measure m = new Measure();
-            User u = UserManager.getUserManager().getCurrentUser();
-            m.setMeasureType(iUserDevice.getMeasure());
-            m.setDeviceDesc(iUserDevice.getDevice().getDescription());
-            m.setTimestamp(XmlManager.getXmlManager().getTimestamp(null));
-            m.setFile(null);
-            m.setFileType(null);
-            if (u != null) {
-                m.setIdUser(u.getId());
-                if (u.getIsPatient())
-                    m.setIdPatient(u.getId());
-            }
-            m.setMeasures(tmpVal);
-            m.setFailed(false);
-            m.setBtAddress(iBTAddress);
 
-            iScheduler.showMeasurementResults(m);
+            Measure m = getMeasure();
+            m.setMeasures(tmpVal);
+
+            deviceListener.showMeasurementResults(m);
         } else {
         	Log.e(TAG,  "Dati non trovati");
-        	iScheduler.notifyError(DeviceListener.NO_MEASURES_FOUND, ResourceManager.getResource().getString("ENoMeasuresFound"));
+        	deviceListener.notifyError(DeviceListener.NO_MEASURES_FOUND, ResourceManager.getResource().getString("ENoMeasuresFound"));
         }
     }
     
@@ -422,7 +348,7 @@ public class ForaThermometerClient implements DeviceHandler,
             // user has activated and a device is found; but the device scheduler don't
             // still know that bluetooth is active and so we must advice it with setting
             // a new state of bluetooth
-            //iScheduler.BTActivated();
+            //deviceListener.BTActivated();
             // the automatic search, find all available addresses and when we arrive
             // here we must check if the found address is the same of the searched
             // (in the case of search by name we must check if the device of found
@@ -465,7 +391,7 @@ public class ForaThermometerClient implements DeviceHandler,
                     // the selection done by user is managed in the ui class which
                     // implements BTSearcherEventListener interface, so here arrive
                     // when the selection is already done
-                	iScheduler.notifyWaitToUi(ResourceManager.getResource().getString("KConnectingDev"));
+                	deviceListener.notifyWaitToUi(ResourceManager.getResource().getString("KConnectingDev"));
                     break;
             }
             break;
@@ -476,7 +402,7 @@ public class ForaThermometerClient implements DeviceHandler,
             try {
             	connectToServer();
 			} catch (IOException e) {
-				iScheduler.notifyError(DeviceListener.CONNECTION_ERROR, ResourceManager.getResource().getString("EBtDeviceConnError"));
+				deviceListener.notifyError(DeviceListener.CONNECTION_ERROR, ResourceManager.getResource().getString("EBtDeviceConnError"));
 			}
             break;
     	
@@ -488,14 +414,14 @@ public class ForaThermometerClient implements DeviceHandler,
     	case EConnected:
     		logger.log(Level.INFO, "runBTSocket: EConnected");
 			//Device find
-    		if (iPairingMode) {
-	    		iScheduler.notifyWaitToUi(ResourceManager.getResource().getString("KConnectingDev"));
+    		if (operationType == OperationType.Pair) {
+	    		deviceListener.notifyWaitToUi(ResourceManager.getResource().getString("KConnectingDev"));
 	    	} else {
-	    		iScheduler.notifyWaitToUi(ResourceManager.getResource().getString("KMeasuring"));
+	    		deviceListener.notifyWaitToUi(ResourceManager.getResource().getString("KMeasuring"));
 	    	}
     		
 			//Device connected, sending request for last measure
-			iState = TState.ESendingReqLast;
+			iState = TState.ESendingData;
 			messageToSend = new byte[8];
 			messageToSend[0] = TTypeCommand.getVal(TTypeCommand.kT_init);
 			messageToSend[1] = TTypeCommand.getVal(TTypeCommand.kT_25);
@@ -516,17 +442,17 @@ public class ForaThermometerClient implements DeviceHandler,
 			
     		break;
     		
-    	case ESendingReqLast:
-    		logger.log(Level.INFO, "runBTSocket: ESendingReqLast");
-    		iState = TState.EWaitingLastMeasure;
+    	case ESendingData:
+    		logger.log(Level.INFO, "runBTSocket: ESendingData");
+    		iState = TState.EGettingMeasures;
     		if(waitforAck){
     			logger.log(Level.INFO, "waiting for ack... ");
     			readAck();    			
     		}
     		break;
     		
-    	case EWaitingLastMeasure:
-    		logger.log(Level.INFO, "runBTSocket: EWaitingLastMeasure");
+    	case EGettingMeasures:
+    		logger.log(Level.INFO, "runBTSocket: EGettingMeasures");
     		timer.cancel();
     		// Type of response:
     		// 0x25: time measure
@@ -549,10 +475,10 @@ public class ForaThermometerClient implements DeviceHandler,
     					iForaThermometerSocket.removeBTSocketEventListener(this);
     					iForaThermometerSocket.close();
     					reset();
-                        iScheduler.notifyError(DeviceListener.NO_MEASURES_FOUND, ResourceManager.getResource().getString("ENoMeasuresFound"));
+                        deviceListener.notifyError(DeviceListener.NO_MEASURES_FOUND, ResourceManager.getResource().getString("ENoMeasuresFound"));
     				} else {
     					//Correct, sending request for data measure
-    					iState = TState.ESendingReqLast;
+    					iState = TState.ESendingData;
     					messageToSend = new byte[8];
     					messageToSend[0] = TTypeCommand.getVal(TTypeCommand.kT_init);
     					messageToSend[1] = TTypeCommand.getVal(TTypeCommand.kT_26);
@@ -572,7 +498,7 @@ public class ForaThermometerClient implements DeviceHandler,
     				iForaThermometerSocket.removeBTSocketEventListener(this);
     				iForaThermometerSocket.close();
 					reset();
-                    iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
+                    deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
     			}
     			break;
     		case 0x26:
@@ -601,7 +527,7 @@ public class ForaThermometerClient implements DeviceHandler,
     				iForaThermometerSocket.removeBTSocketEventListener(this);
     				iForaThermometerSocket.close();
 					reset();
-                    iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
+                    deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
     			}
     			break;
     			
@@ -610,7 +536,7 @@ public class ForaThermometerClient implements DeviceHandler,
 				iForaThermometerSocket.removeBTSocketEventListener(this);
 				iForaThermometerSocket.close();
 				reset();
-                iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
+                deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
     			break;
     		}
     		break;
@@ -618,7 +544,7 @@ public class ForaThermometerClient implements DeviceHandler,
     	case ESendingCmdOff:
     		logger.log(Level.INFO, "runBTSocket: ESendingCmdOff");
     		  		
-    		if(iPairingMode){
+    		if(operationType == OperationType.Pair){
     			logger.log(Level.INFO, "runBTSocket: ESendingCmdOff -> EDisconnectingPairing");
     			iState = TState.EDisconnectingPairing;
     		} else {
@@ -636,8 +562,8 @@ public class ForaThermometerClient implements DeviceHandler,
     		logger.log(Level.INFO, "ForaTM: runBTSocket EDisconnectingPairing");
 			//Pairing eseguito con successo. Salva il BT MAC
     		iForaThermometerSocket.removeBTSocketEventListener(this);
-    		iScheduler.configReady(ResourceManager.getResource().getString("KPairingMsgDone"));
-			iScheduler.setBtMAC(iBTAddress);	
+    		deviceListener.configReady(ResourceManager.getResource().getString("KPairingMsgDone"));
+			deviceListener.setBtMAC(iBtDevAddr);	
 			currentPos = 0;	
     		break;
     		
@@ -656,11 +582,11 @@ public class ForaThermometerClient implements DeviceHandler,
 	private class TimerExpired extends TimerTask {
 		public void run(){
 			logger.log(Level.INFO, "TIMER SCADUTO iState = "+iState);
-			if(iState == TState.EWaitingLastMeasure){
+			if(iState == TState.EGettingMeasures){
 				logger.log(Level.INFO, "re-sending request for last measure");
 				//Device connected, re-sending request for last measure
 				waitforAck = false;
-				iState = TState.ESendingReqLast;
+				iState = TState.ESendingData;
 				messageToSend = new byte[8];
 				messageToSend[0] = TTypeCommand.getVal(TTypeCommand.kT_init);
 				messageToSend[1] = TTypeCommand.getVal(TTypeCommand.kT_25);

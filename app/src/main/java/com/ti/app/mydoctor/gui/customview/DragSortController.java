@@ -294,7 +294,7 @@ public class DragSortController extends SimpleFloatViewManager implements View.O
     }
 
     /**
-     * Get the position to start dragging based on the ACTION_DOWN
+     * Get the position to startOperation dragging based on the ACTION_DOWN
      * MotionEvent. This function simply calls
      * {@link #dragHandleHitPosition(MotionEvent)}. Override
      * to change drag handle behavior;

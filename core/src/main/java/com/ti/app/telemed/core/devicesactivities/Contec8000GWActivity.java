@@ -114,7 +114,7 @@ public class Contec8000GWActivity extends Activity {
 		// Bluetooth collection
 		Intent para = getIntent();
 		if (para != null) {
-            iBTAddress = para.getExtras().getString(DeviceHandler.BT_ADDRESS);
+            iBTAddress = para.getExtras().getString(Contec8000GW.BT_ADDRESS);
             measure = (Measure) para.getExtras().getSerializable(Contec8000GW.MEASURE_OBJECT);
 			data = new DataUtils(this, iBTAddress, mHandler);
 		}
@@ -284,7 +284,7 @@ public class Contec8000GWActivity extends Activity {
 		public void callCaseStateMsg(short state) {
             Log.e(TAG, "callCaseStateMsg " + Integer.toString(state));
 			if (state == 0) {
-				Log.d(TAG, "Save start");// Start storing files
+				Log.d(TAG, "Save startOperation");// Start storing files
 			} else {
 				Log.d(TAG, "Save end");// The storage is complete
                 mHandler.obtainMessage(MESSAGE_END_MEASURE).sendToTarget();

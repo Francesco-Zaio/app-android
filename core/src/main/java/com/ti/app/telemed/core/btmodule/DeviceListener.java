@@ -24,6 +24,5 @@ public interface DeviceListener {
     void setBtMAC(String mac);
     void showMeasurementResults(Measure m);
     void configReady(String msg);
-    void operationCompleted();
     void startEcgDraw();
 }

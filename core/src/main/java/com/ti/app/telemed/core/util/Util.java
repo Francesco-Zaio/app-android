@@ -194,4 +194,8 @@ public class Util {
 	public static void setDemoRocheMode(boolean demoMode) {
 		setRegistryValue(Util.KEY_ROCHE_DEMO_MODE, demoMode);
 	}
+
+	public static void resetBTAddresses() {
+		DbManager.getDbManager().resetAllBtAddressDevice();
+	}
 }

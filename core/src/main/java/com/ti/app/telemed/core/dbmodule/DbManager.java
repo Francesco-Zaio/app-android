@@ -113,7 +113,7 @@ public class DbManager {
 		+ "MEASURE text, " 
 		+ "MODEL text, "
 		+ "DESCRIPTION text, "
-        + "NEED_CFG integer, "
+        + "IS_BT_DEV integer, "
         + "CLASS_NAME text )";
     
     private static final String CREATE_USER_DEVICE_TBL = "CREATE table USER_DEVICE ("
@@ -225,7 +225,7 @@ public class DbManager {
                     case 12:
                         db.execSQL("ALTER TABLE USER ADD COLUMN AUTO_LOGIN integer DEFAULT 0");
                     case 13:
-                        db.execSQL("ALTER TABLE DEVICE ADD COLUMN NEED_CFG integer");
+                        db.execSQL("ALTER TABLE DEVICE ADD COLUMN IS_BT_DEV integer");
                     case 14:
                         // rimossa colonna DEVICE_TYPE da MEASURE non serve fare nulla
                     case 15:
@@ -309,7 +309,7 @@ public class DbManager {
             values.put("MEASURE", d.getMeasure());
             values.put("MODEL", d.getModel());
             values.put("DESCRIPTION", d.getDescription());
-            values.put("NEED_CFG", d.isBTDevice()? 1:0);
+            values.put("IS_BT_DEV", d.isBTDevice()? 1:0);
             values.put("CLASS_NAME", d.getClassName());
             if (mDb.insert("DEVICE", null, values) > 0) {
                 logger.log(Level.INFO, "Device inserted: " + d.toString());
@@ -331,7 +331,7 @@ public class DbManager {
         synchronized (this) {
             ContentValues values = new ContentValues();
             values.put("DESCRIPTION", d.getDescription());
-            values.put("NEED_CFG", d.isBTDevice()? 1:0);
+            values.put("IS_BT_DEV", d.isBTDevice()? 1:0);
             values.put("CLASS_NAME", d.getClassName());
             String[] args = new String[]{d.getMeasure(), d.getModel()};
             mDb.update("DEVICE", values, "MEASURE = ? AND MODEL =  ? ", args);
@@ -381,7 +381,7 @@ public class DbManager {
             ret.setMeasure(c.getString(c.getColumnIndex("MEASURE")));
             ret.setModel(c.getString(c.getColumnIndex("MODEL")));
             ret.setDescription(c.getString(c.getColumnIndex("DESCRIPTION")));
-            ret.setIsBTDevice(c.getInt(c.getColumnIndex("NEED_CFG")) == 1);
+            ret.setIsBTDevice(c.getInt(c.getColumnIndex("IS_BT_DEV")) == 1);
             ret.setClassName(c.getString(c.getColumnIndex("CLASS_NAME")));
             return ret;
         }
@@ -1610,7 +1610,7 @@ public class DbManager {
         List<String> ret = new ArrayList<>();
         Cursor c = null;
         try {
-            c = mDb.rawQuery("SELECT DISTINCT MEASURE FROM DEVICE WHERE NEED_CFG = 1 ORDER BY MEASURE ASC", null);
+            c = mDb.rawQuery("SELECT DISTINCT MEASURE FROM DEVICE WHERE IS_BT_DEV = 1 ORDER BY MEASURE ASC", null);
             if (c != null) {
                 while (c.moveToNext()) {
                     ret.add(c.getString(c.getColumnIndex("MEASURE")));
@@ -1643,7 +1643,18 @@ public class DbManager {
             return ret;
         }
 	}
-	
+
+    public void resetAllBtAddressDevice() {
+        synchronized (this) {
+            ContentValues values = new ContentValues();
+            values.put("BTADDRESS", "");
+            int n = mDb.update("USER_DEVICE", values, null, null);
+            Log.i(TAG, "resetAllBtAddressDevice: " + n + " USER_DEVICE records updated");
+            n = mDb.update("CURRENT_DEVICE", values, null, null);
+            Log.i(TAG, "resetAllBtAddressDevice: " + n + " CURRENT_DEVICE records updated");
+        }
+    }
+
 	public void updateBtAddressDevice(UserDevice ud) {
         synchronized (this) {
 

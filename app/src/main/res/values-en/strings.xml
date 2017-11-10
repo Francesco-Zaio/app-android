@@ -109,10 +109,11 @@
 	<string name="quiz">Survey</string>
 	<string name="quiz_loading">Loading survey&#8230;</string>
 	
+    <string name="demoRoche">Demo mode (Coaguchek XS - Roche)</string>
+	<string name="reset_bt_addr">Reset BT addresses</string>
+	<string name="on_off">"On/Off "</string>
+
 	<string name="totalDuration">Total duration</string>
 	<string name="readLoop">Continuous sampling</string>
-    <string name="demoRoche">Demo mode (Coaguchek XS - Roche)</string>
-	<string name="demoOffline">Demo offline mode</string>
-	<string name="on_off">"On/Off "</string>
 
 </resources>

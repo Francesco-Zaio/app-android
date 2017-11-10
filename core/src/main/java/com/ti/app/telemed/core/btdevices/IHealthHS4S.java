@@ -12,6 +12,10 @@ import com.ihealth.communication.manager.iHealthDevicesManager;
 import com.ti.app.telemed.core.ResourceManager;
 import com.ti.app.telemed.core.btmodule.DeviceListener;
 import com.ti.app.telemed.core.common.Measure;
+import com.ti.app.telemed.core.common.Patient;
+import com.ti.app.telemed.core.common.UserMeasure;
+import com.ti.app.telemed.core.dbmodule.DbManager;
+import com.ti.app.telemed.core.usermodule.UserManager;
 import com.ti.app.telemed.core.util.GWConst;
 
 import org.json.JSONException;
@@ -169,13 +173,15 @@ class IHealthHS4S extends Handler implements IHealtDevice{
 
     private void notifyResultData(String message) {
         String strWeight;
+        double weight;
+        double bmi = 0.;
 
+        DecimalFormat df = new DecimalFormat("#.#");
+        df.setRoundingMode(RoundingMode.HALF_EVEN);
         try {
             JSONTokener jsonTokener = new JSONTokener(message);
             JSONObject jsonObject = (JSONObject) jsonTokener.nextValue();
-            double weight = jsonObject.getDouble(HsProfile.WEIGHT_HS);
-            DecimalFormat df = new DecimalFormat("#.#");
-            df.setRoundingMode(RoundingMode.HALF_EVEN);
+            weight = jsonObject.getDouble(HsProfile.WEIGHT_HS);
             strWeight = df.format(weight);
             strWeight = strWeight.replace ('.', ',');
         } catch (JSONException e) {
@@ -185,15 +191,19 @@ class IHealthHS4S extends Handler implements IHealtDevice{
             return;
         }
 
-        // Creo un istanza di Misura del tipo PR
+        Patient p = iHealth.getPatient();
+        if (p != null) {
+            double height = Double.parseDouble(p.getHeight())/100;
+            if (height > 0) {
+                bmi = weight / (height * height);
+            }
+        }
+
         HashMap<String,String> tmpVal = new HashMap<>();
         tmpVal.put(GWConst.EGwCode_01, strWeight);  // peso
-
+        if (bmi > 0)
+            tmpVal.put(GWConst.EGwCode_S0, df.format(bmi).replace ('.',','));  // bmi
         measure.setMeasures(tmpVal);
-        measure.setFile(null);
-        measure.setFileType(null);
-        measure.setFailed(false);
-
         iHealth.notifyEndMeasurement(measure);
     }
 }

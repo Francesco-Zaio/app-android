@@ -45,6 +45,8 @@ public class ShowUtilitySettings extends ActionBarActivity {
 	private EditText portEt;
 	private EditText quizEt;
 	private Switch demoRocheSw;
+	private Switch btAddrResetSw;
+
 	private Button okButton;
 	private Button cancelButton;
 
@@ -100,6 +102,8 @@ public class ShowUtilitySettings extends ActionBarActivity {
 		portEt = (EditText) findViewById(R.id.port_et);
 		quizEt = (EditText) findViewById(R.id.quiz_et);
         demoRocheSw = (Switch) findViewById(R.id.demo_roche_sw);
+		btAddrResetSw = (Switch) findViewById(R.id.reset_bt_addr_sw);
+        btAddrResetSw.setChecked(false);
 
 		okButton = (Button) findViewById(R.id.confirm_button);
 		cancelButton = (Button) findViewById(R.id.cancel_button);
@@ -238,6 +242,8 @@ public class ShowUtilitySettings extends ActionBarActivity {
 					sc.setTargetSend(defaultSC.getTargetSendDef());
 					MyDoctorApp.getConfigurationManager().updateConfiguration(sc);
                     Util.setDemoRocheMode(demoRocheSw.isChecked());
+					if (btAddrResetSw.isChecked())
+						Util.resetBTAddresses();
 					finish();
 				} catch (DbException e) {
 					e.printStackTrace();

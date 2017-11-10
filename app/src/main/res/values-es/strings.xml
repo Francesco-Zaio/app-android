@@ -109,10 +109,10 @@
 	<string name="quiz">Encuesta</string>
 	<string name="quiz_loading">Carga encuesta&#8230;</string>
 	
-	<string name="totalDuration">Duración total</string>
-	<string name="readLoop">Muestreo continuo</string>
     <string name="demoRoche">modo de demostración (Coaguchek XS - Roche)</string>
-	<string name="demoOffline">modo de demostración \'offline\'</string>
+	<string name="reset_bt_addr">Restablecer la dirección BT</string>
 	<string name="on_off">"On/Off "</string>
 
+	<string name="totalDuration">Duración total</string>
+	<string name="readLoop">Muestreo continuo</string>
 </resources>

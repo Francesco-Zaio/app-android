@@ -226,7 +226,7 @@ public class XmlManager extends DefaultHandler {
 			rightConfProperty = false;
 			propertyDataBuffer = new StringBuilder();
 			createParser();
-			// we start the parsing
+			// we startOperation the parsing
 			
 			parser.parse(new ByteArrayInputStream(xmlMessage.getBytes()), this);
 			Log.i(TAG, "Parse end");

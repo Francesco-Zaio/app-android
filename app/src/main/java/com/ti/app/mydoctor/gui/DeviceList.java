@@ -6,6 +6,7 @@ import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -96,6 +97,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Vector;
+
+import static com.ti.app.mydoctor.gui.DeviceScanActivity.SELECTED_DEVICE;
 
 
 public class DeviceList extends AppCompatActivity implements OnChildClickListener, DeviceListFragmentListener {
@@ -1090,7 +1093,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
         }
 
         if (pd != null && pd.getDevice().isBTDevice()) {
-            boolean needPairing = deviceManager.needPairing(pd);
             boolean needCfg = deviceManager.needCfg(pd);
 			MenuItem mi;
 
@@ -1523,10 +1525,15 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
     	case REQUEST_SCAN_DEVICES:
     		if (resultCode == Activity.RESULT_OK){
     			int position = data.getExtras().getInt(DeviceScanActivity.SELECTED_DEVICE_POSITION);
+                //BluetoothDevice bd = data.getExtras().getParcelable(SELECTED_DEVICE);
+                //deviceManager.selectDevice(bd);
     			stopDeviceOperation(position);
     		} else {
+                //deviceManager.abortOperation();
+                //myRemoveDialog(PROGRESS_DIALOG);
     			stopDeviceOperation(-2);
     		}
+            refreshList();
     		break;
     	case MANUAL_MEASURE_ENTRY:
     		if(resultCode == RESULT_OK){
@@ -1741,7 +1748,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                     activity.myRemoveDialog(PROGRESS_DIALOG);
                     if (ECGDrawActivity.getInstance() != null)
                         ECGDrawActivity.getInstance().finish();
-                    activity.measureData = (Measure) msg.getData().getSerializable(DeviceManager.MEASURE);// MeasureManager.getMeasureManager().saveMeasureData(measureData);
+					activity.measureData = (Measure) msg.obj;
                     activity.myShowDialog(MEASURE_RESULT_DIALOG);
                     break;
                 case DeviceManager.ERROR_STATE:
@@ -1949,7 +1956,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                 return builder.create();
             case MEASURE_RESULT_DIALOG:
                 Log.i(TAG, "Visualizzo dialog MEASURE_RESULT_DIALOG");
-                return createMeasureResultDialog(measureData);
+                return createMeasureResultDialog();
             case PROGRESS_DIALOG:
                 return createProgressDialog(dataBundle);
             case ALERT_DIALOG:
@@ -2234,15 +2241,14 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
     	return builder.create();
 	}
 
-	private Dialog createMeasureResultDialog(Measure data) {
-        measureData = data;
+	private Dialog createMeasureResultDialog() {
         Log.d(TAG, "createMeasureResultDialog ");
 
         Context ctx = this;
         ctx.setTheme(R.style.Theme_MyDoctorAtHome_Light);
         AlertDialog.Builder builder = new AlertDialog.Builder(ctx);
 
-        String keyMeasType = AppUtil.KEY_MEASURE_TYPE.concat(data.getMeasureType());
+        String keyMeasType = AppUtil.KEY_MEASURE_TYPE.concat(measureData.getMeasureType());
         String title = AppResourceManager.getResource().getString(keyMeasType);
         builder.setTitle(title);
 
@@ -2252,30 +2258,20 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
         String okBtnMsg = AppResourceManager.getResource().getString("MeasureResultDialog.sendBtn");
         String action = MeasureDialogClickListener.SAVE_ACTION;
 
-        String measureStr = getMeasureMessage(data);
+        String measureStr = getMeasureMessage(measureData);
         builder.setMessage(measureStr + "\n" + msg);
 
-        MeasureDialogClickListener measureDialogListener = new MeasureDialogClickListener(action, data.getMeasureType());
+        MeasureDialogClickListener measureDialogListener = new MeasureDialogClickListener(action, measureData.getMeasureType());
         builder.setPositiveButton(okBtnMsg, measureDialogListener);
         builder.setNegativeButton(AppResourceManager.getResource().getString("MeasureResultDialog.cancelBtn"), measureDialogListener);
+        /*
         if (!deviceManager.getCurrentUser().getIsPatient() && !deviceManager.getCurrentDevice().getMeasure().equals(GWConst.KMsrSpir)) {
             List<UserPatient> patients = DbManager.getDbManager().getUserPatients(UserManager.getUserManager().getCurrentUser().getId());
             if (patients != null && patients.size() != 1) {
                 builder.setNeutralButton(R.string.changePatientQuestion, measureDialogListener);
- /*               builder.setNeutralButton(R.string.changePatientQuestion, new DialogInterface.OnClickListener() {
-
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        removeDialog(MEASURE_RESULT_DIALOG);
-                        removeDialog(MEASURE_RESULT_DIALOG_SEND_ALL);
-                        Intent selectPatientIntent = new Intent(DeviceList.this, SelectPatient.class);
-                        selectPatientIntent.putExtra(GWConst.USER_ID, deviceManager.getCurrentUser().getId());
-                        startActivityForResult(selectPatientIntent, id);
-                    }
-                });
-                */
             }
         }
+        */
         beep();
         builder.setCancelable(false);
         return builder.create();

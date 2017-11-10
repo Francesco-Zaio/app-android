@@ -34,33 +34,25 @@ import com.ti.app.telemed.core.xmlmodule.XmlManager;
 import com.ti.app.telemed.core.util.GWConst;
 import com.ti.app.telemed.core.util.Util;
 
-public class MIRSpirodoc implements DeviceHandler,
+public class MIRSpirodoc extends DeviceHandler implements
         BTSocketEventListener,
         BTSearcherEventListener {
 
-	private enum TState {
-		EWaitingToGetDevice, 
-		EGettingDevice, 
-		EGettingService, 
-		EConnected, 
-		EWaitingInitPacket, 
-		EWaitingInfoPacket, 
-		EWaitingControlPacket, 
-		EWaitingInfoPatientPacket, 
-		EWaitingInfoCurvePacket, 
-		EWaitingCurve, 
-		EWaitingCurveEnd, 
-		EWaitingTheorSpiroPacket, 
-		ESendingStartCmd, 
-		ESendingConf, 
-		ESendingReady, 
-		EDisconnecting, 
-		EDisconnectingFromUser, 
-		EDisconnectingOK
-	}
-
 	private enum TTypeMessage {
-		READY(0x0D), START_CONFIG(0x31), START_SPIRO(0x35), START_OXY(0x45), INIT_CONF_STD(0x55), INIT_CONF_SMP(0x65), DATA_END(0xFF), DATA_NULL(0x00), DATA_ONE(0x01), CURVE_END(0x0A), ERR_TX(0x1B), ERR_GEN(0x45), ERR_CF(0x46), ERR_FULL(0x47);
+		READY(0x0D),
+		START_CONFIG(0x31),
+		START_SPIRO(0x35),
+		START_OXY(0x45),
+		INIT_CONF_STD(0x55),
+		INIT_CONF_SMP(0x65),
+		DATA_END(0xFF),
+		DATA_NULL(0x00),
+		DATA_ONE(0x01),
+		CURVE_END(0x0A),
+		ERR_TX(0x1B),
+		ERR_GEN(0x45),
+		ERR_CF(0x46),
+		ERR_FULL(0x47);
 
 		private int value;
 
@@ -70,7 +62,9 @@ public class MIRSpirodoc implements DeviceHandler,
 	}
 
 	private enum TTypeCommand {
-		DATA_CONF(0xD0), DATA_TEST_SPIRO(0xD1), DATA_TEST_OXY(0xD2);
+		DATA_CONF(0xD0),
+		DATA_TEST_SPIRO(0xD1),
+		DATA_TEST_OXY(0xD2);
 
 		private int value;
 
@@ -80,7 +74,8 @@ public class MIRSpirodoc implements DeviceHandler,
 	}
 
     private enum TSpirodocType {
-		DEV_STANDARD(0xC0), DEV_SIMPLE(0xC1);
+		DEV_STANDARD(0xC0),
+		DEV_SIMPLE(0xC1);
 
 		private int value;
 
@@ -92,15 +87,6 @@ public class MIRSpirodoc implements DeviceHandler,
 	// prefisso chiave di registro dove viene salvato il tipo di device (Standard/Simple)
 	private static final String REGKEY = "MIRSpirodoc";
 
-    // Indicates that the current request is not a measure but a connection request
-    private boolean iPairingMode = false;
-    private UserDevice iUserDevice = null;
-
-	// State of the active object
-    private TState iState;
-	// Type of search the scheduler requires
-	private TCmd iCmdCode;
-
 	// iServiceSearcher searches for service this client can
 	// connect to (in symbian version the type was CBTUtil) and
 	// substitutes RSocketServ and RSocket of symbian version too
@@ -108,23 +94,10 @@ public class MIRSpirodoc implements DeviceHandler,
 	// iIEMBloodPressureSocket is an RSocket in the Symbian version
     private BTSocket iMIRSpiroDocSocket;
 
-	// BT address obtained from scheduler (in symbian version the
-	// type was TBTDevAddr)
-    private String iBtDevAddr;
-
-	// BT address of the found device (we can have not received bt address from
-	// scheduler or it can be changed, so we take this value from the searcher
-	// after the device finding)
-	private String iBTAddress;
-
     private Vector<BluetoothDevice> deviceList;
     private int currentPos;
     private boolean deviceSearchCompleted;
     private boolean serverOpenFailed;
-
-	// a pointer to scheduler
-    private DeviceListener iScheduler;
-	private BTSearcherEventListener scanActivityListener;
 
 	private static final String TAG = "MIRSpirodoc";
 
@@ -155,27 +128,75 @@ public class MIRSpirodoc implements DeviceHandler,
 		return spirodocType == TSpirodocType.DEV_STANDARD;
 	}
 
-	public MIRSpirodoc(DeviceListener aScheduler) {
-        iScheduler = aScheduler;
-		iState = TState.EWaitingToGetDevice;
-		iScheduler = aScheduler;
+	public MIRSpirodoc(DeviceListener listener, UserDevice ud) {
+        super(listener, ud);
 		deviceSearchCompleted = false;
 		serverOpenFailed = false;
 		iServiceSearcher = new BTSearcher();
 		iMIRSpiroDocSocket = BTSocket.getBTSocket();
 	}
 
-	private void connectToServer() throws IOException {
+    // abstract methods of DeviceHandler
+
+    @Override
+    public void confirmDialog() {
+    }
+    @Override
+    public void cancelDialog(){
+    }
+
+    @Override
+    public boolean startOperation(OperationType ot, BTSearcherEventListener btSearchListener) {
+        if (!startInit(ot, btSearchListener))
+            return false;
+
+        switch (ot) {
+            case Pair:
+                break;
+            case Measure:
+                if (GWConst.KMsrOss.equals(iUserDevice.getMeasure()))
+                    iCommand = TTypeCommand.DATA_TEST_OXY;
+                else if (GWConst.KMsrSpir.equals(iUserDevice.getMeasure()))
+                    iCommand = TTypeCommand.DATA_TEST_SPIRO;
+                break;
+            case Config:
+                iCommand = TTypeCommand.DATA_CONF;
+                break;
+        }
+
+        iServiceSearcher.clearBTSearcherEventListener();
+        iServiceSearcher.addBTSearcherEventListener(this);
+        if (iCmdCode == TCmd.ECmdConnByUser)
+            iServiceSearcher.addBTSearcherEventListener(iBTSearchListener);
+        iServiceSearcher.setSearchType(iCmdCode);
+        iServiceSearcher.startSearchDevices();
+        return true;
+    }
+
+    @Override
+    public void abortOperation() {
+        Log.d(TAG, "abortOperation");
+        stop();
+    }
+
+    @Override
+    public void selectDevice(int selected){
+        Log.d(TAG, "selectDevice: selected=" + selected);
+        iServiceSearcher.stopSearchDevices(selected);
+    }
+
+
+    private void connectToServer() throws IOException {
 		// this function is called when we are in EGettingService state and
 		// we are going to EGettingConnection state
-		iBTAddress = iServiceSearcher.getCurrBTDevice().getAddress();
+		iBtDevAddr = iServiceSearcher.getCurrBTDevice().getAddress();
 		
-		if (iPairingMode) {
+		if (operationType == OperationType.Pair) {
             BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
             Set<BluetoothDevice> pairedDevices = mBluetoothAdapter.getBondedDevices();
             if (pairedDevices.size() > 0) {
                 for (BluetoothDevice device : pairedDevices) {
-                    if (device.getAddress().equalsIgnoreCase(iBTAddress)) {
+                    if (device.getAddress().equalsIgnoreCase(iBtDevAddr)) {
                         try {
                             Method m = device.getClass().getMethod("removeBond", (Class[]) null);
                             m.invoke(device, (Object[]) null);
@@ -192,112 +213,26 @@ public class MIRSpirodoc implements DeviceHandler,
 		iMIRSpiroDocSocket.connectInsecure(iServiceSearcher.getCurrBTDevice());
 	}
 
-	// methods of DeviceHandler interface
 
-    @Override
-    public void confirmDialog() {
-    }
-    @Override
-    public void cancelDialog(){
-    }
-
-    @Override
-    public void start(OperationType ot, UserDevice ud, BTSearcherEventListener btSearchListener) {
-        if (iState == TState.EWaitingToGetDevice) {
-            iUserDevice = ud;
-            scanActivityListener = btSearchListener;
-            iBtDevAddr = iUserDevice.getBtAddress();
-
-            iPairingMode = false;
-            switch (ot) {
-                case Pair:
-                    iPairingMode = true;
-                    break;
-                case Measure:
-                    if (GWConst.KMsrOss.equals(ud.getMeasure()))
-                        iCommand = TTypeCommand.DATA_TEST_OXY;
-                    else if (GWConst.KMsrSpir.equals(ud.getMeasure()))
-                        iCommand = TTypeCommand.DATA_TEST_SPIRO;
-                    break;
-                case Config:
-                    iCommand = TTypeCommand.DATA_CONF;
-                    break;
-            }
-
-            iServiceSearcher.clearBTSearcherEventListener();
-            iServiceSearcher.addBTSearcherEventListener(this);
-            if (iBtDevAddr != null && !iBtDevAddr.isEmpty()) {
-                iCmdCode = TCmd.ECmdConnByAddr;
-            } else {
-                iCmdCode = TCmd.ECmdConnByUser;
-                iServiceSearcher.addBTSearcherEventListener(scanActivityListener);
-            }
-            iState = TState.EGettingDevice;
-            iServiceSearcher.setSearchType(iCmdCode);
-            // it launch the automatic procedures for the manual device search
-            iServiceSearcher.startSearchDevices();
-        }
-    }
-
-    @Override
-	public void stopDeviceOperation(int selected) {
-		if (selected == -1) {
-			stop();
-		} else if (selected == -2) {
-			iServiceSearcher.stopSearchDevices(-1);
-			iServiceSearcher.removeBTSearcherEventListener(this);
-			if (iState != TState.EGettingDevice) {
-				// we advise the scheduler of the end of the activity on the
-				// device
-				iScheduler.operationCompleted();
-			}
-		} else {
-			iServiceSearcher.stopSearchDevices(selected);
-		}
-	}
-
-
-    public void reset() {
-        iBTAddress = null;
+    private void reset() {
+        iBtDevAddr = null;
         deviceSearchCompleted = false;
         serverOpenFailed = false;
         // this class object must return to the initial state
         iState = TState.EWaitingToGetDevice;
     }
 
-    public void stop()  {
-        if (iState == TState.EGettingDevice) {
-            iServiceSearcher.stopSearchDevices(-1);
-            iServiceSearcher.removeBTSearcherEventListener(this);
-            if (scanActivityListener != null) {
-                iServiceSearcher.removeBTSearcherEventListener(scanActivityListener);
-            }
-            iServiceSearcher.close();
-            // we advise the scheduler of the end of the activity on the device
-            iScheduler.operationCompleted();
-        } else if (iState == TState.EGettingService) {
-            iServiceSearcher.close();
-            // we advise the scheduler of the end of the activity on the device
-            iScheduler.operationCompleted();
-        } else if (iState == TState.EDisconnectingFromUser) {
-            iMIRSpiroDocSocket.close();
+    private void stop()  {
+        iServiceSearcher.stopSearchDevices(-1);
+        iServiceSearcher.removeBTSearcherEventListener(this);
+        iServiceSearcher.close();
+        iMIRSpiroDocSocket.close();
+        iMIRSpiroDocSocket.removeBTSocketEventListener(this);
+
+        if (iState == TState.EDisconnectingFromUser) {
             runBTSocket();
-            // we advise the scheduler of the end of the activity on the device
-            iScheduler.operationCompleted();
-        } else if (iState == TState.EDisconnectingOK) {
-            iMIRSpiroDocSocket.close();
-            iMIRSpiroDocSocket.removeBTSocketEventListener(this);
-            iState = TState.EWaitingToGetDevice;
-            //makeResultData();
-        } else {
-            if (!serverOpenFailed) {
-                // cancels all outstanding operations on socket
-                iMIRSpiroDocSocket.close();
-                iMIRSpiroDocSocket.removeBTSocketEventListener(this);
-            }
-            // we advise the scheduler of the end of the activity on the device
-            iScheduler.operationCompleted();
         }
+        reset();
     }
 
 
@@ -319,7 +254,7 @@ public class MIRSpirodoc implements DeviceHandler,
 
     @Override
 	public void deviceSelected(BTSearcherEvent evt) {
-		Log.i(TAG, "IEMBP: deviceSelected");
+		Log.i(TAG, "IEMBP: selectDevice");
 		// we change status
 		iState = TState.EGettingService;
 
@@ -352,7 +287,7 @@ public class MIRSpirodoc implements DeviceHandler,
 		case 0: // thread interrupted
 			reset();
 			Log.e(TAG, description);
-			iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
+			deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
 			break;
 		case 1: // bluetooth open error
 			Log.e(TAG, description);
@@ -365,26 +300,26 @@ public class MIRSpirodoc implements DeviceHandler,
 				runBTSocket();
 			}
 			reset();
-            iScheduler.notifyError(DeviceListener.CONNECTION_ERROR, ResourceManager.getResource().getString("EBtDeviceConnError"));
+            deviceListener.notifyError(DeviceListener.CONNECTION_ERROR, ResourceManager.getResource().getString("EBtDeviceConnError"));
 			break;
 		case 2: // bluetooth read error
 			Log.e(TAG, description);
 			iState = TState.EDisconnecting;
 			runBTSocket();
 			reset();
-            iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
+            deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
 			break;
 		case 3: // bluetooth write error
 			Log.e(TAG, description);
 			iState = TState.EDisconnecting;
 			runBTSocket();
 			reset();
-            iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
+            deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
 			break;
 		case 4: // bluetooth close error
 			Log.e(TAG, description);
 			reset();
-            iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
+            deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
 			break;
 		}
 	}
@@ -408,7 +343,7 @@ public class MIRSpirodoc implements DeviceHandler,
 			// still know that bluetooth is active and so we must advice it with
 			// setting
 			// a new state of bluetooth
-			// iScheduler.BTActivated();
+			// deviceListener.BTActivated();
 			// the automatic search, find all available addresses and when we
 			// arrive
 			// here we must check if the found address is the same of the
@@ -460,7 +395,7 @@ public class MIRSpirodoc implements DeviceHandler,
 				// the selection done by user is managed in the ui class which
 				// implements BTSearcherEventListener interface, so here arrive
 				// when the selection is already done
-				iScheduler.notifyWaitToUi(ResourceManager.getResource().getString("KPairingMsg"));
+				deviceListener.notifyWaitToUi(ResourceManager.getResource().getString("KPairingMsg"));
 				break;
 			}
 		 
@@ -473,8 +408,8 @@ public class MIRSpirodoc implements DeviceHandler,
 				// the search is finished and we stop it (we remove from event
 				// list)
 				iServiceSearcher.removeBTSearcherEventListener(this);
-				if (scanActivityListener != null) {
-					iServiceSearcher.removeBTSearcherEventListener(scanActivityListener);
+				if (iBTSearchListener != null) {
+					iServiceSearcher.removeBTSearcherEventListener(iBTSearchListener);
 				}
 				if (iMIRSpiroDocSocket.isAvailable()) {
 					connectToServer();
@@ -482,7 +417,7 @@ public class MIRSpirodoc implements DeviceHandler,
 					Log.e(TAG, "Risorsa non disponibile");
 				}
 			} catch (IOException e) {
-                iScheduler.notifyError(DeviceListener.CONNECTION_ERROR, ResourceManager.getResource().getString("EBtDeviceConnError"));
+                deviceListener.notifyError(DeviceListener.CONNECTION_ERROR, ResourceManager.getResource().getString("EBtDeviceConnError"));
 			}
 			break;
 		default:
@@ -602,7 +537,7 @@ public class MIRSpirodoc implements DeviceHandler,
 
 			iInitPacketCounter = 0;
 
-			if (iPairingMode) {
+			if (operationType == OperationType.Pair) {
 
 				iInitPacketCode = TTypeMessage.START_CONFIG;
 
@@ -630,7 +565,7 @@ public class MIRSpirodoc implements DeviceHandler,
 					break;
 				}
 
-				iScheduler.notifyToUi(MessageLoader);
+				deviceListener.notifyToUi(MessageLoader);
 
 				// Invio comando iniziale
 				iState = TState.ESendingStartCmd;
@@ -691,14 +626,14 @@ public class MIRSpirodoc implements DeviceHandler,
 				if (iDeviceType != TSpirodocType.DEV_SIMPLE && iDeviceType != TSpirodocType.DEV_STANDARD)
 					iErrorCode = TMyDoctorErrorCode.EMyDoctorErrWrongDevice;
 
-				if (iPairingMode) {
+				if (operationType == OperationType.Pair) {
 
 					if (iErrorCode == TMyDoctorErrorCode.KErrNone) {
 						// Pairing eseguito con successo. Salva il BT MAC
-						Util.setRegistryValue(REGKEY+iBTAddress, iDeviceType.toString());
+						Util.setRegistryValue(REGKEY+iBtDevAddr, iDeviceType.toString());
 						iMIRSpiroDocSocket.removeBTSocketEventListener(this);
-						iScheduler.configReady(ResourceManager.getResource().getString("KPairingMsgDone"));
-						iScheduler.setBtMAC(iBTAddress);
+						deviceListener.configReady(ResourceManager.getResource().getString("KPairingMsgDone"));
+						deviceListener.setBtMAC(iBtDevAddr);
 						currentPos = 0;
 						// Chiude la connessione
 						iState = TState.EDisconnecting;
@@ -751,7 +686,7 @@ public class MIRSpirodoc implements DeviceHandler,
 						}
 
 						// Invia configurazione
-						iState = TState.ESendingConf;
+						iState = TState.ESendingData;
 						SendDataL(); // Send the config data
 					} else {
 						Log.d(TAG, " TIPO DATI NON PRESENTE");
@@ -777,20 +712,20 @@ public class MIRSpirodoc implements DeviceHandler,
 				switch (iErrorCode) {
 				case EMyDoctorErrNoMeasure:
 					msg = ResourceManager.getResource().getString("KNoNewMeasure"); //"StringLoader::LoadLC( R_MYDOCTOR_NO_NEW_MEASURE_SPIRODOC )";
-                    iScheduler.notifyError(DeviceListener.NO_MEASURES_FOUND, msg);
+                    deviceListener.notifyError(DeviceListener.NO_MEASURES_FOUND, msg);
 					break;
 				case EMyDoctorErrWrongData:
 					msg = ResourceManager.getResource().getString("EDataReadError"); //"StringLoader::LoadLC( R_MYDOCTOR_WRONG_DATA )";
-                    iScheduler.notifyError(DeviceListener.DEVICE_DATA_ERROR, msg);
+                    deviceListener.notifyError(DeviceListener.DEVICE_DATA_ERROR, msg);
 					break;
 				default:
 					msg = ResourceManager.getResource().getString("ECommunicationError"); //"StringLoader::LoadLC( R_MYDOCTOR_ERROR_COMM )";
-                    iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR, msg);
+                    deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR, msg);
 					break;
 				}
 			}
 			break;
-		case ESendingConf:
+		case ESendingData:
 			iState = TState.EWaitingControlPacket;
 			RequestData();
 			break;
@@ -820,28 +755,28 @@ public class MIRSpirodoc implements DeviceHandler,
                     DisconnectFromServerL();
                     iErrorCode = TMyDoctorErrorCode.EMyDoctorErrConfigWrong;
                     msg = ResourceManager.getResource().getString("EWrongConfiguration"); // "StringLoader::LoadLC( R_MYDOCTOR_WRONG_CONFIG )";
-                    iScheduler.notifyError(DeviceListener.DEVICE_CFG_ERROR, msg);
+                    deviceListener.notifyError(DeviceListener.DEVICE_CFG_ERROR, msg);
                     break;
                 case 3: // cf errato
                     iState = TState.EDisconnecting;
                     DisconnectFromServerL();
                     iErrorCode = TMyDoctorErrorCode.EMyDoctorErrConfigWrong;
                     msg = ResourceManager.getResource().getString("EWrongUser"); // "StringLoader::LoadLC( R_MYDOCTOR_WRONG_CF )";
-                    iScheduler.notifyError(DeviceListener.USER_CFG_ERROR, msg);
+                    deviceListener.notifyError(DeviceListener.USER_CFG_ERROR, msg);
                     break;
                 case 4: // Memoria piena
                     iState = TState.EDisconnecting;
                     DisconnectFromServerL();
                     iErrorCode = TMyDoctorErrorCode.EMyDoctorErrMemoryFull;
                     msg = ResourceManager.getResource().getString("EMemoryExhausted"); // "StringLoader::LoadLC( R_MYDOCTOR_NO_MEMORY )";
-                    iScheduler.notifyError(DeviceListener.DEVICE_MEMORY_EXHAUSTED, msg);
+                    deviceListener.notifyError(DeviceListener.DEVICE_MEMORY_EXHAUSTED, msg);
                     break;
                 default: // Errore generale
                     iState = TState.EDisconnecting;
                     DisconnectFromServerL();
                     iErrorCode = TMyDoctorErrorCode.EMyDoctorErrWrongData;
                     msg = ResourceManager.getResource().getString("ECommunicationError"); // "StringLoader::LoadLC( R_MYDOCTOR_WRONG_GEN )";
-                    iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR, msg);
+                    deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR, msg);
 			}
 			break;
 		case EWaitingInfoPatientPacket:
@@ -962,7 +897,7 @@ public class MIRSpirodoc implements DeviceHandler,
 				iState = TState.EDisconnecting;
 				DisconnectFromServerL();
 				msg = ResourceManager.getResource().getString("ECommunicationError"); // "StringLoader::LoadLC( R_MYDOCTOR_WRONG_GEN )";
-                iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR, msg);
+                deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR, msg);
 			}
 
 			break;
@@ -982,7 +917,7 @@ public class MIRSpirodoc implements DeviceHandler,
 
 				iErrorCode = TMyDoctorErrorCode.EMyDoctorErrWrongData;
 				msg = ResourceManager.getResource().getString("ECommunicationError"); // "StringLoader::LoadLC( R_MYDOCTOR_WRONG_GEN )";
-                iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR, msg);
+                deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR, msg);
 				// CleanupStack::PopAndDestroy();
 
 			}
@@ -1007,7 +942,7 @@ public class MIRSpirodoc implements DeviceHandler,
 				break;
 			case DATA_CONF:
 				String MessageLoader = ResourceManager.getResource().getString("KMsgConfOK"); // "StringLoader::LoadLC( R_MYDOCTOR_RIGHT_CONFIG )";
-				iScheduler.configReady(MessageLoader);
+				deviceListener.configReady(MessageLoader);
 				// CleanupStack::PopAndDestroy();
 				break;
 
@@ -1111,23 +1046,11 @@ public class MIRSpirodoc implements DeviceHandler,
         tmpVal.put(GWConst.EGwCode_1L, oxyFileName);  // filename
         tmpVal.put(GWConst.EGwCode_BATTERY, Integer.toString(batt)); // livello batteria
 
-        Measure m = new Measure();
-        User u = UserManager.getUserManager().getCurrentUser();
-        m.setMeasureType(iUserDevice.getMeasure());
-        m.setDeviceDesc(iUserDevice.getDevice().getDescription());
-        m.setTimestamp(XmlManager.getXmlManager().getTimestamp(null));
+        Measure m = getMeasure();
         m.setFile(textBuffer.array());
         m.setFileType(XmlManager.MIR_OXY_FILE_TYPE);
-        if (u != null) {
-            m.setIdUser(u.getId());
-            if (u.getIsPatient())
-                m.setIdPatient(u.getId());
-        }
         m.setMeasures(tmpVal);
-        m.setFailed(false);
-        m.setBtAddress(iBTAddress);
-
-        iScheduler.showMeasurementResults(m);
+        deviceListener.showMeasurementResults(m);
 	}
 	
 	private void ReadDataSpiro() {
@@ -1256,23 +1179,11 @@ public class MIRSpirodoc implements DeviceHandler,
         tmpVal.put(GWConst.EGwCode_0M, spiroFileName);  // filename
         tmpVal.put(GWConst.EGwCode_BATTERY, Integer.toString(batt)); // livello batteria
 
-        Measure m = new Measure();
-        User u = UserManager.getUserManager().getCurrentUser();
-        m.setMeasureType(iUserDevice.getMeasure());
-        m.setDeviceDesc(iUserDevice.getDevice().getDescription());
-        m.setTimestamp(XmlManager.getXmlManager().getTimestamp(null));
+        Measure m = getMeasure();
         m.setFile(stream.array());
         m.setFileType(XmlManager.MIR_SPIRO_FILE_TYPE);
-        if (u != null) {
-            m.setIdUser(u.getId());
-            if (u.getIsPatient())
-                m.setIdPatient(u.getId());
-        }
         m.setMeasures(tmpVal);
-        m.setFailed(false);
-        m.setBtAddress(iBTAddress);
-
-        iScheduler.showMeasurementResults(m);
+        deviceListener.showMeasurementResults(m);
 	}
 
 	private int getIntValue(byte a, byte b){
@@ -1694,7 +1605,7 @@ public class MIRSpirodoc implements DeviceHandler,
 		case ESendingStartCmd:
 			iMIRSpiroDocSocket.write(iCmd);
 			break;
-		case ESendingConf:
+		case ESendingData:
 			switch (iDeviceType) {
 			case DEV_STANDARD:
 				Log.d(TAG, "write byte=" + iStandardConfPacket.array().length);
@@ -1708,7 +1619,7 @@ public class MIRSpirodoc implements DeviceHandler,
 			break;
 		default:
 			// errore di programmazione uscire dall'applicazione
-            iScheduler.notifyError(DeviceListener.MEASUREMENT_ERROR, "");
+            deviceListener.notifyError(DeviceListener.MEASUREMENT_ERROR, "");
 			break;
 		}
 	}
@@ -1804,7 +1715,7 @@ public class MIRSpirodoc implements DeviceHandler,
 			
 			iErrorCode = TMyDoctorErrorCode.EMyDoctorErrCommunicationError;
 			String msg = ResourceManager.getResource().getString("ECommunicationError"); // "StringLoader::LoadLC( R_MYDOCTOR_ERROR_COMM )";
-            iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR, msg);
+            deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR, msg);
 			// CleanupStack::PopAndDestroy();
 
 			iState = TState.EDisconnecting;

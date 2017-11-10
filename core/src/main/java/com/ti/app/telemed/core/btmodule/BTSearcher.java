@@ -30,7 +30,7 @@ public class BTSearcher {
 
     private BluetoothAdapter mBtAdapter;
 
-    private BroadcastReceiver mReceiver;
+    private BroadcastReceiver mReceiver = null;
 
     public BTSearcher() {
         selectedDevice = -1;
@@ -41,23 +41,27 @@ public class BTSearcher {
     }
 
     private void registerReceiver() {
-        mReceiver = new MyBroadcastReceiver();
-        // Register for broadcasts when a device is discovered
-        IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
-        MyApp.getContext().registerReceiver(mReceiver, filter);
+        if (mReceiver == null) {
+            mReceiver = new MyBroadcastReceiver();
+            // Register for broadcasts when a device is discovered
+            IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
+            MyApp.getContext().registerReceiver(mReceiver, filter);
 
-        // Register for broadcasts when discovery has finished
-        filter = new IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
-        MyApp.getContext().registerReceiver(mReceiver, filter);
+            // Register for broadcasts when discovery has finished
+            filter = new IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
+            MyApp.getContext().registerReceiver(mReceiver, filter);
+        }
     }
 
     private void unregisterReceiver() {
-        try{
-            MyApp.getContext().unregisterReceiver(mReceiver);
-        } catch(Exception e){
-            Log.w(TAG, e.getMessage());
+        if (mReceiver != null) {
+            try {
+                MyApp.getContext().unregisterReceiver(mReceiver);
+            } catch (Exception e) {
+                Log.w(TAG, e.getMessage());
+            }
+            mReceiver = null;
         }
-        mReceiver = null;
     }
 
     public void setSearchType(DeviceHandler.TCmd sType) {
@@ -94,13 +98,9 @@ public class BTSearcher {
 
     public void stopSearchDevices(int selected) {
         Log.i(TAG, "stopSearchDevices: selected = " + selected);
-
         unregisterReceiver();
-
-        boolean ret = mBtAdapter.cancelDiscovery();
-
-        Log.i(TAG, "cancelDiscovery: ret = "+ ret);
-
+        if (mBtAdapter.isDiscovering())
+        mBtAdapter.cancelDiscovery();
         if (selected >= 0) {
             selectedDevice = selected;
             // in all case

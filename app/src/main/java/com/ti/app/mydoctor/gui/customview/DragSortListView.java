@@ -227,14 +227,14 @@ public class DragSortListView extends ListView {
     private DragScroller mDragScroller;
 
     /**
-     * Determines the start of the upward drag-scroll region
+     * Determines the startOperation of the upward drag-scroll region
      * at the top of the ListView. Specified by a fraction
      * of the ListView height, thus screen resolution agnostic.
      */
     private float mDragUpScrollStartFrac = 1.0f / 3.0f;
 
     /**
-     * Determines the start of the downward drag-scroll region
+     * Determines the startOperation of the downward drag-scroll region
      * at the bottom of the ListView. Specified by a fraction
      * of the ListView height, thus screen resolution agnostic.
      */
@@ -1848,7 +1848,7 @@ public class DragSortListView extends ListView {
         int currentScrollDir = mDragScroller.getScrollDir();
 
         if (minY > mLastY && minY > mDownScrollStartY && currentScrollDir != DragScroller.DOWN) {
-            // dragged down, it is below the down scroll start and it is not
+            // dragged down, it is below the down scroll startOperation and it is not
             // scrolling up
 
             if (currentScrollDir != DragScroller.STOP) {
@@ -1856,10 +1856,10 @@ public class DragSortListView extends ListView {
                 mDragScroller.stopScrolling(true);
             }
 
-            // start scrolling down
+            // startOperation scrolling down
             mDragScroller.startScrolling(DragScroller.DOWN);
         } else if (maxY < mLastY && maxY < mUpScrollStartY && currentScrollDir != DragScroller.UP) {
-            // dragged up, it is above the up scroll start and it is not
+            // dragged up, it is above the up scroll startOperation and it is not
             // scrolling up
 
             if (currentScrollDir != DragScroller.STOP) {
@@ -1867,7 +1867,7 @@ public class DragSortListView extends ListView {
                 mDragScroller.stopScrolling(true);
             }
 
-            // start scrolling up
+            // startOperation scrolling up
             mDragScroller.startScrolling(DragScroller.UP);
         }
         else if (maxY >= mUpScrollStartY && minY <= mDownScrollStartY
@@ -2661,7 +2661,7 @@ public class DragSortListView extends ListView {
         // To improve on the average time, we minimize the number of calls to
         // setItemChecked by only calling it for items that actually have a
         // changed state. This is achieved by building a list containing the
-        // start and end of the "runs" of checked items, and then moving the
+        // startOperation and end of the "runs" of checked items, and then moving the
         // runs. Note that moving an item from A to B is essentially a rotation
         // of the range of items in [A, B]. Let's say we have
         // . . U V X Y Z . .
@@ -2774,7 +2774,7 @@ public class DragSortListView extends ListView {
             // rangeStart and rangeEnd are equivalent positions so to be
             // consistent we translate them to the same integer value. That way
             // we can check whether a run covers the entire range by just
-            // checking if the start equals the end position.
+            // checking if the startOperation equals the end position.
             currentRunEnd = rangeStart;
         }
         runStart[runCount] = currentRunStart;
@@ -2845,7 +2845,7 @@ public class DragSortListView extends ListView {
          * 
          * @param w Normalized position in scroll region (i.e. w \in [0,1]).
          * Small w typically means slow scrolling.
-         * @param t Time (in milliseconds) since start of scroll (handy if you
+         * @param t Time (in milliseconds) since startOperation of scroll (handy if you
          * want scroll acceleration).
          * @return Scroll speed at position w and time t in pixels/ms.
          */

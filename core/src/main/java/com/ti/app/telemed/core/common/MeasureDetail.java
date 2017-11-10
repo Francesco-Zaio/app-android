@@ -13,8 +13,8 @@ public class MeasureDetail {
     private static final String[] OS_Detail = {GWConst.EGwCode_07,GWConst.EGwCode_1B,GWConst.EGwCode_1D,GWConst.EGwCode_1F,GWConst.EGwCode_0F,GWConst.EGwCode_1A,GWConst.EGwCode_1C,GWConst.EGwCode_1E,GWConst.EGwCode_1G,GWConst.EGwCode_BATTERY};
     private static final String[] PR_Short = {GWConst.EGwCode_03,GWConst.EGwCode_04};
     private static final String[] PR_Detail = {GWConst.EGwCode_03,GWConst.EGwCode_04,GWConst.EGwCode_05,GWConst.EGwCode_06,GWConst.EGwCode_BATTERY};
-    private static final String[] PS_Short = {GWConst.EGwCode_01};
-    private static final String[] PS_Detail = {GWConst.EGwCode_01,GWConst.EGwCode_F1,GWConst.EGwCode_F2,GWConst.EGwCode_BATTERY};
+    private static final String[] PS_Short = {GWConst.EGwCode_01,GWConst.EGwCode_S0};
+    private static final String[] PS_Detail = {GWConst.EGwCode_01,GWConst.EGwCode_S0,GWConst.EGwCode_F1,GWConst.EGwCode_F2,GWConst.EGwCode_BATTERY};
     private static final String[] TC_Short = {GWConst.EGwCode_0R};
     private static final String[] TC_Detail = {GWConst.EGwCode_0R,GWConst.EGwCode_0U,GWConst.EGwCode_BATTERY};
     private static final String[] PT_Short = {GWConst.EGwCode_0Z,GWConst.EGwCode_0X,GWConst.EGwCode_0V};

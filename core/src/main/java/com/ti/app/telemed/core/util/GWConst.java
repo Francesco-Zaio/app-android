@@ -120,6 +120,7 @@ public interface GWConst {
 	String EGwCode_D0 = "D0";
 	String EGwCode_D1 = "D1";
 	String EGwCode_EA = "EA"; // Risultato analisi ECG
+	String EGwCode_S0 = "S0"; // Indice di massa corporea
 	String EGwCode_BATTERY = "A0";
 
 	//Constants for Message Bundles

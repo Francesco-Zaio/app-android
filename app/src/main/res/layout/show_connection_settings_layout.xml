@@ -97,6 +97,20 @@
 					android:layout_height="wrap_content"
 					android:text="@string/on_off" />
 
+				<TextView
+					android:id="@+id/reset_bt_addr_tv"
+					android:layout_below="@id/demo_roche_sw"
+					android:layout_width="fill_parent"
+					android:layout_height="wrap_content"
+					android:text="@string/reset_bt_addr" />
+
+				<Switch
+					android:id="@+id/reset_bt_addr_sw"
+					android:layout_below="@id/reset_bt_addr_tv"
+					android:layout_width="wrap_content"
+					android:layout_height="wrap_content"
+					android:text="@string/on_off" />
+
 			</RelativeLayout>
 		</ScrollView>
 	</RelativeLayout>

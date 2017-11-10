@@ -3,13 +3,13 @@ package com.ti.app.mydoctor.devicemodule;
 import java.lang.reflect.Method;
 
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
 
 import com.ti.app.mydoctor.AppResourceManager;
-import com.ti.app.telemed.core.ResourceManager;
 import com.ti.app.telemed.core.btmodule.events.BTSearcherEventListener;
 import com.ti.app.telemed.core.btmodule.DeviceHandler;
 import com.ti.app.telemed.core.btmodule.DeviceListener;
@@ -45,8 +45,6 @@ public class DeviceManager implements DeviceListener {
 
     public static final int REFRESH_LIST = 10;
 
-    public static final String MEASURE = "MEASURE";
-	
 	private boolean operationRunning;
 	
 	public DeviceManager() {		
@@ -149,10 +147,7 @@ public class DeviceManager implements DeviceListener {
 	}
 
 	private void executeOp() throws Exception {
-
-        Class<?> c = Class.forName("com.ti.app.telemed.core.btdevices." + currentDevice.getDevice().getClassName());
-        currentDeviceHandler = (DeviceHandler) c.getDeclaredConstructor(DeviceListener.class).newInstance(this);
-
+        currentDeviceHandler = DeviceHandler.getInstance(this,currentDevice);
         DeviceHandler.OperationType op;
         if (isConfig)
             op = DeviceHandler.OperationType.Config;
@@ -160,10 +155,18 @@ public class DeviceManager implements DeviceListener {
             op = DeviceHandler.OperationType.Pair;
         else
             op = DeviceHandler.OperationType.Measure;
-
         notifyToUi(AppResourceManager.getResource().getString("KSearchingDev"));
-        currentDeviceHandler.start(op, currentDevice, btSearcherListener);
+        currentDeviceHandler.startOperation(op, btSearcherListener);
 	}
+
+	public void abortOperation() {
+        operationRunning = false;
+        currentDeviceHandler.abortOperation();
+    }
+
+    public void selectDevice(BluetoothDevice bd) {
+        //currentDeviceHandler.selectDevice(bd);
+    }
 
 	public void stopDeviceOperation(int selected) {
     	try {
@@ -171,8 +174,10 @@ public class DeviceManager implements DeviceListener {
     		// partire la misura, quindi operationRunning deve restare true
         	if(selected < 0){
         		operationRunning = false;
-        	}
-			currentDeviceHandler.stopDeviceOperation(selected);
+                currentDeviceHandler.abortOperation();
+        	} else {
+                currentDeviceHandler.selectDevice(selected);
+            }
 		} catch (Exception e) {
 			showError(AppResourceManager.getResource().getString("EGWNurseBtSearchError"));
 		}
@@ -209,7 +214,7 @@ public class DeviceManager implements DeviceListener {
     public void showMeasurementResults(Measure m) {
         Message message = handler.obtainMessage(MEASURE_RESULT);
         Bundle bundle = new Bundle();
-        bundle.putSerializable(MEASURE, m);
+        message.obj = m;
         message.setData(bundle);
         handler.sendMessage(message);
     }
@@ -235,12 +240,6 @@ public class DeviceManager implements DeviceListener {
         operationRunning = false;
         sendMessageToHandler(msg, ERROR_STATE, AppConst.MESSAGE);
     }
-
-    @Override
-    public void operationCompleted() {
-		Log.i(TAG, "operationCompleted");
-		operationRunning = false;
-	}
 
     @Override
 	public void notifyToUi(String msg) {

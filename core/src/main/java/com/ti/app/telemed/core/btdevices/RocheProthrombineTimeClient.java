@@ -26,7 +26,7 @@ import com.ti.app.telemed.core.xmlmodule.XmlManager;
 import android.bluetooth.BluetoothDevice;
 import android.util.Log;
 
-public class RocheProthrombineTimeClient implements DeviceHandler,
+public class RocheProthrombineTimeClient extends DeviceHandler implements
 		BTSocketEventListener, BTSearcherEventListener {
 
     private enum TTypeControl {
@@ -99,17 +99,21 @@ public class RocheProthrombineTimeClient implements DeviceHandler,
 	/**
 	 * TState The state of the active object, determines behavior within the
 	 * RunL method.
-	 */
+
 	private enum TState {
-		EWaitingToGetDevice, EGettingDevice, EGettingService, EConnected, ESendingHS, // HS:
-																						// HandShaking
+		EWaitingToGetDevice,
+		EGettingDevice,
+		EGettingService,
+		EConnected,
+		ESendingHS, // HandShaking
 		ESendPowerUpSeq, // Power Up Sequence (sending)
 		ENumbMeasReq, // Richiesta numero misure in memoria
 		ELastMeasReq, // Richiesta ultima misura
 		EConfDeviceReq, // Richiesta ID device
 		ESendingClosure, // FASE di chiusura
 		ESendingRecovery, // Stato di recupero della Power Up Sequence
-		ELastSending, ESendReadClear, // Read and Clear after error (sending)
+		ELastSending,
+        ESendReadClear, // Read and Clear after error (sending)
 		EWaitingAckHS, // HS: HandShaking
 		EWaitPowerUpSeq, // Power Up Sequence (waiting)
 		ENumbMeasRes, // Risposta numero misure in memoria
@@ -121,15 +125,7 @@ public class RocheProthrombineTimeClient implements DeviceHandler,
 		EDisconnectingPairing,
 		EDisconnecting
 	}
-
-	// Indicates that the current request is not a measure but a connection request
-    private boolean iPairingMode = false;
-    private UserDevice iUserDevice = null;
-
-    // State of the active object
-	private TState iState;
-	// Type of search the scheduler requires
-    private TCmd iCmdCode;
+     */
 
 	// iServiceSearcher searches for service this client can
 	// connect to (in symbian version the type was CBTUtil) and
@@ -137,15 +133,6 @@ public class RocheProthrombineTimeClient implements DeviceHandler,
     private BTSearcher iServiceSearcher;
 	// iCGBloodPressureSocket is an RSocket in the Symbian version
     private BTSocket iPTRSocket;
-
-	// BT address obtained from scheduler (in symbian version the
-	// type was TBTDevAddr)
-    private String iBtDevAddr;
-
-	// BT address of the found device (we can have not received bt address from
-	// scheduler or it can be changed, so we take this value from the searcher
-	// after the device finding)
-    private String iBTAddress;
 
     private Vector<BluetoothDevice> deviceList;
     private int currentPos;
@@ -180,13 +167,10 @@ public class RocheProthrombineTimeClient implements DeviceHandler,
 
     private boolean operationDeleted;
     private boolean serverOpenFailed;
-	// a pointer to scheduler
-    private DeviceListener iScheduler;
 
     private boolean isTimerExpired;
     private TimerExpired timerExpired;
 	private Timer timer;
-	private BTSearcherEventListener scanActivityListener;
 	private boolean demoMode = false;
 
 	private static final String TAG = "RocheProthrombineClient";
@@ -201,10 +185,10 @@ public class RocheProthrombineTimeClient implements DeviceHandler,
 	}
 
 
-	public RocheProthrombineTimeClient(DeviceListener aScheduler) {
+	public RocheProthrombineTimeClient(DeviceListener listener, UserDevice ud) {
+        super(listener, ud);
+
 		demoMode  = Util.isDemoRocheMode();
-		iState = TState.EWaitingToGetDevice;
-		iScheduler = aScheduler;
  		deviceSearchCompleted = false;
 		/* Buffer utilizzati per la trasmissione e ricezione dati. */
 		iSendDataCmd = new byte[1];
@@ -255,99 +239,60 @@ public class RocheProthrombineTimeClient implements DeviceHandler,
     }
 
     @Override
-    public void start(OperationType ot, UserDevice ud, BTSearcherEventListener btSearchListener) {
-        if (iState == TState.EWaitingToGetDevice) {
-            iPairingMode = (ot == OperationType.Pair);
-            iUserDevice = ud;
-            scanActivityListener = btSearchListener;
-            iBtDevAddr = iUserDevice.getBtAddress();
-            iServiceSearcher.clearBTSearcherEventListener();
-            iServiceSearcher.addBTSearcherEventListener(this);
-            if (iBtDevAddr != null && !iBtDevAddr.isEmpty()) {
-                iCmdCode = TCmd.ECmdConnByAddr;
-                iServiceSearcher.removeBTSearcherEventListener(scanActivityListener);
-            } else {
-                iCmdCode = TCmd.ECmdConnByUser;
-                iServiceSearcher.addBTSearcherEventListener(scanActivityListener);
-            }
-            iState = TState.EGettingDevice;
-            iServiceSearcher.setSearchType(iCmdCode);
-            // it launch the automatic procedures for the manual device search
-            iServiceSearcher.startSearchDevices();
-        }
+    public boolean startOperation(OperationType ot, BTSearcherEventListener btSearchListener) {
+        if (!startInit(ot, btSearchListener))
+            return false;
+
+        iServiceSearcher.clearBTSearcherEventListener();
+        iServiceSearcher.addBTSearcherEventListener(this);
+        if (iCmdCode == TCmd.ECmdConnByUser && iBTSearchListener != null)
+            iServiceSearcher.addBTSearcherEventListener(iBTSearchListener);
+        iServiceSearcher.setSearchType(iCmdCode);
+        iServiceSearcher.startSearchDevices();
+        return true;
     }
 
-	@Override
-	public void stopDeviceOperation(int selected) {
-		if (selected == -1) {
-			stop();
-		} else if (selected == -2) {
-			iServiceSearcher.stopSearchDevices(-1);
-			iServiceSearcher.removeBTSearcherEventListener(this);
-			if (iState != TState.EGettingDevice) {
-				// we advise the scheduler of the end of the activity on the
-				// device
-				iScheduler.operationCompleted();
-			}
-		} else {
-			iServiceSearcher.stopSearchDevices(selected);
-		}
-	}
+    @Override
+    public void abortOperation() {
+        Log.d(TAG, "abortOperation");
+        stop();
+    }
+
+    @Override
+    public void selectDevice(int selected){
+        Log.d(TAG, "selectDevice: selected=" + selected);
+        iServiceSearcher.stopSearchDevices(selected);
+    }
 
 
-    public void stop() {
-        Log.i(TAG, "PTR: stop");
-        if (iState == TState.EGettingDevice) {
-            iServiceSearcher.stopSearchDevices(-1);
-            iServiceSearcher.close();
-            iState = TState.EWaitingToGetDevice;
-            // we advise the scheduler of the end of the activity on the device
-            iScheduler.operationCompleted();
-        } else if (iState == TState.EGettingService) {
-            iServiceSearcher.close();
-            iState = TState.EWaitingToGetDevice;
-            // we advise the scheduler of the end of the activity on the device
-            iScheduler.operationCompleted();
-        } else if (iState == TState.EDisconnectingOK) {
+    private void stop() {
+        if (timer != null)
+            timer.cancel();
+        iServiceSearcher.stopSearchDevices(-1);
+        iServiceSearcher.clearBTSearcherEventListener();
+        iServiceSearcher.close();
+        iPTRSocket.close();
+        iPTRSocket.removeBTSocketEventListener(this);
+
+        if (iState == TState.EDisconnectingOK) {
             if (iCmdCode.equals(TCmd.ECmdConnByUser)) {
-                iScheduler.setBtMAC(iBTAddress);
+                deviceListener.setBtMAC(iBtDevAddr);
             }
-            iPTRSocket.close();
-            iPTRSocket.removeBTSocketEventListener(this);
-            iState = TState.EWaitingToGetDevice;
-
             Log.d(TAG, "iLastMeasure [48]=" + iLastMeasure.charAt(48) + " ? " + 0x31);
             if (!demoMode && iLastMeasure.charAt(48) == 0x31) {
                 String msg = ResourceManager.getResource().getString("KNoNewMeasure");
-                iScheduler.notifyError(DeviceListener.NO_MEASURES_FOUND,msg);
+                deviceListener.notifyError(DeviceListener.NO_MEASURES_FOUND,msg);
             }
             else {
                 makeResultData();
             }
         } else if (iState == TState.EDisconnectingPairing) {
-            iPTRSocket.close();
-            iPTRSocket.removeBTSocketEventListener(this);
             runBTSocket();
-            // we advise the scheduler of the end of the activity on the device
-            iScheduler.operationCompleted();
-        } else {
-            Log.i(TAG, "PTR: stop ELSE");
-            if (!serverOpenFailed) {
-                Log.i(TAG, "PTR: stop !serverOpenFailed");
-                if (timer != null)
-                    timer.cancel();
-                // cancels all outstanding operations on socket
-                iPTRSocket.close();
-                iPTRSocket.removeBTSocketEventListener(this);
-            }
-            iState = TState.EWaitingToGetDevice;
-            // we advise the scheduler of the end of the activity on the device
-            iScheduler.operationCompleted();
         }
-        iServiceSearcher.removeBTSearcherEventListener(this);
+        reset();
     }
 
-    public void reset() {
+    private void reset() {
         if (timer != null) {
             timer.cancel();
         }
@@ -390,7 +335,7 @@ public class RocheProthrombineTimeClient implements DeviceHandler,
 
     @Override
     public void deviceSelected(BTSearcherEvent evt) {
-        Log.i(TAG, "ROCHE: deviceSelected");
+        Log.i(TAG, "ROCHE: selectDevice");
         // we change status
         iState = TState.EGettingService;
         runBTSearcher();
@@ -421,7 +366,7 @@ public class RocheProthrombineTimeClient implements DeviceHandler,
 			reset();
 			Log.e(TAG, description);
             msg = ResourceManager.getResource().getString("ECommunicationError");
-            iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR, msg);
+            deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR, msg);
 			break;
 		case 1: // bluetooth open error
 			Log.e(TAG, description);
@@ -436,7 +381,7 @@ public class RocheProthrombineTimeClient implements DeviceHandler,
 			}
 			reset();
             msg = ResourceManager.getResource().getString("EBtDeviceConnError");
-            iScheduler.notifyError(DeviceListener.CONNECTION_ERROR, msg);
+            deviceListener.notifyError(DeviceListener.CONNECTION_ERROR, msg);
 			break;
 		case 2: // bluetooth read error
         case 3: // bluetooth write error
@@ -446,13 +391,13 @@ public class RocheProthrombineTimeClient implements DeviceHandler,
 			runBTSocket();
 			reset();
             msg = ResourceManager.getResource().getString("ECommunicationError");
-            iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR, msg);
+            deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR, msg);
 			break;
 		case 4: // bluetooth close error
 			Log.e(TAG, description);
 			reset();
             msg = ResourceManager.getResource().getString("ECommunicationError");
-            iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR, msg);
+            deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR, msg);
 			break;
 		}
 	}
@@ -487,23 +432,9 @@ public class RocheProthrombineTimeClient implements DeviceHandler,
         tmpVal.put(GWConst.EGwCode_0Z, iINR);
         tmpVal.put(GWConst.EGwCode_0X, iQ);
 
-        Measure m = new Measure();
-        User u = UserManager.getUserManager().getCurrentUser();
-        m.setMeasureType(iUserDevice.getMeasure());
-        m.setDeviceDesc(iUserDevice.getDevice().getDescription());
-        m.setTimestamp(XmlManager.getXmlManager().getTimestamp(null));
-        m.setFile(null);
-        m.setFileType(null);
-        if (u != null) {
-            m.setIdUser(u.getId());
-            if (u.getIsPatient())
-                m.setIdPatient(u.getId());
-        }
+        Measure m = getMeasure();
         m.setMeasures(tmpVal);
-        m.setFailed(false);
-        m.setBtAddress(iBTAddress);
-
-        iScheduler.showMeasurementResults(m);
+        deviceListener.showMeasurementResults(m);
 	}
 
 	/**
@@ -676,7 +607,7 @@ public class RocheProthrombineTimeClient implements DeviceHandler,
 		Log.d(TAG, "disconnectProtocolError()");
 		
 		// Invia messaggio di errore allo scheduler
-        iScheduler.notifyToUi(ResourceManager.getResource().getString("KErrAlignDevices"));
+        deviceListener.notifyToUi(ResourceManager.getResource().getString("KErrAlignDevices"));
 
 		//isRecoveryStatus = true;
 		recoveryFromError();
@@ -690,7 +621,7 @@ public class RocheProthrombineTimeClient implements DeviceHandler,
     private void connectToServer() throws IOException {
         // this function is called when we are in EGettingService state and
         // we are going to EGettingConnection state
-        iBTAddress = iServiceSearcher.getCurrBTDevice().getAddress();
+        iBtDevAddr = iServiceSearcher.getCurrBTDevice().getAddress();
         // iPTRSocket is an RSocket in the Symbian version
         iPTRSocket.addBTSocketEventListener(this);
         iPTRSocket.connect(iServiceSearcher.getCurrBTDevice());
@@ -711,7 +642,7 @@ public class RocheProthrombineTimeClient implements DeviceHandler,
 			// still know that bluetooth is active and so we must advice it with
 			// setting
 			// a new state of bluetooth
-			// iScheduler.BTActivated();
+			// deviceListener.BTActivated();
 			// the automatic search, find all available addresses and when we
 			// arrive
 			// here we must check if the found address is the same of the
@@ -761,7 +692,7 @@ public class RocheProthrombineTimeClient implements DeviceHandler,
 				}
 				break;
 			case ECmdConnByUser:
-                iScheduler.notifyWaitToUi(ResourceManager.getResource().getString("KConnectingDev"));
+                deviceListener.notifyWaitToUi(ResourceManager.getResource().getString("KConnectingDev"));
 				break;
 			}
 			break;
@@ -772,7 +703,7 @@ public class RocheProthrombineTimeClient implements DeviceHandler,
 				connectToServer();
 			} catch (IOException e) {
                 String msg = ResourceManager.getResource().getString("EBtDeviceConnError");
-                iScheduler.notifyError(DeviceListener.CONNECTION_ERROR, msg);
+                deviceListener.notifyError(DeviceListener.CONNECTION_ERROR, msg);
 			}
 			break;
 
@@ -788,19 +719,19 @@ public class RocheProthrombineTimeClient implements DeviceHandler,
 		case EConnected:
 			Log.i(TAG, "EConnected");
 			
-			if(iPairingMode){
+			if(operationType == OperationType.Pair){
     			iState = TState.EDisconnectingPairing;
                 stop();
     		}  else {
     			if (iCmdCode.equals(TCmd.ECmdConnByUser)) {
-    				Log.i(TAG, "iBTAddress: " + iBTAddress);
-        			iScheduler.setBtMAC(iBTAddress);
+    				Log.i(TAG, "iBTAddress: " + iBtDevAddr);
+        			deviceListener.setBtMAC(iBtDevAddr);
     			}
     			// Strumento trovato si procede all'allineamento dei dispositivi
-    			iScheduler.notifyToUi(ResourceManager.getResource().getString(
+    			deviceListener.notifyToUi(ResourceManager.getResource().getString(
                         "KAlignDevices"));
     						
-    			iScheduler.askSomething(
+    			deviceListener.askSomething(
     					ResourceManager.getResource().getString("KAlignDevicesSend"),
     	    			ResourceManager.getResource().getString("confirmButton"), 
     	    			ResourceManager.getResource().getString("cancelButton"));
@@ -945,7 +876,7 @@ public class RocheProthrombineTimeClient implements DeviceHandler,
 				} else if (iAckReceived[0] == TTypeUserCommand
 						.getVal(TTypeUserCommand.kT_STA)) {
 					makeSendData(TTypeControl.getVal(TTypeControl.kT_CR));
-					iScheduler.notifyWaitToUi(ResourceManager.getResource()
+					deviceListener.notifyWaitToUi(ResourceManager.getResource()
 							.getString("KMeasuring"));
 					iState = TState.ESendPowerUpSeq;
 					sendCmd();
@@ -1096,7 +1027,7 @@ public class RocheProthrombineTimeClient implements DeviceHandler,
 						iPTRSocket.removeBTSocketEventListener(this);
 						iState = TState.EWaitingToGetDevice;
                         String msg = ResourceManager.getResource().getString("ECommunicationError");
-                        iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR, msg);
+                        deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR, msg);
 					}
 				} else {
 					if (iDataReceived == null) {
@@ -1382,8 +1313,8 @@ public class RocheProthrombineTimeClient implements DeviceHandler,
 			Log.i(TAG, "PTR: EDisconnectingPairing");
 			//Pairing eseguito con successo. Salva il BT MAC
     		iPTRSocket.removeBTSocketEventListener(this);
-    		iScheduler.configReady(ResourceManager.getResource().getString("KPairingMsgDone"));
-			iScheduler.setBtMAC(iBTAddress);				
+    		deviceListener.configReady(ResourceManager.getResource().getString("KPairingMsgDone"));
+			deviceListener.setBtMAC(iBtDevAddr);
 			currentPos = 0;
 			break;
 
@@ -1448,7 +1379,7 @@ public class RocheProthrombineTimeClient implements DeviceHandler,
 					// Richiede ultima misura
 					iCountNMR = 0;
 					//isRecoveryStatus = false;
-					iScheduler.notifyWaitToUi(ResourceManager.getResource()
+					deviceListener.notifyWaitToUi(ResourceManager.getResource()
 							.getString("KConnMsgMsgRochePTR"));
 
 					makeSendData(TTypeUserCommand
@@ -1467,7 +1398,7 @@ public class RocheProthrombineTimeClient implements DeviceHandler,
 					// reset();
 					recoveryFromError();
 
-					// iScheduler.Connected(KAlignMsgPTR,iScheduler.iUserData->iAudio);
+					// deviceListener.Connected(KAlignMsgPTR,deviceListener.iUserData->iAudio);
 
 					makeSendData(TTypeControl.getVal(TTypeControl.kT_CAN));
 

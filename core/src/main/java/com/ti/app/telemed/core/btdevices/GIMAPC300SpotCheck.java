@@ -18,12 +18,11 @@ import com.ti.app.telemed.core.btmodule.DeviceListener;
 import com.ti.app.telemed.core.btmodule.events.BTSearcherEvent;
 import com.ti.app.telemed.core.btmodule.events.BTSearcherEventListener;
 import com.ti.app.telemed.core.common.Measure;
-import com.ti.app.telemed.core.common.User;
 import com.ti.app.telemed.core.common.UserDevice;
-import com.ti.app.telemed.core.usermodule.UserManager;
 import com.ti.app.telemed.core.util.GWConst;
 
 import java.io.IOException;
+import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
 import java.text.DecimalFormat;
 import java.util.Calendar;
@@ -44,8 +43,8 @@ import com.creative.base.Isender;
 import com.ti.app.telemed.core.xmlmodule.XmlManager;
 
 public class GIMAPC300SpotCheck
-        extends Handler
-        implements DeviceHandler, IBluetoothCallBack, ISpotCheckCallBack {
+        extends DeviceHandler
+        implements IBluetoothCallBack, ISpotCheckCallBack {
 
 	private static final String TAG = "GIMAPC300SpotCheck";
 
@@ -66,25 +65,6 @@ public class GIMAPC300SpotCheck
 
     private static final int[] battValues = {10,40,70,100};
 
-    private enum TState {
-        WaitingToGetDevice, // default
-        GettingDevice,      // discovery in corso
-        Connecting,         // chiamata a connectDevice()
-        Connected,           // callabck connessione avvenuta OK o fine Misura
-        Disconnecting
-    }
-
-	// State of the active object
-    private TState iState;
-    // Type of search the scheduler requires
-    private TCmd iCmdCode;
-
-    private BTSearcherEventListener scanActivityListener;
-
-    // BT address of the connected device or the device to connect to
-    private String iBtDevAddr;
-    private UserDevice iUserDevice;
-
     private BluetoothDevice selectedDevice;
     private BluetoothOpertion  bluetoothOper = null;
     private BluetoothSocket devSocket = null;
@@ -97,11 +77,6 @@ public class GIMAPC300SpotCheck
 	private String iBodyTemperature;
     private int iBattery = 0;
 
-    private DeviceListener deviceListener;
-
-    // Indicates that the current request is not a measure but a connection request
-    private boolean iPairingMode = false;
-
     public static boolean needPairing(UserDevice userDevice) {
         return true;
     }
@@ -110,11 +85,35 @@ public class GIMAPC300SpotCheck
         return false;
     }
 
-    public GIMAPC300SpotCheck(DeviceListener aScheduler) {
+    public GIMAPC300SpotCheck(DeviceListener listener, UserDevice ud) {
+        super(listener, ud);
         deviceList = new Vector<>();
-        bluetoothOper = new BluetoothOpertion(MyApp.getContext(),this);
-        iState = TState.WaitingToGetDevice;
-        deviceListener = aScheduler;
+    }
+
+    @Override
+    public boolean startOperation(OperationType ot, BTSearcherEventListener btSearchListener) {
+        if (!startInit(ot, btSearchListener))
+            return false;
+
+        Log.d(TAG,"startOperation: iBtDevAddr="+iBtDevAddr + " iCmdCode="+iCmdCode.toString());
+        if (bluetoothOper == null)
+            bluetoothOper = new BluetoothOpertion(MyApp.getContext(),this);
+        bluetoothOper.discovery();
+        return true;
+    }
+
+    @Override
+    public void abortOperation() {
+        Log.d(TAG, "abortOperation");
+        stop();
+    }
+
+    @Override
+    public void selectDevice(int selected){
+        Log.d(TAG, "selectDevice: selected=" + selected);
+        selectedDevice = deviceList.elementAt(selected);
+        iBtDevAddr = selectedDevice.getAddress();
+        devOpHandler.sendEmptyMessage(MSG_DEVICE_SELECTED);
     }
 
 
@@ -125,17 +124,17 @@ public class GIMAPC300SpotCheck
         Log.d(TAG, "onFindDevice");
         switch (iCmdCode) {
             case ECmdConnByUser:
-                if (scanActivityListener != null) {
+                if (iBTSearchListener != null) {
                     if (device != null) {
                         deviceList.add(device);
                     }
-                    sendEmptyMessage(MSG_DEVICE_DISCOVERED);
+                    devOpHandler.sendEmptyMessage(MSG_DEVICE_DISCOVERED);
                 }
                 break;
             case ECmdConnByAddr:
                 if (device.getAddress().equals(iBtDevAddr))  {
                     selectedDevice = device;
-                    sendEmptyMessage(MSG_DEVICE_SELECTED);
+                    devOpHandler.sendEmptyMessage(MSG_DEVICE_SELECTED);
                 }
                 break;
         }
@@ -144,26 +143,26 @@ public class GIMAPC300SpotCheck
     @Override
     public void onDiscoveryCompleted(List<BluetoothDevice> var1) {
         Log.d(TAG, "onDiscoveryCompleted");
-        sendEmptyMessage(MSG_DISCOVERY_FINISH);
+        devOpHandler.sendEmptyMessage(MSG_DISCOVERY_FINISH);
     }
 
     @Override
     public void onConnected(BluetoothSocket socket) {
         Log.d(TAG, "onConnected");
         devSocket = socket;
-        sendEmptyMessage(MSG_DEVICE_CONNECTED);
+        devOpHandler.sendEmptyMessage(MSG_DEVICE_CONNECTED);
     }
 
     @Override
     public void onConnectFail(String var1){
         Log.d(TAG, "onConnectFail: " + var1);
-        sendEmptyMessage(MSG_DEVICE_ERROR);
+        devOpHandler.sendEmptyMessage(MSG_DEVICE_ERROR);
     }
 
     @Override
     public void onException(int var1){
         Log.d(TAG, "onException: " + var1);
-        sendEmptyMessage(MSG_DEVICE_ERROR);
+        devOpHandler.sendEmptyMessage(MSG_DEVICE_ERROR);
     }
 
     @Override
@@ -177,7 +176,7 @@ public class GIMAPC300SpotCheck
     @Override
     public void OnConnectLose() {
         Log.d(TAG, "OnConnectLose");
-        sendEmptyMessage(MSG_DISCONN);
+        devOpHandler.sendEmptyMessage(MSG_DISCONN);
     }
 
     @Override
@@ -188,16 +187,16 @@ public class GIMAPC300SpotCheck
     @Override
     public void OnGetDeviceVer(int nHWMajor, int nHWMinor, int nSWMajor, int nSWMinor, int nPower, int nBattery) {
 //        Log.d(TAG, "OnGetDeviceVer: nHWMajor="+nHWMajor+" nHWMinor="+nHWMinor+" nSWMajor="+nSWMajor+" nSWMinor="+nSWMinor+" nPower="+nPower+" nBattery="+nBattery);
-        obtainMessage(MSG_BATTERY, nPower, nBattery).sendToTarget();
+        devOpHandler.obtainMessage(MSG_BATTERY, nPower, nBattery).sendToTarget();
     }
 
     @Override
     public void OnGetECGAction(int status) {
         Log.d(TAG, "OnGetECGAction->"+status);
         if(status==1) {
-            sendEmptyMessage(MSG_MEASURING);
+            devOpHandler.sendEmptyMessage(MSG_MEASURING);
         } else if (status == 2) {
-            sendEmptyMessage(MSG_MEASURE_CANCELED);
+            devOpHandler.sendEmptyMessage(MSG_MEASURE_CANCELED);
         }
     }
 
@@ -220,7 +219,7 @@ public class GIMAPC300SpotCheck
     @Override
     public void OnGetECGResult(int nResult, int nHR) {
         Log.d(TAG, "OnGetECGResult: nResult="+nResult+" nHR="+nHR);
-        sendEmptyMessage(MSG_DISCONN);
+        devOpHandler.sendEmptyMessage(MSG_DISCONN);
     }
 
     @Override
@@ -231,13 +230,13 @@ public class GIMAPC300SpotCheck
     @Override
     public void OnGetGlu(float nGlu, int nGluStatus, int unit) {
         Log.d(TAG, "OnGetGlu: nGlu="+nGlu+" nGluStatus="+nGluStatus+" unit="+unit);
-        Message msg = obtainMessage(MSG_GLU);
+        Message msg = devOpHandler.obtainMessage(MSG_GLU);
         Bundle data = new Bundle();
         data.putFloat("nGlu", nGlu);
         data.putInt("nGluStatus", nGluStatus);
         data.putInt("unit", unit);
         msg.setData(data);
-        sendMessage(msg);
+        devOpHandler.sendMessage(msg);
     }
 
     @Override
@@ -249,9 +248,9 @@ public class GIMAPC300SpotCheck
     public void OnGetNIBPAction(int bStart) {
         Log.d(TAG, "OnGetNIBPAction: bStart="+bStart);
         if (bStart == 1)
-            sendEmptyMessage(MSG_MEASURING);
+            devOpHandler.sendEmptyMessage(MSG_MEASURING);
         else if (bStart == 2)
-            sendEmptyMessage(MSG_MEASURE_CANCELED);
+            devOpHandler.sendEmptyMessage(MSG_MEASURE_CANCELED);
     }
 
     @Override
@@ -262,7 +261,7 @@ public class GIMAPC300SpotCheck
     @Override
     public void OnGetNIBPResult(boolean bHR, int nPulse, int nMAP, int nSYS, int nDIA, int nGrade, int nBPErr) {
         Log.d(TAG, "OnGetNIBPResult: bHR="+(bHR?"true":"false")+" nPulse="+nPulse+" nMAP="+nMAP+" nSYS="+nSYS+" nDIA="+nDIA+" nGrade="+nGrade+" nBPErr="+nBPErr);
-        Message msg = obtainMessage(MSG_BP);
+        Message msg = devOpHandler.obtainMessage(MSG_BP);
         Bundle data = new Bundle();
         data.putBoolean("bHR", bHR);
         data.putInt("nPulse", nPulse);
@@ -272,7 +271,7 @@ public class GIMAPC300SpotCheck
         data.putInt("nGrade", nGrade);
         data.putInt("nBPErr", nBPErr);
         msg.setData(data);
-        sendMessage(msg);
+        devOpHandler.sendMessage(msg);
     }
 
     @Override
@@ -288,20 +287,20 @@ public class GIMAPC300SpotCheck
     @Override
     public void OnGetPowerOff() { //bluetooth disconnect , call it first
         Log.d(TAG, "OnGetPowerOff");
-        sendEmptyMessage(MSG_DISCONN);
+        devOpHandler.sendEmptyMessage(MSG_DISCONN);
     }
 
     @Override
     public void OnGetSpO2Param(int nSpO2, int nPR, float nPI, boolean bProbe, int nMode) {
         Log.d(TAG, "OnGetSpO2Param");
-        Message msg = obtainMessage(MSG_OXY);
+        Message msg = devOpHandler.obtainMessage(MSG_OXY);
         Bundle data = new Bundle();
         data.putInt("nSpO2", nSpO2);
         data.putInt("nPR", nPR);
         data.putBoolean("bProbe", bProbe);
         data.putInt("nMode", nMode);
         msg.setData(data);
-        sendMessage(msg);
+        devOpHandler.sendMessage(msg);
     }
 
     @Override
@@ -316,7 +315,7 @@ public class GIMAPC300SpotCheck
     @Override
     public void OnGetTmp(boolean bManualStart, boolean bProbeOff, float nTmp, int nTmpStatus, int nResultStatus) {
         Log.d(TAG, "OnGetTmp");
-        Message msg = obtainMessage(MSG_TEMPERATURE);
+        Message msg = devOpHandler.obtainMessage(MSG_TEMPERATURE);
         Bundle data = new Bundle();
         data.putBoolean("bManualStart", bManualStart);
         data.putBoolean("bProbeOff", bProbeOff);
@@ -324,7 +323,7 @@ public class GIMAPC300SpotCheck
         data.putInt("nTmpStatus", nTmpStatus);
         data.putInt("nResultStatus", nResultStatus);
         msg.setData(data);
-        sendMessage(msg);
+        devOpHandler.sendMessage(msg);
     }
 
     @Override
@@ -337,9 +336,9 @@ public class GIMAPC300SpotCheck
     public void OnGetSpO2Action(int action) {
         Log.d(TAG, "OnGetSpO2Action: action="+action);
         if (action == 1)
-            sendEmptyMessage(MSG_MEASURING);
+            devOpHandler.sendEmptyMessage(MSG_MEASURING);
         else if (action >= 2)
-            sendEmptyMessage(MSG_MEASURE_CANCELED);
+            devOpHandler.sendEmptyMessage(MSG_MEASURE_CANCELED);
     }
 
     @Override
@@ -351,9 +350,9 @@ public class GIMAPC300SpotCheck
     public void OnGetGLUAction(int status) {
         Log.d(TAG, "OnGetNIBPAction: status="+status);
         if (status == 1)
-            sendEmptyMessage(MSG_MEASURING);
+            devOpHandler.sendEmptyMessage(MSG_MEASURING);
         else if (status == 2)
-            sendEmptyMessage(MSG_MEASURE_CANCELED);
+            devOpHandler.sendEmptyMessage(MSG_MEASURE_CANCELED);
     }
 
     @Override
@@ -376,37 +375,9 @@ public class GIMAPC300SpotCheck
         makeGLUResultData();
     }
 
-    @Override
-    public void start(OperationType ot, UserDevice ud, BTSearcherEventListener scanActivityListener) {
-        if (iState == TState.WaitingToGetDevice) {
-            iPairingMode = ot == OperationType.Pair;
-            iUserDevice = ud;
-            this.scanActivityListener = scanActivityListener;
-            iBtDevAddr = iUserDevice.getBtAddress();
-            if (iBtDevAddr != null && !iBtDevAddr.isEmpty()) {
-                iCmdCode = TCmd.ECmdConnByAddr;
-            } else {
-                iCmdCode = TCmd.ECmdConnByUser;
-            }
-            iState = TState.GettingDevice;
-            bluetoothOper.discovery();
-        }
-    }
-
-    @Override
-    public void stopDeviceOperation(int selected) {
-    	if (selected < 0) {
-            stop();
-		} else {
-            selectedDevice = deviceList.elementAt(selected);
-            iBtDevAddr = selectedDevice.getAddress();
-            sendEmptyMessage(MSG_DEVICE_SELECTED);
-		}
-    }
-
 
     public void reset() {
-        iState = TState.WaitingToGetDevice;
+        iState = TState.EWaitingToGetDevice;
 
         deviceList.clear();
         selectedDevice = null;
@@ -417,7 +388,7 @@ public class GIMAPC300SpotCheck
 
     public void stop() {
         Log.d(TAG, "stop");
-        iState = TState.Disconnecting;
+        iState = TState.EDisconnecting;
         if (spotCheck != null)
             spotCheck.Stop();
 
@@ -428,113 +399,121 @@ public class GIMAPC300SpotCheck
                 bluetoothOper.disConnect(devSocket);
 
         reset();
-        deviceListener.operationCompleted();
     }
 
 
-    // Handler methods
+    private final MyHandler devOpHandler = new MyHandler(this);
 
-    @Override
-    public void handleMessage(Message msg) {
-        super.handleMessage(msg);
-        Bundle d;
-        switch (msg.what) {
-            case MSG_BATTERY:
-                if (msg.arg1 >= 0 && msg.arg1 < 4)
-                    iBattery = battValues[msg.arg1];
-                break;
-            case MSG_MEASURING:
-                deviceListener.notifyWaitToUi(ResourceManager.getResource().getString("KMeasuring"));
-                break;
-            case MSG_MEASURE_CANCELED:
-                deviceListener.notifyError(DeviceListener.MEASUREMENT_ERROR, ResourceManager.getResource().getString("KAbortMeasure"));
-                stop();
-                break;
-            case MSG_GLU:
-                d = msg.getData();
-                askGLUMeasure(d);
-                break;
-            case MSG_BP:
-                d = msg.getData();
-                makeBPResultData(d);
-                break;
-            case MSG_TEMPERATURE:
-                d = msg.getData();
-                if (d.getInt("nResultStatus") == 0) {
-                    iBodyTemperature = String.format(Locale.ITALY, "%.2f", msg.getData().getFloat("nTmp"));
-                    makeTemperatureResultData();
-                } else {
-                    // measure out of range
-                    deviceListener.notifyError(DeviceListener.MEASUREMENT_ERROR, ResourceManager.getResource().getString("KWrongMeasure"));
-                    stop();
-                }
-                break;
-            case MSG_OXY:
-                if (firstRead) {
-                    deviceListener.notifyToUi(ResourceManager.getResource().getString("KMeasuring"));
-                    firstRead = false;
-                }
-                d = msg.getData();
-                oxySample(d);
-                break;
-            case MSG_DISCONN:
-                if (iState == TState.Connected) {
-                    deviceListener.notifyError(DeviceListener.CONNECTION_ERROR, ResourceManager.getResource().getString("EBtDeviceConnError"));
-                    stop();
-                }
-                break;
-            case MSG_DEVICE_ERROR:
-                deviceListener.notifyError(DeviceListener.CONNECTION_ERROR, ResourceManager.getResource().getString("EBtDeviceConnError"));
-                stop();
-                break;
-            case MSG_DEVICE_DISCOVERED:
-                if (scanActivityListener != null)
-                    scanActivityListener.deviceDiscovered(new BTSearcherEvent(this), deviceList);
-                break;
-            case MSG_DISCOVERY_FINISH:
-                if (iState == TState.GettingDevice && iCmdCode == TCmd.ECmdConnByAddr) {
-                    // Bluetooth discovery finished without finding the device
-                    deviceListener.notifyError(DeviceListener.DEVICE_NOT_FOUND_ERROR, ResourceManager.getResource().getString("EDeviceNotFound"));
-                    stop();
-                } else if (iCmdCode == TCmd.ECmdConnByUser && scanActivityListener != null)
-                    scanActivityListener.deviceSearchCompleted(new BTSearcherEvent(this));
-                break;
-            case MSG_DEVICE_SELECTED:
-                // for some unknown reasons the discovered could notify the same device more times
-                if (iState == TState.GettingDevice) {
-                    bluetoothOper.connect(selectedDevice);
-                    deviceListener.notifyToUi(ResourceManager.getResource().getString("KConnectingDev"));
-                    iState = TState.Connecting;
-                }
-                break;
-            case MSG_DEVICE_CONNECTED:
-                deviceListener.setBtMAC(iBtDevAddr);
-                if (iPairingMode) {
-                    deviceListener.configReady(ResourceManager.getResource().getString("KPairingMsgDone"));
-                    stop();
-                } else {
-                    switch (iUserDevice.getMeasure()) {
-                        case GWConst.KMsrGlic:
-                            deviceListener.notifyToUi(ResourceManager.getResource().getString("DoMeasureGL"));
-                            break;
-                        case GWConst.KMsrTemp:
-                            deviceListener.notifyToUi(ResourceManager.getResource().getString("DoMeasureTC"));
-                            break;
-                        case GWConst.KMsrPres:
-                            deviceListener.notifyToUi(ResourceManager.getResource().getString("DoMeasurePR"));
-                            break;
-                        case GWConst.KMsrOss:
-                            deviceListener.notifyToUi(ResourceManager.getResource().getString("DoMeasureOS"));
-                            break;
+    private static class MyHandler extends Handler {
+        private final WeakReference<GIMAPC300SpotCheck> mOuter;
+
+        private MyHandler(GIMAPC300SpotCheck outer) {
+            mOuter = new WeakReference<>(outer);
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+            GIMAPC300SpotCheck outer = mOuter.get();
+            Bundle d;
+            switch (msg.what) {
+                case MSG_BATTERY:
+                    if (msg.arg1 >= 0 && msg.arg1 < 4)
+                        outer.iBattery = battValues[msg.arg1];
+                    break;
+                case MSG_MEASURING:
+                    outer.deviceListener.notifyWaitToUi(ResourceManager.getResource().getString("KMeasuring"));
+                    break;
+                case MSG_MEASURE_CANCELED:
+                    outer.deviceListener.notifyError(DeviceListener.MEASUREMENT_ERROR, ResourceManager.getResource().getString("KAbortMeasure"));
+                    outer.stop();
+                    break;
+                case MSG_GLU:
+                    d = msg.getData();
+                    outer.askGLUMeasure(d);
+                    break;
+                case MSG_BP:
+                    d = msg.getData();
+                    outer.makeBPResultData(d);
+                    break;
+                case MSG_TEMPERATURE:
+                    d = msg.getData();
+                    if (d.getInt("nResultStatus") == 0) {
+                        outer.iBodyTemperature = String.format(Locale.ITALY, "%.2f", msg.getData().getFloat("nTmp"));
+                        outer.makeTemperatureResultData();
+                    } else {
+                        // measure out of range
+                        outer.deviceListener.notifyError(DeviceListener.MEASUREMENT_ERROR, ResourceManager.getResource().getString("KWrongMeasure"));
+                        outer.stop();
                     }
-                    startDevice();
-                }
-                break;
-         }
+                    break;
+                case MSG_OXY:
+                    if (outer.firstRead) {
+                        outer.deviceListener.notifyToUi(ResourceManager.getResource().getString("KMeasuring"));
+                        outer.firstRead = false;
+                    }
+                    d = msg.getData();
+                    outer.oxySample(d);
+                    break;
+                case MSG_DISCONN:
+                    if (outer.iState == TState.EConnected) {
+                        outer.deviceListener.notifyError(DeviceListener.CONNECTION_ERROR, ResourceManager.getResource().getString("EBtDeviceConnError"));
+                        outer.stop();
+                    }
+                    break;
+                case MSG_DEVICE_ERROR:
+                    outer.deviceListener.notifyError(DeviceListener.CONNECTION_ERROR, ResourceManager.getResource().getString("EBtDeviceConnError"));
+                    outer.stop();
+                    break;
+                case MSG_DEVICE_DISCOVERED:
+                    if (outer.iBTSearchListener != null)
+                        outer.iBTSearchListener.deviceDiscovered(new BTSearcherEvent(this), outer.deviceList);
+                    break;
+                case MSG_DISCOVERY_FINISH:
+                    if (outer.iState == TState.EGettingDevice && outer.iCmdCode == TCmd.ECmdConnByAddr) {
+                        // Bluetooth discovery finished without finding the device
+                        outer.deviceListener.notifyError(DeviceListener.DEVICE_NOT_FOUND_ERROR, ResourceManager.getResource().getString("EDeviceNotFound"));
+                        outer.stop();
+                    } else if (outer.iCmdCode == TCmd.ECmdConnByUser && outer.iBTSearchListener != null)
+                        outer.iBTSearchListener.deviceSearchCompleted(new BTSearcherEvent(this));
+                    break;
+                case MSG_DEVICE_SELECTED:
+                    // for some unknown reasons the discovered could notify the same device more times
+                    if (outer.iState == TState.EGettingDevice) {
+                        outer.bluetoothOper.connect(outer.selectedDevice);
+                        outer.deviceListener.notifyToUi(ResourceManager.getResource().getString("KConnectingDev"));
+                        outer.iState = TState.EGettingConnection;
+                    }
+                    break;
+                case MSG_DEVICE_CONNECTED:
+                    outer.deviceListener.setBtMAC(outer.iBtDevAddr);
+                    if (outer.operationType == OperationType.Pair) {
+                        outer.deviceListener.configReady(ResourceManager.getResource().getString("KPairingMsgDone"));
+                        outer.stop();
+                    } else {
+                        switch (outer.iUserDevice.getMeasure()) {
+                            case GWConst.KMsrGlic:
+                                outer.deviceListener.notifyToUi(ResourceManager.getResource().getString("DoMeasureGL"));
+                                break;
+                            case GWConst.KMsrTemp:
+                                outer.deviceListener.notifyToUi(ResourceManager.getResource().getString("DoMeasureTC"));
+                                break;
+                            case GWConst.KMsrPres:
+                                outer.deviceListener.notifyToUi(ResourceManager.getResource().getString("DoMeasurePR"));
+                                break;
+                            case GWConst.KMsrOss:
+                                outer.deviceListener.notifyToUi(ResourceManager.getResource().getString("DoMeasureOS"));
+                                break;
+                        }
+                        outer.startDevice();
+                    }
+                    break;
+            }
+        }
     }
 
     private void startDevice() {
-        iState = TState.Connected;
+        iState = TState.EConnected;
         try {
             Ireader reader = new InputStreamReader(devSocket.getInputStream());
             Isender sender = new OutputStreamSender(devSocket.getOutputStream());
@@ -604,18 +583,6 @@ public class GIMAPC300SpotCheck
     }
 
     private void makeGLUResultData() {
-        Measure m = new Measure();
-        User u = UserManager.getUserManager().getCurrentUser();
-        m.setMeasureType(iUserDevice.getMeasure());
-        m.setDeviceDesc(iUserDevice.getDevice().getDescription());
-        m.setTimestamp(XmlManager.getXmlManager().getTimestamp(null));
-        m.setFile(null);
-        m.setFileType(null);
-        if (u != null) {
-            m.setIdUser(u.getId());
-            if (u.getIsPatient())
-                m.setIdPatient(u.getId());
-        }
         HashMap<String, String> tmpVal = new HashMap<>();
         if (prePrandial) {
             tmpVal.put(GWConst.EGwCode_0E, Integer.toString(gluValue));  // glicemia Pre-prandiale
@@ -623,9 +590,8 @@ public class GIMAPC300SpotCheck
             tmpVal.put(GWConst.EGwCode_0T, Integer.toString(gluValue));  // glicemia Post-prandiale
         }
         tmpVal.put(GWConst.EGwCode_BATTERY, Integer.toString(iBattery)); // livello batteria
+        Measure m = getMeasure();
         m.setMeasures(tmpVal);
-        m.setFailed(false);
-        m.setBtAddress(iBtDevAddr);
         deviceListener.showMeasurementResults(m);
         stop();
     }
@@ -651,31 +617,8 @@ public class GIMAPC300SpotCheck
         tmpVal.put(GWConst.EGwCode_04, Integer.toString(b.getInt("nSYS"))); // pressione massima
         tmpVal.put(GWConst.EGwCode_06, Integer.toString(b.getInt("nPulse"))); // freq cardiaca
         tmpVal.put(GWConst.EGwCode_BATTERY, Integer.toString(iBattery)); // livello batteria
-/*
-        data.putBoolean("bHR", bHR);
-        data.putInt("nPulse", nPulse);
-        data.putInt("nMAP", nMAP);
-        data.putInt("nSYS", nSYS);
-        data.putInt("nDIA", nDIA);
-        data.putInt("nGrade", nGrade);
-        data.putInt("nBPErr", nBPErr);
-*/
-        Measure m = new Measure();
-        User u = UserManager.getUserManager().getCurrentUser();
-        m.setMeasureType(iUserDevice.getMeasure());
-        m.setDeviceDesc(iUserDevice.getDevice().getDescription());
-        m.setTimestamp(XmlManager.getXmlManager().getTimestamp(null));
-        m.setFile(null);
-        m.setFileType(null);
-        if (u != null) {
-            m.setIdUser(u.getId());
-            if (u.getIsPatient())
-                m.setIdPatient(u.getId());
-        }
+        Measure m = getMeasure();
         m.setMeasures(tmpVal);
-        m.setFailed(false);
-        m.setBtAddress(iBtDevAddr);
-
         deviceListener.showMeasurementResults(m);
         stop();
     }
@@ -692,22 +635,8 @@ public class GIMAPC300SpotCheck
             tmpVal.put(GWConst.EGwCode_0R, iBodyTemperature);
             tmpVal.put(GWConst.EGwCode_BATTERY, Integer.toString(iBattery)); // livello batteria
 
-            Measure m = new Measure();
-            User u = UserManager.getUserManager().getCurrentUser();
-            m.setMeasureType(iUserDevice.getMeasure());
-            m.setDeviceDesc(iUserDevice.getDevice().getDescription());
-            m.setTimestamp(XmlManager.getXmlManager().getTimestamp(null));
-            m.setFile(null);
-            m.setFileType(null);
-            if (u != null) {
-                m.setIdUser(u.getId());
-                if (u.getIsPatient())
-                    m.setIdPatient(u.getId());
-            }
+            Measure m = getMeasure();
             m.setMeasures(tmpVal);
-            m.setFailed(false);
-            m.setBtAddress(iBtDevAddr);
-
             deviceListener.showMeasurementResults(m);
         }
         stop();
@@ -952,23 +881,10 @@ public class GIMAPC300SpotCheck
         tmpVal.put(GWConst.EGwCode_1H, oxyFileName);  // filename
         tmpVal.put(GWConst.EGwCode_BATTERY, Integer.toString(iBattery)); // livello batteria
 
-
-        Measure m = new Measure();
-        User u = UserManager.getUserManager().getCurrentUser();
-        m.setMeasureType(iUserDevice.getMeasure());
-        m.setDeviceDesc(iUserDevice.getDevice().getDescription());
-        m.setTimestamp(XmlManager.getXmlManager().getTimestamp(null));
+        Measure m = getMeasure();
         m.setFile(oxyStream);
         m.setFileType(XmlManager.MIR_OXY_FILE_TYPE);
-        if (u != null) {
-            m.setIdUser(u.getId());
-            if (u.getIsPatient())
-                m.setIdPatient(u.getId());
-        }
         m.setMeasures(tmpVal);
-        m.setFailed(false);
-        m.setBtAddress(iBtDevAddr);
-
         deviceListener.showMeasurementResults(m);
         stop();
     }

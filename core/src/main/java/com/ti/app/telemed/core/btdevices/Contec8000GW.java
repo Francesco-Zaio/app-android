@@ -18,41 +18,25 @@ import com.ti.app.telemed.core.btmodule.events.BTSearcherEventListener;
 import com.ti.app.telemed.core.btmodule.events.BTSocketEvent;
 import com.ti.app.telemed.core.btmodule.events.BTSocketEventListener;
 import com.ti.app.telemed.core.common.Measure;
-import com.ti.app.telemed.core.common.User;
 import com.ti.app.telemed.core.common.UserDevice;
 import com.ti.app.telemed.core.devicesactivities.Contec8000GWActivity;
-import com.ti.app.telemed.core.usermodule.UserManager;
-import com.ti.app.telemed.core.xmlmodule.XmlManager;
-
 
 import java.io.IOException;
 import java.util.Vector;
 
 
-public class Contec8000GW extends BroadcastReceiver implements DeviceHandler, BTSearcherEventListener, BTSocketEventListener {
+public class Contec8000GW extends DeviceHandler implements  BTSearcherEventListener, BTSocketEventListener {
 
     public static final String CONTEC8000GW_BROADCAST_EVENT = "com.ti.app.telemed.core.btdevices.Contec8000GW";
+    public static final String BT_ADDRESS = "BT_ADDRESS";
+    public static final String MEASURE_OBJECT = "MEASURE_OBJECT";
+
     public static final String RESULT = "RESULT";
     public static final int RESULT_OK = 0;
     public static final int RESULT_ERROR = 1;
     public static final int RESULT_ABORT = 2;
 
     private static final String TAG = "Contec8000GW";
-
-    private enum TState {
-        EWaitingToGetDevice,
-        EGettingDevice,
-        EGettingService,
-        EGettingConnection,
-        EActivityRunning,
-        EDisconnecting,
-        EDisconnectingPairing,
-    }
-
-    // State of the active object
-    private TState iState;
-    // Type of search the scheduler requires
-    private TCmd iCmdCode;
 
     // iServiceSearcher searches for service this client can
     // connect to (in symbian version the type was CBTUtil) and
@@ -61,25 +45,11 @@ public class Contec8000GW extends BroadcastReceiver implements DeviceHandler, BT
     // iCGBloodPressureSocket is an RSocket in the Symbian version
     private BTSocket deviceSocket;
 
-    // BT address obtained from scheduler (in symbian version the
-    // type was TBTDevAddr)
-    private String iBtDevAddr;
-
-    // BT address of the found device (we can have not received bt address from
-    // scheduler or it can be changed, so we take this value from the searcher
-    // after the device finding)
-    private String iBTAddress;
-    private boolean iPairingMode;
-    private Measure iMeasure;
-
     private boolean serverOpenFailed;
-
     private Vector<BluetoothDevice> deviceList;
     private int currentPos;
     private boolean deviceSearchCompleted;
 
-    // a pointer to scheduler
-    private DeviceListener iScheduler;
 
     public static boolean needPairing(UserDevice userDevice) {
         return true;
@@ -89,18 +59,55 @@ public class Contec8000GW extends BroadcastReceiver implements DeviceHandler, BT
         return false;
     }
 
-    public Contec8000GW (DeviceListener aScheduler) {
-        iState = TState.EWaitingToGetDevice;
-        iScheduler = aScheduler;
+    public Contec8000GW (DeviceListener listener, UserDevice ud) {
+        super(listener, ud);
+
         deviceSearchCompleted = false;
         serverOpenFailed = false;
         iServiceSearcher = new BTSearcher();
         deviceSocket = BTSocket.getBTSocket();
     }
 
+    // DeviceHandler interface Methods
+
+    @Override
+    public void confirmDialog() {
+    }
+    @Override
+    public void cancelDialog(){
+    }
+
+    @Override
+    public boolean startOperation(OperationType ot, BTSearcherEventListener btSearchListener) {
+        if (!startInit(ot, btSearchListener))
+            return false;
+
+        Log.d(TAG,"startOperation: iBtDevAddr="+iBtDevAddr + " iCmdCode="+iCmdCode.toString());
+        iServiceSearcher.clearBTSearcherEventListener();
+        iServiceSearcher.addBTSearcherEventListener(this);
+        if (iCmdCode == TCmd.ECmdConnByUser)
+            iServiceSearcher.addBTSearcherEventListener(btSearchListener);
+        iServiceSearcher.setSearchType(iCmdCode);
+        iServiceSearcher.startSearchDevices();
+        return true;
+    }
+
+    @Override
+    public void abortOperation() {
+        Log.d(TAG, "abortOperation");
+        stop();
+    }
+
+    @Override
+    public void selectDevice(int selected){
+        Log.d(TAG, "selectDevice: selected=" + selected);
+        iServiceSearcher.stopSearchDevices(selected);
+    }
+
+
     private void connectToDevice() throws IOException {
         Log.i(TAG, "connectToDevice");
-        iBTAddress = iServiceSearcher.getCurrBTDevice().getAddress();
+        iBtDevAddr = iServiceSearcher.getCurrBTDevice().getAddress();
         deviceSocket.addBTSocketEventListener(this);
         deviceSocket.connect(iServiceSearcher.getCurrBTDevice());
     }
@@ -133,33 +140,34 @@ public class Contec8000GW extends BroadcastReceiver implements DeviceHandler, BT
                         // the selection done by user is managed in the ui class which
                         // implements BTSearcherEventListener interface, so here arrive
                         // when the selection is already done
-                        iScheduler.notifyWaitToUi(ResourceManager.getResource().getString("KConnectingDev"));
+                        deviceListener.notifyWaitToUi(ResourceManager.getResource().getString("KConnectingDev"));
                         break;
                 }
                 break;
             case EGettingService:
                 iState = TState.EGettingConnection;
                 try {
-                    if (iPairingMode)
+                    if (operationType == OperationType.Pair)
                         connectToDevice();
                     else {
                         startActivity();
                     }
                 } catch (IOException e) {
-                    iScheduler.notifyError(DeviceListener.CONNECTION_ERROR, ResourceManager.getResource().getString("EBtDeviceConnError"));
+                    deviceListener.notifyError(DeviceListener.CONNECTION_ERROR, ResourceManager.getResource().getString("EBtDeviceConnError"));
                 }
                 break;
         }
     }
 
     private void startActivity() {
+        Measure m = getMeasure();
         Intent intent = new Intent( MyApp.getContext(), Contec8000GWActivity.class );
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        intent.putExtra(MEASURE_OBJECT, iMeasure);
+        intent.putExtra(MEASURE_OBJECT, m);
         intent.putExtra(BT_ADDRESS, iBtDevAddr);
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(CONTEC8000GW_BROADCAST_EVENT);
-        MyApp.getContext().registerReceiver(this,intentFilter);
+        MyApp.getContext().registerReceiver(receiver,intentFilter);
         MyApp.getContext().startActivity(intent);
     }
 
@@ -167,7 +175,10 @@ public class Contec8000GW extends BroadcastReceiver implements DeviceHandler, BT
         switch(iState) {
             case EGettingConnection:
                 Log.i(TAG, "EGettingConnection in runBTSocket");
-                iState = TState.EDisconnectingPairing;
+                if (operationType == OperationType.Pair) {
+                    deviceListener.configReady(ResourceManager.getResource().getString("KPairingMsgDone"));
+                    deviceListener.setBtMAC(iBtDevAddr);
+                }
                 stop();
                 break;
             case EDisconnecting:
@@ -177,115 +188,30 @@ public class Contec8000GW extends BroadcastReceiver implements DeviceHandler, BT
                 deviceSocket.close();
                 reset();
                 break;
-            case EDisconnectingPairing:
-                Log.i(TAG, "EDisconnectingPairing in runBTSocket");
-                //Pairing eseguito con successo. Salva il BT MAC
-                deviceSocket.removeBTSocketEventListener(this);
-                iScheduler.configReady(ResourceManager.getResource().getString("KPairingMsgDone"));
-                iScheduler.setBtMAC(iBTAddress);
-                currentPos = 0;
-                break;
         }
     }
 
-
-    // DeviceHandler interface Methods
-
-    @Override
-    public void confirmDialog() {
-    }
-    @Override
-    public void cancelDialog(){
-    }
-
-    @Override
-    public void start(OperationType ot, UserDevice ud, BTSearcherEventListener btSearchListener) {
-        if (iState == TState.EWaitingToGetDevice) {
-            iPairingMode = ot == OperationType.Pair;
-            iBtDevAddr = ud.getBtAddress();
-
-            iMeasure = new Measure();
-            User u = UserManager.getUserManager().getCurrentUser();
-            iMeasure.setMeasureType(ud.getMeasure());
-            iMeasure.setDeviceDesc(ud.getDevice().getDescription());
-            iMeasure.setTimestamp(XmlManager.getXmlManager().getTimestamp(null));
-            iMeasure.setFile(null);
-            iMeasure.setFileType(null);
-            if (u != null) {
-                iMeasure.setIdUser(u.getId());
-                if (u.getIsPatient())
-                    iMeasure.setIdPatient(u.getId());
-            }
-            iMeasure.setFailed(false);
-
-            iServiceSearcher.clearBTSearcherEventListener();
-            iServiceSearcher.addBTSearcherEventListener(this);
-            if (iBtDevAddr != null && !iBtDevAddr.isEmpty()) {
-                iCmdCode = TCmd.ECmdConnByAddr;
-            } else {
-                iCmdCode = TCmd.ECmdConnByUser;
-                iServiceSearcher.addBTSearcherEventListener(btSearchListener);
-            }
-            iState = TState.EGettingDevice;
-            iServiceSearcher.setSearchType(iCmdCode);
-            // it launch the automatic procedures for the manual device search
-            iServiceSearcher.startSearchDevices();
-        }
-    }
-
-    @Override
-    public void stopDeviceOperation(int selected) {
-        if (selected == -1) {
-            // L'utente ha premuto Annulla sulla finestra di dialogo
-            stop();
-            reset();
-        } else if (selected == -2) {
-            // L'utente ha premuto back o ha chiuso la lista dei device trovati sena selezionarne nessuno
-            iServiceSearcher.stopSearchDevices(-1);
-            iServiceSearcher.removeBTSearcherEventListener(this);
-            if (iState != TState.EGettingDevice) {
-                // we advise the scheduler of the end of the activity on the device
-                iScheduler.operationCompleted();
-            }
-        } else {
-            // >= 0 (device selezionato)
-            iServiceSearcher.stopSearchDevices(selected);
-        }
-    }
-
-
-    public void reset() {
+    private void reset() {
         iState = TState.EWaitingToGetDevice;
         deviceSearchCompleted = false;
         serverOpenFailed = false;
-        iBTAddress = null;
+        iBtDevAddr = null;
     }
 
-    public void stop() {
-        if (iState == TState.EGettingDevice) {
-            iServiceSearcher.stopSearchDevices(-1);
-            iServiceSearcher.close();
-            // we advise the scheduler of the end of the activity on the device
-            iScheduler.operationCompleted();
-        } else if (iState == TState.EGettingService) {
-            iServiceSearcher.close();
-            // we advise the scheduler of the end of the activity on the device
-            iScheduler.operationCompleted();
-        } else if (iState == TState.EDisconnectingPairing) {
+    private void stop() {
+        try {
+            MyApp.getContext().unregisterReceiver(receiver);
+        } catch (IllegalArgumentException e){
+            // ignore exception
+        }
+        iServiceSearcher.stopSearchDevices(-1);
+        iServiceSearcher.clearBTSearcherEventListener();
+        iServiceSearcher.close();
+        if (!serverOpenFailed) {
             deviceSocket.close();
             deviceSocket.removeBTSocketEventListener(this);
-            runBTSocket();
-            // we advise the scheduler of the end of the activity on the device
-            iScheduler.operationCompleted();
-        }  else {
-            if (!serverOpenFailed) {
-                // cancels all outstanding operations on socket
-                deviceSocket.close();
-                deviceSocket.removeBTSocketEventListener(this);
-            }
-            // we advise the scheduler of the end of the activity on the device
-            iScheduler.operationCompleted();
         }
+        reset();
     }
 
 
@@ -307,7 +233,7 @@ public class Contec8000GW extends BroadcastReceiver implements DeviceHandler, BT
 
     @Override
     public void deviceSelected(BTSearcherEvent evt) {
-        Log.i(TAG, "deviceSelected");
+        Log.i(TAG, "selectDevice");
         // we change status
         iState = TState.EGettingService;
 
@@ -324,18 +250,18 @@ public class Contec8000GW extends BroadcastReceiver implements DeviceHandler, BT
             case 0: //thread interrupted
             case 4: //bluetooth close error
                 reset();
-                iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR,ResourceManager.getResource().getString("ECommunicationError"));
+                deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR,ResourceManager.getResource().getString("ECommunicationError"));
                 break;
             case 1: //bluetooth open error
                 serverOpenFailed = true;
-                iScheduler.notifyError(DeviceListener.CONNECTION_ERROR,ResourceManager.getResource().getString("EBtDeviceConnError"));
+                deviceListener.notifyError(DeviceListener.CONNECTION_ERROR,ResourceManager.getResource().getString("EBtDeviceConnError"));
                 break;
             case 2: //bluetooth read error
             case 3: //bluetooth write error
                 iState = TState.EDisconnecting;
                 runBTSocket();
                 reset();
-                iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR,ResourceManager.getResource().getString("ECommunicationError"));
+                deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR,ResourceManager.getResource().getString("ECommunicationError"));
                 break;
         }
     }
@@ -356,25 +282,25 @@ public class Contec8000GW extends BroadcastReceiver implements DeviceHandler, BT
     }
 
 
-    // BroadcastReceiver Method
-
-    @Override
-    public void onReceive(Context context, Intent intent) {
-        int result = intent.getExtras().getInt(RESULT);
-        switch (result) {
-            case RESULT_ABORT:
-                reset();
-                iScheduler.notifyError(DeviceListener.NO_MEASURES_FOUND, ResourceManager.getResource().getString("KNoNewMeasure"));
-                break;
-            case RESULT_ERROR:
-                reset();
-                iScheduler.notifyError(DeviceListener.COMMUNICATION_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
-                break;
-            case RESULT_OK:
-                iMeasure = (Measure)intent.getExtras().getSerializable(MEASURE_OBJECT);
-                iScheduler.showMeasurementResults(iMeasure);
-                break;
+    private final BroadcastReceiver receiver = new BroadcastReceiver () {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            int result = intent.getExtras().getInt(RESULT);
+            switch (result) {
+                case RESULT_ABORT:
+                    reset();
+                    deviceListener.notifyError(DeviceListener.NO_MEASURES_FOUND, ResourceManager.getResource().getString("KNoNewMeasure"));
+                    break;
+                case RESULT_ERROR:
+                    reset();
+                    deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
+                    break;
+                case RESULT_OK:
+                    Measure iMeasure = (Measure) intent.getExtras().getSerializable(MEASURE_OBJECT);
+                    deviceListener.showMeasurementResults(iMeasure);
+                    break;
+            }
         }
-    }
+    };
 
 }

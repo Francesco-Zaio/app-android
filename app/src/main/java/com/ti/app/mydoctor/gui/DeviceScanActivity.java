@@ -31,6 +31,9 @@ public class DeviceScanActivity extends Activity implements BTSearcherEventListe
     private ArrayAdapter<String> mNewDevicesArrayAdapter;
     
     public static final String SELECTED_DEVICE_POSITION = "SELECTED_DEVICE_POSITION";
+	public static final String SELECTED_DEVICE = "SELECTED_DEVICE";
+
+    private Vector<BluetoothDevice> devList;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,6 +46,7 @@ public class DeviceScanActivity extends Activity implements BTSearcherEventListe
         // Initialize array adapter
         mNewDevicesArrayAdapter = new MyArrayAdapter(this, R.layout.device_name);
 
+        devList = null;
         // Find and set up the ListView for newly discovered devices
         ListView newDevicesListView = (ListView) findViewById(R.id.new_devices);
         newDevicesListView.setAdapter(mNewDevicesArrayAdapter);
@@ -75,6 +79,7 @@ public class DeviceScanActivity extends Activity implements BTSearcherEventListe
             	setResult(RESULT_CANCELED);            	
             } else {
             	Intent res = new Intent();
+				res.putExtra(SELECTED_DEVICE, devList.get(position));
             	res.putExtra(SELECTED_DEVICE_POSITION, position);
             	setResult(RESULT_OK, res);
             }          
@@ -85,6 +90,7 @@ public class DeviceScanActivity extends Activity implements BTSearcherEventListe
 	@Override
 	public void deviceDiscovered(BTSearcherEvent evt,
 			Vector<BluetoothDevice> devList) {
+        this.devList = devList;
 		BluetoothDevice dev = devList.lastElement();
 		if(dev.getName()!= null){
 			mNewDevicesArrayAdapter.add(dev.getName());
@@ -107,7 +113,7 @@ public class DeviceScanActivity extends Activity implements BTSearcherEventListe
 
 	@Override
 	public void deviceSelected(BTSearcherEvent evt) {
-		Log.i(TAG, "deviceSelected");
+		Log.i(TAG, "selectDevice");
 	}
 	
 	private class MyArrayAdapter extends ArrayAdapter<String> {

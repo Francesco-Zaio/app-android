@@ -21,6 +21,7 @@ import com.ti.app.telemed.core.btmodule.DeviceListener;
 import com.ti.app.telemed.core.btmodule.events.BTSearcherEvent;
 import com.ti.app.telemed.core.btmodule.events.BTSearcherEventListener;
 import com.ti.app.telemed.core.common.Measure;
+import com.ti.app.telemed.core.common.Patient;
 import com.ti.app.telemed.core.common.User;
 import com.ti.app.telemed.core.common.UserDevice;
 import com.ti.app.telemed.core.usermodule.UserManager;
@@ -28,6 +29,7 @@ import com.ti.app.telemed.core.util.GWConst;
 import com.ti.app.telemed.core.util.Util;
 import com.ti.app.telemed.core.xmlmodule.XmlManager;
 
+import java.lang.ref.WeakReference;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -37,8 +39,7 @@ import java.util.Locale;
 import java.util.Vector;
 
 
-public class AgamatrixJazz extends Handler implements
-        DeviceHandler,
+public class AgamatrixJazz extends DeviceHandler implements
         BTSearcherEventListener,
         ConnectionStateListener,
         MeterSettingsListener,
@@ -58,28 +59,11 @@ public class AgamatrixJazz extends Handler implements
     private static final int HANDLER_SETTINGS = 106;
     private static final int HANDLER_MEASURES_COUNT = 107;
 
-    private enum TState {
-        EWaitingToGetDevice,    // default e notifica disconnessione
-        EGettingDevice,         // chiamata di start(...)
-        EGettingConnection,     // chiamata a connectDevice()
-        EDisconnecting,         // chiamata a disconnectDevice
-        EConnected,             // callabck connessione avvenuta OK o fine Misura
-        EGettingMeasures       // chiamata startMeasures
-    }
-
-    private DeviceListener deviceListener;
     private Vector<BluetoothDevice> deviceList;
     private BTSearcher iServiceSearcher;
-    private BTSearcherEventListener scanActivityListener;
-    private TState iState;
-    private String iBtDevAddr;
-    private boolean iPairingMode;
-    private TCmd iCmdCode;
     private boolean prePrandial = true;
-    private BluetoothDevice device;
     private AgaMatrixClient mClient;
     private int batteryLevel = 0;
-    private Measure m;
     private double conversionFactor = 1.;
     private ArrayList<?> measurements;
     private int measureIndex = 0;
@@ -95,11 +79,10 @@ public class AgamatrixJazz extends Handler implements
         return false;
     }
 
-    public AgamatrixJazz(DeviceListener aScheduler) {
-        iState = TState.EWaitingToGetDevice;
-        scanActivityListener = null;
+    public AgamatrixJazz(DeviceListener listener, UserDevice ud) {
+            super(listener, ud);
+
         iServiceSearcher = new BTSearcher();
-        deviceListener = aScheduler;
         deviceList = new Vector<>();
         mClient = null;
         measurements = null;
@@ -122,58 +105,29 @@ public class AgamatrixJazz extends Handler implements
     }
 
     @Override
-    public void start(OperationType ot, UserDevice ud, BTSearcherEventListener btSearchListener) {
-        if (iState == TState.EWaitingToGetDevice && ud != null) {
-            Log.d(TAG,"start: iBtDevAddr="+ud.getBtAddress());
-            iPairingMode = (ot == OperationType.Pair);
-            iState = TState.EGettingMeasures;
-            measurements = null;
-            iBtDevAddr = ud.getBtAddress();
-            scanActivityListener = btSearchListener;
+    public boolean startOperation(OperationType ot, BTSearcherEventListener btSearchListener) {
+        if (!startInit(ot, btSearchListener))
+            return false;
 
-            m = new Measure();
-            User u = UserManager.getUserManager().getCurrentUser();
-            m.setMeasureType(ud.getMeasure());
-            m.setDeviceDesc(ud.getDevice().getDescription());
-            m.setTimestamp(XmlManager.getXmlManager().getTimestamp(null));
-            m.setFile(null);
-            m.setFileType(null);
-            if (u != null) {
-                m.setIdUser(u.getId());
-                if (u.getIsPatient())
-                    m.setIdPatient(u.getId());
-            }
-            m.setFailed(false);
-            m.setBtAddress(iBtDevAddr);
+        Log.d(TAG,"startOperation: iBtDevAddr="+iBtDevAddr + " iCmdCode="+iCmdCode.toString());
+        iServiceSearcher.clearBTSearcherEventListener();
+        iServiceSearcher.addBTSearcherEventListener(this);
+        iServiceSearcher.setSearchType(iCmdCode);
+        iServiceSearcher.startSearchDevices();
 
-
-            iServiceSearcher.clearBTSearcherEventListener();
-            iServiceSearcher.addBTSearcherEventListener(this);
-            if (iBtDevAddr != null && !iBtDevAddr.isEmpty()) {
-                iCmdCode = TCmd.ECmdConnByAddr;
-            } else {
-                iCmdCode = TCmd.ECmdConnByUser;
-            }
-            iState = TState.EGettingDevice;
-            iServiceSearcher.setSearchType(iCmdCode);
-            // it launch the automatic procedures for the manual device search
-            iServiceSearcher.startSearchDevices();
-        }
+        return true;
     }
 
     @Override
-    public void stopDeviceOperation(int selected) {
-        Log.d(TAG, "stopDeviceOperation: selected=" + selected);
+    public void abortOperation() {
+        Log.d(TAG, "abortOperation");
+        stop();
+    }
 
-        // selected == -1 Normal end of operation
-        // selected == -2 Operation interrupted
-        // selected >= 0 the user has selected the device at the 'selected' position in the list of discovered devices
-        if (selected < 0) {
-            stop();
-        } else {
-            device = deviceList.get(selected);
-            iServiceSearcher.stopSearchDevices(selected);
-        }
+    @Override
+    public void selectDevice(int selected){
+        Log.d(TAG, "selectDevice: selected=" + selected);
+        iServiceSearcher.stopSearchDevices(selected);
     }
 
 
@@ -186,26 +140,26 @@ public class AgamatrixJazz extends Handler implements
         if (iCmdCode == TCmd.ECmdConnByAddr) {
             for (int i=0; i<deviceList.size(); i++)
                 if (iBtDevAddr.equalsIgnoreCase(deviceList.get(i).getAddress())) {
-                    device = deviceList.get(i);
                     iServiceSearcher.stopSearchDevices(i);
                 }
-        } else if (scanActivityListener != null) {
-            scanActivityListener.deviceDiscovered(evt, deviceList);
+        } else if (iBTSearchListener != null) {
+            iBTSearchListener.deviceDiscovered(evt, deviceList);
         }
     }
 
     @Override
     public void deviceSearchCompleted(BTSearcherEvent evt) {
-        if (iCmdCode == TCmd.ECmdConnByUser && scanActivityListener != null)
-            scanActivityListener.deviceSearchCompleted(evt);
+        if (iCmdCode == TCmd.ECmdConnByUser && iBTSearchListener != null)
+            iBTSearchListener.deviceSearchCompleted(evt);
     }
 
     @Override
     public void deviceSelected(BTSearcherEvent evt) {
-        Log.i(TAG, "deviceSelected: iBtDevAddr="+device.getAddress());
         iState = TState.EGettingConnection;
-        iBtDevAddr = device.getAddress();
-        mClient = AgaMatrixClient.getInstance(MyApp.getContext(), device);
+        BluetoothDevice d = iServiceSearcher.getCurrBTDevice();
+        Log.i(TAG, "selectDevice: iBtDevAddr="+d.getAddress());
+        iBtDevAddr =  d.getAddress();
+        mClient = AgaMatrixClient.getInstance(MyApp.getContext(), d);
         mClient.setAPIKey(AUTHORIZATION_KEY);
         mClient.registerConnectionStateListener(this);
         mClient.getBatteryStatus(this);
@@ -219,27 +173,27 @@ public class AgamatrixJazz extends Handler implements
     public void onConnectionStateChange(int state, int status, String macAddr) {
         Log.d(TAG,"onConnectionStateChange: state="+state+" stauts="+status+"macAddr="+macAddr);
         if (state == Constants.AM_CONNECTION_STATE_CONNECTED)
-            obtainMessage(HANDLER_DEVICE_CONNECTED).sendToTarget();
+            devOpHandler.obtainMessage(HANDLER_DEVICE_CONNECTED).sendToTarget();
         else if (state == Constants.AM_CONNECTION_STATE_DISCONNECTED)
-            obtainMessage(HANDLER_DEVICE_DISCONNECTED).sendToTarget();
+            devOpHandler.obtainMessage(HANDLER_DEVICE_DISCONNECTED).sendToTarget();
     }
 
     @Override
     public void onBatteryStatusAvailable(final int percent) {
         Log.d(TAG,"onBatteryStatusAvailable: percent="+percent);
-        obtainMessage(HANDLER_BATTERY, percent, 0 ).sendToTarget();
+        devOpHandler.obtainMessage(HANDLER_BATTERY, percent, 0 ).sendToTarget();
     }
 
     @Override
     public void onBatteryStatusError(final int status) {
         Log.d(TAG,"onBatteryStatusError: status="+status);
-        obtainMessage(HANDLER_ERROR, status, 0).sendToTarget();
+        devOpHandler.obtainMessage(HANDLER_ERROR, status, 0).sendToTarget();
     }
 
     @Override
     public void onSettingsReadComplete(final MeterSettings meterSettings) {
         Log.d(TAG,"onSettingsReadComplete:");
-        obtainMessage(HANDLER_SETTINGS,meterSettings).sendToTarget();
+        devOpHandler.obtainMessage(HANDLER_SETTINGS,meterSettings).sendToTarget();
     }
 
     @Override
@@ -255,97 +209,108 @@ public class AgamatrixJazz extends Handler implements
     @Override
     public void onSettingsError(final int status) {
         Log.d(TAG,"onSettingsError: status"+status);
-        obtainMessage(HANDLER_ERROR, status, 0).sendToTarget();
+        devOpHandler.obtainMessage(HANDLER_ERROR, status, 0).sendToTarget();
     }
 
     @Override
     public void onGlucoseMeasurementsCountAvailable(final int count) {
         Log.d(TAG,"onGlucoseMeasurementsCountAvailable: count="+count);
-        obtainMessage(HANDLER_MEASURES_COUNT,count,0).sendToTarget();
+        devOpHandler.obtainMessage(HANDLER_MEASURES_COUNT,count,0).sendToTarget();
     }
 
     @Override
     public void onGlucoseMeasurementsAvailable(final ArrayList<GlucoseMeasurement> measurements) {
         Log.d(TAG,"onGlucoseMeasurementsAvailable: nr="+measurements.size());
-        obtainMessage(HANDLER_MEASURES,measurements).sendToTarget();
+        devOpHandler.obtainMessage(HANDLER_MEASURES,measurements).sendToTarget();
     }
 
     @Override
     public void onGlucoseMeasurementsError(final int status) {
         Log.d(TAG,"onGlucoseMeasurementsError: status="+status);
-        obtainMessage(HANDLER_ERROR, status, 0).sendToTarget();
+        devOpHandler.obtainMessage(HANDLER_ERROR, status, 0).sendToTarget();
     }
 
-    @Override
-    public void handleMessage(Message msg) {
-        switch (msg.what) {
-            case HANDLER_DEVICE_CONNECTED:
-                break;
-            case HANDLER_DEVICE_DISCONNECTED:
-                if (iState == TState.EConnected || iState == TState.EGettingMeasures){
-                    String message = ResourceManager.getResource().getString("ECommunicationError");
-                    deviceListener.notifyError(DeviceListener.CONNECTION_ERROR,message);
-                    stop();
-                }
-                break;
-            case HANDLER_SETTINGS:
-                if (msg.obj instanceof MeterSettings) {
-                    MeterSettings settings = (MeterSettings)msg.obj;
-                    if (settings.getUnits() == MeterSettings.UNITS_MM_PER_L)
-                        conversionFactor=18.;
-                }
-                if (lastSequenceNr > 0)
-                    mClient.getGlucoseMeasurementCountStartingAt(lastSequenceNr, this);
-                else
-                    mClient.getGlucoseMeasurementCount(this);
-                iState = TState.EGettingMeasures;
-                break;
-            case HANDLER_BATTERY:
-                deviceListener.setBtMAC(iBtDevAddr);
-                if (iPairingMode) {
-                    deviceListener.configReady(ResourceManager.getResource().getString("KPairingMsgDone"));
-                    stop();
-                } else {
-                    batteryLevel = msg.arg1;
-                    iState = TState.EConnected;
-                    lastSequenceNr = Util.getRegistryIntValue(REGKEY+iBtDevAddr);
-                    mClient.getMeterSettings(this);
-                    deviceListener.notifyWaitToUi(ResourceManager.getResource().getString("KMeasuring"));
-                }
-                break;
-            case HANDLER_MEASURES_COUNT:
-                if (lastSequenceNr > 0 && msg.arg1 > 1)
-                    mClient.getGlucoseMeasurementsStartingAt(lastSequenceNr, this);
-                else if (lastSequenceNr == 0 && msg.arg1 > 0)
-                    mClient.getAllGlucoseMeasurements(this);
-                else {
-                    deviceListener.notifyError("",ResourceManager.getResource().getString("KNoNewMeasure"));
-                    stop();
-                }
-                break;
-            case HANDLER_MEASURES:
-                if (msg.obj != null && msg.obj instanceof ArrayList<?>) {
-                    measurements = (ArrayList<?>) msg.obj;
-                    measureIndex = 0;
-                    if (measurements.size() == 0) {
-                        deviceListener.notifyError("",ResourceManager.getResource().getString("KNoNewMeasure"));
-                        stop();
-                    } else {
-                        askMeasure();
-                    }
-                } else {
-                    String message = ResourceManager.getResource().getString("EDataReadError");
-                    deviceListener.notifyError(DeviceListener.DEVICE_DATA_ERROR, message);
-                    stop();
-                }
-                break;
-            case HANDLER_ERROR:
-                String message = ResourceManager.getResource().getString("ECommunicationError");
-                deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR,message);
-                stop();
-                break;
+    private final MyHandler devOpHandler = new MyHandler(this);
+
+    private static class MyHandler extends Handler {
+        private final WeakReference<AgamatrixJazz> mOuter;
+
+        private MyHandler(AgamatrixJazz outer) {
+            mOuter = new WeakReference<>(outer);
         }
 
+        @Override
+        public void handleMessage(Message msg) {
+            AgamatrixJazz outer = mOuter.get();
+            switch (msg.what) {
+                case HANDLER_DEVICE_CONNECTED:
+                    break;
+                case HANDLER_DEVICE_DISCONNECTED:
+                    if (outer.iState == TState.EConnected || outer.iState == TState.EGettingMeasures) {
+                        String message = ResourceManager.getResource().getString("ECommunicationError");
+                        outer.deviceListener.notifyError(DeviceListener.CONNECTION_ERROR, message);
+                        outer.stop();
+                    }
+                    break;
+                case HANDLER_SETTINGS:
+                    if (msg.obj instanceof MeterSettings) {
+                        MeterSettings settings = (MeterSettings) msg.obj;
+                        if (settings.getUnits() == MeterSettings.UNITS_MM_PER_L)
+                            outer.conversionFactor = 18.;
+                    }
+                    if (outer.lastSequenceNr > 0)
+                        outer.mClient.getGlucoseMeasurementCountStartingAt(outer.lastSequenceNr, outer);
+                    else
+                        outer.mClient.getGlucoseMeasurementCount(outer);
+                    outer.iState = TState.EGettingMeasures;
+                    break;
+                case HANDLER_BATTERY:
+                    outer.deviceListener.setBtMAC(outer.iBtDevAddr);
+                    if (outer.operationType == OperationType.Pair) {
+                        outer.deviceListener.configReady(ResourceManager.getResource().getString("KPairingMsgDone"));
+                        outer.stop();
+                    } else {
+                        outer.batteryLevel = msg.arg1;
+                        outer.iState = TState.EConnected;
+                        outer.lastSequenceNr = Util.getRegistryIntValue(REGKEY + outer.iBtDevAddr);
+                        outer.mClient.getMeterSettings(outer);
+                        outer.deviceListener.notifyWaitToUi(ResourceManager.getResource().getString("KMeasuring"));
+                    }
+                    break;
+                case HANDLER_MEASURES_COUNT:
+                    if (outer.lastSequenceNr > 0 && msg.arg1 > 1)
+                        outer.mClient.getGlucoseMeasurementsStartingAt(outer.lastSequenceNr, outer);
+                    else if (outer.lastSequenceNr == 0 && msg.arg1 > 0)
+                        outer.mClient.getAllGlucoseMeasurements(outer);
+                    else {
+                        outer.deviceListener.notifyError("", ResourceManager.getResource().getString("KNoNewMeasure"));
+                        outer.stop();
+                    }
+                    break;
+                case HANDLER_MEASURES:
+                    if (msg.obj != null && msg.obj instanceof ArrayList<?>) {
+                        outer.measurements = (ArrayList<?>) msg.obj;
+                        outer.measureIndex = 0;
+                        if (outer.measurements.size() == 0) {
+                            outer.deviceListener.notifyError("", ResourceManager.getResource().getString("KNoNewMeasure"));
+                            outer.stop();
+                        } else {
+                            outer.askMeasure();
+                        }
+                    } else {
+                        String message = ResourceManager.getResource().getString("EDataReadError");
+                        outer.deviceListener.notifyError(DeviceListener.DEVICE_DATA_ERROR, message);
+                        outer.stop();
+                    }
+                    break;
+                case HANDLER_ERROR:
+                    String message = ResourceManager.getResource().getString("ECommunicationError");
+                    outer.deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR, message);
+                    outer.stop();
+                    break;
+            }
+
+        }
     }
 
     private void askMeasure() {
@@ -391,8 +356,6 @@ public class AgamatrixJazz extends Handler implements
         GlucoseMeasurement glm = (GlucoseMeasurement) measurements.get(measureIndex);
         Calendar cal = Calendar.getInstance();
         cal.setTime(glm.getTimestamp());
-        m.setTimestamp(XmlManager.getXmlManager().getTimestamp(cal));
-
         int val = (int)(glm.getGlucoseConcentration()*conversionFactor);
         HashMap<String,String> tmpVal = new HashMap<>();
         if (prePrandial) {
@@ -401,18 +364,19 @@ public class AgamatrixJazz extends Handler implements
             tmpVal.put(GWConst.EGwCode_0T, Integer.toString(val));  // glicemia Post-prandiale
         }
         tmpVal.put(GWConst.EGwCode_BATTERY, Integer.toString(batteryLevel)); // livello batteria
+
+        Measure m = getMeasure();
+        m.setTimestamp(XmlManager.getXmlManager().getTimestamp(cal));
         m.setMeasures(tmpVal);
         m.setFailed(false);
-        m.setBtAddress(iBtDevAddr);
 
         Util.setRegistryValue(REGKEY+iBtDevAddr, glm.getSequenceNumber());
 
         deviceListener.showMeasurementResults(m);
-
         stop();
     }
 
-    public void stop() {
+    private void stop() {
         Log.d(TAG, "stop");
         if (iState == TState.EGettingDevice) {
             iServiceSearcher.stopSearchDevices(-1);
@@ -424,8 +388,6 @@ public class AgamatrixJazz extends Handler implements
             iState = TState.EDisconnecting;
             mClient.shutdown();
         }
-        // we advise the scheduler of the end of the activity on the device
-        deviceListener.operationCompleted();
         reset();
     }
 
@@ -433,7 +395,7 @@ public class AgamatrixJazz extends Handler implements
         iState = TState.EWaitingToGetDevice;
         iBtDevAddr = null;
         deviceList.clear();
-        scanActivityListener = null;
+        iBTSearchListener = null;
         mClient = null;
         measurements = null;
         measureIndex = 0;

@@ -2,7 +2,6 @@ package com.ti.app.telemed.core.btdevices;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.os.Handler;
 import android.util.Log;
 
 import com.ti.app.telemed.core.ResourceManager;
@@ -12,10 +11,7 @@ import com.ti.app.telemed.core.btmodule.events.BTSearcherEvent;
 import com.ti.app.telemed.core.btmodule.events.BTSearcherEventListener;
 import com.ti.app.telemed.core.common.ECGDrawData;
 import com.ti.app.telemed.core.common.Measure;
-import com.ti.app.telemed.core.common.User;
 import com.ti.app.telemed.core.common.UserDevice;
-import com.ti.app.telemed.core.usermodule.UserManager;
-import com.ti.app.telemed.core.xmlmodule.XmlManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,22 +22,9 @@ import java.util.Vector;
 import static com.ti.app.telemed.core.btmodule.DeviceListener.MEASUREMENT_ERROR;
 
 
-public class ECGTest extends Handler implements DeviceHandler {
+public class ECGTest extends DeviceHandler {
 
-    private enum TState {
-        EWaitingToGetDevice,    // default e notifica disconnessione
-        EGettingDevice,         // chiamata di start(...)
-        EGettingConnection,     // chiamata a connectDevice()
-        EDisconnecting,         // chiamata a disconnectDevice
-        EConnected,             // callabck connessione avvenuta OK o fine Misura
-        EGettingMeasures       // chiamata startMeasures
-    }
-
-    private DeviceListener deviceListener;
     private Vector<BluetoothDevice> deviceList;
-    private BTSearcherEventListener scanActivityListener;
-    private TState iState;
-    String iBTAddress;
 
     private static final String TAG = "ECGTest";
 
@@ -64,10 +47,8 @@ public class ECGTest extends Handler implements DeviceHandler {
         return false;
     }
 
-    public ECGTest(DeviceListener aScheduler) {
-        Log.d(TAG, "IHealth");
-        iState = TState.EWaitingToGetDevice;
-        deviceListener = aScheduler;
+    public ECGTest(DeviceListener listener, UserDevice ud) {
+        super(listener, ud);
         deviceList = new Vector<>();
     }
 
@@ -84,61 +65,46 @@ public class ECGTest extends Handler implements DeviceHandler {
     }
 
     @Override
-    public void start(OperationType ot, UserDevice ud, BTSearcherEventListener btSearchListener) {
-        if (iState == TState.EWaitingToGetDevice && ud != null) {
-            iState = TState.EGettingMeasures;
-            scanActivityListener = btSearchListener;
-            iBTAddress = ud.getBtAddress();
+    public boolean startOperation(OperationType ot, BTSearcherEventListener btSearchListener) {
+        if (!startInit(ot, btSearchListener))
+            return false;
 
-            Measure m = new Measure();
-            User u = UserManager.getUserManager().getCurrentUser();
-            m.setMeasureType(ud.getMeasure());
-            m.setDeviceDesc(ud.getDevice().getDescription());
-            m.setTimestamp(XmlManager.getXmlManager().getTimestamp(null));
-            m.setFile(null);
-            m.setFileType(null);
-            if (u != null) {
-                m.setIdUser(u.getId());
-                if (u.getIsPatient())
-                    m.setIdPatient(u.getId());
-            }
-            m.setFailed(false);
-            m.setBtAddress(iBTAddress);
+        Log.d(TAG,"startOperation: iBtDevAddr="+iBtDevAddr + " iCmdCode="+iCmdCode.toString());
+        iState = TState.EGettingMeasures;
 
-            if (iBTAddress == null || iBTAddress.isEmpty()) {
-                deviceList.add(BluetoothAdapter.getDefaultAdapter().getRemoteDevice("00:00:00:00:00:00"));
-                scanActivityListener.deviceDiscovered(new BTSearcherEvent(this), deviceList);
-                scanActivityListener.deviceSearchCompleted(new BTSearcherEvent(this));
-            }
-            thread.start();
+        if (iBtDevAddr == null || iBtDevAddr.isEmpty()) {
+            deviceList.add(BluetoothAdapter.getDefaultAdapter().getRemoteDevice("00:00:00:00:00:00"));
+            iBTSearchListener.deviceDiscovered(new BTSearcherEvent(this), deviceList);
+            iBTSearchListener.deviceSearchCompleted(new BTSearcherEvent(this));
         }
+        thread.start();
+
+        return true;
+    }
+
+
+    @Override
+    public void abortOperation() {
+        Log.d(TAG, "abortOperation");
+        thread.interrupt();
+        resetTimer();
+        stop();
     }
 
     @Override
-    public void stopDeviceOperation(int selected) {
-        Log.d(TAG, "stopDeviceOperation: selected=" + selected);
-
-        // selected == -1 Normal end of operation
-        // selected == -2 Operation interrupted
-        // selected >= 0 the user has selected the device at the 'selected' position in the list of discovered devices
-        if (selected < 0) {
-            thread.interrupt();
-            resetTimer();
-            stop();
-        }  else {
-            synchronized (thread) {
-                thread.notify();
-            }
+    public void selectDevice(int selected){
+        Log.d(TAG, "selectDevice: selected=" + selected);
+        synchronized (thread) {
+            thread.notify();
         }
     }
-
 
     private final Thread thread = new Thread() {
         @Override
         public void run() {
             try {
                 synchronized (thread) {
-                    if (iBTAddress == null || iBTAddress.isEmpty()) {
+                    if (iBtDevAddr == null || iBtDevAddr.isEmpty()) {
                         thread.wait();
                     }
 
@@ -162,7 +128,7 @@ public class ECGTest extends Handler implements DeviceHandler {
                     notifyError(MEASUREMENT_ERROR, "Errore di Misurazione");
                 }
             } catch (InterruptedException e) {
-                return;
+                // nothing to do
             }
         }
     };
@@ -217,7 +183,6 @@ public class ECGTest extends Handler implements DeviceHandler {
     public void stop() {
         Log.d(TAG, "stop");
         // we advise the scheduler of the end of the activity on the device
-        deviceListener.operationCompleted();
         deviceList.clear();
     }
 

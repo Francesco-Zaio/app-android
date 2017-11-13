@@ -165,22 +165,7 @@ public class DeviceManager implements DeviceListener {
     }
 
     public void selectDevice(BluetoothDevice bd) {
-        //currentDeviceHandler.selectDevice(bd);
-    }
-
-	public void stopDeviceOperation(int selected) {
-    	try {
-    		// Se selected è > 0 è terminata la fase di search device ma deve
-    		// partire la misura, quindi operationRunning deve restare true
-        	if(selected < 0){
-        		operationRunning = false;
-                currentDeviceHandler.abortOperation();
-        	} else {
-                currentDeviceHandler.selectDevice(selected);
-            }
-		} catch (Exception e) {
-			showError(AppResourceManager.getResource().getString("EGWNurseBtSearchError"));
-		}
+        currentDeviceHandler.selectDevice(bd);
     }
 
 	public UserDevice getCurrentDevice() {

@@ -13,11 +13,8 @@ import java.util.Vector;
 
 import com.ti.app.telemed.core.btmodule.BTSearcher;
 import com.ti.app.telemed.core.btmodule.BTSocket;
-import com.ti.app.telemed.core.btmodule.events.BTSearcherEvent;
 import com.ti.app.telemed.core.btmodule.events.BTSearcherEventListener;
-import com.ti.app.telemed.core.btmodule.events.BTSocketEvent;
 import com.ti.app.telemed.core.btmodule.events.BTSocketEventListener;
-
 import com.ti.app.telemed.core.ResourceManager;
 import com.ti.app.telemed.core.btmodule.DeviceListener;
 import com.ti.app.telemed.core.common.Measure;
@@ -43,7 +40,8 @@ public class NoninOximeter extends DeviceHandler implements
 
 	private Vector<BluetoothDevice> deviceList;
 	private int currentPos;
-	private boolean deviceSearchCompleted;
+    private BluetoothDevice selectedDevice;
+    private boolean deviceSearchCompleted;
 
     private byte[] iBufferAck; // 1 byte
     private byte[] iBufferData; // 4 byte
@@ -158,7 +156,6 @@ public class NoninOximeter extends DeviceHandler implements
         iServiceSearcher.addBTSearcherEventListener(this);
         if (iCmdCode == TCmd.ECmdConnByUser && iBTSearchListener != null)
             iServiceSearcher.addBTSearcherEventListener(iBTSearchListener);
-        iServiceSearcher.setSearchType(iCmdCode);
         iServiceSearcher.startSearchDevices();
         return true;
     }
@@ -170,9 +167,30 @@ public class NoninOximeter extends DeviceHandler implements
     }
 
     @Override
-    public void selectDevice(int selected){
-        Log.d(TAG, "selectDevice: selected=" + selected);
-        iServiceSearcher.stopSearchDevices(selected);
+    public void selectDevice(BluetoothDevice bd){
+        Log.d(TAG, "selectDevice: addr=" + bd.getAddress());
+        iServiceSearcher.stopSearchDevices();
+        selectedDevice = bd;
+        iBtDevAddr = selectedDevice.getAddress();
+        iState = TState.EGettingService;
+        runBTSearcher();
+    }
+
+
+    // methods of BTSearchEventListener interface
+
+    @Override
+    public void deviceDiscovered(Vector<BluetoothDevice> devList) {
+        deviceList = devList;
+        // we recall runBTSearcher, because every time we find a device, we have
+        // to check if it is the device we want
+        runBTSearcher();
+    }
+
+    @Override
+    public void deviceSearchCompleted() {
+        deviceSearchCompleted = true;
+        currentPos = 0;
     }
 
 
@@ -187,7 +205,7 @@ public class NoninOximeter extends DeviceHandler implements
     }
 
     private void stop() {
-        iServiceSearcher.stopSearchDevices(-1);
+        iServiceSearcher.stopSearchDevices();
         iServiceSearcher.clearBTSearcherEventListener();
         iServiceSearcher.close();
         iNoninOxySocket.close();
@@ -201,36 +219,12 @@ public class NoninOximeter extends DeviceHandler implements
         reset();
     }
 
-	// methods of BTSearchEventListener interface
-    
-	@Override
-	public void deviceDiscovered(BTSearcherEvent evt,  Vector<BluetoothDevice> devList) {
-		deviceList = devList;
-		// we recall runBTSearcher, because every time we find a device, we have
-        // to check if it is the device we want
-        runBTSearcher();
-	}
-    
-	@Override
-	public void deviceSearchCompleted(BTSearcherEvent evt) {
-		deviceSearchCompleted = true;
-		currentPos = 0;
-	}
-	
-    @Override
-    public void deviceSelected(BTSearcherEvent evt) {
-        Log.i(TAG, "NoninOximeter: selectDevice");
-        // we change status
-        iState = TState.EGettingService;
-        runBTSearcher();
-    }
-
 
     // Methods of BTSocketEventListener interface
 
     @Override
-    public void errorThrown(BTSocketEvent evt, int type, String description) {
-        Log.e(TAG, "NoninOximeter errorThrown " + type + " " + description);
+    public void errorThrown(int type, String description) {
+        Log.e(TAG, "NoninOximeter writeErrorThrown " + type + " " + description);
         switch (type) {
             case 0: //thread interrupted
             case 4: //bluetooth close error
@@ -252,17 +246,17 @@ public class NoninOximeter extends DeviceHandler implements
     }
 
     @Override
-    public void openDone(BTSocketEvent evt) {
+    public void openDone() {
         runBTSocket();
     }
 
     @Override
-    public void readDone(BTSocketEvent evt) {
+    public void readDone() {
         runBTSocket();
     }
 
     @Override
-    public void writeDone(BTSocketEvent evt) {
+    public void writeDone() {
         runBTSocket();
     }
 
@@ -271,10 +265,9 @@ public class NoninOximeter extends DeviceHandler implements
         // this function is called when we are in EGettingService state and
         // we are going to EGettingConnection state
         Log.i(TAG, "NoninOximeter: connectToServer");
-        iBtDevAddr = iServiceSearcher.getCurrBTDevice().getAddress();
         // iCGBloodPressureSocket is an RSocket in the Symbian version
         iNoninOxySocket.addBTSocketEventListener(this);
-        iNoninOxySocket.connect(iServiceSearcher.getCurrBTDevice());
+        iNoninOxySocket.connect(selectedDevice);
     }
 
     private void disconnectProtocolError() {
@@ -313,7 +306,7 @@ public class NoninOximeter extends DeviceHandler implements
 				String tmpBtDevAddr;
 				tmpBtDevAddr = deviceList.elementAt(currentPos).getAddress();
 				if (tmpBtDevAddr.equals(iBtDevAddr)) {
-					iServiceSearcher.stopSearchDevices(currentPos);
+					selectDevice(deviceList.elementAt(currentPos));
 				} else {
 					// the name is different, so we must wait that the searcher
 					// find another device

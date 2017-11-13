@@ -10,11 +10,8 @@ import java.lang.reflect.Method;
 import java.util.UUID;
 import java.util.Vector;
 
-import com.ti.app.telemed.core.btmodule.events.BTSocketEvent;
 import com.ti.app.telemed.core.btmodule.events.BTSocketEventListener;
-import com.ti.app.telemed.core.btmodule.events.BTSocketReadEvent;
 import com.ti.app.telemed.core.btmodule.events.BTSocketReadEventListener;
-import com.ti.app.telemed.core.btmodule.events.BTSocketWriteEvent;
 import com.ti.app.telemed.core.btmodule.events.BTSocketWriteEventListener;
 
 import android.bluetooth.BluetoothDevice;
@@ -23,7 +20,7 @@ import android.util.Log;
 
 public class BTSocket implements BTSocketReadEventListener, BTSocketWriteEventListener {
     
-    private Vector<BTSocketEventListener> btSocketEventListeners = new Vector<BTSocketEventListener>();
+    private Vector<BTSocketEventListener> btSocketEventListeners = new Vector<>();
     
     private BluetoothDevice btDevice;
 	private BluetoothSocket mmSocket;
@@ -197,7 +194,7 @@ public class BTSocket implements BTSocketReadEventListener, BTSocketWriteEventLi
     
     private Vector<BTSocketEventListener> getBTSocketEventListeners(){
 		// we work on a copy of the vector, so if change we don't have problem
-		Vector<BTSocketEventListener> copy = null;
+		Vector<BTSocketEventListener> copy;
         synchronized (this) {
             copy = (Vector<BTSocketEventListener>) btSocketEventListeners.clone();
         }
@@ -205,58 +202,59 @@ public class BTSocket implements BTSocketReadEventListener, BTSocketWriteEventLi
 	}
 	
     private void fireOpenDone() {
-        BTSocketEvent event = new BTSocketEvent(this);
-        for (BTSocketEventListener listener : getBTSocketEventListeners()) {        	
-            listener.openDone(event);
+        for (BTSocketEventListener listener : getBTSocketEventListeners()) {
+            listener.openDone();
         }
     }
     
     private void fireReadDone() {
-    	BTSocketEvent event = new BTSocketEvent(this);
         for (BTSocketEventListener listener : getBTSocketEventListeners()) {
-            listener.readDone(event);
+            listener.readDone();
         }        
     }
     
     private void fireWriteDone() {
-    	BTSocketEvent event = new BTSocketEvent(this);
         for (BTSocketEventListener listener : getBTSocketEventListeners()) {
-            listener.writeDone(event);
+            listener.writeDone();
         }        
     }
     
     private void fireErrorThrown(int type, String description) {
-    	BTSocketEvent event = new BTSocketEvent(this);
         for (BTSocketEventListener listener : getBTSocketEventListeners()) {
-            listener.errorThrown(event, type, description);
+            listener.errorThrown(type, description);
         }
     }
     
  // methods of btSocketReadEventListeners interface
-    public void openDone(BTSocketReadEvent evt) {
+	@Override
+    public void readOpenDone() {
     	openWriterStream();
     }
-    
-	public void readDone(BTSocketReadEvent evt) {
+
+	@Override
+	public void readDone() {
 		fireReadDone();
 	}
-	
-	public void errorThrown(BTSocketReadEvent evt, int type, String description) {
+
+	@Override
+	public void readErrorThrown(int type, String description) {
 		fireErrorThrown(type, description);
 	}
     
     // methods of btSocketWriteEventListeners interface
-	
-	public void openDone(BTSocketWriteEvent evt) {
+
+	@Override
+	public void writeOpenDone() {
 		available = false;
 		fireOpenDone();
 	}
-	
-	public void writeDone(BTSocketWriteEvent evt) {
+	@Override
+	public void writeDone() {
 		fireWriteDone();
 	}
-	
-	public void errorThrown(BTSocketWriteEvent evt, int type, String description) {
+
+	@Override
+	public void writeErrorThrown(int type, String description) {
 		fireErrorThrown(type, description);
 	}
 

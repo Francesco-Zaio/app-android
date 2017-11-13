@@ -15,7 +15,6 @@ import com.ti.app.telemed.core.MyApp;
 import com.ti.app.telemed.core.ResourceManager;
 import com.ti.app.telemed.core.btmodule.DeviceHandler;
 import com.ti.app.telemed.core.btmodule.DeviceListener;
-import com.ti.app.telemed.core.btmodule.events.BTSearcherEvent;
 import com.ti.app.telemed.core.btmodule.events.BTSearcherEventListener;
 import com.ti.app.telemed.core.common.Measure;
 import com.ti.app.telemed.core.common.UserDevice;
@@ -109,9 +108,9 @@ public class GIMAPC300SpotCheck
     }
 
     @Override
-    public void selectDevice(int selected){
-        Log.d(TAG, "selectDevice: selected=" + selected);
-        selectedDevice = deviceList.elementAt(selected);
+    public void selectDevice(BluetoothDevice bd){
+        Log.d(TAG, "selectDevice: addr=" + bd.getAddress());
+        selectedDevice = bd;
         iBtDevAddr = selectedDevice.getAddress();
         devOpHandler.sendEmptyMessage(MSG_DEVICE_SELECTED);
     }
@@ -467,7 +466,7 @@ public class GIMAPC300SpotCheck
                     break;
                 case MSG_DEVICE_DISCOVERED:
                     if (outer.iBTSearchListener != null)
-                        outer.iBTSearchListener.deviceDiscovered(new BTSearcherEvent(this), outer.deviceList);
+                        outer.iBTSearchListener.deviceDiscovered(outer.deviceList);
                     break;
                 case MSG_DISCOVERY_FINISH:
                     if (outer.iState == TState.EGettingDevice && outer.iCmdCode == TCmd.ECmdConnByAddr) {
@@ -475,7 +474,7 @@ public class GIMAPC300SpotCheck
                         outer.deviceListener.notifyError(DeviceListener.DEVICE_NOT_FOUND_ERROR, ResourceManager.getResource().getString("EDeviceNotFound"));
                         outer.stop();
                     } else if (outer.iCmdCode == TCmd.ECmdConnByUser && outer.iBTSearchListener != null)
-                        outer.iBTSearchListener.deviceSearchCompleted(new BTSearcherEvent(this));
+                        outer.iBTSearchListener.deviceSearchCompleted();
                     break;
                 case MSG_DEVICE_SELECTED:
                     // for some unknown reasons the discovered could notify the same device more times

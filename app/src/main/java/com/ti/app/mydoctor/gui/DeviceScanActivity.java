@@ -20,7 +20,6 @@ import android.widget.TextView;
 
 import com.ti.app.mydoctor.R;
 import com.ti.app.mydoctor.MyDoctorApp;
-import com.ti.app.telemed.core.btmodule.events.BTSearcherEvent;
 import com.ti.app.telemed.core.btmodule.events.BTSearcherEventListener;
 
 public class DeviceScanActivity extends Activity implements BTSearcherEventListener {
@@ -29,11 +28,10 @@ public class DeviceScanActivity extends Activity implements BTSearcherEventListe
 
     // Member fields
     private ArrayAdapter<String> mNewDevicesArrayAdapter;
-    
-    public static final String SELECTED_DEVICE_POSITION = "SELECTED_DEVICE_POSITION";
+    private Vector<BluetoothDevice> devList;
+
 	public static final String SELECTED_DEVICE = "SELECTED_DEVICE";
 
-    private Vector<BluetoothDevice> devList;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,8 +43,8 @@ public class DeviceScanActivity extends Activity implements BTSearcherEventListe
 
         // Initialize array adapter
         mNewDevicesArrayAdapter = new MyArrayAdapter(this, R.layout.device_name);
+        devList = new Vector<>();
 
-        devList = null;
         // Find and set up the ListView for newly discovered devices
         ListView newDevicesListView = (ListView) findViewById(R.id.new_devices);
         newDevicesListView.setAdapter(mNewDevicesArrayAdapter);
@@ -80,7 +78,6 @@ public class DeviceScanActivity extends Activity implements BTSearcherEventListe
             } else {
             	Intent res = new Intent();
 				res.putExtra(SELECTED_DEVICE, devList.get(position));
-            	res.putExtra(SELECTED_DEVICE_POSITION, position);
             	setResult(RESULT_OK, res);
             }          
             finish();
@@ -88,32 +85,25 @@ public class DeviceScanActivity extends Activity implements BTSearcherEventListe
     };
 
 	@Override
-	public void deviceDiscovered(BTSearcherEvent evt,
-			Vector<BluetoothDevice> devList) {
-        this.devList = devList;
+	public void deviceDiscovered(Vector<BluetoothDevice> devList) {
 		BluetoothDevice dev = devList.lastElement();
-		if(dev.getName()!= null){
+		if(dev.getName()!= null)
 			mNewDevicesArrayAdapter.add(dev.getName());
-		} else if(dev.getAddress()!= null){
+		else if (dev.getAddress() != null)
 			mNewDevicesArrayAdapter.add(dev.getAddress());
-		} else {
-			mNewDevicesArrayAdapter.add("Test Device");
-		}
+        else
+            return;
+        this.devList.add(dev);
 	}
 
 	@Override
-	public void deviceSearchCompleted(BTSearcherEvent evt) {
+	public void deviceSearchCompleted() {
 		setProgressBarIndeterminateVisibility(false);
         setTitle(R.string.select_device);
         if (mNewDevicesArrayAdapter.getCount() == 0) {
             String noDevices = getResources().getText(R.string.none_found).toString();
             mNewDevicesArrayAdapter.add(noDevices);
         }        
-	}
-
-	@Override
-	public void deviceSelected(BTSearcherEvent evt) {
-		Log.i(TAG, "selectDevice");
 	}
 	
 	private class MyArrayAdapter extends ArrayAdapter<String> {

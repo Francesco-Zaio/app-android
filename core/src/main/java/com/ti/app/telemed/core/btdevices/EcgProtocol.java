@@ -15,9 +15,7 @@ import java.util.Vector;
 import com.ti.app.telemed.core.ResourceManager;
 import com.ti.app.telemed.core.btmodule.BTSearcher;
 import com.ti.app.telemed.core.btmodule.BTSocket;
-import com.ti.app.telemed.core.btmodule.events.BTSearcherEvent;
 import com.ti.app.telemed.core.btmodule.events.BTSearcherEventListener;
-import com.ti.app.telemed.core.btmodule.events.BTSocketEvent;
 import com.ti.app.telemed.core.btmodule.events.BTSocketEventListener;
 import com.ti.app.telemed.core.btmodule.DeviceHandler;
 import com.ti.app.telemed.core.btmodule.DeviceListener;
@@ -83,6 +81,7 @@ public class EcgProtocol extends DeviceHandler implements
 
     private Vector<BluetoothDevice> deviceList;
     private int currentPos;
+    private BluetoothDevice selectedDevice;
     private boolean deviceSearchCompleted;
 
     // Gestione puntatori al file
@@ -200,9 +199,7 @@ public class EcgProtocol extends DeviceHandler implements
         if (iCmdCode == TCmd.ECmdConnByUser && iBTSearchListener != null)
             iServiceSearcher.addBTSearcherEventListener(iBTSearchListener);
         iServiceSearcher.addBTSearcherEventListener(this);
-        iServiceSearcher.setSearchType(iCmdCode);
         iServiceSearcher.startSearchDevices();
-
         return true;
     }
 
@@ -213,19 +210,40 @@ public class EcgProtocol extends DeviceHandler implements
     }
 
     @Override
-    public void selectDevice(int selected){
-        Log.d(TAG, "selectDevice: selected=" + selected);
-        iServiceSearcher.stopSearchDevices(selected);
+    public void selectDevice(BluetoothDevice bd){
+        Log.d(TAG, "selectDevice: iBtDevAddr="+bd.getAddress());
+        iServiceSearcher.stopSearchDevices();
+        selectedDevice = bd;
+        iBtDevAddr = selectedDevice.getAddress();
+        iState = TState.EGettingService;
+        runBTSearcher();
     }
+
+
+    // methods of BTSearchEventListener interface
+
+    @Override
+    public void deviceDiscovered(Vector<BluetoothDevice> devList) {
+        deviceList = devList;
+        // we recall runBTSearcher, because every time we find a device, we have
+        // to check if it is the device we want
+        runBTSearcher();
+    }
+
+    @Override
+    public void deviceSearchCompleted() {
+        deviceSearchCompleted = true;
+        currentPos = 0;
+    }
+
 
     private void connectToServer() throws IOException {
         // this function is called when we are in EGettingService state and
         // we are going to EGettingConnection state
         Log.i(TAG, "ECG: connectToServer");
-        iBtDevAddr = iServiceSearcher.getCurrBTDevice().getAddress();
         // iCGBloodPressureSocket is an RSocket in the Symbian version
         iECGSocket.addBTSocketEventListener(this);
-        iECGSocket.connect(iServiceSearcher.getCurrBTDevice());
+        iECGSocket.connect(selectedDevice);
     }
 
     private void disconnectProtocolError() {
@@ -238,7 +256,7 @@ public class EcgProtocol extends DeviceHandler implements
     }
 
     public void stop() {
-        iServiceSearcher.stopSearchDevices(-1);
+        iServiceSearcher.stopSearchDevices();
         iServiceSearcher.clearBTSearcherEventListener();
         iServiceSearcher.close();
         iECGSocket.close();
@@ -288,37 +306,12 @@ public class EcgProtocol extends DeviceHandler implements
     }
 
 
-    // methods of BTSearchEventListener interface
-
-    @Override
-    public void deviceDiscovered(BTSearcherEvent evt, Vector<BluetoothDevice> devList) {
-        deviceList = devList;
-        // we recall runBTSearcher, because every time we find a device, we have
-        // to check if it is the device we want
-        runBTSearcher();
-    }
-
-    @Override
-    public void deviceSearchCompleted(BTSearcherEvent evt) {
-        deviceSearchCompleted = true;
-        currentPos = 0;
-    }
-
-    @Override
-    public void deviceSelected(BTSearcherEvent evt){
-        Log.i(TAG, "ECG: selectDevice");
-        // we change status
-        iState = TState.EGettingService;
-        runBTSearcher();
-    }
-
-
     // methods of BTSocketEventListener interface
 
     @Override
-    public void errorThrown(BTSocketEvent evt, int type, String description) {
-        Log.e(TAG, "ECG errorThrown");
-        Log.e(TAG, "ECG errorThrown " + type + ": " + description);
+    public void errorThrown(int type, String description) {
+        Log.e(TAG, "ECG writeErrorThrown");
+        Log.e(TAG, "ECG writeErrorThrown " + type + ": " + description);
         String msg;
         switch (type) {
             case 0: //thread interrupted
@@ -357,17 +350,17 @@ public class EcgProtocol extends DeviceHandler implements
     }
 
     @Override
-    public void openDone(BTSocketEvent evt) {
+    public void openDone() {
         runBTSocket();
     }
 
     @Override
-    public void readDone(BTSocketEvent evt) {
+    public void readDone() {
         runBTSocket();
     }
 
     @Override
-    public void writeDone(BTSocketEvent evt) {
+    public void writeDone() {
         runBTSocket();
     }
 
@@ -698,9 +691,9 @@ public class EcgProtocol extends DeviceHandler implements
                     case ECmdConnByAddr:
                         String tmpBtDevAddr;
                         tmpBtDevAddr = deviceList.elementAt(currentPos).getAddress();
-                        if ( tmpBtDevAddr.equals(iBtDevAddr) ) {
+                        if (tmpBtDevAddr.equals(iBtDevAddr)) {
                             // we pass the position of the selected device into the devices vector
-                            iServiceSearcher.stopSearchDevices(currentPos);
+                            selectDevice(deviceList.elementAt(currentPos));
                         } else {
                             // the address is different, so we must wait that the searcher
                             // find another device

@@ -19,15 +19,12 @@ import android.util.Log;
 import com.ti.app.telemed.core.ResourceManager;
 import com.ti.app.telemed.core.btmodule.BTSearcher;
 import com.ti.app.telemed.core.btmodule.BTSocket;
-import com.ti.app.telemed.core.btmodule.events.BTSearcherEvent;
 import com.ti.app.telemed.core.btmodule.events.BTSearcherEventListener;
-import com.ti.app.telemed.core.btmodule.events.BTSocketEvent;
 import com.ti.app.telemed.core.btmodule.events.BTSocketEventListener;
 import com.ti.app.telemed.core.common.Measure;
 import com.ti.app.telemed.core.common.Patient;
 import com.ti.app.telemed.core.btmodule.DeviceHandler;
 import com.ti.app.telemed.core.btmodule.DeviceListener;
-import com.ti.app.telemed.core.common.User;
 import com.ti.app.telemed.core.common.UserDevice;
 import com.ti.app.telemed.core.usermodule.UserManager;
 import com.ti.app.telemed.core.xmlmodule.XmlManager;
@@ -96,8 +93,8 @@ public class MIRSpirodoc extends DeviceHandler implements
 
     private Vector<BluetoothDevice> deviceList;
     private int currentPos;
-    private boolean deviceSearchCompleted;
-    private boolean serverOpenFailed;
+	private BluetoothDevice selectedDevice;
+	private boolean deviceSearchCompleted;
 
 	private static final String TAG = "MIRSpirodoc";
 
@@ -131,7 +128,6 @@ public class MIRSpirodoc extends DeviceHandler implements
 	public MIRSpirodoc(DeviceListener listener, UserDevice ud) {
         super(listener, ud);
 		deviceSearchCompleted = false;
-		serverOpenFailed = false;
 		iServiceSearcher = new BTSearcher();
 		iMIRSpiroDocSocket = BTSocket.getBTSocket();
 	}
@@ -168,7 +164,6 @@ public class MIRSpirodoc extends DeviceHandler implements
         iServiceSearcher.addBTSearcherEventListener(this);
         if (iCmdCode == TCmd.ECmdConnByUser)
             iServiceSearcher.addBTSearcherEventListener(iBTSearchListener);
-        iServiceSearcher.setSearchType(iCmdCode);
         iServiceSearcher.startSearchDevices();
         return true;
     }
@@ -180,17 +175,36 @@ public class MIRSpirodoc extends DeviceHandler implements
     }
 
     @Override
-    public void selectDevice(int selected){
-        Log.d(TAG, "selectDevice: selected=" + selected);
-        iServiceSearcher.stopSearchDevices(selected);
+    public void selectDevice(BluetoothDevice bd){
+        Log.d(TAG, "selectDevice: addr=" + bd.getAddress());
+        iServiceSearcher.stopSearchDevices();
+        iState = TState.EGettingService;
+        selectedDevice = bd;
+        iBtDevAddr = selectedDevice.getAddress();
+        runBTSearcher();
+    }
+
+
+    // BTSearcherEventListener Interface Methods
+
+    @Override
+    public void deviceDiscovered(Vector<BluetoothDevice> devList) {
+        deviceList = devList;
+        // we recall runBTSearcher, because every time we find a device, we have
+        // to check if it is the device we want
+        runBTSearcher();
+    }
+
+    @Override
+    public void deviceSearchCompleted() {
+        deviceSearchCompleted = true;
+        currentPos = 0;
     }
 
 
     private void connectToServer() throws IOException {
 		// this function is called when we are in EGettingService state and
 		// we are going to EGettingConnection state
-		iBtDevAddr = iServiceSearcher.getCurrBTDevice().getAddress();
-		
 		if (operationType == OperationType.Pair) {
             BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
             Set<BluetoothDevice> pairedDevices = mBluetoothAdapter.getBondedDevices();
@@ -210,20 +224,19 @@ public class MIRSpirodoc extends DeviceHandler implements
 		
 		// iCGBloodPressureSocket is an RSocket in the Symbian version
 		iMIRSpiroDocSocket.addBTSocketEventListener(this);
-		iMIRSpiroDocSocket.connectInsecure(iServiceSearcher.getCurrBTDevice());
+		iMIRSpiroDocSocket.connectInsecure(selectedDevice);
 	}
 
 
     private void reset() {
         iBtDevAddr = null;
         deviceSearchCompleted = false;
-        serverOpenFailed = false;
         // this class object must return to the initial state
         iState = TState.EWaitingToGetDevice;
     }
 
     private void stop()  {
-        iServiceSearcher.stopSearchDevices(-1);
+        iServiceSearcher.stopSearchDevices();
         iServiceSearcher.removeBTSearcherEventListener(this);
         iServiceSearcher.close();
         iMIRSpiroDocSocket.close();
@@ -236,52 +249,26 @@ public class MIRSpirodoc extends DeviceHandler implements
     }
 
 
-	// BTSearcherEventListener Interface Methods
-
-	@Override
-	public void deviceDiscovered(BTSearcherEvent evt, Vector<BluetoothDevice> devList) {
-		deviceList = devList;
-		// we recall runBTSearcher, because every time we find a device, we have
-		// to check if it is the device we want
-		runBTSearcher();
-	}
-
-    @Override
-	public void deviceSearchCompleted(BTSearcherEvent evt) {
-		deviceSearchCompleted = true;
-		currentPos = 0;
-	}
-
-    @Override
-	public void deviceSelected(BTSearcherEvent evt) {
-		Log.i(TAG, "IEMBP: selectDevice");
-		// we change status
-		iState = TState.EGettingService;
-
-		runBTSearcher();
-	}
-
-
 	// BTSocketEventListener Interface Methods
 
     @Override
-	public void openDone(BTSocketEvent evt) {
+	public void openDone() {
 		runBTSocket();
 	}
 
     @Override
-	public void readDone(BTSocketEvent evt) {
+	public void readDone() {
 		runBTSocket();
 	}
 
-    @Override	public void writeDone(BTSocketEvent evt) {
+    @Override	public void writeDone() {
 		runBTSocket();
 	}
 
     @Override
-    public void errorThrown(BTSocketEvent evt, int type, String description) {
+    public void errorThrown(int type, String description) {
 		
-		Log.d(TAG, "errorThrown type=" + type + " description=" + description);
+		Log.d(TAG, "writeErrorThrown type=" + type + " description=" + description);
 		
 		switch (type) {
 		case 0: // thread interrupted
@@ -296,7 +283,6 @@ public class MIRSpirodoc extends DeviceHandler implements
 				// this state
 				// means that we have to do the pairing
 				iState = TState.EDisconnecting;
-				serverOpenFailed = true;
 				runBTSocket();
 			}
 			reset();
@@ -357,7 +343,7 @@ public class MIRSpirodoc extends DeviceHandler implements
 				tmpBtDevAddr = deviceList.elementAt(currentPos).getAddress();
 				if (tmpBtDevAddr.equals(iBtDevAddr)) {
 					// the address is the same
-					iServiceSearcher.stopSearchDevices(currentPos);
+                    selectDevice(deviceList.elementAt(currentPos));
 				} else {
 					// the address is different, so we must wait that the
 					// searcher

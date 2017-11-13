@@ -9,19 +9,14 @@ import java.util.Vector;
 import com.ti.app.telemed.core.ResourceManager;
 import com.ti.app.telemed.core.btmodule.BTSearcher;
 import com.ti.app.telemed.core.btmodule.BTSocket;
-import com.ti.app.telemed.core.btmodule.events.BTSearcherEvent;
 import com.ti.app.telemed.core.btmodule.events.BTSearcherEventListener;
-import com.ti.app.telemed.core.btmodule.events.BTSocketEvent;
 import com.ti.app.telemed.core.btmodule.events.BTSocketEventListener;
 import com.ti.app.telemed.core.btmodule.DeviceHandler;
 import com.ti.app.telemed.core.btmodule.DeviceListener;
 import com.ti.app.telemed.core.common.Measure;
-import com.ti.app.telemed.core.common.User;
 import com.ti.app.telemed.core.common.UserDevice;
-import com.ti.app.telemed.core.usermodule.UserManager;
 import com.ti.app.telemed.core.util.GWConst;
 import com.ti.app.telemed.core.util.Util;
-import com.ti.app.telemed.core.xmlmodule.XmlManager;
 
 import android.bluetooth.BluetoothDevice;
 import android.util.Log;
@@ -136,7 +131,8 @@ public class RocheProthrombineTimeClient extends DeviceHandler implements
 
     private Vector<BluetoothDevice> deviceList;
     private int currentPos;
-    private boolean deviceSearchCompleted;
+	private BluetoothDevice selectedDevice;
+	private boolean deviceSearchCompleted;
 
 	/* Buffer utilizzati per la trasmissione e ricezione dati. */
 	private byte[] iSendDataCmd;
@@ -247,7 +243,6 @@ public class RocheProthrombineTimeClient extends DeviceHandler implements
         iServiceSearcher.addBTSearcherEventListener(this);
         if (iCmdCode == TCmd.ECmdConnByUser && iBTSearchListener != null)
             iServiceSearcher.addBTSearcherEventListener(iBTSearchListener);
-        iServiceSearcher.setSearchType(iCmdCode);
         iServiceSearcher.startSearchDevices();
         return true;
     }
@@ -259,16 +254,37 @@ public class RocheProthrombineTimeClient extends DeviceHandler implements
     }
 
     @Override
-    public void selectDevice(int selected){
-        Log.d(TAG, "selectDevice: selected=" + selected);
-        iServiceSearcher.stopSearchDevices(selected);
+    public void selectDevice(BluetoothDevice bd){
+        Log.d(TAG, "selectDevice: addr=" + bd.getAddress());
+        iServiceSearcher.stopSearchDevices();
+        selectedDevice = bd;
+        iBtDevAddr = selectedDevice.getAddress();
+        iState = TState.EGettingService;
+        runBTSearcher();
+    }
+
+
+    // methods of BTSearchEventListener interface
+
+    @Override
+    public void deviceDiscovered(Vector<BluetoothDevice> devList) {
+        deviceList = devList;
+        // we recall runBTSearcher, because every time we find a device, we have
+        // to check if it is the device we want
+        runBTSearcher();
+    }
+
+    @Override
+    public void deviceSearchCompleted() {
+        deviceSearchCompleted = true;
+        currentPos = 0;
     }
 
 
     private void stop() {
         if (timer != null)
             timer.cancel();
-        iServiceSearcher.stopSearchDevices(-1);
+        iServiceSearcher.stopSearchDevices();
         iServiceSearcher.clearBTSearcherEventListener();
         iServiceSearcher.close();
         iPTRSocket.close();
@@ -331,35 +347,10 @@ public class RocheProthrombineTimeClient extends DeviceHandler implements
     }
 
 
-    // methods of BTSearchEventListener interface
-
-    @Override
-    public void deviceSelected(BTSearcherEvent evt) {
-        Log.i(TAG, "ROCHE: selectDevice");
-        // we change status
-        iState = TState.EGettingService;
-        runBTSearcher();
-    }
-
-    @Override
-	public void deviceDiscovered(BTSearcherEvent evt, Vector<BluetoothDevice> devList) {
-		deviceList = devList;
-		// we recall runBTSearcher, because every time we find a device, we have
-		// to check if it is the device we want
-		runBTSearcher();
-	}
-
-    @Override
-	public void deviceSearchCompleted(BTSearcherEvent evt) {
-		deviceSearchCompleted = true;
-		currentPos = 0;
-	}
-
-
 	// methods of BTSocketEventListener interface
 
 	@Override
-	public void errorThrown(BTSocketEvent evt, int type, String description) {
+	public void errorThrown(int type, String description) {
         String msg;
 		switch (type) {
 		case 0: // thread interrupted
@@ -403,17 +394,17 @@ public class RocheProthrombineTimeClient extends DeviceHandler implements
 	}
 
 	@Override
-	public void openDone(BTSocketEvent evt) {
+	public void openDone() {
 		runBTSocket();
 	}
 
 	@Override
-	public void readDone(BTSocketEvent evt) {
+	public void readDone() {
 		runBTSocket();
 	}
 
 	@Override
-	public void writeDone(BTSocketEvent evt) {
+	public void writeDone() {
 		runBTSocket();
 	}
 
@@ -621,10 +612,9 @@ public class RocheProthrombineTimeClient extends DeviceHandler implements
     private void connectToServer() throws IOException {
         // this function is called when we are in EGettingService state and
         // we are going to EGettingConnection state
-        iBtDevAddr = iServiceSearcher.getCurrBTDevice().getAddress();
         // iPTRSocket is an RSocket in the Symbian version
         iPTRSocket.addBTSocketEventListener(this);
-        iPTRSocket.connect(iServiceSearcher.getCurrBTDevice());
+        iPTRSocket.connect(selectedDevice);
     }
 
 	private void runBTSearcher() {
@@ -657,7 +647,7 @@ public class RocheProthrombineTimeClient extends DeviceHandler implements
 				if (tmpBtDevAddr.equals(iBtDevAddr)) {
 					// we pass the position of the selected device into the
 					// devices vector
-					iServiceSearcher.stopSearchDevices(currentPos);
+                    selectDevice(deviceList.elementAt(currentPos));
 				} else {
 					// the address is different, so we must wait that the
 					// searcher

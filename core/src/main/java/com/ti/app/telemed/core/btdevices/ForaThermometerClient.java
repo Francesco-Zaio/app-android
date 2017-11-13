@@ -11,9 +11,7 @@ import java.util.logging.Logger;
 import com.ti.app.telemed.core.ResourceManager;
 import com.ti.app.telemed.core.btmodule.BTSearcher;
 import com.ti.app.telemed.core.btmodule.BTSocket;
-import com.ti.app.telemed.core.btmodule.events.BTSearcherEvent;
 import com.ti.app.telemed.core.btmodule.events.BTSearcherEventListener;
-import com.ti.app.telemed.core.btmodule.events.BTSocketEvent;
 import com.ti.app.telemed.core.btmodule.events.BTSocketEventListener;
 import com.ti.app.telemed.core.btmodule.DeviceHandler;
 import com.ti.app.telemed.core.btmodule.DeviceListener;
@@ -62,6 +60,7 @@ public class ForaThermometerClient extends DeviceHandler implements
 
     private Vector<BluetoothDevice> deviceList;
     private int currentPos;
+    private BluetoothDevice selectedDevice;
     private boolean deviceSearchCompleted;
 
     // used for sending message
@@ -75,7 +74,6 @@ public class ForaThermometerClient extends DeviceHandler implements
 
     private boolean dataFound;
     private boolean operationDeleted;
-    private boolean serverOpenFailed;
 
     private boolean waitforAck;
     private Timer timer;
@@ -93,18 +91,12 @@ public class ForaThermometerClient extends DeviceHandler implements
 
     public ForaThermometerClient(DeviceListener listener, UserDevice ud) {
         super(listener, ud);
-        
         deviceSearchCompleted = false;
         dataFound = false;
-        
         messageToSend = new byte[8];
         messageReceived = new byte[8];
-
         operationDeleted = false;
-        serverOpenFailed = false;
-        
         waitforAck = true;
-        
         iServiceSearcher = new BTSearcher();
         iForaThermometerSocket = BTSocket.getBTSocket();
     }
@@ -130,7 +122,6 @@ public class ForaThermometerClient extends DeviceHandler implements
         iServiceSearcher.addBTSearcherEventListener(this);
         if (iCmdCode == TCmd.ECmdConnByUser)
             iServiceSearcher.addBTSearcherEventListener(iBTSearchListener);
-        iServiceSearcher.setSearchType(iCmdCode);
         iServiceSearcher.startSearchDevices();
         return true;
     }
@@ -142,16 +133,20 @@ public class ForaThermometerClient extends DeviceHandler implements
     }
 
     @Override
-    public void selectDevice(int selected){
-        Log.d(TAG, "selectDevice: selected=" + selected);
-        iServiceSearcher.stopSearchDevices(selected);
+    public void selectDevice(BluetoothDevice bd){
+        Log.d(TAG, "selectDevice: addr=" + bd.getAddress());
+        iServiceSearcher.stopSearchDevices();
+        selectedDevice = bd;
+        iBtDevAddr = selectedDevice.getAddress();
+        iState = TState.EGettingService;
+        runBTSearcher();
     }
 
 
     // methods of BTSearchEventListener interface
 
     @Override
-    public void deviceDiscovered(BTSearcherEvent evt, Vector<BluetoothDevice> devList) {
+    public void deviceDiscovered(Vector<BluetoothDevice> devList) {
         deviceList = devList;
         // we recall runBTSearcher, because every time we find a device, we have
         // to check if it is the device we want
@@ -159,42 +154,33 @@ public class ForaThermometerClient extends DeviceHandler implements
     }
 
     @Override
-    public void deviceSearchCompleted(BTSearcherEvent evt) {
+    public void deviceSearchCompleted() {
         deviceSearchCompleted = true;
         currentPos = 0;
-    }
-
-    @Override
-    public void deviceSelected(BTSearcherEvent evt){
-        logger.log(Level.INFO, "CGE2C: selectDevice");
-        // we change status
-        iState = TState.EGettingService;
-
-        runBTSearcher();
     }
 
 
     // methods of BTSocketEventListener interface
 
     @Override
-    public void openDone(BTSocketEvent evt){
+    public void openDone(){
         runBTSocket();
     }
 
     @Override
-    public void readDone(BTSocketEvent evt){
+    public void readDone(){
         logger.log(Level.INFO, "ack received: "+toHexString(messageReceived));
         runBTSocket();
     }
 
     @Override
-    public void writeDone(BTSocketEvent evt){
+    public void writeDone(){
         logger.log(Level.INFO, "command sent"+toHexString(messageToSend));
         runBTSocket();
     }
 
     @Override
-    public void errorThrown(BTSocketEvent evt, int type, String description){
+    public void errorThrown(int type, String description){
         Log.e(TAG,  description);
         switch (type) {
             case 0: //thread interrupted
@@ -207,7 +193,6 @@ public class ForaThermometerClient extends DeviceHandler implements
                     // means that we have to do the pairing
                     iState = TState.EDisconnecting;
                     operationDeleted = true;
-                    serverOpenFailed = true;
                     runBTSocket();
                 }
                 reset();
@@ -234,19 +219,15 @@ public class ForaThermometerClient extends DeviceHandler implements
         deviceSearchCompleted = false;
         dataFound = false;
         operationDeleted = false;
-        serverOpenFailed = false;
-
         messageReceived = new byte[8];
-
         waitforAck = true;
-
         // this class object must return to the initial state
         iState = TState.EWaitingToGetDevice;
     }
 
 
     public void stop() {
-        iServiceSearcher.stopSearchDevices(-1);
+        iServiceSearcher.stopSearchDevices();
         iServiceSearcher.clearBTSearcherEventListener();
         iServiceSearcher.close();
         iForaThermometerSocket.close();
@@ -268,9 +249,8 @@ public class ForaThermometerClient extends DeviceHandler implements
     private void connectToServer() throws IOException {
         // this function is called when we are in EGettingService state and
 		// we are connecting to the device
-		iBtDevAddr = iServiceSearcher.getCurrBTDevice().getAddress();
 		iForaThermometerSocket.addBTSocketEventListener(this);
-		iForaThermometerSocket.connect(iServiceSearcher.getCurrBTDevice());
+		iForaThermometerSocket.connect(selectedDevice);
     }
     
     /**
@@ -360,7 +340,7 @@ public class ForaThermometerClient extends DeviceHandler implements
                     if ( tmpBtDevAddr.equals(iBtDevAddr) ) {
                         // the btAddress is the same
                         // we pass the position of the selected device into the devices vector
-                    	iServiceSearcher.stopSearchDevices(currentPos);  
+                        selectDevice(deviceList.elementAt(currentPos));
                     } else {
                         // the name is different, so we must wait that the searcher
                         // find another device

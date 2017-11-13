@@ -18,13 +18,9 @@ import com.ti.app.telemed.core.ResourceManager;
 import com.ti.app.telemed.core.btmodule.BTSearcher;
 import com.ti.app.telemed.core.btmodule.DeviceHandler;
 import com.ti.app.telemed.core.btmodule.DeviceListener;
-import com.ti.app.telemed.core.btmodule.events.BTSearcherEvent;
 import com.ti.app.telemed.core.btmodule.events.BTSearcherEventListener;
 import com.ti.app.telemed.core.common.Measure;
-import com.ti.app.telemed.core.common.Patient;
-import com.ti.app.telemed.core.common.User;
 import com.ti.app.telemed.core.common.UserDevice;
-import com.ti.app.telemed.core.usermodule.UserManager;
 import com.ti.app.telemed.core.util.GWConst;
 import com.ti.app.telemed.core.util.Util;
 import com.ti.app.telemed.core.xmlmodule.XmlManager;
@@ -112,9 +108,7 @@ public class AgamatrixJazz extends DeviceHandler implements
         Log.d(TAG,"startOperation: iBtDevAddr="+iBtDevAddr + " iCmdCode="+iCmdCode.toString());
         iServiceSearcher.clearBTSearcherEventListener();
         iServiceSearcher.addBTSearcherEventListener(this);
-        iServiceSearcher.setSearchType(iCmdCode);
         iServiceSearcher.startSearchDevices();
-
         return true;
     }
 
@@ -125,45 +119,39 @@ public class AgamatrixJazz extends DeviceHandler implements
     }
 
     @Override
-    public void selectDevice(int selected){
-        Log.d(TAG, "selectDevice: selected=" + selected);
-        iServiceSearcher.stopSearchDevices(selected);
+    public void selectDevice(BluetoothDevice bd){
+        Log.d(TAG, "selectDevice: iBtDevAddr="+bd.getAddress());
+        iServiceSearcher.stopSearchDevices();
+        iState = TState.EGettingConnection;
+        iBtDevAddr =  bd.getAddress();
+        mClient = AgaMatrixClient.getInstance(MyApp.getContext(), bd);
+        mClient.setAPIKey(AUTHORIZATION_KEY);
+        mClient.registerConnectionStateListener(this);
+        mClient.getBatteryStatus(this);
+        deviceListener.notifyToUi(ResourceManager.getResource().getString("KConnectingDev"));
     }
 
 
     // methods of BTSearcherEventListener interface
 
     @Override
-    public void deviceDiscovered(BTSearcherEvent evt, Vector<BluetoothDevice> devList) {
+    public void deviceDiscovered(Vector<BluetoothDevice> devList) {
         Log.d(TAG,"deviceDiscovered: size="+devList.size());
         deviceList = devList;
         if (iCmdCode == TCmd.ECmdConnByAddr) {
             for (int i=0; i<deviceList.size(); i++)
                 if (iBtDevAddr.equalsIgnoreCase(deviceList.get(i).getAddress())) {
-                    iServiceSearcher.stopSearchDevices(i);
+                    selectDevice(deviceList.get(i));
                 }
         } else if (iBTSearchListener != null) {
-            iBTSearchListener.deviceDiscovered(evt, deviceList);
+            iBTSearchListener.deviceDiscovered(deviceList);
         }
     }
 
     @Override
-    public void deviceSearchCompleted(BTSearcherEvent evt) {
+    public void deviceSearchCompleted() {
         if (iCmdCode == TCmd.ECmdConnByUser && iBTSearchListener != null)
-            iBTSearchListener.deviceSearchCompleted(evt);
-    }
-
-    @Override
-    public void deviceSelected(BTSearcherEvent evt) {
-        iState = TState.EGettingConnection;
-        BluetoothDevice d = iServiceSearcher.getCurrBTDevice();
-        Log.i(TAG, "selectDevice: iBtDevAddr="+d.getAddress());
-        iBtDevAddr =  d.getAddress();
-        mClient = AgaMatrixClient.getInstance(MyApp.getContext(), d);
-        mClient.setAPIKey(AUTHORIZATION_KEY);
-        mClient.registerConnectionStateListener(this);
-        mClient.getBatteryStatus(this);
-        deviceListener.notifyToUi(ResourceManager.getResource().getString("KConnectingDev"));
+            iBTSearchListener.deviceSearchCompleted();
     }
 
 
@@ -379,9 +367,9 @@ public class AgamatrixJazz extends DeviceHandler implements
     private void stop() {
         Log.d(TAG, "stop");
         if (iState == TState.EGettingDevice) {
-            iServiceSearcher.stopSearchDevices(-1);
+            iServiceSearcher.stopSearchDevices();
         }
-        iServiceSearcher.stopSearchDevices(-1);
+        iServiceSearcher.stopSearchDevices();
         iServiceSearcher.clearBTSearcherEventListener();
         iServiceSearcher.close();
         if (mClient != null) {

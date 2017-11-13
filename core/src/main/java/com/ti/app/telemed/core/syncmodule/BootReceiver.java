@@ -5,6 +5,7 @@ import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.os.DropBoxManager;
 import android.os.PowerManager;
 import android.util.Log;
 
@@ -84,14 +85,16 @@ public class BootReceiver extends BroadcastReceiver implements  WebManagerResult
     @Override
     public void webAuthenticationSucceeded(WebManagerResultEvent evt){
         User u = UserManager.getUserManager().getCurrentUser();
+        // verifico se nel frattempo non è cambiato l'utente
         if (u != null && u.getId().equals(userId))
-            UserManager.getUserManager().selectUser(userId);
+            UserManager.getUserManager().reloadCurrentUser();
 
         PowerManager.WakeLock lock = getLock(MyApp.getContext());
         if (lock.isHeld()) {
             lock.release();
         }
     }
+
     @Override
     public void webAuthenticationFailed(WebManagerResultEvent evt){
         // Le credenziali dell'utente corrente sono errate (l'utente può essere stato rimosso o

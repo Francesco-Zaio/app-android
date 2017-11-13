@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -53,6 +54,8 @@ import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+
+import static com.ti.app.mydoctor.gui.DeviceScanActivity.SELECTED_DEVICE;
 
 public class DeviceSettingsActivity extends ActionBarListActivity {
 	private static final String TAG = "DeviceSettingsActivity";
@@ -448,16 +451,6 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
 		startActivityForResult(serverIntent, REQUEST_SCAN_DEVICES);
 	}
 	
-	//Termina operazione di scansione
-	private void stopDeviceOperation(int position) {
-		deviceManager.stopDeviceOperation(position);
-		if(position < 0){
-			closeProgressDialog();			
-		}
-		
-		refreshList();
-	}
-	
 	@Override
 	public void onActivityResult(int requestCode, int resultCode, Intent data) {
 		super.onActivityResult(requestCode, resultCode, data);	
@@ -480,13 +473,15 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
             break;
     	
     	case REQUEST_SCAN_DEVICES:
-    		if (resultCode == Activity.RESULT_OK){
-    			int position = data.getExtras().getInt(DeviceScanActivity.SELECTED_DEVICE_POSITION);
-    			stopDeviceOperation(position);
-    		} else {
-    			stopDeviceOperation(-2); 
-    		}
-    		break;
+			if (resultCode == Activity.RESULT_OK){
+				BluetoothDevice bd = data.getExtras().getParcelable(SELECTED_DEVICE);
+				deviceManager.selectDevice(bd);
+			} else {
+				deviceManager.abortOperation();
+				closeProgressDialog();
+			}
+			refreshList();
+			break;
     	}
 	}
 
@@ -570,8 +565,9 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
     
     private class ProgressDialogClickListener implements DialogInterface.OnClickListener {			
 		public void onClick(DialogInterface dialog, int which) {
-			closeProgressDialog();
-			stopDeviceOperation(-1);			
+            closeProgressDialog();
+            deviceManager.abortOperation();
+            refreshList();
 		}		
 	}
     

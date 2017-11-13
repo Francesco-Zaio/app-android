@@ -1465,7 +1465,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 						}
 					}
 	    			else
-	    				userManager.selectUser((User)null);
+	    				userManager.reset();
 	    		} else {
 	    			myShowDialog(LOGIN_DIALOG);
 	    		}
@@ -1524,14 +1524,11 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
             break;
     	case REQUEST_SCAN_DEVICES:
     		if (resultCode == Activity.RESULT_OK){
-    			int position = data.getExtras().getInt(DeviceScanActivity.SELECTED_DEVICE_POSITION);
-                //BluetoothDevice bd = data.getExtras().getParcelable(SELECTED_DEVICE);
-                //deviceManager.selectDevice(bd);
-    			stopDeviceOperation(position);
+                BluetoothDevice bd = data.getExtras().getParcelable(SELECTED_DEVICE);
+                deviceManager.selectDevice(bd);
     		} else {
-                //deviceManager.abortOperation();
-                //myRemoveDialog(PROGRESS_DIALOG);
-    			stopDeviceOperation(-2);
+                deviceManager.abortOperation();
+                myRemoveDialog(PROGRESS_DIALOG);
     		}
             refreshList();
     		break;
@@ -2310,15 +2307,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 		}
 	}
 
-	private void stopDeviceOperation(int position) {
-		deviceManager.stopDeviceOperation(position);
-		if(position < 0){
-			myRemoveDialog(PROGRESS_DIALOG);
-		}
-		refreshList();
-	}
-
-
 	private class ProgressDialogClickListener implements DialogInterface.OnClickListener {
 		public void onClick(DialogInterface dialog, int which) {
 			Button btn = ((ProgressDialog)dialog).getButton(which);
@@ -2326,7 +2314,9 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 			myRemoveDialog(PROGRESS_DIALOG);
 			if(AppConst.IS_MEASURE.equals(tag)){
                 // annullo l'acquisizione di una misura
-				stopDeviceOperation(-1);
+                deviceManager.abortOperation();
+                myRemoveDialog(PROGRESS_DIALOG);
+                refreshList();
 			}
 		}
 	}

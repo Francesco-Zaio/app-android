@@ -13,9 +13,7 @@ import com.ti.app.telemed.core.btmodule.BTSearcher;
 import com.ti.app.telemed.core.btmodule.BTSocket;
 import com.ti.app.telemed.core.btmodule.DeviceHandler;
 import com.ti.app.telemed.core.btmodule.DeviceListener;
-import com.ti.app.telemed.core.btmodule.events.BTSearcherEvent;
 import com.ti.app.telemed.core.btmodule.events.BTSearcherEventListener;
-import com.ti.app.telemed.core.btmodule.events.BTSocketEvent;
 import com.ti.app.telemed.core.btmodule.events.BTSocketEventListener;
 import com.ti.app.telemed.core.common.Measure;
 import com.ti.app.telemed.core.common.UserDevice;
@@ -48,6 +46,7 @@ public class Contec8000GW extends DeviceHandler implements  BTSearcherEventListe
     private boolean serverOpenFailed;
     private Vector<BluetoothDevice> deviceList;
     private int currentPos;
+    private BluetoothDevice selectedDevice;
     private boolean deviceSearchCompleted;
 
 
@@ -87,7 +86,6 @@ public class Contec8000GW extends DeviceHandler implements  BTSearcherEventListe
         iServiceSearcher.addBTSearcherEventListener(this);
         if (iCmdCode == TCmd.ECmdConnByUser)
             iServiceSearcher.addBTSearcherEventListener(btSearchListener);
-        iServiceSearcher.setSearchType(iCmdCode);
         iServiceSearcher.startSearchDevices();
         return true;
     }
@@ -99,17 +97,37 @@ public class Contec8000GW extends DeviceHandler implements  BTSearcherEventListe
     }
 
     @Override
-    public void selectDevice(int selected){
-        Log.d(TAG, "selectDevice: selected=" + selected);
-        iServiceSearcher.stopSearchDevices(selected);
+    public void selectDevice(BluetoothDevice bd){
+        Log.d(TAG, "selectDevice: addr=" + bd.getAddress());
+        iServiceSearcher.stopSearchDevices();
+        iState = TState.EGettingService;
+        selectedDevice = bd;
+        iBtDevAddr = selectedDevice.getAddress();
+        runBTSearcher();
+    }
+
+
+    // methods of BTSearcherEventListener interface
+
+    @Override
+    public void deviceDiscovered(Vector<BluetoothDevice> devList) {
+        deviceList = devList;
+        // we recall runBTSearcher, because every time we find a device, we have
+        // to check if it is the device we want
+        runBTSearcher();
+    }
+
+    @Override
+    public void deviceSearchCompleted() {
+        deviceSearchCompleted = true;
+        currentPos = 0;
     }
 
 
     private void connectToDevice() throws IOException {
         Log.i(TAG, "connectToDevice");
-        iBtDevAddr = iServiceSearcher.getCurrBTDevice().getAddress();
         deviceSocket.addBTSocketEventListener(this);
-        deviceSocket.connect(iServiceSearcher.getCurrBTDevice());
+        deviceSocket.connect(selectedDevice);
     }
 
     private void runBTSearcher() {
@@ -119,8 +137,8 @@ public class Contec8000GW extends DeviceHandler implements  BTSearcherEventListe
                     case ECmdConnByAddr:
                         String tmpBtDevAddr;
                         tmpBtDevAddr = deviceList.elementAt(currentPos).getAddress();
-                        if (tmpBtDevAddr.equals(iBtDevAddr)) {
-                            iServiceSearcher.stopSearchDevices(currentPos);
+                        if (tmpBtDevAddr.equalsIgnoreCase(iBtDevAddr)) {
+                            selectDevice(deviceList.elementAt(currentPos));
                         } else {
                             if (deviceSearchCompleted) {
                                 deviceSearchCompleted = false;
@@ -204,7 +222,7 @@ public class Contec8000GW extends DeviceHandler implements  BTSearcherEventListe
         } catch (IllegalArgumentException e){
             // ignore exception
         }
-        iServiceSearcher.stopSearchDevices(-1);
+        iServiceSearcher.stopSearchDevices();
         iServiceSearcher.clearBTSearcherEventListener();
         iServiceSearcher.close();
         if (!serverOpenFailed) {
@@ -215,37 +233,13 @@ public class Contec8000GW extends DeviceHandler implements  BTSearcherEventListe
     }
 
 
-    // methods of BTSearcherEventListener interface
-
-    @Override
-    public void deviceDiscovered(BTSearcherEvent evt,  Vector<BluetoothDevice> devList) {
-        deviceList = devList;
-        // we recall runBTSearcher, because every time we find a device, we have
-        // to check if it is the device we want
-        runBTSearcher();
-    }
-
-    @Override
-    public void deviceSearchCompleted(BTSearcherEvent evt) {
-        deviceSearchCompleted = true;
-        currentPos = 0;
-    }
-
-    @Override
-    public void deviceSelected(BTSearcherEvent evt) {
-        Log.i(TAG, "selectDevice");
-        // we change status
-        iState = TState.EGettingService;
-
-        runBTSearcher();
-    }
 
 
     // Methods of BTSocketEventListener interface
 
     @Override
-    public void errorThrown(BTSocketEvent evt, int type, String description) {
-        Log.e(TAG, "errorThrown " + type + " " + description);
+    public void errorThrown(int type, String description) {
+        Log.e(TAG, "writeErrorThrown " + type + " " + description);
         switch (type) {
             case 0: //thread interrupted
             case 4: //bluetooth close error
@@ -267,17 +261,17 @@ public class Contec8000GW extends DeviceHandler implements  BTSearcherEventListe
     }
 
     @Override
-    public void openDone(BTSocketEvent evt) {
+    public void openDone() {
         runBTSocket();
     }
 
     @Override
-    public void readDone(BTSocketEvent evt) {
+    public void readDone() {
         runBTSocket();
     }
 
     @Override
-    public void writeDone(BTSocketEvent evt) {
+    public void writeDone() {
         runBTSocket();
     }
 

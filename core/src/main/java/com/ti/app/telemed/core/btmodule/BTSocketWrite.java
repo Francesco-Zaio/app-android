@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Vector;
 
-import com.ti.app.telemed.core.btmodule.events.BTSocketWriteEvent;
 import com.ti.app.telemed.core.btmodule.events.BTSocketWriteEventListener;
 
 import android.bluetooth.BluetoothSocket;
@@ -26,12 +25,12 @@ public class BTSocketWrite implements Runnable {
 	private boolean isClosed = true;
 	
 	//Thread management
-	private Thread currT;
+	private final Thread currT;
 	private boolean loop = true;
 	private Op currentOpOn;
 	
 	//Listener management
-	private Vector<BTSocketWriteEventListener> btSocketWriteEventListeners = new Vector<BTSocketWriteEventListener>();
+	private Vector<BTSocketWriteEventListener> btSocketWriteEventListeners = new Vector<>();
 	
 	private static final String TAG = "BTSocket";
 	 
@@ -98,7 +97,7 @@ public class BTSocketWrite implements Runnable {
 	
 	private Vector<BTSocketWriteEventListener> getBTSocketWriteEventListeners(){
 		// we work on a copy of the vector, so if change we don't have problem
-		Vector<BTSocketWriteEventListener> copy = null;
+		Vector<BTSocketWriteEventListener> copy;
         synchronized (this) {
             copy = (Vector<BTSocketWriteEventListener>) btSocketWriteEventListeners.clone();
         }
@@ -106,23 +105,20 @@ public class BTSocketWrite implements Runnable {
 	}
 	
     private void fireOpenDone() {
-        BTSocketWriteEvent event = new BTSocketWriteEvent(this);
         for (BTSocketWriteEventListener listener : getBTSocketWriteEventListeners()) {        	
-            listener.openDone(event);
+            listener.writeOpenDone();
         }
     }
     
     private void fireWriteDone() {
-    	BTSocketWriteEvent event = new BTSocketWriteEvent(this);
         for (BTSocketWriteEventListener listener : getBTSocketWriteEventListeners()) {
-            listener.writeDone(event);
+            listener.writeDone();
         }        
     }
     
     private void fireErrorThrown(int type, String description) {
-    	BTSocketWriteEvent event = new BTSocketWriteEvent(this);
         for (BTSocketWriteEventListener listener : getBTSocketWriteEventListeners()) {
-            listener.errorThrown(event, type, description);
+            listener.writeErrorThrown(type, description);
         }
     }
 	

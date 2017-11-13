@@ -1,5 +1,6 @@
 package com.ti.app.telemed.core.btmodule;
 
+import android.bluetooth.BluetoothDevice;
 import android.util.Log;
 
 import com.ti.app.telemed.core.btmodule.events.BTSearcherEventListener;
@@ -16,7 +17,7 @@ import java.lang.reflect.Method;
 /**
  * <h1>Acquisire una misura da un dispsitivo</h1>
  * La classe DeviceHandler rappresenta un generico dispositivo Bluetooth.
- * I metodi di questa classe permettono di eseguire tutte le operazioni necessarie per acquisire una misura dal dispositivo.
+ * <p>I metodi di questa classe permettono di eseguire tutte le operazioni necessarie per acquisire una misura dal dispositivo.
  *
  * @author  Massimo Martini
  * @version 1.0
@@ -120,9 +121,9 @@ public abstract class DeviceHandler {
     /**
      * Metodo statico che deve essere utilizzato per ottenere un istanza della classe DeviceHandler.
      *
-     * @param listener Istanza di una classe che implementa l'interfaccia DeviceListenr {@see com.ti.app.telemed.core.btmodule.DeviceListener} che
+     * @param listener Istanza di una classe che implementa l'interfaccia {@link DeviceListener} che
      *                 ricevera' le notifiche durante l'esecuzione dell'operazione sul dispositivo.
-     * @param ud       UserDevice {@see com.ti.app.telemed.core.common.UserDevice} che deve essere gestito dalla nuova istanza di DeviceHandler
+     * @param ud       UserDevice {@link com.ti.app.telemed.core.common.UserDevice} che deve essere gestito dalla nuova istanza di DeviceHandler
      * @return         La nuova istanza di DeviceHandler o <code>null</code> in caso di errore.
      */
     public static DeviceHandler getInstance(DeviceListener listener, UserDevice ud) {
@@ -196,22 +197,40 @@ public abstract class DeviceHandler {
     }
     /**
      * Avvia l'operazione richiesta sul dispositivo.
+     * <p> Se il parametro btSearchListener e' <code>null</code>, lo UserDevice indicato
+     * all'istanziazione della classe deve contenere l'indirizzo bluetooth del dispositivo
+     * con cui effettuare l'operazione.
+     * Se invece il parametro btSearchListener non e' <code>null</code>, verra' avviato un discovery
+     * e all'istanza btSearchListener verrano notificati tutti i dispositivi bluetooth trovati.
+     * In questo caso dovra' poi essere invocato il metodo {@link #selectDevice(BluetoothDevice bd) selectDevice}
+     * per indicare il dispositivo selezionato per eseguire l'operazione.
      *
      * @param  ot               {@see OperationType} tipo di operazione che deve essere eseguita.
-     * @param  btSearchListener Istanza di una classe che implementa l'interfaccia {@see com.ti.app.telemed.core.btmodule.events.BTSearcherEventListener}.
-     *                          Se diverso da <code>null</code> questa istanza riceverà una notifica per ogni dispositivo bluetooth trovato durante l'operazione di discovery.
-     *                          Se e' null, lo UserDevice indicato all'istanziazione della classe, deve contenere un indirizzo bluetooth
-     *                          valido che indichi il dispositivo con cui effettuare l'operazione.
+     * @param  btSearchListener listenere che implementa l'interfaccia {@see com.ti.app.telemed.core.btmodule.events.BTSearcherEventListener}
      * @return                  <code>true</code> se l'operazione viene avviata o <code>false</code> in caso di errore.
      */
     abstract public boolean startOperation(OperationType ot, BTSearcherEventListener btSearchListener);
 
+    /**
+     * Termina l'operazione in corso
+     */
     abstract public void abortOperation();
 
-    abstract public void selectDevice(int selected);
+    /**
+     * Permette di indicare il dispositivo bluetooth su cui eseguire l'operazione avviata con
+     * il metodo {@link #startOperation(OperationType ot, BTSearcherEventListener btSearchListener) startOperation}
+     * @param bd dispositivo selezionato
+     */
+    abstract public void selectDevice(BluetoothDevice bd);
 
+    /**
+     * Notifica una risposta positiva richiesta precedentemente con il metodo {@link DeviceListener#askSomething(String messageText, String positiveText, String negativeText) DeviceListener.askSomething}
+     */
     abstract public void confirmDialog();
 
+    /**
+     * Notifica una risposta negativa richiesta precedentemente con il metodo {@link DeviceListener#askSomething(String messageText, String positiveText, String negativeText) DeviceListener.askSomething}
+     */
     abstract public void cancelDialog();
 
 
@@ -259,10 +278,10 @@ public abstract class DeviceHandler {
             iBtDevAddr = iUserDevice.getBtAddress();
         else
             iBtDevAddr = "";
-        if (iBtDevAddr != null && !iBtDevAddr.isEmpty()) {
-            iCmdCode = TCmd.ECmdConnByAddr;
-        } else if (iBTSearchListener != null){
+        if (iBTSearchListener != null){
             iCmdCode = TCmd.ECmdConnByUser;
+        } else if (iBtDevAddr != null && !iBtDevAddr.isEmpty()) {
+            iCmdCode = TCmd.ECmdConnByAddr;
         } else {
             Log.e(TAG, "startOperation: BTSearcherEventListener is null!");return false;
         }

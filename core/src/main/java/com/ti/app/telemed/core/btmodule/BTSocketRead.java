@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Vector;
 
-import com.ti.app.telemed.core.btmodule.events.BTSocketReadEvent;
 import com.ti.app.telemed.core.btmodule.events.BTSocketReadEventListener;
 
 import android.bluetooth.BluetoothSocket;
@@ -29,12 +28,12 @@ public class BTSocketRead implements Runnable {
 	private boolean notifyEOF = false;
 	
 	//Thread management
-	private Thread currT;
+	private final Thread currT;
 	private boolean loop = true;
 	private Op currentOpOn;
 	
 	//Listener management
-	private Vector<BTSocketReadEventListener> btSocketReadEventListeners = new Vector<BTSocketReadEventListener>();
+	private Vector<BTSocketReadEventListener> btSocketReadEventListeners = new Vector<>();
 	
 	private static final String TAG = "BTSocket";
 	
@@ -104,7 +103,7 @@ public class BTSocketRead implements Runnable {
 	
 	private Vector<BTSocketReadEventListener> getBTSocketReadEventListeners(){
 		// we work on a copy of the vector, so if change we don't have problem
-		Vector<BTSocketReadEventListener> copy = null;
+		Vector<BTSocketReadEventListener> copy;
         synchronized (this) {
             copy = (Vector<BTSocketReadEventListener>) btSocketReadEventListeners.clone();
         }
@@ -112,23 +111,20 @@ public class BTSocketRead implements Runnable {
 	}
 	
     private void fireOpenDone() {
-        BTSocketReadEvent event = new BTSocketReadEvent(this);
-        for (BTSocketReadEventListener listener : getBTSocketReadEventListeners()) {        	
-            listener.openDone(event);
+        for (BTSocketReadEventListener listener : getBTSocketReadEventListeners()) {
+            listener.readOpenDone();
         }
     }
     
     private void fireReadDone() {
-    	BTSocketReadEvent event = new BTSocketReadEvent(this);
         for (BTSocketReadEventListener listener : getBTSocketReadEventListeners()) {
-            listener.readDone(event);
+            listener.readDone();
         }        
     }
     
     private void fireErrorThrown(int type, String description) {
-    	BTSocketReadEvent event = new BTSocketReadEvent(this);
         for (BTSocketReadEventListener listener : getBTSocketReadEventListeners()) {
-            listener.errorThrown(event, type, description);
+            listener.readErrorThrown(type, description);
         }
     }
         
@@ -146,7 +142,7 @@ public class BTSocketRead implements Runnable {
 						break;
 					case OPEN:
 						try {      
-                        	inStream = mmSocket.getInputStream();;
+                        	inStream = mmSocket.getInputStream();
                             currentOpOn = Op.IDLE;
                             isClosed = false;
                             fireOpenDone();                            

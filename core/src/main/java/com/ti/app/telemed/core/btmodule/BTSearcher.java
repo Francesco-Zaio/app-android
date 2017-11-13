@@ -4,7 +4,6 @@ package com.ti.app.telemed.core.btmodule;
 import java.util.Vector;
 
 import com.ti.app.telemed.core.MyApp;
-import com.ti.app.telemed.core.btmodule.events.BTSearcherEvent;
 import com.ti.app.telemed.core.btmodule.events.BTSearcherEventListener;
 
 import android.bluetooth.BluetoothAdapter;
@@ -21,11 +20,6 @@ public class BTSearcher {
 
     private Vector<BTSearcherEventListener> btSearcherEventListeners = new Vector<>();
 
-    // Type of search the scheduler requires
-    private DeviceHandler.TCmd searchType;
-
-    private int selectedDevice;
-
     private Vector<BluetoothDevice> foundDevices = null;
 
     private BluetoothAdapter mBtAdapter;
@@ -33,7 +27,6 @@ public class BTSearcher {
     private BroadcastReceiver mReceiver = null;
 
     public BTSearcher() {
-        selectedDevice = -1;
         foundDevices = new Vector<>();
 
         // Get the local Bluetooth adapter
@@ -64,14 +57,6 @@ public class BTSearcher {
         }
     }
 
-    public void setSearchType(DeviceHandler.TCmd sType) {
-        searchType = sType;
-    }
-
-    public BluetoothDevice getCurrBTDevice() {
-        return foundDevices.elementAt(selectedDevice);
-    }
-
     private Runnable startSearchRunnable = new Runnable() {
 
         @Override
@@ -96,16 +81,10 @@ public class BTSearcher {
         t.start();
     }
 
-    public void stopSearchDevices(int selected) {
-        Log.i(TAG, "stopSearchDevices: selected = " + selected);
+    public void stopSearchDevices() {
         unregisterReceiver();
         if (mBtAdapter.isDiscovering())
-        mBtAdapter.cancelDiscovery();
-        if (selected >= 0) {
-            selectedDevice = selected;
-            // in all case
-            fireDeviceSelected();
-        }
+            mBtAdapter.cancelDiscovery();
     }
 
     /**
@@ -114,9 +93,6 @@ public class BTSearcher {
     public void deviceSearchCompleted() {
         fireDeviceSearchCompleted();
         unregisterReceiver();
-        if (searchType == DeviceHandler.TCmd.ECmdConnByAddr && selectedDevice == -1)
-            startSearchDevices();
-
     }
 
     public void close() {
@@ -124,7 +100,6 @@ public class BTSearcher {
     }
 
     private void reset() {
-        selectedDevice = -1;
         if (!foundDevices.isEmpty()) {
             foundDevices.removeAllElements();
         }
@@ -159,24 +134,15 @@ public class BTSearcher {
         return copy;
     }
 
-    private void fireDeviceSelected() {
-        BTSearcherEvent event = new BTSearcherEvent(this);
-        for (BTSearcherEventListener listener : getBTSearcherEventListeners()) {
-            listener.deviceSelected(event);
-        }
-    }
-
     private void fireDeviceDiscovered(Vector<BluetoothDevice> devList) {
-        BTSearcherEvent event = new BTSearcherEvent(this);
         for (BTSearcherEventListener listener : getBTSearcherEventListeners()) {
-            listener.deviceDiscovered(event, devList);
+            listener.deviceDiscovered(devList);
         }
     }
 
     private void fireDeviceSearchCompleted() {
-        BTSearcherEvent event = new BTSearcherEvent(this);
         for (BTSearcherEventListener listener : getBTSearcherEventListeners()) {
-            listener.deviceSearchCompleted(event);
+            listener.deviceSearchCompleted();
         }
     }
 

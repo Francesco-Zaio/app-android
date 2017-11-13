@@ -15,13 +15,11 @@ import android.util.Log;
 
 import com.ti.app.telemed.core.MyApp;
 import com.ti.app.telemed.core.ResourceManager;
-import com.ti.app.telemed.core.btmodule.events.BTSearcherEvent;
 import com.ti.app.telemed.core.btmodule.events.BTSearcherEventListener;
 import com.ti.app.telemed.core.btmodule.DeviceHandler;
 import com.ti.app.telemed.core.btmodule.DeviceListener;
 import com.ti.app.telemed.core.common.Measure;
 import com.ti.app.telemed.core.common.Patient;
-import com.ti.app.telemed.core.common.User;
 import com.ti.app.telemed.core.common.UserDevice;
 import com.ti.app.telemed.core.util.GWConst;
 
@@ -106,10 +104,10 @@ public class IHealth extends DeviceHandler {
     }
 
     @Override
-    public void selectDevice(int selected){
-        Log.d(TAG, "selectDevice: selected=" + selected);
-        iBtDevAddr = deviceList.elementAt(selected).getAddress();
-        deviceType = deviceTypes.elementAt(selected);
+    public void selectDevice(BluetoothDevice bd){
+        Log.d(TAG, "selectDevice: addr=" + bd.getAddress());
+        iBtDevAddr = bd.getAddress();
+        deviceType = deviceTypes.elementAt(deviceList.indexOf(bd));
         devOpHandler.sendEmptyMessage(HANDLER_DEVICE_SELECTED);
     }
 
@@ -189,7 +187,7 @@ public class IHealth extends DeviceHandler {
                             deviceList.add(device);
                             deviceTypes.add(devType);
                         }
-                        iBTSearchListener.deviceDiscovered(new BTSearcherEvent(this), deviceList);
+                        iBTSearchListener.deviceDiscovered(deviceList);
                     }
                     break;
                 case ECmdConnByAddr:
@@ -205,7 +203,7 @@ public class IHealth extends DeviceHandler {
         public void onScanFinish() {
             Log.d(TAG, "iHealthDevicesCallback:onScanFinish");
             if (iCmdCode == TCmd.ECmdConnByUser && iBTSearchListener != null)
-                iBTSearchListener.deviceSearchCompleted(new BTSearcherEvent(this));
+                iBTSearchListener.deviceSearchCompleted();
             devOpHandler.sendEmptyMessage(HANDLER_DISCOVERY_FINISH);
         }
 

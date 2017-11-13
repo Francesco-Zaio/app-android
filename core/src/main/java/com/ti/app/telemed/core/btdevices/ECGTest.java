@@ -7,7 +7,6 @@ import android.util.Log;
 import com.ti.app.telemed.core.ResourceManager;
 import com.ti.app.telemed.core.btmodule.DeviceHandler;
 import com.ti.app.telemed.core.btmodule.DeviceListener;
-import com.ti.app.telemed.core.btmodule.events.BTSearcherEvent;
 import com.ti.app.telemed.core.btmodule.events.BTSearcherEventListener;
 import com.ti.app.telemed.core.common.ECGDrawData;
 import com.ti.app.telemed.core.common.Measure;
@@ -74,8 +73,8 @@ public class ECGTest extends DeviceHandler {
 
         if (iBtDevAddr == null || iBtDevAddr.isEmpty()) {
             deviceList.add(BluetoothAdapter.getDefaultAdapter().getRemoteDevice("00:00:00:00:00:00"));
-            iBTSearchListener.deviceDiscovered(new BTSearcherEvent(this), deviceList);
-            iBTSearchListener.deviceSearchCompleted(new BTSearcherEvent(this));
+            iBTSearchListener.deviceDiscovered(deviceList);
+            iBTSearchListener.deviceSearchCompleted();
         }
         thread.start();
 
@@ -92,8 +91,8 @@ public class ECGTest extends DeviceHandler {
     }
 
     @Override
-    public void selectDevice(int selected){
-        Log.d(TAG, "selectDevice: selected=" + selected);
+    public void selectDevice(BluetoothDevice bd){
+        Log.d(TAG, "selectDevice: addr=" + bd.getAddress());
         synchronized (thread) {
             thread.notify();
         }

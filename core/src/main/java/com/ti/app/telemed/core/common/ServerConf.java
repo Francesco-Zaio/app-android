@@ -2,19 +2,16 @@ package com.ti.app.telemed.core.common;
 
 public class ServerConf {
 	private String ip;
-	private String protocol;
 	private String port;
 	private String targetCfg;
 	private String targetSend;
 	private String ipDef;
-	private String protocolDef;
 	private String portDef;
 	private String targetCfgDef;
 	private String targetSendDef;
 
-	public ServerConf(String ip, String protocol, String port, String targetCfg, String targetSend) {
+	public ServerConf(String ip, String port, String targetCfg, String targetSend) {
 		this.ipDef = ip;
-		this.protocolDef = protocol;
 		this.portDef = port;
 		this.targetCfgDef = targetCfg;
 		this.targetSendDef = targetSend;
@@ -29,14 +26,6 @@ public class ServerConf {
 
 	public void setIp(String ip) {
 		this.ip = ip;
-	}
-
-	public String getProtocol() {
-		return protocol;
-	}
-
-	public void setProtocol(String protocol) {
-		this.protocol = protocol;
 	}
 
 	public String getPort() {
@@ -71,14 +60,6 @@ public class ServerConf {
 		this.ipDef = ipDef;
 	}
 
-	public String getProtocolDef() {
-		return protocolDef;
-	}
-
-	public void setProtocolDef(String protocolDef) {
-		this.protocolDef = protocolDef;
-	}
-
 	public String getPortDef() {
 		return portDef;
 	}
@@ -108,7 +89,6 @@ public class ServerConf {
 		if(obj instanceof ServerConf){
 			ServerConf sc = (ServerConf)obj;
 			return sc.getIp().equalsIgnoreCase(this.ip)
-					&& sc.getProtocol().equalsIgnoreCase(this.protocol)
 					&& sc.getPort().equalsIgnoreCase(this.port)
 					&& sc.getTargetCfg().equalsIgnoreCase(this.targetCfg)
 					&& sc.getTargetSend().equalsIgnoreCase(this.targetSend);

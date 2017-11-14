@@ -597,7 +597,7 @@ public class ShowMeasure extends ActionBarListActivity{
 		
 		String idPatient = UserManager.getUserManager().getCurrentPatient().getId();
 		String measureType = idMisura.equals("ALL")? null:idMisura;
-		listaMisure = measureManager.getMeasureData(idUser, null, null, measureType, idPatient, MeasureManager.BooleanFilter.not);
+		listaMisure = measureManager.getMeasureData(idUser, null, null, measureType, idPatient, false);
 		if(listaMisure != null) {
             for (Measure misura : listaMisure) {
 				HashMap<String, String> map = new HashMap<>();

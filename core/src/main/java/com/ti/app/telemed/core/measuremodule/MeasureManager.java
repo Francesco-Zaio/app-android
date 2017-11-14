@@ -3,19 +3,21 @@ package com.ti.app.telemed.core.measuremodule;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.util.List;
 
 import com.ti.app.telemed.core.MyApp;
 import com.ti.app.telemed.core.common.Measure;
+import com.ti.app.telemed.core.common.MeasureProtocolCfg;
 import com.ti.app.telemed.core.common.User;
+import com.ti.app.telemed.core.common.UserDevice;
+import com.ti.app.telemed.core.common.UserMeasure;
 import com.ti.app.telemed.core.dbmodule.DbManager;
 import com.ti.app.telemed.core.syncmodule.SendMeasuresService;
 import com.ti.app.telemed.core.usermodule.UserManager;
+import com.ti.app.telemed.core.util.GWConst;
 import com.ti.app.telemed.core.xmlmodule.XmlManager;
 
 import android.content.Intent;
-import android.support.annotation.NonNull;
 import android.util.Log;
 
 import static com.ti.app.telemed.core.util.GWConst.EGwCode_D0;
@@ -23,70 +25,83 @@ import static com.ti.app.telemed.core.util.GWConst.EGwCode_D1;
 import static com.ti.app.telemed.core.util.GWConst.EGwCode_Q0;
 import static com.ti.app.telemed.core.util.GWConst.EGwCode_Q1;
 import static com.ti.app.telemed.core.util.GWConst.EGwCode_Q2;
-
+/**
+ * <h1>Gestione della misure sul DB</h1>.
+ * Questa classe implementa il design pattern del singleton.
+ * <p>Tramite questa classe viene gestita la memorizzazione e la lettura delle misure
+ * sul DB locale.
+ */
 public class MeasureManager {
-
-	public enum DocumentType{
-		DischargeDocument,
-		AcceptanceDocument
-	}
-
-	public enum BooleanFilter{
-		yes (1),
-		not (0),
-		ignore (-1);
-
-        private final int val;
-
-        BooleanFilter(int val) {
-            this.val = val;
-        }
-
-        public int value() {
-            return val;
-        }
-	}
-
-	public enum NotBioMeasureType {
-		HealthStatus,
-		PainLevel,
-		SleepQuality
-	}
-	
 	private static final String TAG = "MEASUREMANAGER";
-    
-	// variable for singleton
 	private static MeasureManager measureManager;
-	
-	private Logger logger = Logger.getLogger(MeasureManager.class.getName());
-	
+
+    /**
+     * Restituisce l'istanza di MeasureManager.
+     * @return      istanza di MeasureManager.
+     */
 	public static MeasureManager getMeasureManager() {
 		if (measureManager == null) {
 			measureManager = new MeasureManager();
 		}
 		return measureManager;
 	}
-	
-	public boolean saveMeasureData(@NonNull Measure m) {
+
+
+    /**
+     * Tipo di misura non biometrica.
+     */
+	public enum NotBioMeasureType {
+		HealthStatus,
+		PainLevel,
+		SleepQuality
+	}
+
+    /**
+     * Tipo di documento.
+     */
+    public enum DocumentType{
+        DischargeDocument,
+        AcceptanceDocument
+    }
+    /**
+     * Salva ed invia alla piattaforma una misura.
+     * @param m     misura da salvare (non puo' essere null).
+     * @return      {@code true} in caso di successo o altrimenti {@code false}.
+     */
+	public boolean saveMeasureData(Measure m) {
 		synchronized (this) {
+            if (m == null)
+                return false;
 			Log.i(TAG, "saveMeasureData: ");
             try {
                 boolean result = DbManager.getDbManager().insertMeasure(m);
                 MyApp.getContext().startService(new Intent(MyApp.getContext(), SendMeasuresService.class));
                 return result;
             } catch (Exception sqle) {
-                logger.log(Level.SEVERE,"ERROR SAVE MEASURE DB " + sqle);
+                Log.e(TAG, "ERROR SAVE MEASURE DB " + sqle);
                 return false;
             }
 		}	
 	}
 
+    /**
+     * Salva ed invia alla piattaforma una documento.
+     * @param outputFile        Path assoluto del file contenente il documento da inviare.
+     * @param docType           Tipo di documento {@see DocumentType}.
+     * @return                  {@code true} in caso di successo o altrimenti {@code false}.
+     */
 	public boolean saveDocument(String outputFile, DocumentType docType) {
 		synchronized (this) {
-			if (outputFile == null || outputFile.isEmpty()) {
-				Log.e(TAG, "saveDocument - outputFile is null or empty");
-				return false;
-			}
+
+            if (outputFile == null || outputFile.isEmpty() || docType==null) {
+                Log.e(TAG, "saveDocument - null parameter!");
+                return false;
+            }
+            File f = new File(outputFile);
+            if(!f.exists() || f.isDirectory()) {
+                Log.e(TAG, "saveDocument - File not found!");
+                return false;
+            }
 			User currentUser = UserManager.getUserManager().getCurrentUser();
 			if (currentUser == null) {
 				Log.e(TAG, "saveDocument - currentUser is Null");
@@ -96,13 +111,12 @@ public class MeasureManager {
 			String code;
 			switch (docType) {
 				case DischargeDocument:
-					code = EGwCode_D0;  //nome file
+					code = EGwCode_D0;
 					break;
 				case AcceptanceDocument:
-					code = EGwCode_D1;  //nome file
+					code = EGwCode_D1;
 					break;
 				default:
-					Log.e(TAG, "saveDocument - DocumentType not recognized");
 					return false;
 			}
 
@@ -123,13 +137,19 @@ public class MeasureManager {
 
 				return saveMeasureData(m);
 			} catch (Exception e) {
-				e.printStackTrace();
-				logger.log(Level.SEVERE, e.getMessage());
+                Log.e(TAG, e.getMessage());
                 return false;
 			}
 		}
 	}
 
+    /**
+     * Salva ed invia alla piattaforma una misura non biometrica.
+     * @param type              Tipo di misura biometrica {@see NotBioMeasureType}.
+     * @param level             Valore della misura biometrica.
+     * @param standardProtocol  Indica se la misura e' stata acquisita con il "Protocollo standard".
+     * @return                  {@code true} in caso di successo o altrimenti {@code false}.
+     */
 	public boolean saveNotBioMeasure(NotBioMeasureType type, int level, boolean standardProtocol) {
 		User currentUser = UserManager.getUserManager().getCurrentUser();
 		if (currentUser == null) {
@@ -167,61 +187,137 @@ public class MeasureManager {
 				m.setFailed(false);
 				return saveMeasureData(m);
 			} catch (Exception e) {
-				e.printStackTrace();
-				logger.log(Level.SEVERE, e.getMessage());
+                Log.e(TAG,e.getMessage());
 				return false;
 			}
 		}
 	}
 
 	/**
-	 * Metodo che consente di eliminare una misura dal db
-	 * @param measure oggetto di tipo {@code Measure} che rappresenta la misura da eliminare dal db
+	 * Elimina una misura dal db.
+	 * @param measure       Misura da eliminare dal db.
+     * @return              {@code true} in caso di successo o altrimenti {@code false}.
 	 */
 	public boolean deleteMeasure(Measure measure) {
-		try {
-			DbManager.getDbManager().deleteMeasure(measure.getIdUser(), measure.getTimestamp(), measure.getMeasureType());
-		} catch (Exception sqle) {
-			sqle.printStackTrace();
-			logger.log(Level.SEVERE, sqle.getMessage());
-			return false;
-		}
+        if (measure == null)
+            return false;
+        DbManager.getDbManager().deleteMeasure(measure.getIdUser(), measure.getTimestamp(), measure.getMeasureType());
         return true;
 	}
 	
 	/**
-	 * Metodo che consente di eliminare tutte le misure dal db
-	 * @param idUser variabile di tipo {@code String} che contiene l'identificatore dell'utente
-	 * @param idPatient variabile di tipo {@code String} che contiene l'identificatore del paziente. null o "" per non indicarlo
-	 * @param measureType variabile di tipo {@code String} che contiene le operazioni da eliminare: null o "" per non indicarlo
+	 * Elimina dal DB le misure selezionate tramite i parametri passati.
+     * @param idUser        Identifivo dell'utente (non puo' essere null o vuoto).
+	 * @param idPatient     Identifivo del paziente (se e' null il filtro non viene considerato).
+	 * @param measureType   Tipo di misura (se e' null il filtro non viene considerato).
+     * @return              {@code true} in caso di successo o altrimenti {@code false}.
 	 */
 	public boolean deleteMeasures(String idUser, String idPatient, String measureType) {
-		try {
-			DbManager.getDbManager().deleteMeasures(idUser, idPatient, measureType);
-		} catch (Exception sqle) {
-			sqle.printStackTrace();
-			logger.log(Level.SEVERE, sqle.getMessage());
-			return false;
-		}
+		if (idUser==null || idUser.isEmpty())
+		    return false;
+        DbManager.getDbManager().deleteMeasures(idUser, idPatient, measureType);
         return true;
 	}
-	
-	/**
-	 * Metodo che restituisce tutte le misure associate ad un utente
-	 * @param measureType variabile di tipo {@code String} che specifica quale tipo di misure devono essere restituite: se ALL vengono restituite tutte le misure
-	 * @param idUser variabile di tipo {@code String} che identifica l'utente
-	 * @param idPatient variabile di tipo {@code String} che identifica il paziente
-	 * @return array di oggetti {@code Measure} che contiene l'elenco di misure associate all'utente
-	 */
-	public ArrayList<Measure> getMeasureData(String idUser, String dateFrom, String dateTo, String measureType, String idPatient, BooleanFilter failed) {
-		ArrayList<Measure> listaMisure = null;
 
-		try {
-			listaMisure = (ArrayList<Measure>) DbManager.getDbManager().getMeasureData(idUser, dateFrom, dateTo, measureType, idPatient, failed.value());
-		} catch (Exception sqle) {
-			sqle.printStackTrace();
-			logger.log(Level.SEVERE, sqle.getMessage());
-		}
-		return listaMisure;
+    /**
+     * Legge dal DB le misure selezionate tramite i parametri passati.
+     * @param idUser        Identifivo dell'utente (vedi {@link User#getId() User.getId()}) (non puo' essere null).
+     * @param dateFrom      Timestamp nel formato "yyyyMMddHHmmss". La data misura deve essere maggiore o uguale di questo paramtro (se e' null il filtro non viene considerato).
+     * @param dateTo        Timestamp nel formato "yyyyMMddHHmmss". La data misura deve essere minore o uguale di questo paramtro (se e' null il filtro non viene considerato).
+     * @param measureType   Tipo di misura (se e' null il filtro non viene considerato).
+     * @param idPatient     Identifivo del paziente (se e' null il filtro non viene considerato).
+     * @param failed        Indica se devono essere selezionate anche le misure fallite (se e' null il filtro non viene considerato).
+     * @return              La lista di misure selezionate o {@code null} in caso di errore.
+     */
+	public ArrayList<Measure> getMeasureData(String idUser,
+                                             String dateFrom,
+                                             String dateTo,
+                                             String measureType,
+                                             String idPatient,
+                                             Boolean failed) {
+        if (idUser==null || idUser.isEmpty())
+            return null;
+        return DbManager.getDbManager().getMeasureData(idUser, dateFrom, dateTo, measureType, idPatient, failed);
 	}
+
+    /**
+     * Restituisce i dati configurati per il Protocollo di misura.
+     * @return      Protocollo di misura.
+     */
+    public MeasureProtocolCfg getMeasureProtocolCfg() {
+        return DbManager.getDbManager().getMeasureProtocolCfg();
+    }
+
+    /**
+     * Restituisce la configurazione dei diversi tipi di misura abilitati per l'utente specificato.
+     * @param userId        Identificativo dell'utente (vedi {@link User#getId() User.getId()}) (non puo' essere null).
+     * @return              Lista di oggetti {@link UserMeasure} o {@code null} in caso di errore.
+     */
+    public List<UserMeasure> getUserMeasures (String userId) {
+        if (userId==null)
+            return null;
+        return DbManager.getDbManager().getUserMeasures(userId);
+    }
+
+    /**
+     * Restituisce la lista di tutti i dispositivi utilizzabili dall'utente corrente.
+     * @return          Lista di oggetti {@link UserDevice} o {@code null} in caso di errore.
+     */
+    public List<UserDevice> getCurrentUserDevices() {
+        return DbManager.getDbManager().getCurrentUserDevices();
+    }
+
+    /**
+     * Restituisce la lista dei dispositivi utilizzabili per l'utente e tipo
+     * di misura specificati.
+     * @param measure   Tipo di misura (non puo' essere null).
+     * @param userId    Identificativo dell utente (vedi {@link User#getId() User.getId()}) (non puo' essere null).
+     * @return          Lista di oggetti {@link UserDevice} o {@code null} in caso di errore.
+     */
+    public List<UserDevice> getModelsForMeasure(String measure, String userId) {
+        if (measure== null || userId==null)
+            return null;
+        return DbManager.getDbManager().getModelsForMeasure(measure, userId);
+    }
+
+    /**
+     * Restituisce la configurazione dei diversi tipi di misura biometriche abilitati per l'utente specificato.
+     * @param userId        Identificativo dell'utente (vedi {@link User#getId() User.getId()}) (non puo' essere null).
+     * @return              Lista di oggetti {@link UserMeasure}.
+     */
+    public List<UserMeasure> getBiometricUserMeasures (String userId) {
+        if (userId == null)
+            return null;
+        return DbManager.getDbManager().getBiometricUserMeasures(userId);
+    }
+
+    /**
+     * Restituisce lo UserDevice corrispondente ai paramtri passati.
+     * @param idUser        Identificativo dell utente (vedi {@link User#getId() User.getId()}) (non puo' essere null).
+     * @param measureType   Tipo di misura (vedi {@link UserMeasure#getMeasure()}  UserMeasure.getMeasure()}) (non puo' essere null).
+     * @param deviceModel   Modello del dispositivo (vedi {@link com.ti.app.telemed.core.common.Device#getModel() Device.getModel()}) (non puo' essere null).
+     * @return              Oggetto {@link UserDevice} o {@code null} in caso di errore.
+     */
+    public UserDevice getUserDevice(String idUser, String measureType, String deviceModel) {
+        if (idUser== null || measureType==null || deviceModel==null)
+            return null;
+        return DbManager.getDbManager().getUserDevice(idUser, measureType, deviceModel);
+    }
+
+    /**
+     * Resetta sul DB il campo relativo all'indirizzo Bluetooth dello UserDevice passato.
+     * @param userDevice    {@link UserDevice}.
+     */
+    public void cleanBtAddressDevice(UserDevice userDevice) {
+        if (userDevice != null)
+            DbManager.getDbManager().cleanBtAddressDevice(userDevice);
+    }
+
+    /**
+     * Aggiorna sul DB il campo relativo all'indirizzo Bluetooth dello UserDevice passato.
+     * @param userDevice    {@link UserDevice}.
+     */
+    public void updateBtAddressDevice(UserDevice userDevice) {
+        DbManager.getDbManager().updateBtAddressDevice(userDevice);
+    }
 }

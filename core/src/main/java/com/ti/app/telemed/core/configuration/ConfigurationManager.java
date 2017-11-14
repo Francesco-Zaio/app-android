@@ -25,6 +25,9 @@ import com.ti.app.telemed.core.dbmodule.DbManager;
 import com.ti.app.telemed.core.exceptions.DbException;
 import com.ti.app.telemed.core.util.GWConst;
 
+/**
+ * Questa classe gestisce i parametri necessari per connettersi alla piattaforma
+ */
 public class ConfigurationManager {
 
 	private static final String TAG = "ConfigurationManager";
@@ -37,27 +40,26 @@ public class ConfigurationManager {
 	private static final String PORT = "port";
 	private static final String TARGETCFG = "targetCfg";
 	private static final String TARGETSEND = "targetSend";
-	private static final String PROTOCOL = "protocol";
     private static final String IP_DEF = "IP_def";
     private static final String PORT_DEF = "port_def";
     private static final String TARGETCFG_DEF = "targetCfg_def";
 	private static final String TARGETSEND_DEF = "targetSend_def";
-	private static final String PROTOCOL_DEF = "protocol_def";
 
 	private String ipValue;
 	private String portValue;
 	private String targetCfgValue;
     private String targetSendValue;
-	private String httpModeValue;
 
 	private String ipDefaultValue;
 	private String portDefaultValue;
 	private String targetCfgDefaultValue;
     private String targetSendDefaultValue;
-	private String httpModeDefaultValue;
 
 	private Logger logger = Logger.getLogger(ConfigurationManager.class.getName());
 
+    /**
+     * Questo metodo viene automaticamente invocato all'avvio dell'applicazione e non deve essere usato.
+     */
 	public void init() throws Exception{
 		try {
 			readConfigurations();
@@ -194,16 +196,14 @@ public class ConfigurationManager {
                                 }
                                 if (hadTokens) {
                                 	if (key.equalsIgnoreCase(IP)) {
-                                			ipValue = value;
+                                        ipValue = value;
                                 	} else if (key.equalsIgnoreCase(PORT)) {
-                                			portValue = value;
+                                        portValue = value;
                                 	} else if (key.equalsIgnoreCase(TARGETCFG)) {
-                                			targetCfgValue = value;
+                                        targetCfgValue = value;
                                 	} else if (key.equalsIgnoreCase(TARGETSEND)) {
                                         targetSendValue = value;
-                                    } else if (key.equalsIgnoreCase(PROTOCOL)) {
-                                			httpModeValue = value;
-                                	} else if (key.equalsIgnoreCase(IP_DEF)) {
+                                    } else if (key.equalsIgnoreCase(IP_DEF)) {
                                         ipDefaultValue = value;
                                     } else if (key.equalsIgnoreCase(PORT_DEF)) {
                                         portDefaultValue = value;
@@ -211,8 +211,6 @@ public class ConfigurationManager {
                                         targetCfgDefaultValue = value;
                                     } else if (key.equalsIgnoreCase(TARGETSEND_DEF)) {
                                         targetSendDefaultValue = value;
-                                    } else if (key.equalsIgnoreCase(PROTOCOL_DEF)) {
-                                        httpModeDefaultValue = value;
                                     }
                                 }
                             }
@@ -241,12 +239,10 @@ public class ConfigurationManager {
 	private void insertDbServerConf() throws DbException {
 		ServerConf sc = new ServerConf();
 		sc.setIp(ipValue);
-		sc.setProtocol(httpModeValue);
 		sc.setPort(portValue);
 		sc.setTargetCfg(targetCfgValue);
         sc.setTargetSend(targetSendValue);
 		sc.setIpDef(ipDefaultValue);
-		sc.setProtocolDef(httpModeDefaultValue);
 		sc.setPortDef(portDefaultValue);
         sc.setTargetCfgDef(targetCfgDefaultValue);
         sc.setTargetSendDef(targetSendDefaultValue);
@@ -258,13 +254,11 @@ public class ConfigurationManager {
 		// Sovrascrivo tutti i valori che ho letto dal file ini con quelli del DB
 
 		ipValue = dbServerConf.getIp();
-		httpModeValue = dbServerConf.getProtocol();
 		portValue = dbServerConf.getPort();
 		targetCfgValue = dbServerConf.getTargetCfg();
 		targetSendValue = dbServerConf.getTargetSend();
 
 		ipDefaultValue = dbServerConf.getIpDef();
-		httpModeDefaultValue = dbServerConf.getProtocolDef();
 		portDefaultValue = dbServerConf.getPortDef();
 		targetCfgDefaultValue = dbServerConf.getTargetCfgDef();
 		targetSendDefaultValue = dbServerConf.getTargetSendDef();
@@ -273,50 +267,57 @@ public class ConfigurationManager {
 	}
 
 
-    public void updateConfiguration(ServerConf conf) throws DbException {
+    /**
+     * Restituisce un oggetto {@link ServerConf} contenente i parametri di configurazone
+     * @return      {@link ServerConf}
+     */
+    public ServerConf getConfiguration() {
+        return DbManager.getDbManager().getServerConf();
+    }
+
+    /**
+     * Aggiorna la configurazione sul DB.
+     *
+     * @param conf      Configurzione da aggiornare.
+     */
+    public void updateConfiguration(ServerConf conf) {
         ipValue = conf.getIp();
-        httpModeValue = conf.getProtocol();
         portValue = conf.getPort();
         targetCfgValue = conf.getTargetCfg();
         DbManager.getDbManager().updateServerConf(conf);
         logger.log(Level.INFO, "Configuration updated");
     }
 
-	public String getIpValue() {
-		return ipValue;
-	}
-
-	public String getPortValue() {
-		return portValue;
-	}
-
-	public String getTargetCfgValue() {
-		return targetCfgValue;
-	}
-
-    public String getTargetSendValue() {
-        return targetSendValue;
+    /**
+     * Resetta la configurazione ai valori di default
+     */
+    public void resetConfiguration() {
+        DbManager.getDbManager().resetServerConf();
+        ServerConf dbServerConf = DbManager.getDbManager().getServerConf();
+        setDbServerConf(dbServerConf);
     }
 
-    public String getHttpModeValue() {
-		return httpModeValue;
-	}
-
+    /**
+     * Restituisce la URL a cui inviare le richieste dei dati di configurazione
+     * @return      {@link URL}
+     * @throws Exception
+     */
 	public URL getConfigurationPlatformUrl() throws Exception {
-		String configurationPlatfomStr = getHttpModeValue() + "://"
-				+ getIpValue() + ":" + getPortValue() + "/" + getTargetCfgValue();
-		URL url = (new URI(configurationPlatfomStr)).toURL();
-		logger.log(Level.INFO, "Configuration Platfom URL = "
-				+ configurationPlatfomStr);
+        ServerConf sc = getConfiguration();
+        URL url = new URL("https",sc.getIp(),Integer.parseInt(sc.getPort()),sc.getTargetCfg());
+        logger.log(Level.INFO, "Configuration Platfom URL = " + url.toString());
 		return url;
 	}
 
+    /**
+     * Restituisce la URL a cui inviare le misure
+     * @return      {@link URL}
+     * @throws Exception
+     */
     public URL getSendPlatformUrl() throws Exception {
-        String configurationPlatfomStr = getHttpModeValue() + "://"
-                + getIpValue() + ":" + getPortValue() + "/" + getTargetSendValue();
-        URL url = (new URI(configurationPlatfomStr)).toURL();
-        logger.log(Level.INFO, "Configuration Platfom URL = "
-                + configurationPlatfomStr);
+        ServerConf sc = getConfiguration();
+        URL url = new URL("https",sc.getIp(),Integer.parseInt(sc.getPort()),sc.getTargetSend());
+        logger.log(Level.INFO, "Configuration Platfom URL = " + url.toString());
         return url;
     }
 }

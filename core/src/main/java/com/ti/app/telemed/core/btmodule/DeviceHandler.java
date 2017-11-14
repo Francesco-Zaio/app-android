@@ -127,8 +127,10 @@ public abstract class DeviceHandler {
      * @return         La nuova istanza di DeviceHandler o <code>null</code> in caso di errore.
      */
     public static DeviceHandler getInstance(DeviceListener listener, UserDevice ud) {
-        if (listener == null || ud == null)
+        if (listener==null || ud == null || !ud.getDevice().isBTDevice()) {
+            Log.e(TAG, "getInstance: DeviceListener or UserDevice is null or not valid.");
             return null;
+        }
         try {
             Class<?> c = Class.forName("com.ti.app.telemed.core.btdevices." + ud.getDevice().getClassName());
             return (DeviceHandler) c.getDeclaredConstructor(DeviceListener.class, UserDevice.class ).newInstance(listener, ud);

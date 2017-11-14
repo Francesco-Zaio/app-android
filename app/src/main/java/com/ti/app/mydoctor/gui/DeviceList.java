@@ -385,7 +385,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
         protected Void doInBackground(Void... unused) {
             try {
                 errorFound = false;
-                MyDoctorApp.getConfigurationManager().init();
                 checkUser(DbManager.getDbManager().getActiveUser());
             } catch (Exception e) {
                 e.printStackTrace();
@@ -557,7 +556,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 				//Controllo se il paziente � stato scelto
 				if ( UserManager.getUserManager().getCurrentPatient() != null ) {
 					String idPatient = UserManager.getUserManager().getCurrentPatient().getId();
-					ArrayList<Measure> ml = measureManager.getMeasureData(idUser, null, null, null, idPatient, MeasureManager.BooleanFilter.not);
+					ArrayList<Measure> ml = measureManager.getMeasureData(idUser, null, null, null, idPatient, false);
 					if(ml == null) {
 						//Non ci sono misure
 						iconGroupArray.remove(0); //remove icona Misure
@@ -1079,7 +1078,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 
         //Visibiltà voce "Mostra misure"
         if (userManager.getCurrentPatient() != null) {
-            ArrayList<Measure> patientMeasures = measureManager.getMeasureData(userManager.getCurrentUser().getId(), null, null, selectedMeasureType, userManager.getCurrentPatient().getId(), MeasureManager.BooleanFilter.ignore);
+            ArrayList<Measure> patientMeasures = measureManager.getMeasureData(userManager.getCurrentUser().getId(), null, null, selectedMeasureType, userManager.getCurrentPatient().getId(), null);
             if (patientMeasures != null && patientMeasures.size() > 0) {
                 MenuItem mi = menu.findItem(R.id.show_measure);
                 mi.setVisible(true);
@@ -2425,7 +2424,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
         if (user == null ){
             mUIHandler.sendEmptyMessage(LOGIN_DIALOG);
         } else if ( !user.getHasAutoLogin() || user.isBlocked()) {
-            //L'utente non ha l'autologin quindi appare dialog di inserimento precompilata
+            //L'utente non ha l'autologin quindi appare dialog di login con solo lo userid precompilato
             userDataBundle = new Bundle();
             userDataBundle.putBoolean("CHANGEABLE", false);
             userDataBundle.putString("LOGIN", user.getLogin());
@@ -2433,9 +2432,10 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
         } else {
             long lastUpdateTime = user.getTimestamp();
             int diffHours = AppUtil.getDiffHours(new Date().getTime(), lastUpdateTime);
+			// riesegue il login da piattaforma solo se l'ultimo è stato effettuato da più di un ora
             if (diffHours > 1) {
                 runningConfig = true;
-                //l'update della configurazione equivale a rifare il login (senza per� chiedere user e pwd)
+                //l'update della configurazione equivale a rifare il login (senza pero' chiedere user e pwd)
                 dataBundle = new Bundle();
                 dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("KMsgConf"));
                 dataBundle.putBoolean(AppConst.MESSAGE_CANCELLABLE, false);

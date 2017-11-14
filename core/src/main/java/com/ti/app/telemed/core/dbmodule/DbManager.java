@@ -536,12 +536,10 @@ public class DbManager {
         synchronized (this) {
             ContentValues values = new ContentValues();
             values.put("IP", sc.getIp());
-            values.put("PROTOCOL",  sc.getProtocol());
             values.put("PORT", sc.getPort());
             values.put("TARGETCFG", sc.getTargetCfg());
             values.put("TARGETSEND", sc.getTargetSend());
             values.put("IP_DEF", sc.getIpDef());
-            values.put("PROTOCOL_DEF", sc.getProtocolDef());
             values.put("PORT_DEF", sc.getPortDef());
             values.put("TARGETCFG_DEF", sc.getTargetCfgDef());
             values.put("TARGETSEND_DEF", sc.getTargetSendDef());
@@ -553,7 +551,6 @@ public class DbManager {
         synchronized (this) {
             ContentValues values = new ContentValues();
             values.put("IP", sc.getIp());
-            values.put("PROTOCOL",  sc.getProtocol());
             values.put("PORT", sc.getPort());
             values.put("TARGETCFG", sc.getTargetCfg());
             values.put("TARGETSEND", sc.getTargetSend());
@@ -574,18 +571,16 @@ public class DbManager {
                 c = mDb.query("SERVER_CONF", new String[]{"IP_DEF", "PROTOCOL_DEF", "PORT_DEF", "TARGETCFG_DEF", "TARGETSEND_DEF"}, null, null, null, null, null);
                 if (c.moveToFirst()) {
                     int ipColumnIndex = c.getColumnIndexOrThrow("IP_DEF");
-                    int protocolColumnIndex = c.getColumnIndexOrThrow("PROTOCOL_DEF");
                     int portColumnIndex = c.getColumnIndexOrThrow("PORT_DEF");
                     int targetCfgColumnIndex = c.getColumnIndexOrThrow("TARGETCFG_DEF");
                     int targetSendColumnIndex = c.getColumnIndexOrThrow("TARGETSEND_DEF");
 
                     String ip = c.getString(ipColumnIndex);
-                    String protocol = c.getString(protocolColumnIndex);
                     String port = c.getString(portColumnIndex);
                     String targetCfg = c.getString(targetCfgColumnIndex);
                     String targetSend = c.getString(targetSendColumnIndex);
 
-                    sc = new ServerConf(ip, protocol, port, targetCfg, targetSend);
+                    sc = new ServerConf(ip, port, targetCfg, targetSend);
                 }
             } finally {
                 if (c != null)
@@ -604,7 +599,6 @@ public class DbManager {
             ContentValues values = new ContentValues();
             values.put("IP", defaultSC.getIpDef());
             values.put("PORT", defaultSC.getPortDef());
-            values.put("PROTOCOL", defaultSC.getProtocolDef());
             values.put("TARGETCFG", defaultSC.getTargetCfgDef());
             values.put("TARGETSEND", defaultSC.getTargetSendDef());
             mDb.update("SERVER_CONF", values, null, null);
@@ -616,12 +610,10 @@ public class DbManager {
         synchronized (this) {
             ServerConf ret = new ServerConf();
             ret.setIp(c.getString(c.getColumnIndex("IP")));
-            ret.setProtocol(c.getString(c.getColumnIndex("PROTOCOL")));
             ret.setPort(c.getString(c.getColumnIndex("PORT")));
             ret.setTargetCfg(c.getString(c.getColumnIndex("TARGETCFG")));
             ret.setTargetSend(c.getString(c.getColumnIndex("TARGETSEND")));
             ret.setIpDef(c.getString(c.getColumnIndex("IP_DEF")));
-            ret.setProtocolDef(c.getString(c.getColumnIndex("PROTOCOL_DEF")));
             ret.setPortDef(c.getString(c.getColumnIndex("PORT_DEF")));
             ret.setTargetCfgDef(c.getString(c.getColumnIndex("TARGETCFG_DEF")));
             ret.setTargetSendDef(c.getString(c.getColumnIndex("TARGETSEND_DEF")));
@@ -1726,7 +1718,7 @@ public class DbManager {
      * @param failed {@code int} 0 solo misure valide, 1 solo misure fallite, qualsiasi altro valore per non filtrare
 	 * @return oggetto di tipo {@code List<Measure>} che contiene la lista delle misure associate all'utente
 	 */
-	public List<Measure> getMeasureData(String idUser, String dateFrom, String dateTo, String measureType, String idPatient, int failed) {
+	public ArrayList<Measure> getMeasureData(String idUser, String dateFrom, String dateTo, String measureType, String idPatient, Boolean failed) {
         synchronized (this) {
             ArrayList<Measure> listaMisure = new ArrayList<>();
             Cursor c = null;
@@ -1758,10 +1750,11 @@ public class DbManager {
                 where = where + " AND ID_PATIENT = ?";
                 values [n] = idPatient;
             }
-            if (failed == 0)
-                where = where + " AND FAILED = 0";
-            else if (failed == 1)
-                where = where + " AND FAILED = 1";
+            if (failed != null)
+                if (failed)
+                    where = where + " AND FAILED = 1";
+                else
+                    where = where + " AND FAILED = 0";
 
             try {
                 c = mDb.query("MEASURE", null, where, values, null, null, "TIMESTAMP");

@@ -9,7 +9,6 @@ import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarActivity;
-import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -27,19 +26,11 @@ import com.ti.app.mydoctor.MyDoctorApp;
 import com.ti.app.mydoctor.AppResourceManager;
 import com.ti.app.mydoctor.util.AppUtil;
 import com.ti.app.telemed.core.common.ServerConf;
-import com.ti.app.telemed.core.common.UserMeasure;
-import com.ti.app.telemed.core.dbmodule.DbManager;
-import com.ti.app.telemed.core.exceptions.DbException;
+import com.ti.app.telemed.core.configuration.ConfigurationManager;
 import com.ti.app.mydoctor.gui.customview.GWTextView;
 import com.ti.app.telemed.core.util.Util;
 
 public class ShowUtilitySettings extends ActionBarActivity {
-	private static final String TAG = "ShowUtilitySettings";
-	
-	//Action bar
-	private ActionBar customActionBar;
-	private GWTextView titleTV;
-	
 	//Elementi che compongono la GUI
 	private EditText hostEt;
 	private EditText portEt;
@@ -47,13 +38,9 @@ public class ShowUtilitySettings extends ActionBarActivity {
 	private Switch demoRocheSw;
 	private Switch btAddrResetSw;
 
-	private Button okButton;
-	private Button cancelButton;
-
 	//Dialog
-	public static final int ERROR_DIALOG = 0;
-	public static final int CONNECTING_CONFIRM_DIALOG = 1;
-	public static final int ALERT_DIALOG = 3;
+	private static final int ERROR_DIALOG = 0;
+    private static final int CONNECTING_CONFIRM_DIALOG = 1;
 	
 	private Bundle dataBundle;
 	private static final String ID = "ID";
@@ -75,7 +62,7 @@ public class ShowUtilitySettings extends ActionBarActivity {
 		getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
 		//Inizializza l'ActionBAr
-		customActionBar = this.getSupportActionBar();
+        ActionBar customActionBar = this.getSupportActionBar();
 		//Setta il gradiente di sfondo della action bar
 		Drawable cd = this.getResources().getDrawable(R.drawable.action_bar_background_color);
 		customActionBar.setBackgroundDrawable(cd);
@@ -89,7 +76,7 @@ public class ShowUtilitySettings extends ActionBarActivity {
 		//Settare il font e il titolo della Activity
 		LayoutInflater inflator = (LayoutInflater)this.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 		View titleView = inflator.inflate(R.layout.actionbar_title, null);
-		titleTV = (GWTextView)titleView.findViewById(R.id.actionbar_title_label);
+        GWTextView titleTV = (GWTextView)titleView.findViewById(R.id.actionbar_title_label);
 		titleTV.setText(this.getResources().getString(R.string.connectionSettings));
 		customActionBar.setCustomView(titleView);
 		
@@ -105,8 +92,8 @@ public class ShowUtilitySettings extends ActionBarActivity {
 		btAddrResetSw = (Switch) findViewById(R.id.reset_bt_addr_sw);
         btAddrResetSw.setChecked(false);
 
-		okButton = (Button) findViewById(R.id.confirm_button);
-		cancelButton = (Button) findViewById(R.id.cancel_button);
+        Button okButton = (Button) findViewById(R.id.confirm_button);
+        Button cancelButton = (Button) findViewById(R.id.cancel_button);
 		//Imposto il listener per i click sui button
 		okButton.setOnClickListener(connection_button_click_listener);
 		cancelButton.setOnClickListener(connection_button_click_listener);
@@ -120,9 +107,8 @@ public class ShowUtilitySettings extends ActionBarActivity {
 	 * Metodo che permette di popolare gli elementi che compongono la GUI con le informazioni lette da db
 	 */
 	private void populateActivity() {
-		DbManager dbManager = DbManager.getDbManager();
+        ServerConf sc = MyDoctorApp.getConfigurationManager().getConfiguration();
 		try {
-			ServerConf sc = dbManager.getServerConf();
 			hostEt.setText(sc.getIp());
 			portEt.setText(sc.getPort());
 			quizEt.setText(AppUtil.getRegistryValue(AppUtil.KEY_URL_QUIZ, AppUtil.URL_QUIZ_DEFAULT));
@@ -136,21 +122,16 @@ public class ShowUtilitySettings extends ActionBarActivity {
 	public boolean onOptionsItemSelected(MenuItem item) {
 		
 		switch(item.getItemId()) {
-		case android.R.id.home: //Ritorna alla Home quando si clicca sull'icona della App
-			//Creo l'oggetto Intent necessario per tale operazione
-			Intent intent = new Intent();
-			//Associo il risultato dell'operazione all'intent
-			setResult(RESULT_CANCELED, intent);
-			//L'activity ha terminato la sua funzione e viene chiusa
-			//passando il controllo all'activity che l'ha chiamata
-			finish();
-            return true;  
-		case R.id.reset_settings:
-			prepareBundle(R.id.reset_settings, rManager.getString("showSettingsRevertToDefaultTitle"), rManager.getString("showSettingsRevertToDefaultMessage"));
-			showDialog(CONNECTING_CONFIRM_DIALOG);					
-			return true;
-            
-            default:
+			case android.R.id.home: //Ritorna alla Home quando si clicca sull'icona della App
+				Intent intent = new Intent();
+				setResult(RESULT_CANCELED, intent);
+				finish();
+				return true;
+			case R.id.reset_settings:
+				prepareBundle(R.id.reset_settings, rManager.getString("showSettingsRevertToDefaultTitle"), rManager.getString("showSettingsRevertToDefaultMessage"));
+				showDialog(CONNECTING_CONFIRM_DIALOG);
+				return true;
+			default:
             	return super.onOptionsItemSelected(item);
 		}
 	}
@@ -183,13 +164,8 @@ public class ShowUtilitySettings extends ActionBarActivity {
 		case CONNECTING_CONFIRM_DIALOG:
 			builder.setTitle(dataBundle.getString(TITLE));
 			builder.setMessage(dataBundle.getString(MESSAGE));
-			builder.setPositiveButton(R.string.okButton, connecting_confirm_dialog_click_listener);
-			builder.setNegativeButton(R.string.cancelButton, connecting_confirm_dialog_click_listener);
-			break;		
-		case ALERT_DIALOG:
-			builder.setTitle(dataBundle.getString(TITLE));
-			builder.setMessage(dataBundle.getString(MESSAGE));
-			builder.setNeutralButton(R.string.okButton, alert_dialog_click_listener);
+			builder.setPositiveButton(R.string.okButton, reset_configuration_dialog_click_listener);
+			builder.setNegativeButton(R.string.cancelButton, reset_configuration_dialog_click_listener);
 			break;
 		}
 		
@@ -230,27 +206,17 @@ public class ShowUtilitySettings extends ActionBarActivity {
 			switch(v.getId()) {
 			case R.id.confirm_button:
 				AppUtil.setRegistryValue(AppUtil.KEY_URL_QUIZ, quizEt.getText().toString());
-				DbManager dbManager = DbManager.getDbManager();
-				try {
-                    //Aggiorno il contenuto del db in base agli input dell'utente
-					ServerConf sc = new ServerConf();
-					ServerConf defaultSC = dbManager.getDefaultServerConf();
-					sc.setIp(hostEt.getText().toString());
-					sc.setPort(portEt.getText().toString());
-					sc.setProtocol(defaultSC.getProtocolDef());
-					sc.setTargetCfg(defaultSC.getTargetCfgDef());
-					sc.setTargetSend(defaultSC.getTargetSendDef());
-					MyDoctorApp.getConfigurationManager().updateConfiguration(sc);
-                    Util.setDemoRocheMode(demoRocheSw.isChecked());
-					if (btAddrResetSw.isChecked())
-						Util.resetBTAddresses();
-					finish();
-				} catch (DbException e) {
-					e.printStackTrace();
-					Log.e(TAG, "ERROR on button_click_listener: " + e.getMessage());
-					showDialog(ShowUtilitySettings.ERROR_DIALOG);
-				}
-				
+				//Aggiorno il contenuto del db in base agli input dell'utente
+				ServerConf sc = MyDoctorApp.getConfigurationManager().getConfiguration();
+				sc.setIp(hostEt.getText().toString());
+				sc.setPort(portEt.getText().toString());
+				sc.setTargetCfg(sc.getTargetCfgDef());
+				sc.setTargetSend(sc.getTargetSendDef());
+				MyDoctorApp.getConfigurationManager().updateConfiguration(sc);
+				Util.setDemoRocheMode(demoRocheSw.isChecked());
+				if (btAddrResetSw.isChecked())
+					Util.resetBTAddresses();
+				finish();
 				break;
 			case R.id.cancel_button:
 				finish();
@@ -262,30 +228,16 @@ public class ShowUtilitySettings extends ActionBarActivity {
 	/**
 	 * Listener per la gestione degli eventi sulla dialog CONFIRM_DIALOG per il ripristino dei dati di connessione
 	 */
-	private DialogInterface.OnClickListener connecting_confirm_dialog_click_listener = new DialogInterface.OnClickListener() {
-		
+	private DialogInterface.OnClickListener reset_configuration_dialog_click_listener = new DialogInterface.OnClickListener() {
 		@Override
 		public void onClick(DialogInterface dialog, int which) {
 			//Identifico quale elemento è stato premuto
 			switch(which) {
 			case DialogInterface.BUTTON_POSITIVE:
 				if(dataBundle.getInt(ID) == R.id.reset_settings) {
-					DbManager dbManager = DbManager.getDbManager();
-					try {
-						dbManager.resetServerConf();
-						ServerConf defaultSC = dbManager.getDefaultServerConf();
-						defaultSC.setIp(defaultSC.getIpDef());
-						defaultSC.setPort(defaultSC.getPortDef());
-						defaultSC.setProtocol(defaultSC.getProtocolDef());
-						defaultSC.setTargetCfg(defaultSC.getTargetCfgDef());
-						defaultSC.setTargetSend(defaultSC.getTargetSendDef());
-
-						MyDoctorApp.getConfigurationManager().updateConfiguration(defaultSC);
-						finish();
-						Toast.makeText(getApplicationContext(), AppResourceManager.getResource().getString("showSettingsOperationSuccessfull"), Toast.LENGTH_LONG).show();
-					} catch(DbException e) {
-						showDialog(ERROR_DIALOG);
-					}
+                    MyDoctorApp.getConfigurationManager().resetConfiguration();
+                    Toast.makeText(getApplicationContext(), AppResourceManager.getResource().getString("showSettingsOperationSuccessfull"), Toast.LENGTH_LONG).show();
+                    finish();
 				}
 				break;
 			case DialogInterface.BUTTON_NEGATIVE:
@@ -293,21 +245,6 @@ public class ShowUtilitySettings extends ActionBarActivity {
 				break;
 			}
 			removeDialog(CONNECTING_CONFIRM_DIALOG);
-		}
-	};
-	
-	/**
-	 * Listener per la gestione degli eventi sulla dialog ALERT_DIALOG
-	 */
-	private DialogInterface.OnClickListener alert_dialog_click_listener = new DialogInterface.OnClickListener() {
-		
-		@Override
-		public void onClick(DialogInterface dialog, int which) {
-			//Identifico quale elemento è stato premuto
-			switch(which) {
-			case DialogInterface.BUTTON_NEUTRAL:
-				removeDialog(ALERT_DIALOG);
-			}
 		}
 	};
 }

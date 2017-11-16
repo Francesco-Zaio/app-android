@@ -20,7 +20,7 @@ import android.widget.TextView;
 
 import com.ti.app.mydoctor.R;
 import com.ti.app.mydoctor.MyDoctorApp;
-import com.ti.app.telemed.core.btmodule.events.BTSearcherEventListener;
+import com.ti.app.telemed.core.btmodule.BTSearcherEventListener;
 
 public class DeviceScanActivity extends Activity implements BTSearcherEventListener {
     // Debugging

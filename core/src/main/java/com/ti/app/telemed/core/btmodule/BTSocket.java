@@ -10,10 +10,6 @@ import java.lang.reflect.Method;
 import java.util.UUID;
 import java.util.Vector;
 
-import com.ti.app.telemed.core.btmodule.events.BTSocketEventListener;
-import com.ti.app.telemed.core.btmodule.events.BTSocketReadEventListener;
-import com.ti.app.telemed.core.btmodule.events.BTSocketWriteEventListener;
-
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.util.Log;

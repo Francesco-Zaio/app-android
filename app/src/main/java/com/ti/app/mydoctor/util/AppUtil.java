@@ -12,7 +12,6 @@ import com.ti.app.telemed.core.util.GWConst;
 
 
 import java.io.File;
-import java.io.FileOutputStream;
 
 public class AppUtil {
 	
@@ -71,7 +70,7 @@ public class AppUtil {
     }
 	
 	public static boolean isCamera(Device device) {
-		return ((device.getModel() != null && device.getModel().equalsIgnoreCase(GWConst.KCAMERA)));
+		return ((device.getModel() != null && device.getModel().equalsIgnoreCase(GWConst.DEVICE_CAMERA)));
 	}
 
 	public static int getIconId(String measure) {
@@ -125,7 +124,7 @@ public class AppUtil {
 	}
 	
 	public static boolean isManualMeasure(Device device) {
-		return (device != null && device.getModel() != null && device.getModel().equalsIgnoreCase(GWConst.KManualMeasure));
+		return (device != null && device.getModel() != null && device.getModel().equalsIgnoreCase(GWConst.DEVICE_MANUAL));
 	}
 	
 	public static Long getRegistryLongValue(String keyValue) {		

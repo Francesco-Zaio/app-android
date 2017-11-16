@@ -195,7 +195,7 @@ class IHealthHS4S extends Handler implements IHealtDevice{
         if (p != null) {
             double height = Double.parseDouble(p.getHeight())/100;
             if (height > 0) {
-                bmi = weight / (height * height);
+                bmi = 1.3 * weight / Math.pow(height,2.5);
             }
         }
 

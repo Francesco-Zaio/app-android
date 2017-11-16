@@ -13,8 +13,8 @@ import java.util.Vector;
 
 import com.ti.app.telemed.core.btmodule.BTSearcher;
 import com.ti.app.telemed.core.btmodule.BTSocket;
-import com.ti.app.telemed.core.btmodule.events.BTSearcherEventListener;
-import com.ti.app.telemed.core.btmodule.events.BTSocketEventListener;
+import com.ti.app.telemed.core.btmodule.BTSearcherEventListener;
+import com.ti.app.telemed.core.btmodule.BTSocketEventListener;
 import com.ti.app.telemed.core.ResourceManager;
 import com.ti.app.telemed.core.btmodule.DeviceListener;
 import com.ti.app.telemed.core.common.Measure;
@@ -161,8 +161,8 @@ public class NoninOximeter extends DeviceHandler implements
     }
 
     @Override
-    public void abortOperation() {
-        Log.d(TAG, "abortOperation");
+    public void stopOperation() {
+        Log.d(TAG, "stopOperation");
         stop();
     }
 

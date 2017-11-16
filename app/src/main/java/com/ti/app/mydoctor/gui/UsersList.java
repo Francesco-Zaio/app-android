@@ -106,7 +106,7 @@ public class UsersList extends ActionBarListActivity {
 		
 		User cu = DbManager.getDbManager().getCurrentUser();
 		if( cu != null) {
-			if( cu.getId().equalsIgnoreCase( GWConst.DEFAULT_USER_ID ))
+			if( cu.getId().equalsIgnoreCase( DbManager.DEFAULT_USER_ID ))
 				titleTV.setText(R.string.users_title);
 			else
 				titleTV.setText(cu.getName() + "\n" + cu.getSurname());

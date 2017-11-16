@@ -15,13 +15,12 @@ import android.util.Log;
 
 import com.ti.app.telemed.core.MyApp;
 import com.ti.app.telemed.core.ResourceManager;
-import com.ti.app.telemed.core.btmodule.events.BTSearcherEventListener;
+import com.ti.app.telemed.core.btmodule.BTSearcherEventListener;
 import com.ti.app.telemed.core.btmodule.DeviceHandler;
 import com.ti.app.telemed.core.btmodule.DeviceListener;
 import com.ti.app.telemed.core.common.Measure;
 import com.ti.app.telemed.core.common.Patient;
 import com.ti.app.telemed.core.common.UserDevice;
-import com.ti.app.telemed.core.util.GWConst;
 
 import com.ihealth.communication.manager.iHealthDevicesCallback;
 import com.ihealth.communication.manager.iHealthDevicesManager;
@@ -81,16 +80,16 @@ public class IHealth extends DeviceHandler {
         }
 
         switch(deviceModel) {
-            case GWConst.KBP550BTIHealth:
+            case IHealtDevice.KBP550BTIHealth:
                 iHealthDevicesManager.getInstance().startDiscovery(iHealthDevicesManager.DISCOVERY_BP550BT);
                 break;
-            case GWConst.KBP5IHealth:
+            case IHealtDevice.KBP5IHealth:
                 iHealthDevicesManager.getInstance().startDiscovery(iHealthDevicesManager.DISCOVERY_BP5);
                 break;
-            case GWConst.KPO3IHealth:
+            case IHealtDevice.KPO3IHealth:
                 iHealthDevicesManager.getInstance().startDiscovery(iHealthDevicesManager.DISCOVERY_PO3);
                 break;
-            case GWConst.KHS4SIHealth:
+            case IHealtDevice.KHS4SIHealth:
                 iHealthDevicesManager.getInstance().startDiscovery(iHealthDevicesManager.DISCOVERY_HS4S);
                 break;
         }
@@ -98,8 +97,8 @@ public class IHealth extends DeviceHandler {
     }
 
     @Override
-    public void abortOperation() {
-        Log.d(TAG, "abortOperation");
+    public void stopOperation() {
+        Log.d(TAG, "stopOperation");
         stop();
     }
 
@@ -176,8 +175,6 @@ public class IHealth extends DeviceHandler {
         @Override
         public void onScanDevice(String mac, String devType, int rssi, Map manufactorData) {
             Log.d(TAG, "iHealthDevicesCallback:onScanDevice ++ " + "Mac=" + mac + " - DevType=" + devType);
-            Log.d(TAG, "iHealthDevicesCallback:onScanDevice ++ " + "manufactorData=" + manufactorData);
-
             String s = macConvert(mac);
             switch (iCmdCode) {
                 case ECmdConnByUser:
@@ -312,16 +309,16 @@ public class IHealth extends DeviceHandler {
     private void startMeasure()  {
         Measure m = getMeasure();
         switch (deviceModel) {
-            case GWConst.KPO3IHealth:
+            case IHealtDevice.KPO3IHealth:
                 deviceController = new IHealthPO3(this, m);
                 break;
-            case GWConst.KBP5IHealth:
+            case IHealtDevice.KBP5IHealth:
                 deviceController = new IHealthBP5(this, m);
                 break;
-            case GWConst.KHS4SIHealth:
+            case IHealtDevice.KHS4SIHealth:
                 deviceController = new IHealthHS4S(this, m);
                 break;
-            case GWConst.KBP550BTIHealth:
+            case IHealtDevice.KBP550BTIHealth:
                 deviceController = new IHealthBP550BT(this, m);
                 break;
         }

@@ -524,7 +524,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 		labelChildArray.add(new ArrayList<String>());
 		labelChildArray.add(new ArrayList<String>());
 
-		if(loggedUser == null || (loggedUser.getId().equalsIgnoreCase( GWConst.DEFAULT_USER_ID )) ){
+		if(loggedUser == null || (loggedUser.getId().equalsIgnoreCase( DbManager.DEFAULT_USER_ID )) ){
 			iconGroupArray.remove(4); //remove icona Logout*
 			iconGroupArray.remove(0); //remove icona Misure
 
@@ -754,7 +754,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
             case ITEM_DEVICES_MANAGEMENT:
                 //Verifica che l'utente attivo sia quello di default
                 User loggedUser = DbManager.getDbManager().getCurrentUser();
-                if( loggedUser == null || GWConst.DEFAULT_USER_ID.equalsIgnoreCase(loggedUser.getId())){
+                if( loggedUser == null || DbManager.DEFAULT_USER_ID.equalsIgnoreCase(loggedUser.getId())){
                     //Non ci sono utenti registrati, quindi crea l'utente di default
                     try {
                         DbManager.getDbManager().createDefaultUser();
@@ -1033,7 +1033,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 
 		User activeUser = DbManager.getDbManager().getActiveUser();
 
-		if( activeUser == null || activeUser.getId().equalsIgnoreCase( GWConst.DEFAULT_USER_ID ) ){
+		if( activeUser == null || activeUser.getId().equalsIgnoreCase( DbManager.DEFAULT_USER_ID ) ){
 			MenuItemCompat.setShowAsAction(mActionBarMenu.findItem(R.id.action_bar_menu), MenuItemCompat.SHOW_AS_ACTION_NEVER);
 			mActionBarMenu.findItem(R.id.action_bar_menu).setVisible(false);
 		} else {
@@ -1812,23 +1812,26 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 				break;
 			case UserManager.ERROR_OCCURED:
             case UserManager.BAD_PASSWORD:
-				Log.d(TAG, "UserManager.ERROR_OCCURED:");
+                Log.d(TAG, "UserManager.ERROR_OCCURED:");
                 activity.myRemoveDialog(PROGRESS_DIALOG);
-				dataBundle = msg.getData();
-				dataBundle.putBoolean(AppConst.LOGIN_ERROR, false);
+                dataBundle = new Bundle();
+                dataBundle.putString(AppConst.MESSAGE, (String)msg.obj);
+                dataBundle.putBoolean(AppConst.LOGIN_ERROR, false);
                 activity.myShowDialog(ALERT_DIALOG);
                 activity.runningConfig = false;
 				break;
 			case UserManager.LOGIN_FAILED:
                 Log.e(TAG, "userManagerHandler: login failed");
                 activity.myRemoveDialog(PROGRESS_DIALOG);
-                dataBundle = msg.getData();
+                dataBundle = new Bundle();
+                dataBundle.putString(AppConst.MESSAGE, (String)msg.obj);
                 dataBundle.putBoolean(AppConst.LOGIN_ERROR, true);
                 activity.myShowDialog(ALERT_DIALOG);
                 activity.runningConfig = false;
                 break;
 			case UserManager.USER_BLOCKED:
                 Log.e(TAG, "userManagerHandler: User Blocked");
+                activity.myRemoveDialog(PROGRESS_DIALOG);
 			    DialogManager.showToastMessage(activity, AppResourceManager.getResource().getString("userBlocked"));
                 activity.measureList = new ArrayList<>();
                 activity.setupView();
@@ -1841,8 +1844,9 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
             case UserManager.USER_LOCKED:
 				Log.e(TAG, "userManagerHandler: User Locked");
                 activity.myRemoveDialog(PROGRESS_DIALOG);
-				dataBundle = msg.getData();
-				dataBundle.putBoolean(AppConst.LOGIN_ERROR, false);
+                dataBundle = new Bundle();
+                dataBundle.putString(AppConst.MESSAGE, (String)msg.obj);
+                dataBundle.putBoolean(AppConst.LOGIN_ERROR, false);
                 activity.myShowDialog(ALERT_DIALOG);
                 activity.runningConfig = false;
 				break;
@@ -1919,8 +1923,8 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                 if (currentDialog != null && currentDialog.isShowing())
                     currentDialog.dismiss();
                 currentDialog = d;
-                currentDialog.show();
             }
+            currentDialog.show();
             myOnPrepareDialog(dialogId, d);
         }
     }

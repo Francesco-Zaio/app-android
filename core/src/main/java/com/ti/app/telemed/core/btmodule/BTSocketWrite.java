@@ -4,8 +4,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Vector;
 
-import com.ti.app.telemed.core.btmodule.events.BTSocketWriteEventListener;
-
 import android.bluetooth.BluetoothSocket;
 import android.util.Log;
 

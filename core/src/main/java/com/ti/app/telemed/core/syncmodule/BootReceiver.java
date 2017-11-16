@@ -5,14 +5,12 @@ import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.os.DropBoxManager;
 import android.os.PowerManager;
 import android.util.Log;
 
 import com.ti.app.telemed.core.MyApp;
 import com.ti.app.telemed.core.common.User;
 import com.ti.app.telemed.core.dbmodule.DbManager;
-import com.ti.app.telemed.core.exceptions.DbException;
 import com.ti.app.telemed.core.usermodule.UserManager;
 import com.ti.app.telemed.core.util.GWConst;
 import com.ti.app.telemed.core.webmodule.WebManager;
@@ -58,7 +56,7 @@ public class BootReceiver extends BroadcastReceiver implements  WebManagerResult
                     login = u.getLogin();
                     PowerManager.WakeLock lock=getLock(context);
                     if (!lock.isHeld()) {
-                        lock.acquire(GWConst.CONNECTION_TIMEOUT+GWConst.READ_TIMEOUT+5000);
+                        lock.acquire(GWConst.HTTP_CONNECTION_TIMEOUT +GWConst.HTTP_READ_TIMEOUT +5000);
                     }
                     WebManager.getWebManager().askOperatorData(u.getLogin(), u.getPassword(), this, false);
                     context.startService(new Intent(context, SendMeasuresService.class));

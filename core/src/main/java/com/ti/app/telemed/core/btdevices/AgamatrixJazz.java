@@ -18,7 +18,7 @@ import com.ti.app.telemed.core.ResourceManager;
 import com.ti.app.telemed.core.btmodule.BTSearcher;
 import com.ti.app.telemed.core.btmodule.DeviceHandler;
 import com.ti.app.telemed.core.btmodule.DeviceListener;
-import com.ti.app.telemed.core.btmodule.events.BTSearcherEventListener;
+import com.ti.app.telemed.core.btmodule.BTSearcherEventListener;
 import com.ti.app.telemed.core.common.Measure;
 import com.ti.app.telemed.core.common.UserDevice;
 import com.ti.app.telemed.core.util.GWConst;
@@ -113,8 +113,8 @@ public class AgamatrixJazz extends DeviceHandler implements
     }
 
     @Override
-    public void abortOperation() {
-        Log.d(TAG, "abortOperation");
+    public void stopOperation() {
+        Log.d(TAG, "stopOperation");
         stop();
     }
 

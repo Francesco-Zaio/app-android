@@ -4,7 +4,6 @@ package com.ti.app.telemed.core.btmodule;
 import java.util.Vector;
 
 import com.ti.app.telemed.core.MyApp;
-import com.ti.app.telemed.core.btmodule.events.BTSearcherEventListener;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;

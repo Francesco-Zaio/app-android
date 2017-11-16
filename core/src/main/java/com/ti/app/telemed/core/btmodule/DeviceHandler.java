@@ -3,7 +3,6 @@ package com.ti.app.telemed.core.btmodule;
 import android.bluetooth.BluetoothDevice;
 import android.util.Log;
 
-import com.ti.app.telemed.core.btmodule.events.BTSearcherEventListener;
 import com.ti.app.telemed.core.common.Measure;
 import com.ti.app.telemed.core.common.Patient;
 import com.ti.app.telemed.core.common.User;
@@ -208,7 +207,7 @@ public abstract class DeviceHandler {
      * per indicare il dispositivo selezionato per eseguire l'operazione.
      *
      * @param  ot               {@see OperationType} tipo di operazione che deve essere eseguita.
-     * @param  btSearchListener listenere che implementa l'interfaccia {@see com.ti.app.telemed.core.btmodule.events.BTSearcherEventListener}
+     * @param  btSearchListener listenere che implementa l'interfaccia {@see com.ti.app.telemed.core.btmodule.BTSearcherEventListener}
      * @return                  <code>true</code> se l'operazione viene avviata o <code>false</code> in caso di errore.
      */
     abstract public boolean startOperation(OperationType ot, BTSearcherEventListener btSearchListener);
@@ -216,7 +215,7 @@ public abstract class DeviceHandler {
     /**
      * Termina l'operazione in corso
      */
-    abstract public void abortOperation();
+    abstract public void stopOperation();
 
     /**
      * Permette di indicare il dispositivo bluetooth su cui eseguire l'operazione avviata con
@@ -235,6 +234,13 @@ public abstract class DeviceHandler {
      */
     abstract public void cancelDialog();
 
+    /**
+     * Indica se è in corso un operazione
+     * @return      <code>true</code> se c'e' un operazione avviata altrimenti <code>false</code>.
+     */
+    public boolean operationRunning() {
+        return iState!=TState.EWaitingToGetDevice;
+    }
 
 
     protected Measure getMeasure() {

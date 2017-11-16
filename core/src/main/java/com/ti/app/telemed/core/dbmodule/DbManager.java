@@ -34,8 +34,12 @@ import android.util.Log;
 import org.json.JSONObject;
 
 public class DbManager {
-	
-	private Logger logger = Logger.getLogger(DbManager.class.getName());
+
+    //ID for default user
+    public static final String DEFAULT_USER_ID = "-1";
+
+
+    private Logger logger = Logger.getLogger(DbManager.class.getName());
 	
 	private static final String TAG = "DbManager";
 	    
@@ -762,7 +766,7 @@ public class DbManager {
         Vector<Object> dataContainer = new Vector<>();
 
         User defaultUser = new User();
-        defaultUser.setId( GWConst.DEFAULT_USER_ID );
+        defaultUser.setId( DEFAULT_USER_ID );
         defaultUser.setCf( "0000000000000000" );
         defaultUser.setName( "default" );
         defaultUser.setSurname( "default" );
@@ -784,7 +788,7 @@ public class DbManager {
         List<String> measureTypes = getCfgMeasureTypes();
         for (String mt:measureTypes) {
             UserMeasure um = new UserMeasure();
-            um.setIdUser(GWConst.DEFAULT_USER_ID);
+            um.setIdUser(DEFAULT_USER_ID);
             um.setMeasure(mt);
             um.setFamily(UserMeasure.MeasureFamily.BIOMETRICA);
             dataContainer.add( um );
@@ -792,7 +796,7 @@ public class DbManager {
 
         updateConfiguration(dataContainer);
 
-        return getUser( GWConst.DEFAULT_USER_ID );
+        return getUser( DEFAULT_USER_ID );
     }
 
     public User getActiveUser() {
@@ -888,7 +892,7 @@ public class DbManager {
                 if (c != null) {
                     while (c.moveToNext()) {
                         User u = getUserObject(c);
-                        if ((u.getId().equalsIgnoreCase( GWConst.DEFAULT_USER_ID ))
+                        if ((u.getId().equalsIgnoreCase( DEFAULT_USER_ID ))
                                 || (currentUser!=null && currentUser.getId().equalsIgnoreCase(u.getId())))
                             continue;
                         ret.add(u);
@@ -911,7 +915,7 @@ public class DbManager {
                 if (c != null) {
                     while (c.moveToNext()) {
                         User u = getUserObject(c);
-                        if (u.getId().equalsIgnoreCase( GWConst.DEFAULT_USER_ID ) )
+                        if (u.getId().equalsIgnoreCase( DEFAULT_USER_ID ) )
                             continue;
                         ret.add(u);
                     }
@@ -936,7 +940,7 @@ public class DbManager {
             if (c != null) {
                 while(c.moveToNext()){
                     User u = getUserObject(c);
-                    if ( !u.getId().equalsIgnoreCase( GWConst.DEFAULT_USER_ID ) )
+                    if ( !u.getId().equalsIgnoreCase( DEFAULT_USER_ID ) )
                         ret.add(u);
                 }
             }
@@ -1889,8 +1893,8 @@ public class DbManager {
         int count = 0;
         try {
             c = mDb.rawQuery(SQL_STATEMENT, new String[]{idUser,
-                    String.valueOf(GWConst.MAX_SEND_RETRY),
-                    String.valueOf(System.currentTimeMillis() / 1000 - GWConst.SEND_RETRY_TIMEOUT)
+                    String.valueOf(GWConst.MEASURE_SEND_RETRY),
+                    String.valueOf(System.currentTimeMillis() / 1000 - GWConst.MEASURE_SEND_TIMEOUT)
             });
             c.moveToFirst();
             count = c.getInt(0);
@@ -1914,8 +1918,8 @@ public class DbManager {
                 //Devono essere restituite tutte le misure non ancora inviate ordinate per TIMESTAMP crescente
                 c = mDb.query("MEASURE", null, "ID_USER = ? AND SENT = 0 AND SEND_FAIL_COUNT < ? AND SEND_FAIL_TIMESTAMP < ?",
                         new String[]{idUser,
-                                String.valueOf(GWConst.MAX_SEND_RETRY),
-                                String.valueOf(System.currentTimeMillis()/1000-GWConst.SEND_RETRY_TIMEOUT)
+                                String.valueOf(GWConst.MEASURE_SEND_RETRY),
+                                String.valueOf(System.currentTimeMillis()/1000-GWConst.MEASURE_SEND_TIMEOUT)
                         },
                         null, null, "TIMESTAMP");
                 if (c != null) {

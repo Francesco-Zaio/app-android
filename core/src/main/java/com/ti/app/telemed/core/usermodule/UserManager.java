@@ -453,12 +453,8 @@ public class UserManager {
     }
 	
 	private void sendMessage(int msgType, String msgText){
-		Message message = handler.obtainMessage(msgType);	
-		if(msgText != null && msgText.length() > 0){
-			Bundle data = new Bundle();
-			data.putString(GWConst.MESSAGE, msgText);
-			message.setData(data);
-		}
+		Message message = handler.obtainMessage(msgType);
+        message.obj=msgText;
 		handler.sendMessage(message);
 	}
 }

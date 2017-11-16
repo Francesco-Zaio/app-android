@@ -23,6 +23,7 @@ public class ConfigurationParser {
 
 	private static final String TAG = "ConfigurationParser";
 
+	private static final char COMMENT_CHAR = '#';
 	private static final String SERVER_SERV_SECTION = "SERVER_SERV";
 	private static final String DEVICE_SECTION = "DEVICE";
 	private static final String USER_DATA_SECTION = "USER_DATA";
@@ -90,7 +91,7 @@ public class ConfigurationParser {
             while ((fileBuffer = br.readLine()) != null) {
                 if (fileBuffer.length()> 0) {
                     switch (fileBuffer.charAt(0)) {
-                        case GWConst.COMMENT_CHAR:
+                        case COMMENT_CHAR:
                             break;
                         case '[':
                             currentSection = fileBuffer.substring(1, fileBuffer.length() - 1);

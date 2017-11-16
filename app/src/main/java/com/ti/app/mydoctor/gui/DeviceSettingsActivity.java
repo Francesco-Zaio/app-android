@@ -42,6 +42,7 @@ import com.ti.app.telemed.core.common.User;
 import com.ti.app.telemed.core.common.UserDevice;
 import com.ti.app.telemed.core.common.UserPatient;
 import com.ti.app.telemed.core.dbmodule.DbManager;
+import com.ti.app.telemed.core.measuremodule.MeasureManager;
 import com.ti.app.telemed.core.usermodule.UserManager;
 import com.ti.app.telemed.core.exceptions.DbException;
 import com.ti.app.telemed.core.util.GWConst;
@@ -175,7 +176,7 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
 				menu.setGroupVisible(R.id.pair_group, false);
 			}
 			
-			if (pd.getDevice().getModel().equalsIgnoreCase(GWConst.KCAMERA)) {
+			if (AppUtil.isCamera(pd.getDevice())) {
 				menu.setGroupVisible(R.id.pair_group, false);
 				menu.setGroupVisible(R.id.select_model_group, false);				
 			}
@@ -212,13 +213,13 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
 	//Inizializza mappa dei dispositivi
 	private void initDeviceMap() throws DbException {
 		deviceMap = new HashMap<>();
-		List<UserDevice> dList = DbManager.getDbManager().getCurrentUserDevices();		
+		List<UserDevice> dList = MeasureManager.getMeasureManager().getCurrentUserDevices();
 		for (UserDevice pDevice : dList) {
-			UserDevice tmpDev = deviceMap.get(pDevice.getMeasure());
-			if(tmpDev == null || pDevice.isActive()){
-				deviceMap.put(pDevice.getMeasure(), pDevice);				
-			}				
-		}		
+            UserDevice tmpDev = deviceMap.get(pDevice.getMeasure());
+            if (tmpDev == null || pDevice.isActive()) {
+                deviceMap.put(pDevice.getMeasure(), pDevice);
+            }
+		}
 	}
 	
 	//Inizializza per un dato dispositivo la mappa dei modelli
@@ -246,7 +247,7 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
 	}	
 	
 	private void setupDeviceList() throws DbException {		
-		User defaultUser = DbManager.getDbManager().getUser( GWConst.DEFAULT_USER_ID );
+		User defaultUser = DbManager.getDbManager().getUser( DbManager.DEFAULT_USER_ID );
 		if(defaultUser != null){
 			//L'utente corrente diventa utente attivo
 			defaultUser.setActive(true);
@@ -308,7 +309,7 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
 					
 					if(!deviceMap.get(selectedMeasureType).isActive()){
 						showSelectModelDialog();
-					} else if ( !deviceMap.get(selectedMeasureType).getDevice().getModel().equals(GWConst.KMirSpirometerSNA)) {
+					} else {
 						UserDevice ud = deviceMap.get(selectedMeasureType);
 						if(ud.isActive()){
 							deviceManager.setCurrentDevice(ud);

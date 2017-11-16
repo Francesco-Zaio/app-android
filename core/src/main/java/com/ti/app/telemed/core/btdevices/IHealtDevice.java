@@ -1,6 +1,12 @@
 package com.ti.app.telemed.core.btdevices;
 
-public interface IHealtDevice {
+interface IHealtDevice {
+
+    String KPO3IHealth = "PO3";
+    String KBP5IHealth = "BP5";
+    String KHS4SIHealth = "HS4S";
+    String KBP550BTIHealth = "BP550BT";
+
     void startMeasure(String mac);
     void stop();
     String getStartMeasureMessage();

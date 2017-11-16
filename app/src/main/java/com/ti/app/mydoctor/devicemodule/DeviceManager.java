@@ -10,14 +10,13 @@ import android.os.Message;
 import android.util.Log;
 
 import com.ti.app.mydoctor.AppResourceManager;
-import com.ti.app.telemed.core.btmodule.events.BTSearcherEventListener;
+import com.ti.app.telemed.core.btmodule.BTSearcherEventListener;
 import com.ti.app.telemed.core.btmodule.DeviceHandler;
 import com.ti.app.telemed.core.btmodule.DeviceListener;
 import com.ti.app.telemed.core.common.Measure;
 import com.ti.app.telemed.core.common.User;
 import com.ti.app.telemed.core.common.UserDevice;
 import com.ti.app.telemed.core.dbmodule.DbManager;
-import com.ti.app.telemed.core.util.GWConst;
 import com.ti.app.mydoctor.gui.DeviceScanActivity;
 import com.ti.app.mydoctor.util.AppConst;
 
@@ -149,19 +148,29 @@ public class DeviceManager implements DeviceListener {
 	private void executeOp() throws Exception {
         currentDeviceHandler = DeviceHandler.getInstance(this,currentDevice);
         DeviceHandler.OperationType op;
-        if (isConfig)
+        String btAddr = currentDevice.getBtAddress();
+        if (isConfig) {
             op = DeviceHandler.OperationType.Config;
-        else if (pairingMode)
+            if (btAddr != null && !btAddr.isEmpty())
+                currentDeviceHandler.startOperation(op, null);
+            else
+                currentDeviceHandler.startOperation(op, btSearcherListener);
+        } else if (pairingMode) {
             op = DeviceHandler.OperationType.Pair;
-        else
+            currentDeviceHandler.startOperation(op, btSearcherListener);
+        } else {
             op = DeviceHandler.OperationType.Measure;
+            if (btAddr != null && !btAddr.isEmpty())
+                currentDeviceHandler.startOperation(op, null);
+            else
+                currentDeviceHandler.startOperation(op, btSearcherListener);
+        }
         notifyToUi(AppResourceManager.getResource().getString("KSearchingDev"));
-        currentDeviceHandler.startOperation(op, btSearcherListener);
 	}
 
 	public void abortOperation() {
         operationRunning = false;
-        currentDeviceHandler.abortOperation();
+        currentDeviceHandler.stopOperation();
     }
 
     public void selectDevice(BluetoothDevice bd) {
@@ -207,7 +216,7 @@ public class DeviceManager implements DeviceListener {
     @Override
     public void configReady(String msg) {
         Log.i(TAG, "configReady: "+ msg);
-        sendMessageToHandler(msg, CONFIG_READY, GWConst.MESSAGE);
+        sendMessageToHandler(msg, CONFIG_READY, AppConst.MESSAGE);
         operationRunning = false;
     }
 

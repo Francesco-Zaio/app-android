@@ -35,7 +35,7 @@ public class AboutScreen extends AppCompatActivity {
 		User loggedUser = dbM.getCurrentUser();
 		//2. verifico se è l'utente di default
 		if( loggedUser != null ) {
-			if( loggedUser.getId().equalsIgnoreCase( GWConst.DEFAULT_USER_ID ) ) {
+			if( loggedUser.getId().equalsIgnoreCase( DbManager.DEFAULT_USER_ID ) ) {
 				//utente di default, abilita menu
 				MenuInflater inflater = getMenuInflater();
 				inflater.inflate(R.menu.show_advanced_settings_menu, menu);
@@ -43,7 +43,7 @@ public class AboutScreen extends AppCompatActivity {
 		} else {
 			//Non ci sono utenti attivi, quindi carica l'utente di default
 			try {
-				loggedUser = dbM.getUser( GWConst.DEFAULT_USER_ID );
+				loggedUser = dbM.getUser( DbManager.DEFAULT_USER_ID );
 
 				if( loggedUser == null ) {
 					//3. se l'utente di default non esiste lo crea

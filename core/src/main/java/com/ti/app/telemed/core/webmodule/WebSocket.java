@@ -228,8 +228,8 @@ public class WebSocket implements Runnable {
                     		
                     		// we open the HTTP connection
                     		urlConnection = connUrl.openConnection();
-                            urlConnection.setConnectTimeout(GWConst.CONNECTION_TIMEOUT);
-                            urlConnection.setReadTimeout(GWConst.READ_TIMEOUT);
+                            urlConnection.setConnectTimeout(GWConst.HTTP_CONNECTION_TIMEOUT);
+                            urlConnection.setReadTimeout(GWConst.HTTP_READ_TIMEOUT);
 
                 			// we add capability to use input and output stream
                 			urlConnection.setDoInput(true);

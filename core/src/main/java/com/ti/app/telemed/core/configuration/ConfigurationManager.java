@@ -34,6 +34,9 @@ public class ConfigurationManager {
 	
 	// constants
 	private static final String INI_FILE_NAME = "Gateway.ini";
+    private static final String DEVICES_FILE_it_IT = "devices-it.txt";
+    private static final String DEVICES_FILE_en_GB = "devices-en.txt";
+    private static final char COMMENT_CHAR = '#';
     private static final String CONFIGURATION_SERVER_DEFAULT_SECTION = "SERVER_CONF_DEFAULT";
     private static final String CONFIGURATION_SERVER_SECTION = "SERVER_CONF";
 	private static final String IP = "IP";
@@ -80,11 +83,11 @@ public class ConfigurationManager {
 		Locale locale = Locale.getDefault();
 		String language = locale.getLanguage();
 		
-		String filename = GWConst.DEVICES_FILE_en_GB;
+		String filename = DEVICES_FILE_it_IT;
 		if("it".equals(language)){ 
-			filename = GWConst.DEVICES_FILE_it_IT;
+			filename = DEVICES_FILE_it_IT;
 		} else if("en".equals(language)){
-			filename = GWConst.DEVICES_FILE_en_GB;
+			filename = DEVICES_FILE_en_GB;
 		}
 		return filename;
 	}
@@ -166,7 +169,7 @@ public class ConfigurationManager {
             while ((fileBuffer = br.readLine()) != null) {
                 if (fileBuffer.length()> 0) {
                     switch (fileBuffer.charAt(0)) {
-                        case GWConst.COMMENT_CHAR:
+                        case COMMENT_CHAR:
                             break;
                         case '[':
                             currentSection = fileBuffer.substring(1, fileBuffer.length() - 1);

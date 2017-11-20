@@ -7,10 +7,14 @@ import android.util.Log;
 
 import com.agamatrix.ambtsdk.lib.AgaMatrixClient;
 import com.agamatrix.ambtsdk.lib.Constants;
+import com.agamatrix.ambtsdk.lib.interfaces.AgaMatrixTimeListener;
 import com.agamatrix.ambtsdk.lib.interfaces.BatteryStatusListener;
 import com.agamatrix.ambtsdk.lib.interfaces.ConnectionStateListener;
+import com.agamatrix.ambtsdk.lib.interfaces.DeviceInformationListener;
 import com.agamatrix.ambtsdk.lib.interfaces.GlucoseMeasurementsListener;
 import com.agamatrix.ambtsdk.lib.interfaces.MeterSettingsListener;
+import com.agamatrix.ambtsdk.lib.model.AgaMatrixTime;
+import com.agamatrix.ambtsdk.lib.model.DeviceInformation;
 import com.agamatrix.ambtsdk.lib.model.GlucoseMeasurement;
 import com.agamatrix.ambtsdk.lib.model.MeterSettings;
 import com.ti.app.telemed.core.MyApp;
@@ -26,6 +30,8 @@ import com.ti.app.telemed.core.util.Util;
 import com.ti.app.telemed.core.xmlmodule.XmlManager;
 
 import java.lang.ref.WeakReference;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -37,10 +43,11 @@ import java.util.Vector;
 
 public class AgamatrixJazz extends DeviceHandler implements
         BTSearcherEventListener,
+        AgaMatrixTimeListener,
         ConnectionStateListener,
         MeterSettingsListener,
         BatteryStatusListener,
-// DeviceInformationListener,
+        DeviceInformationListener,
         GlucoseMeasurementsListener {
 
     private static final String AUTHORIZATION_KEY = "0300000080ff006d5819113d12ac54cc8485c64f";
@@ -62,7 +69,6 @@ public class AgamatrixJazz extends DeviceHandler implements
     private int batteryLevel = 0;
     private double conversionFactor = 1.;
     private ArrayList<?> measurements;
-    private int measureIndex = 0;
     private int lastSequenceNr = 0;
 
     private static final String TAG = "AgamatrixJazz";
@@ -82,7 +88,6 @@ public class AgamatrixJazz extends DeviceHandler implements
         deviceList = new Vector<>();
         mClient = null;
         measurements = null;
-        measureIndex = 0;
         lastSequenceNr = 0;
     }
 
@@ -104,7 +109,6 @@ public class AgamatrixJazz extends DeviceHandler implements
     public boolean startOperation(OperationType ot, BTSearcherEventListener btSearchListener) {
         if (!startInit(ot, btSearchListener))
             return false;
-
         Log.d(TAG,"startOperation: iBtDevAddr="+iBtDevAddr + " iCmdCode="+iCmdCode.toString());
         iServiceSearcher.clearBTSearcherEventListener();
         iServiceSearcher.addBTSearcherEventListener(this);
@@ -127,7 +131,7 @@ public class AgamatrixJazz extends DeviceHandler implements
         mClient = AgaMatrixClient.getInstance(MyApp.getContext(), bd);
         mClient.setAPIKey(AUTHORIZATION_KEY);
         mClient.registerConnectionStateListener(this);
-        mClient.getBatteryStatus(this);
+        mClient.getDeviceInformation(this);
         deviceListener.notifyToUi(ResourceManager.getResource().getString("KConnectingDev"));
     }
 
@@ -156,6 +160,39 @@ public class AgamatrixJazz extends DeviceHandler implements
 
 
     // Device Library SDK callbacks
+    @Override
+    public void onAgaMatrixTimeUpdated(){
+        mClient.getBatteryStatus(this);
+    }
+
+    @Override
+    public void onAgaMatrixTimeUpdatedError(int errorCode){
+        Log.d(TAG,"onDeviceInformationError: status="+errorCode);
+        devOpHandler.obtainMessage(HANDLER_ERROR, errorCode, 0).sendToTarget();
+    }
+
+    @Override
+    public void onAgaMatrixTime(AgaMatrixTime var1){
+    }
+
+    @Override
+    public void onAgaMatrixTimeError(int var1){
+    }
+
+    @Override
+    public void onDeviceInformationAvailable(DeviceInformation var1) {
+        ByteBuffer bb = ByteBuffer.allocate(10);
+        bb.order(ByteOrder.LITTLE_ENDIAN);
+        Calendar current = Calendar.getInstance();
+        com.agamatrix.ambtsdk.lib.Util.writeBTDateToBuffer(current.getTime(),null,bb);
+        mClient.updateAgaMatrixTime(bb.array(),this);
+    }
+
+    @Override
+    public void onDeviceInformationError(int errorCode){
+        Log.d(TAG,"onDeviceInformationError: status="+errorCode);
+        devOpHandler.obtainMessage(HANDLER_ERROR, errorCode, 0).sendToTarget();
+    }
 
     @Override
     public void onConnectionStateChange(int state, int status, String macAddr) {
@@ -246,10 +283,13 @@ public class AgamatrixJazz extends DeviceHandler implements
                         if (settings.getUnits() == MeterSettings.UNITS_MM_PER_L)
                             outer.conversionFactor = 18.;
                     }
-                    if (outer.lastSequenceNr > 0)
+                    if (outer.lastSequenceNr > 0) {
                         outer.mClient.getGlucoseMeasurementCountStartingAt(outer.lastSequenceNr, outer);
-                    else
+                        Log.d(TAG,"getGlucoseMeasurementCountStartingAt " + outer.lastSequenceNr);
+                    } else {
                         outer.mClient.getGlucoseMeasurementCount(outer);
+                        Log.d(TAG,"getGlucoseMeasurementCount");
+                    }
                     outer.iState = TState.EGettingMeasures;
                     break;
                 case HANDLER_BATTERY:
@@ -261,16 +301,19 @@ public class AgamatrixJazz extends DeviceHandler implements
                         outer.batteryLevel = msg.arg1;
                         outer.iState = TState.EConnected;
                         outer.lastSequenceNr = Util.getRegistryIntValue(REGKEY + outer.iBtDevAddr);
+                        Log.d(TAG,"read lastSequenceNr="+outer.lastSequenceNr);
                         outer.mClient.getMeterSettings(outer);
                         outer.deviceListener.notifyWaitToUi(ResourceManager.getResource().getString("KMeasuring"));
                     }
                     break;
                 case HANDLER_MEASURES_COUNT:
-                    if (outer.lastSequenceNr > 0 && msg.arg1 > 1)
+                    if (outer.lastSequenceNr > 0 && msg.arg1 > 1) {
                         outer.mClient.getGlucoseMeasurementsStartingAt(outer.lastSequenceNr, outer);
-                    else if (outer.lastSequenceNr == 0 && msg.arg1 > 0)
+                        Log.d(TAG,"getGlucoseMeasurementsStartingAt " + outer.lastSequenceNr);
+                    } else if (outer.lastSequenceNr == 0 && msg.arg1 > 0) {
                         outer.mClient.getAllGlucoseMeasurements(outer);
-                    else {
+                        Log.d(TAG, "getAllGlucoseMeasurements " + outer.lastSequenceNr);
+                    } else {
                         outer.deviceListener.notifyError("", ResourceManager.getResource().getString("KNoNewMeasure"));
                         outer.stop();
                     }
@@ -278,7 +321,6 @@ public class AgamatrixJazz extends DeviceHandler implements
                 case HANDLER_MEASURES:
                     if (msg.obj != null && msg.obj instanceof ArrayList<?>) {
                         outer.measurements = (ArrayList<?>) msg.obj;
-                        outer.measureIndex = 0;
                         if (outer.measurements.size() == 0) {
                             outer.deviceListener.notifyError("", ResourceManager.getResource().getString("KNoNewMeasure"));
                             outer.stop();
@@ -297,13 +339,12 @@ public class AgamatrixJazz extends DeviceHandler implements
                     outer.stop();
                     break;
             }
-
         }
     }
 
     private void askMeasure() {
-        if (measurements.get(measureIndex) instanceof GlucoseMeasurement) {
-            GlucoseMeasurement glm = (GlucoseMeasurement)measurements.get(measureIndex);
+        if (measurements.get(0) instanceof GlucoseMeasurement) {
+            GlucoseMeasurement glm = (GlucoseMeasurement)measurements.get(0);
             String message;
             int val = (int)(glm.getGlucoseConcentration()*conversionFactor);
             Date d = glm.getTimestamp();
@@ -334,14 +375,14 @@ public class AgamatrixJazz extends DeviceHandler implements
     }
 
     private void makeResultData() {
-        if (!(measurements.get(measureIndex) instanceof GlucoseMeasurement)) {
+        if (!(measurements.get(0) instanceof GlucoseMeasurement)) {
             String message = ResourceManager.getResource().getString("EDataReadError");
             deviceListener.notifyError(DeviceListener.DEVICE_DATA_ERROR, message);
             stop();
             return;
         }
 
-        GlucoseMeasurement glm = (GlucoseMeasurement) measurements.get(measureIndex);
+        GlucoseMeasurement glm = (GlucoseMeasurement) measurements.get(0);
         Calendar cal = Calendar.getInstance();
         cal.setTime(glm.getTimestamp());
         int val = (int)(glm.getGlucoseConcentration()*conversionFactor);
@@ -359,6 +400,7 @@ public class AgamatrixJazz extends DeviceHandler implements
         m.setFailed(false);
 
         Util.setRegistryValue(REGKEY+iBtDevAddr, glm.getSequenceNumber());
+        Log.d(TAG,"set lastSequenceNr to "+glm.getSequenceNumber());
 
         deviceListener.showMeasurementResults(m);
         stop();
@@ -386,7 +428,6 @@ public class AgamatrixJazz extends DeviceHandler implements
         iBTSearchListener = null;
         mClient = null;
         measurements = null;
-        measureIndex = 0;
         lastSequenceNr = 0;
     }
 }

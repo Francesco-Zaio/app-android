@@ -1761,7 +1761,7 @@ public class DbManager {
                     where = where + " AND FAILED = 0";
 
             try {
-                c = mDb.query("MEASURE", null, where, values, null, null, "TIMESTAMP");
+                c = mDb.query("MEASURE", null, where, values, null, null, "TIMESTAMP DESC");
                 if (c != null) {
                     while (c.moveToNext()) {
                         listaMisure.add(getMeasureObject(c));

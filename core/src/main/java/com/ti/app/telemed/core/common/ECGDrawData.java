@@ -10,10 +10,10 @@ public class ECGDrawData {
     public static int maxVal;
     public static int baseline;
     public static int gain;
-    private static final Integer prog = new Integer(0);
     public static int progress;
     public static String message = "";
 
+    // contiene i campioni dell ECG L'array
     private static final List<int[]> ecgData = new ArrayList<>();
 
     public static void addData(List<int[]> d) {

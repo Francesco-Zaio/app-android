@@ -489,7 +489,6 @@ public class ShowMeasure extends ActionBarListActivity{
 				listAdapter.notifyDataSetChanged();
 				break;
 			case DialogInterface.BUTTON_NEGATIVE:
-				Toast.makeText(context, "Misura non eliminata", Toast.LENGTH_SHORT).show();
 				break;
 			}
 			removeDialog(DELETE_CONFIRM_DIALOG);
@@ -516,7 +515,6 @@ public class ShowMeasure extends ActionBarListActivity{
 				break;
 			case DialogInterface.BUTTON_NEGATIVE:
 				mListView.cancelDrag();
-				Toast.makeText(context, "Misura non eliminata", Toast.LENGTH_SHORT).show();
 				break;
 			}
 			removeDialog(DELETE_CONFIRM_DIALOG);
@@ -586,7 +584,7 @@ public class ShowMeasure extends ActionBarListActivity{
 	
 	protected void startSendingAllMeasures() {
         startService(new Intent(this, SendMeasuresService.class));
-        Toast.makeText(this, dataBundle.getString(AppConst.MESSAGE), Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, AppResourceManager.getResource().getString("KMsgSendMeasureStart"), Toast.LENGTH_SHORT).show();
 	}
 
 	/**

@@ -13,10 +13,7 @@ import com.ti.app.telemed.core.webmodule.WebManager;
 import com.ti.app.telemed.core.webmodule.webmanagerevents.WebManagerResultEvent;
 import com.ti.app.telemed.core.webmodule.webmanagerevents.WebManagerResultEventListener;
 import com.ti.app.telemed.core.xmlmodule.XmlManager.XmlErrorCode;
-import com.ti.app.telemed.core.exceptions.DbException;
-import com.ti.app.telemed.core.util.GWConst;
 
-import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
@@ -146,6 +143,15 @@ public class UserManager {
 	}
 
     /**
+     * Restituisce lo User con l'id specificato corrente loggato
+     * @param id            Identificaticvo utente da caricare
+     * @return              Lo User corrispondente o null se non esiste
+     */
+	public User  getUser(String id) {
+        return DbManager.getDbManager().getUser(id);
+    }
+
+    /**
      * Effettua l'autenticazione verso la piattaforma utilizzando le credenziali passate.
      * L'operazione e' asincrona e l'esito viene notificato all'Handler passato
      * precedentemente con il metodo {@link #setHandler(Handler handler) setHandler}.
@@ -211,13 +217,13 @@ public class UserManager {
         }
     }
 	
-	private void logInUserFromDb() throws Exception {
+	private void logInUserFromDb() {
 		synchronized (currT) {
 			if (currentOpOn == Op.IDLE) {
 				if ((login != null) && (password != null)) {
 					currentOpOn = Op.TALK_TO_DB;
 				} else {
-					throw new Exception();
+					Log.e(TAG,"logInUserFromDb: userid or passsword is null");
 				}
 	        }
 	        currT.notifyAll();
@@ -323,7 +329,7 @@ public class UserManager {
         }
 	}
 
-    private void updateUserCredentials() throws DbException {
+    private void updateUserCredentials() {
         synchronized (currT) {
             if (login != null && password != null) {
                 DbManager.getDbManager().updateUserCredentials(login, password);
@@ -340,9 +346,6 @@ public class UserManager {
             try {
                 updateUserCredentials();
                 logInUserFromDb();
-            } catch (DbException e) {
-                logger.log(Level.SEVERE, "Failed to update patient login and password");
-                sendMessage(ERROR_OCCURED, e.getMessage());
             } catch (Exception e) {
                 logger.log(Level.SEVERE, "Error encoding password");
                 sendMessage(ERROR_OCCURED, "Error encoding password");

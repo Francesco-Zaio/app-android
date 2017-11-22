@@ -19,7 +19,6 @@ import com.ti.app.telemed.core.webmodule.websocketevents.WebSocketTransactionEve
 import com.ti.app.telemed.core.webmodule.websocketevents.WebSocketTransactionEventListener;
 import com.ti.app.telemed.core.xmlmodule.XmlManager;
 import com.ti.app.telemed.core.xmlmodule.XmlManager.XmlErrorCode;
-import com.ti.app.telemed.core.exceptions.DbException;
 import com.ti.app.telemed.core.exceptions.XmlException;
 import com.ti.app.telemed.core.util.Base64;
 
@@ -440,9 +439,6 @@ public class WebManager implements Runnable, WebSocketTransactionEventListener {
             logger.log(Level.SEVERE, "web socket error MANAGE_SUCCESS "+e.getMessage());
             fireWebOperationFailed(XmlErrorCode.PLATFORM_ERROR);
             fireWebOperationFailedSending(XmlErrorCode.PLATFORM_ERROR);
-        } catch (DbException e) {
-            logger.log(Level.SEVERE, "web socket error MANAGE_SUCCESS "+e.getMessage());
-            fireWebOperationFailed(XmlErrorCode.PLATFORM_ERROR);
         } finally {
             currServed = null;
         }

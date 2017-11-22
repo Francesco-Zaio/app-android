@@ -371,7 +371,7 @@ public class ForaThermometerClient extends DeviceHandler implements
                     // the selection done by user is managed in the ui class which
                     // implements BTSearcherEventListener interface, so here arrive
                     // when the selection is already done
-                	deviceListener.notifyWaitToUi(ResourceManager.getResource().getString("KConnectingDev"));
+                	deviceListener.notifyToUi(ResourceManager.getResource().getString("KConnectingDev"));
                     break;
             }
             break;
@@ -395,9 +395,9 @@ public class ForaThermometerClient extends DeviceHandler implements
     		logger.log(Level.INFO, "runBTSocket: EConnected");
 			//Device find
     		if (operationType == OperationType.Pair) {
-	    		deviceListener.notifyWaitToUi(ResourceManager.getResource().getString("KConnectingDev"));
+	    		deviceListener.notifyToUi(ResourceManager.getResource().getString("KConnectingDev"));
 	    	} else {
-	    		deviceListener.notifyWaitToUi(ResourceManager.getResource().getString("KMeasuring"));
+	    		deviceListener.notifyToUi(ResourceManager.getResource().getString("KMeasuring"));
 	    	}
     		
 			//Device connected, sending request for last measure

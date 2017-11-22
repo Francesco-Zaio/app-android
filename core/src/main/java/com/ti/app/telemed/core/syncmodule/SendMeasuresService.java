@@ -11,7 +11,6 @@ import android.util.Log;
 import com.ti.app.telemed.core.common.Measure;
 import com.ti.app.telemed.core.common.User;
 import com.ti.app.telemed.core.dbmodule.DbManager;
-import com.ti.app.telemed.core.exceptions.DbException;
 import com.ti.app.telemed.core.usermodule.UserManager;
 import com.ti.app.telemed.core.webmodule.WebManager;
 import com.ti.app.telemed.core.webmodule.webmanagerevents.WebManagerSendingResultEvent;

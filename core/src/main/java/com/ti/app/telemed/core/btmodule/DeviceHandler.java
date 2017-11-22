@@ -9,6 +9,7 @@ import com.ti.app.telemed.core.common.User;
 import com.ti.app.telemed.core.common.UserDevice;
 import com.ti.app.telemed.core.dbmodule.DbManager;
 import com.ti.app.telemed.core.usermodule.UserManager;
+import com.ti.app.telemed.core.util.Util;
 import com.ti.app.telemed.core.xmlmodule.XmlManager;
 
 import java.lang.reflect.Method;
@@ -248,7 +249,7 @@ public abstract class DeviceHandler {
         m.setMeasureType(iUserDevice.getMeasure());
         m.setDeviceDesc(iUserDevice.getDevice().getDescription());
         m.setBtAddress(iBtDevAddr);
-        m.setTimestamp(XmlManager.getXmlManager().getTimestamp(null));
+        m.setTimestamp(Util.getTimestamp(null));
         m.setFile(null);
         m.setFileType(null);
         m.setFailed(false);

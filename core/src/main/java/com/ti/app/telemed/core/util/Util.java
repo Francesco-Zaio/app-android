@@ -6,11 +6,7 @@ import android.os.Environment;
 import android.util.Log;
 
 import com.ti.app.telemed.core.MyApp;
-import com.ti.app.telemed.core.common.Patient;
-import com.ti.app.telemed.core.common.User;
-import com.ti.app.telemed.core.common.UserMeasure;
 import com.ti.app.telemed.core.dbmodule.DbManager;
-import com.ti.app.telemed.core.exceptions.DbException;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -20,12 +16,15 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
+import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Vector;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -35,8 +34,25 @@ public class Util {
 	private static final String KEY_SHARED_PREFS = "TELEMONITORING_SP";
 	private static final String TAG = "Util";
     private static final String KEY_ROCHE_DEMO_MODE = "ROCHE_DEMO_MODE";
+    private static final String TIMESTAMPFORMAT = "yyyyMMddHHmmss";
 
-	@SuppressLint("NewApi")
+    public static String getTimestamp(Calendar calendar) {
+        if (calendar == null)
+            calendar = new GregorianCalendar();
+        return new SimpleDateFormat(TIMESTAMPFORMAT, Locale.ENGLISH).format(calendar.getTime());
+    }
+
+    public static Date parseTimestamp(String dateString) {
+        try {
+            if (dateString != null && ! dateString.isEmpty())
+                return new SimpleDateFormat(TIMESTAMPFORMAT, Locale.ENGLISH).parse(dateString);
+        } catch (ParseException e) {
+            Log.e(TAG, "parseTimestamp: ParseException");
+        }
+        return null;
+    }
+
+    @SuppressLint("NewApi")
 	public static File getDir() {
 		File sdDir = Environment.getExternalStorageDirectory();
 		File result = new File(sdDir, "nithd");
@@ -128,7 +144,6 @@ public class Util {
 		return sp.getBoolean(keyValue, defaultValue);
 	}
 
-
 	public static boolean storeFile(String fileName, byte[] buffer) {
 		try {
 			Log.d(TAG, "Store file " + fileName);
@@ -175,7 +190,6 @@ public class Util {
 	}
 
     public static int getDiffHours(long t1, long t2) {
-
         int result = 0;
         try {
             result = Math.abs( (int) ((t1-t2) / (60 * 60 * 1000)) );
@@ -191,6 +205,7 @@ public class Util {
 	public static boolean isDemoRocheMode() {
         return getRegistryValue(Util.KEY_ROCHE_DEMO_MODE, false);
 	}
+
 	public static void setDemoRocheMode(boolean demoMode) {
 		setRegistryValue(Util.KEY_ROCHE_DEMO_MODE, demoMode);
 	}

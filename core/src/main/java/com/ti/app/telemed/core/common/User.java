@@ -1,5 +1,7 @@
 package com.ti.app.telemed.core.common;
 
+import com.ti.app.telemed.core.dbmodule.DbManager;
+
 import java.io.Serializable;
 
 public class User implements Serializable {
@@ -19,6 +21,10 @@ public class User implements Serializable {
 	
 	private boolean active;
 	private boolean blocked;
+
+	public boolean isDefaultUser() {
+		return id.equals(DbManager.DEFAULT_USER_ID);
+	}
 
 	public String getId() {
 		return id;

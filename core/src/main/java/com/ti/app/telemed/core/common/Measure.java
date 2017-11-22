@@ -2,10 +2,6 @@ package com.ti.app.telemed.core.common;
 
 import android.util.Log;
 
-import com.ti.app.telemed.core.dbmodule.DbManager;
-import com.ti.app.telemed.core.exceptions.DbException;
-import com.ti.app.telemed.core.xmlmodule.XmlManager;
-
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;

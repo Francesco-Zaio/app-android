@@ -677,13 +677,7 @@ public class Base64
                 oos = new java.io.ObjectOutputStream( b64os );
             }
             oos.writeObject( serializableObject );
-        }   // end try
-        catch( java.io.IOException e ) {
-            // Catch it and then throw it immediately so that
-            // the finally{} block is called for cleanup.
-            throw e;
-        }   // end catch
-        finally {
+        } finally {
             try{ oos.close();   } catch( Exception e ){}
             try{ gzos.close();  } catch( Exception e ){}
             try{ b64os.close(); } catch( Exception e ){}

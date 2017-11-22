@@ -15,7 +15,6 @@ import android.util.Log;
 import com.ti.app.telemed.core.dbmodule.DbManager;
 import com.ti.app.telemed.core.xmlmodule.XmlManager;
 import com.ti.app.telemed.core.xmlmodule.XmlManager.XmlErrorCode;
-import com.ti.app.telemed.core.exceptions.DbException;
 import com.ti.app.telemed.core.exceptions.XmlException;
 import com.ti.app.telemed.core.util.Util;
 
@@ -212,7 +211,7 @@ public class WebMessageManager {
 	
 	// this method must evaluate a web message response and return the message type; the result of
 	// evaluation are saved on db if there are
-	public WebMessageType evaluateWebMessageResponse(String responseBody) throws XmlException, DbException {
+	public WebMessageType evaluateWebMessageResponse(String responseBody) throws XmlException {
 		WebMessageType ret = WebMessageType.LOGIN_RESPONSE;
 		xmlManager.parse(responseBody);
 		logger.log(Level.INFO, "WebMessageManager evaluateWebMessageResponse ENTER");

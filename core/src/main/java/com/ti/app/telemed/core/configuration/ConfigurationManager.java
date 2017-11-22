@@ -22,8 +22,6 @@ import com.ti.app.telemed.core.MyApp;
 import com.ti.app.telemed.core.common.Device;
 import com.ti.app.telemed.core.common.ServerConf;
 import com.ti.app.telemed.core.dbmodule.DbManager;
-import com.ti.app.telemed.core.exceptions.DbException;
-import com.ti.app.telemed.core.util.GWConst;
 
 /**
  * Questa classe gestisce i parametri necessari per connettersi alla piattaforma
@@ -92,7 +90,7 @@ public class ConfigurationManager {
 		return filename;
 	}
 
-	private void checkDevices() throws IOException, DbException{
+	private void checkDevices() throws IOException {
 		try{
 			List<Device> currentDev = new ArrayList<>();
 			// open the file
@@ -141,7 +139,7 @@ public class ConfigurationManager {
         }
 	}
 
-    private void readConfigurations() throws  IOException, DbException {
+    private void readConfigurations() throws  IOException {
         ServerConf dbServerConf = DbManager.getDbManager().getServerConf();
         if (dbServerConf != null) {
             setDbServerConf(dbServerConf);
@@ -151,7 +149,7 @@ public class ConfigurationManager {
         }
     }
 
-    private void readIniFile() throws IOException, DbException {
+    private void readIniFile() throws IOException {
 		String fileBuffer;
         String currentSection, key, value;
         boolean inSection = false;
@@ -239,7 +237,7 @@ public class ConfigurationManager {
 		}
     }
 
-	private void insertDbServerConf() throws DbException {
+	private void insertDbServerConf() {
 		ServerConf sc = new ServerConf();
 		sc.setIp(ipValue);
 		sc.setPort(portValue);

@@ -1,7 +1,8 @@
 package com.ti.app.telemed.core.util;
 
 public interface GWConst {
-    /**
+
+	/**
      * Timeout attesa su tentativo connessione http (millisec)
      */
 	int HTTP_CONNECTION_TIMEOUT = 15000;
@@ -283,6 +284,34 @@ public interface GWConst {
      * Documento di collaudo
      */
 	String EGwCode_D1 = "D1";
+	/**
+	 * Report di laboratorio
+	 */
+	String EGwCode_D2 = "D2";
+	/**
+	 * Immagine radiologica
+	 */
+	String EGwCode_D3 = "D3";
+	/**
+	 * Report medico
+	 */
+	String EGwCode_D4 = "D4";
+	/**
+	 * Diagnosi
+	 */
+	String EGwCode_D5 = "D5";
+	/**
+	 * Prescrizione terapia
+	 */
+	String EGwCode_D6 = "D6";
+	/**
+	 * Lettera
+	 */
+	String EGwCode_D7 = "D7";
+	/**
+	 * Immagine di lesione
+	 */
+	String EGwCode_D8 = "D8";
     /**
      * Misura di BMI (Body mass Index)
      */

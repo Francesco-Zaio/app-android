@@ -283,6 +283,8 @@ public class DbManager {
         if(dbManager == null){
             dbManager = new DbManager();
             dbManager.open();
+            if (dbManager.getUser(DEFAULT_USER_ID) == null)
+                dbManager.createDefaultUser();
         }
         return dbManager;
     }
@@ -762,7 +764,7 @@ public class DbManager {
         }
 	}
 
-    public User createDefaultUser() {
+    private User createDefaultUser() {
         Vector<Object> dataContainer = new Vector<>();
 
         User defaultUser = new User();

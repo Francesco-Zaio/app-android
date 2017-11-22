@@ -4,10 +4,12 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 
 import com.ti.app.telemed.core.MyApp;
 import com.ti.app.telemed.core.common.Measure;
 import com.ti.app.telemed.core.common.MeasureProtocolCfg;
+import com.ti.app.telemed.core.common.Patient;
 import com.ti.app.telemed.core.common.User;
 import com.ti.app.telemed.core.common.UserDevice;
 import com.ti.app.telemed.core.common.UserMeasure;
@@ -15,6 +17,7 @@ import com.ti.app.telemed.core.dbmodule.DbManager;
 import com.ti.app.telemed.core.syncmodule.SendMeasuresService;
 import com.ti.app.telemed.core.usermodule.UserManager;
 import com.ti.app.telemed.core.util.GWConst;
+import com.ti.app.telemed.core.util.Util;
 import com.ti.app.telemed.core.xmlmodule.XmlManager;
 
 import android.content.Intent;
@@ -51,17 +54,47 @@ public class MeasureManager {
      * Tipo di misura non biometrica.
      */
 	public enum NotBioMeasureType {
-		HealthStatus,
-		PainLevel,
-		SleepQuality
+		HealthStatus("Q0"),
+        SleepQuality("Q1"),
+		PainLevel("Q2");
+
+        private final String id;
+        NotBioMeasureType(String s) {
+            id = s;
+        }
+        public boolean equals(String otherId) {
+            return id.equals(otherId);
+        }
+        public String toString() {
+            return this.id;
+        }
 	}
 
-    /**
+
+	/**
      * Tipo di documento.
      */
     public enum DocumentType{
-        DischargeDocument,
-        AcceptanceDocument
+        DischargeDocument("D0"),
+        AcceptanceDocument("D1"),
+        LaboratoryReport("D2"),
+        RadiologicalImage("D3"),
+        MedicalReport("D4"),
+        Diagnosis("D5"),
+        TherapyPrescription("D6"),
+        Letter("D7"),
+        WoundImage("D8");
+
+        private final String id;
+        DocumentType(String s) {
+            id = s;
+        }
+        public boolean equals(String otherId) {
+            return id.equals(otherId);
+        }
+        public String toString() {
+            return this.id;
+        }
     }
     /**
      * Salva ed invia alla piattaforma una misura.
@@ -102,23 +135,14 @@ public class MeasureManager {
                 Log.e(TAG, "saveDocument - File not found!");
                 return false;
             }
-			User currentUser = UserManager.getUserManager().getCurrentUser();
-			if (currentUser == null) {
-				Log.e(TAG, "saveDocument - currentUser is Null");
-				return false;
-			}
+            User currentUser = UserManager.getUserManager().getCurrentUser();
+            Patient currentPatient = UserManager.getUserManager().getCurrentPatient();
+            if (currentUser == null || (currentPatient == null && !currentUser.getIsPatient())) {
+                Log.e(TAG, "saveDocument - currentUser or Patient is Null");
+                return false;
+            }
 
-			String code;
-			switch (docType) {
-				case DischargeDocument:
-					code = EGwCode_D0;
-					break;
-				case AcceptanceDocument:
-					code = EGwCode_D1;
-					break;
-				default:
-					return false;
-			}
+			String code = docType.toString();
 
 			Measure m = new Measure();
 			HashMap<String, String> map = new HashMap<>();
@@ -126,7 +150,7 @@ public class MeasureManager {
 			map.put(code, tokens[tokens.length-1]);  //nome file
 			try {
 				m.setDeviceDesc("Document-" + code);
-				m.setTimestamp(XmlManager.getXmlManager().getTimestamp(null));
+				m.setTimestamp(Util.getTimestamp(null));
 				m.setMeasureType(code);
 				m.setMeasures(map);
 				m.setFile(outputFile.getBytes("UTF-8"));
@@ -144,6 +168,44 @@ public class MeasureManager {
 	}
 
     /**
+     * Salva ed invia alla piattaforma una misura di temperatura corporea.
+     * @param temperature       Valore della temperatura corporea in gradi centigradi.
+     * @param standardProtocol  Indica se la misura e' stata acquisita con il "Protocollo standard".
+     * @return                  {@code true} in caso di successo o altrimenti {@code false}.
+     */
+    public boolean saveManualTemperature(double temperature, boolean standardProtocol) {
+        User currentUser = UserManager.getUserManager().getCurrentUser();
+        Patient currentPatient = UserManager.getUserManager().getCurrentPatient();
+        if (currentUser == null || (currentPatient == null && !currentUser.getIsPatient())) {
+            Log.e(TAG, "saveManualTemperature - currentUser or Patient is Null");
+            return false;
+        }
+        synchronized (this) {
+            Measure m = new Measure();
+            HashMap<String, String> map = new HashMap<>();
+            String tempVal = String.format(Locale.ITALY, "%.2f", temperature);
+            map.put(GWConst.EGwCode_0R, tempVal);
+            try {
+                m.setDeviceDesc(GWConst.DEVICE_MANUAL);
+                m.setTimestamp(Util.getTimestamp(null));
+                m.setMeasureType(GWConst.KMsrTemp);
+                m.setMeasures(map);
+                m.setStandardProtocol(standardProtocol);
+                m.setIdUser(currentUser.getId());
+                if (currentPatient != null)
+                    m.setIdPatient(currentPatient.getId());
+                else
+                    m.setIdPatient(currentUser.getId());
+                m.setFailed(false);
+                return saveMeasureData(m);
+            } catch (Exception e) {
+                Log.e(TAG,e.getMessage());
+                return false;
+            }
+        }
+    }
+
+    /**
      * Salva ed invia alla piattaforma una misura non biometrica.
      * @param type              Tipo di misura biometrica {@see NotBioMeasureType}.
      * @param level             Valore della misura biometrica.
@@ -151,34 +213,20 @@ public class MeasureManager {
      * @return                  {@code true} in caso di successo o altrimenti {@code false}.
      */
 	public boolean saveNotBioMeasure(NotBioMeasureType type, int level, boolean standardProtocol) {
-		User currentUser = UserManager.getUserManager().getCurrentUser();
-		if (currentUser == null) {
-			Log.e(TAG, "saveDocument - currentUser is Null");
-			return false;
-		}
+        User currentUser = UserManager.getUserManager().getCurrentUser();
+        Patient currentPatient = UserManager.getUserManager().getCurrentPatient();
+        if (currentUser == null || (currentPatient == null && !currentUser.getIsPatient())) {
+            Log.e(TAG, "saveNotBioMeasure - currentUser or Patient is Null");
+            return false;
+        }
 		synchronized (this) {
-			String code;
-			switch (type) {
-				case HealthStatus:
-					code = EGwCode_Q0;
-					break;
-				case SleepQuality:
-					code = EGwCode_Q1;
-					break;
-				case PainLevel:
-					code = EGwCode_Q2;
-					break;
-				default:
-					Log.e(TAG, "saveNotBioMeasure - NotBioMeasureType not recognized");
-					return false;
-			}
-
+            String code = type.toString();
 			Measure m = new Measure();
 			HashMap<String, String> map = new HashMap<>();
 			map.put(code, Integer.toString(level));
 			try {
 				m.setDeviceDesc(code);
-				m.setTimestamp(XmlManager.getXmlManager().getTimestamp(null));
+				m.setTimestamp(Util.getTimestamp(null));
 				m.setMeasureType(code);
 				m.setMeasures(map);
 				m.setStandardProtocol(standardProtocol);

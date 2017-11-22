@@ -11,11 +11,6 @@ import org.xml.sax.helpers.DefaultHandler;
 
 import java.io.ByteArrayInputStream;
 import java.nio.CharBuffer;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.GregorianCalendar;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Vector;
@@ -138,8 +133,7 @@ public class XmlManager extends DefaultHandler {
     final static private String COMMAND_TAGNAME = "Command";
     final static private String RESPONSE_TAGNAME = "Response";
     final static private String PROPERTY_TAGNAME = "Property";
-    final static private String PERCEPTBUNDLE_TAGNAME = "PerceptBundle";
-    final static private String PERCEPT_TAGNAME = "Percept";
+
     // constant attribute names
     final static private String VERSION_ATTRIBUTENAME = "ver";
     final static private String SEQUENCE_ATTRIBUTENAME = "seq";
@@ -147,31 +141,18 @@ public class XmlManager extends DefaultHandler {
     final static private String MESSAGE_ATTRIBUTENAME = "message";
     final static private String TIMESTAMP_ATTRIBUTENAME = "timestamp";
     final static private String NAME_ATTRIBUTENAME = "name";
-    final static private String VALUE_ATTRIBUTENAME = "value";
-    final static private String PERCEPTTYPE_ATTRIBUTENAME = "perceptType";
-    final static private String PERCEPTTYPE_ATTRIBUTE_VALUE_STRING = "string";
-    final static private String ADDRESS_ATTRIBUTENAME = "address";
-    // constant for name attribute in command message
-    final static private String COMMAND_SENDING_PERCEPT = "sendingPercept";
 
     // File Type
     public static final String ECG_FILE_TYPE = "ECGFile";
     public static final String MIR_SPIRO_FILE_TYPE = "MirSPIROFile";
     public static final String MIR_OXY_FILE_TYPE = "MirOXYFile";
-    public static final String STM_FILE_TYPE = "StmBgwFile";
     public static final String IMG_FILE_TYPE = "ImgFile";
-    public static final String ZEPHYR_FILE_TYPE = "ZephyrFile";
-    public static final String HVIEW_FILE_TYPE = "HViewFile";
     public static final String DOCUMENT_FILE_TYPE = "DocumentFile";
-    
-    // for timestamp format
-    final static private String KTimestamp = "%04d%02d%02d%02d%02d%02d";
-    final static private String TIMESTAMPFORMAT = "yyyyMMddHHmmss";
 
     private SAXParser parser; 
 
     // sequence number
-    int sequenceNumber;
+    private int sequenceNumber;
 
     // variables for sax management
     private Vector<Object> dataContainer;
@@ -238,36 +219,6 @@ public class XmlManager extends DefaultHandler {
     
     public Vector<Object> getParsedData() {
     	return dataContainer;
-    }
-
-    public String getTimestamp(Calendar calendar) {
-
-        if (calendar == null)
-            calendar = new GregorianCalendar();
-        return new SimpleDateFormat(TIMESTAMPFORMAT, Locale.ENGLISH).format(calendar.getTime());
-
-        /*
-        int year, month, day, hour, minute, second;
-        year = calendar.get(GregorianCalendar.YEAR);
-        // MONTH begin from 0 to 11, so we need add 1 to use it in the timestamp
-        month = calendar.get(GregorianCalendar.MONTH) + 1;
-        day = calendar.get(GregorianCalendar.DAY_OF_MONTH);
-        hour = calendar.get(GregorianCalendar.HOUR_OF_DAY);
-        minute = calendar.get(GregorianCalendar.MINUTE);
-        second = calendar.get(GregorianCalendar.SECOND);
-
-        return String.format(Locale.ENGLISH, KTimestamp, year, month, day, hour, minute, second);
-        */
-    }
-
-    public Date parseDate(String dateString) {
-        try {
-            if (dateString != null && ! dateString.isEmpty())
-                return new SimpleDateFormat(TIMESTAMPFORMAT, Locale.ENGLISH).parse(dateString);
-        } catch (ParseException e) {
-            Log.e(TAG, "parseDate: ParseException");
-        }
-        return null;
     }
 
     // Create XML message for failed measure

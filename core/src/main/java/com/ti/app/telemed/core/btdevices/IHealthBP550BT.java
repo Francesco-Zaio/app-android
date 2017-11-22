@@ -13,7 +13,7 @@ import com.ti.app.telemed.core.ResourceManager;
 import com.ti.app.telemed.core.btmodule.DeviceListener;
 import com.ti.app.telemed.core.common.Measure;
 import com.ti.app.telemed.core.util.GWConst;
-import com.ti.app.telemed.core.xmlmodule.XmlManager;
+import com.ti.app.telemed.core.util.Util;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -208,7 +208,7 @@ class IHealthBP550BT extends Handler implements IHealtDevice{
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.ENGLISH);
                 try {
                     cal.setTime(sdf.parse(date));
-                    timestamp = XmlManager.getXmlManager().getTimestamp(cal);
+                    timestamp = Util.getTimestamp(cal);
                 } catch (ParseException e) {
                     Log.e(TAG, "notifyResultData(): ", e);
                     iHealth.notifyError(DeviceListener.DEVICE_DATA_ERROR,

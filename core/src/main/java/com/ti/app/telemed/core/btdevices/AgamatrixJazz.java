@@ -27,7 +27,6 @@ import com.ti.app.telemed.core.common.Measure;
 import com.ti.app.telemed.core.common.UserDevice;
 import com.ti.app.telemed.core.util.GWConst;
 import com.ti.app.telemed.core.util.Util;
-import com.ti.app.telemed.core.xmlmodule.XmlManager;
 
 import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
@@ -395,7 +394,7 @@ public class AgamatrixJazz extends DeviceHandler implements
         tmpVal.put(GWConst.EGwCode_BATTERY, Integer.toString(batteryLevel)); // livello batteria
 
         Measure m = getMeasure();
-        m.setTimestamp(XmlManager.getXmlManager().getTimestamp(cal));
+        m.setTimestamp(Util.getTimestamp(cal));
         m.setMeasures(tmpVal);
         m.setFailed(false);
 

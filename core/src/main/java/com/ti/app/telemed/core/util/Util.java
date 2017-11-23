@@ -28,7 +28,10 @@ import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-
+/**
+ * Contiene vari metodi di conversione, scrittura/lettura registry, e recupero path filesystem
+ * utilizzati.
+ */
 public class Util {
 	
 	private static final String KEY_SHARED_PREFS = "TELEMONITORING_SP";
@@ -36,13 +39,23 @@ public class Util {
     private static final String KEY_ROCHE_DEMO_MODE = "ROCHE_DEMO_MODE";
     private static final String TIMESTAMPFORMAT = "yyyyMMddHHmmss";
 
+	/**
+	 * Genera un timestamp testuale nel formato richiesto dalla piattaforma (ad esempio timestamp misure).
+	 * @param calendar
+	 * @return Stringa contenente il timestamp.
+	 */
     public static String getTimestamp(Calendar calendar) {
         if (calendar == null)
             calendar = new GregorianCalendar();
         return new SimpleDateFormat(TIMESTAMPFORMAT, Locale.ENGLISH).format(calendar.getTime());
     }
 
-    public static Date parseTimestamp(String dateString) {
+	/**
+	 * Legge un timestamp testuale nel formato della piattaforma e lo converte in un oggetto Date
+	 * @param dateString	Timestamp.
+	 * @return				data o null in caso di errore.
+	 */
+	public static Date parseTimestamp(String dateString) {
         try {
             if (dateString != null && ! dateString.isEmpty())
                 return new SimpleDateFormat(TIMESTAMPFORMAT, Locale.ENGLISH).parse(dateString);
@@ -89,6 +102,11 @@ public class Util {
 		return result;
 	}
 
+	/**
+	 * Esegue il parsing di una Stringa in formato JSON in una HashMap di Stringhe.
+	 * @param jsonString
+	 * @return HashMap<String,String> (vuota in caso di errore).
+	 */
 	public static Map<String,String> jsonToStringMap(String jsonString) {
 		HashMap<String, String> map = new HashMap<>();
 		try {
@@ -107,7 +125,11 @@ public class Util {
 		return map;
 	}
 
-
+	/**
+	 * Scrive un booleano dal registry.
+	 * @param keyValue
+	 * @param stringValue
+	 */
 	public static void setRegistryValue(String keyValue, boolean stringValue) {
 		SharedPreferences sp = MyApp.getContext().getSharedPreferences(KEY_SHARED_PREFS, 0);
 		SharedPreferences.Editor editor = sp.edit();
@@ -115,6 +137,11 @@ public class Util {
 		editor.apply();
 	}
 
+	/**
+	 * Scrive un intero dal registry.
+	 * @param keyValue
+	 * @param value
+	 */
 	public static void setRegistryValue(String keyValue, int value) {
 		SharedPreferences sp = MyApp.getContext().getSharedPreferences(KEY_SHARED_PREFS, 0);
 		SharedPreferences.Editor editor = sp.edit();
@@ -122,28 +149,54 @@ public class Util {
 		editor.apply();
 	}
 
+	/**
+	 * Scrive una Stringa dal registry.
+	 * @param keyValue
+	 * @param stringValue
+	 */
 	public static void setRegistryValue(String keyValue, String stringValue) {
 		SharedPreferences sp = MyApp.getContext().getSharedPreferences(KEY_SHARED_PREFS, 0);
 		SharedPreferences.Editor editor = sp.edit();
 	    editor.putString(keyValue, stringValue);
 	    editor.apply();
 	}
-
+	/**
+	 * Legge un intero dal registry.
+	 * @param keyValue
+	 * @return
+	 */
 	public static int getRegistryIntValue(String keyValue) {
 		SharedPreferences sp = MyApp.getContext().getSharedPreferences(KEY_SHARED_PREFS, 0);
 		return sp.getInt(keyValue,0);
 	}
 
+	/**
+	 * Legge una Stringa dal registry.
+	 * @param keyValue
+	 * @return
+	 */
 	public static String getRegistryValue(String keyValue) {
 		SharedPreferences sp = MyApp.getContext().getSharedPreferences(KEY_SHARED_PREFS, 0);
 		return sp.getString(keyValue, "");
 	}
 
+	/**
+	 * Legge un boolean dal Registry.
+	 * @param keyValue
+	 * @param defaultValue
+	 * @return
+	 */
 	public static boolean getRegistryValue(String keyValue, boolean defaultValue) {
 		SharedPreferences sp = MyApp.getContext().getSharedPreferences(KEY_SHARED_PREFS, 0);
 		return sp.getBoolean(keyValue, defaultValue);
 	}
 
+	/**
+	 * Momorizza un array di bytes in un file.
+	 * @param fileName		Path del file in cui memorizzare l'array.
+	 * @param buffer		Array di bytes da memorizzare.
+	 * @return			true in caso di successo o false in caso di errore.
+	 */
 	public static boolean storeFile(String fileName, byte[] buffer) {
 		try {
 			Log.d(TAG, "Store file " + fileName);
@@ -161,6 +214,12 @@ public class Util {
 		}
     }
 
+	/**
+	 * Comprime inputFile e lo memorizza in outputFile.
+	 * @param inputFile		path del file da comprimere.
+	 * @param outputFile	pathe del file di destinazione.
+	 * @return	true in caso di successo o false in caso di errore.
+	 */
 	public static boolean zipFile(String inputFile, String outputFile) {
 		final int BUFFER = 2048;
 
@@ -189,6 +248,12 @@ public class Util {
 		return true;
 	}
 
+	/**
+	 * restutuisce la differenza in ore fra due timestamp in formato Time Unix (millisecondi).
+	 * @param t1	primo timestamp.
+	 * @param t2	secondo timestamp.
+	 * @return		differenza in ore.
+	 */
     public static int getDiffHours(long t1, long t2) {
         int result = 0;
         try {
@@ -210,6 +275,9 @@ public class Util {
 		setRegistryValue(Util.KEY_ROCHE_DEMO_MODE, demoMode);
 	}
 
+	/**
+	 * Resetta tutti gli i MAC address dei devices Blutooth memorizzati.
+	 */
 	public static void resetBTAddresses() {
 		DbManager.getDbManager().resetAllBtAddressDevice();
 	}

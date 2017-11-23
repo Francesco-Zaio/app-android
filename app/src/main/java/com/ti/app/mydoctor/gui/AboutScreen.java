@@ -13,8 +13,6 @@ import com.ti.app.mydoctor.R;
 import com.ti.app.mydoctor.AppResourceManager;
 import com.ti.app.telemed.core.common.User;
 import com.ti.app.telemed.core.dbmodule.DbManager;
-import com.ti.app.telemed.core.exceptions.DbException;
-import com.ti.app.telemed.core.util.GWConst;
 
 
 public class AboutScreen extends AppCompatActivity {

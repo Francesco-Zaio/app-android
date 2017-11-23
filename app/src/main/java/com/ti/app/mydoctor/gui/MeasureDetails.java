@@ -14,7 +14,7 @@ import com.ti.app.telemed.core.common.Patient;
 import com.ti.app.telemed.core.dbmodule.DbManager;
 import com.ti.app.mydoctor.gui.listadapter.MeasureDetailsListAdapter;
 import com.ti.app.mydoctor.util.AppUtil;
-import com.ti.app.telemed.core.xmlmodule.XmlManager;
+import com.ti.app.telemed.core.util.Util;
 
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -73,12 +73,11 @@ public class MeasureDetails extends ListActivity {
 			patientNameTV.setText(patientName);
 			
 			//Setta la data
-			Date d = XmlManager.getXmlManager().parseDate(currentMeasure.getTimestamp());
+			Date d = Util.parseTimestamp(currentMeasure.getTimestamp());
 			String date = getDate(d);
 			String hour = getHour(d);
 			TextView dateText = (TextView)findViewById(R.id.dataValue);
 			dateText.setText(date + " " + hour);
-
 			
 			//Setta il listener per il buttone cancellazione misura
 			ImageButton buttonCancel = (ImageButton)findViewById(R.id.imageButtonCancel);

@@ -44,8 +44,6 @@ import com.ti.app.telemed.core.common.UserPatient;
 import com.ti.app.telemed.core.dbmodule.DbManager;
 import com.ti.app.telemed.core.measuremodule.MeasureManager;
 import com.ti.app.telemed.core.usermodule.UserManager;
-import com.ti.app.telemed.core.exceptions.DbException;
-import com.ti.app.telemed.core.util.GWConst;
 import com.ti.app.mydoctor.devicemodule.DeviceManager;
 import com.ti.app.mydoctor.gui.customview.ActionBarListActivity;
 import com.ti.app.mydoctor.gui.customview.GWTextView;
@@ -129,13 +127,10 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
         }
 
 		deviceManager = MyDoctorApp.getDeviceManager();
-		deviceManager.setHandler(deviceManagerHandler);	
-		
-		try {
-			setupDeviceList();
-		} catch (DbException e) {
-			e.printStackTrace();
-		} 
+		deviceManager.setHandler(deviceManagerHandler);
+
+		setupDeviceList();
+
 	}
 	
 	@Override
@@ -161,27 +156,22 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
 		AdapterContextMenuInfo info = (AdapterContextMenuInfo) menuInfo;
 		selectedMeasureType = measureList.get(info.position);
 		selectedMeasurePosition = info.position;
-		
-		try {
-			initDeviceMap();
-			UserDevice pd = deviceMap.get(selectedMeasureType);
-			
-			MenuInflater inflater = getMenuInflater();
-			
-			inflater.inflate(R.menu.context_menu_device_settings_advanced, menu);
-			menu.setHeaderTitle(AppResourceManager.getResource().getString("measureType." + selectedMeasureType));
-			menu.setHeaderIcon(AppUtil.getSmallIconId(selectedMeasureType));
-			
-			if (pd.getBtAddress() == null){
-				menu.setGroupVisible(R.id.pair_group, false);
-			}
-			
-			if (AppUtil.isCamera(pd.getDevice())) {
-				menu.setGroupVisible(R.id.pair_group, false);
-				menu.setGroupVisible(R.id.select_model_group, false);				
-			}
-		} catch (DbException e) {
-			e.printStackTrace();
+
+		initDeviceMap();
+		UserDevice pd = deviceMap.get(selectedMeasureType);
+
+		MenuInflater inflater = getMenuInflater();
+		inflater.inflate(R.menu.context_menu_device_settings_advanced, menu);
+		menu.setHeaderTitle(AppResourceManager.getResource().getString("measureType." + selectedMeasureType));
+		menu.setHeaderIcon(AppUtil.getSmallIconId(selectedMeasureType));
+
+		if (pd.getBtAddress() == null){
+			menu.setGroupVisible(R.id.pair_group, false);
+		}
+
+		if (AppUtil.isCamera(pd.getDevice())) {
+			menu.setGroupVisible(R.id.pair_group, false);
+			menu.setGroupVisible(R.id.select_model_group, false);
 		}
 	}
 	
@@ -211,7 +201,7 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
 	}
 	
 	//Inizializza mappa dei dispositivi
-	private void initDeviceMap() throws DbException {
+	private void initDeviceMap() {
 		deviceMap = new HashMap<>();
 		List<UserDevice> dList = MeasureManager.getMeasureManager().getCurrentUserDevices();
 		for (UserDevice pDevice : dList) {
@@ -223,7 +213,7 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
 	}
 	
 	//Inizializza per un dato dispositivo la mappa dei modelli
-	private void initMeasureModelsMap(String userId) throws DbException {
+	private void initMeasureModelsMap(String userId) {
 		measureModelsMap = new HashMap<>();
 		for (String measure : measureList) {
 			List<UserDevice> modelList = DbManager.getDbManager().getModelsForMeasure(measure, userId);
@@ -246,7 +236,7 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
 		return map;
 	}	
 	
-	private void setupDeviceList() throws DbException {		
+	private void setupDeviceList() {
 		User defaultUser = DbManager.getDbManager().getUser( DbManager.DEFAULT_USER_ID );
 		if(defaultUser != null){
 			//L'utente corrente diventa utente attivo
@@ -297,11 +287,7 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
 					int position, long id) {
 				Log.i(TAG, "position: "+position);
 				Log.i(TAG, "parent.getItemAtPosition: "+parent.getItemAtPosition(position));
-				try {
-					initDeviceMap();
-				} catch (DbException e) {
-                    e.printStackTrace();
-				}
+				initDeviceMap();
 				
 				if(!deviceManager.isOperationRunning()){
 					selectedMeasureType = measureList.get(position);

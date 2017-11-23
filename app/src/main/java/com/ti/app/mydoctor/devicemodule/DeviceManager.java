@@ -16,9 +16,9 @@ import com.ti.app.telemed.core.btmodule.DeviceListener;
 import com.ti.app.telemed.core.common.Measure;
 import com.ti.app.telemed.core.common.User;
 import com.ti.app.telemed.core.common.UserDevice;
-import com.ti.app.telemed.core.dbmodule.DbManager;
 import com.ti.app.mydoctor.gui.DeviceScanActivity;
 import com.ti.app.mydoctor.util.AppConst;
+import com.ti.app.telemed.core.measuremodule.MeasureManager;
 
 
 public class DeviceManager implements DeviceListener {
@@ -201,7 +201,7 @@ public class DeviceManager implements DeviceListener {
     public void setBtMAC(String aMac) {
         Log.i(TAG, "setBtMac: " + aMac);
         currentDevice.setBtAddress(aMac);
-        DbManager.getDbManager().updateBtAddressDevice(currentDevice);
+        MeasureManager.getMeasureManager().updateBtAddressDevice(currentDevice);
     }
 
     @Override

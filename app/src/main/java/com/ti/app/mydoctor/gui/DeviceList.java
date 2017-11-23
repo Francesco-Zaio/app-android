@@ -69,7 +69,6 @@ import android.widget.Toast;
 import com.ti.app.mydoctor.R;
 import com.ti.app.mydoctor.AppResourceManager;
 import com.ti.app.mydoctor.util.AppUtil;
-import com.ti.app.telemed.core.common.ECGDrawData;
 import com.ti.app.telemed.core.common.Measure;
 import com.ti.app.telemed.core.common.MeasureDetail;
 import com.ti.app.telemed.core.common.Patient;
@@ -79,8 +78,6 @@ import com.ti.app.telemed.core.common.UserPatient;
 import com.ti.app.telemed.core.dbmodule.DbManager;
 import com.ti.app.telemed.core.measuremodule.MeasureManager;
 import com.ti.app.telemed.core.usermodule.UserManager;
-import com.ti.app.telemed.core.xmlmodule.XmlManager;
-import com.ti.app.telemed.core.exceptions.DbException;
 import com.ti.app.telemed.core.util.GWConst;
 import com.ti.app.mydoctor.MyDoctorApp;
 import com.ti.app.mydoctor.util.AppConst;
@@ -136,7 +133,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
     private static final int REQUEST_SCAN_DEVICES = 4;
     public static final int PATIENT_SELECTION = 6;
     public static final int PATIENT_SELECTION_2 = 7;
-    public static final int MANUAL_MEASURE_ENTRY = 9;
+    public static final int MANUAL_TEMPERATURE_ENTRY = 9;
         
     //Dialog
     private static final int MEASURE_RESULT_DIALOG = 1;
@@ -753,7 +750,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                 break;
             case ITEM_DEVICES_MANAGEMENT:
                 //Verifica che l'utente attivo sia quello di default
-                User loggedUser = DbManager.getDbManager().getCurrentUser();
+                User loggedUser = UserManager.getUserManager().getCurrentUser();
                 if( loggedUser == null || DbManager.DEFAULT_USER_ID.equalsIgnoreCase(loggedUser.getId())){
                     //Non ci sono utenti registrati, quindi crea l'utente di default
                     try {
@@ -1316,11 +1313,8 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 
 		//Rimuove paziente e utenti
 		UserManager.getUserManager().setCurrentPatient(null);
-		try {
-            DbManager.getDbManager().setCurrentUser(null);
-        } catch (Exception e) {
-            Log.e(TAG, "DbManager.getDbManager().setCurrentUser(null): Error");
-        }
+        DbManager.getDbManager().setCurrentUser(null);
+
 	}
 
 	private void executeOperation() {
@@ -1389,7 +1383,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
             deviceManager.setCurrentDevice(uDevice);
             if (uDevice.getMeasure().equalsIgnoreCase(GWConst.KMsrTemp)) {
                 Intent intent = new Intent(DeviceList.this, ManualTemperatureActivity.class);
-                startActivityForResult(intent, MANUAL_MEASURE_ENTRY);
+                startActivityForResult(intent, MANUAL_TEMPERATURE_ENTRY);
             }
         }
     }
@@ -1531,12 +1525,10 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
     		}
             refreshList();
     		break;
-    	case MANUAL_MEASURE_ENTRY:
+    	case MANUAL_TEMPERATURE_ENTRY:
     		if(resultCode == RESULT_OK){
-    	         String pkg = getPackageName();
-    	         String measure = data.getExtras().getString( pkg + ".measure" );
-    	         ArrayList<String> values = data.getStringArrayListExtra( pkg + ".values" );
-    	         sendManualMeasure(measure, values);
+                double temp = data.getExtras().getDouble( ManualTemperatureActivity.TEMPERATURE_VALUE );
+                MeasureManager.getMeasureManager().saveManualTemperature(temp, true);
     	     }
     	     if (resultCode == RESULT_CANCELED) {
                  deviceManager.setCurrentDevice(null);
@@ -1790,17 +1782,13 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 				UserManager.getUserManager().setCurrentPatient(null);
 				Log.i(TAG, "userManangerHandler: user changed");
 
-				try {
-                    activity.titleTV.setText(UserManager.getUserManager().getCurrentUser().getName() + "\n" + UserManager.getUserManager().getCurrentUser().getSurname());
-                    activity.fitTextInPatientNameLabel(activity.getString(R.string.selectPatient));
-                    activity.myRemoveDialog(PROGRESS_DIALOG);
-                    activity.setupDeviceList();
+				activity.titleTV.setText(UserManager.getUserManager().getCurrentUser().getName() + "\n" + UserManager.getUserManager().getCurrentUser().getSurname());
+				activity.fitTextInPatientNameLabel(activity.getString(R.string.selectPatient));
+				activity.myRemoveDialog(PROGRESS_DIALOG);
+				activity.setupDeviceList();
 
-					//Forzo la ricostruzione del menu
-                    activity.supportInvalidateOptionsMenu();
-				} catch (DbException e) {
-                    activity.showErrorDialog(e.getMessage());
-				}
+				//Forzo la ricostruzione del menu
+				activity.supportInvalidateOptionsMenu();
 
 				if (UserManager.getUserManager().getCurrentUser().getIsPatient()) {
                     activity.currentPatientLL.setVisibility(View.GONE);
@@ -1854,7 +1842,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 		}
 	}
 
-	private void setupDeviceList() throws DbException {
+	private void setupDeviceList() {
 		User currentUser = UserManager.getUserManager().getCurrentUser();
 		if(currentUser != null){
 			//L'utente corrente diventa utente attivo
@@ -2475,30 +2463,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 		});
 		builder.setCancelable(true);
 		builder.show();		
-	}
-
-
-		
-	public void sendManualMeasure(String measure, ArrayList<String> values) {
-        Measure m = new Measure();
-        m.setMeasureType(measure);
-        m.setStandardProtocol(true);
-        m.setDeviceDesc(AppResourceManager.getResource().getString("KMsgManualMeasure"));
-        m.setTimestamp(XmlManager.getXmlManager().getTimestamp(null));
-        m.setFile(null);
-        m.setFileType(null);
-        User u = UserManager.getUserManager().getCurrentUser();
-        m.setIdUser(u.getId());
-        if (u.getIsPatient())
-            m.setIdPatient(u.getId());
-
-        HashMap<String,String> tmpVal = new HashMap<>();
-        tmpVal.put(com.ti.app.telemed.core.util.GWConst.EGwCode_0R, values.get(0));  // peso
-        m.setMeasures(tmpVal);
-        m.setFile(null);
-        m.setFileType(null);
-        m.setFailed(false);
-		deviceManager.showMeasurementResults(m);
 	}
 
 	private void refreshList() {

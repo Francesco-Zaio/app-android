@@ -1,7 +1,5 @@
 package com.ti.app.mydoctor.gui;
 
-import java.util.ArrayList;
-
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Typeface;
@@ -22,14 +20,13 @@ import com.ti.app.mydoctor.AppResourceManager;
 import com.ti.app.mydoctor.gui.customview.CustomKeyboardListener;
 import com.ti.app.mydoctor.gui.customview.GWTextView;
 import com.ti.app.mydoctor.gui.customview.CustomKeyboard;
-import com.ti.app.telemed.core.util.GWConst;
 
 public class ManualTemperatureActivity extends ActionBarActivity implements CustomKeyboardListener {
 
+	static final String TEMPERATURE_VALUE = "TEMPERATURE_VALUE";
+
 	//Elementi che compongono la GUI
-	private GWTextView titleTV;
 	private EditText etTemperature;
-	private CustomKeyboard mCustomKeyboard;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -39,10 +36,7 @@ public class ManualTemperatureActivity extends ActionBarActivity implements Cust
 		
 		//Flag per mantenere attivo lo schermo finchè l'activity è in primo piano
 		getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-				
-		/**
-		 * ACTION BAR
-		 */
+
 		//Inizializza l'ActionBAr
 		ActionBar actionBar = this.getSupportActionBar();
 		//Setta il gradiente di sfondo della action bar
@@ -58,14 +52,13 @@ public class ManualTemperatureActivity extends ActionBarActivity implements Cust
 		//Settare il font e il titolo della Activity
 		LayoutInflater inflator = (LayoutInflater)this.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 		View titleView = inflator.inflate(R.layout.actionbar_title, null);
-		titleTV = (GWTextView)titleView.findViewById(R.id.actionbar_title_label);
+        GWTextView titleTV = (GWTextView)titleView.findViewById(R.id.actionbar_title_label);
 		titleTV.setText(AppResourceManager.getResource().getString("ManualTemperatureDialog.title"));
 		actionBar.setCustomView(titleView);
 		
 		//L'icona dell'App diventa tasto per tornare nella Home
 		actionBar.setHomeButtonEnabled(true);
 		actionBar.setDisplayHomeAsUpEnabled(true);
-		/*************************************************/
 				
 		TextView tempInfoLbl = (TextView) findViewById(R.id.manual_temperature_info_label);
 		tempInfoLbl.setText(AppResourceManager.getResource().getString("ManualTemperatureDialog.temperatureLabel"));
@@ -79,7 +72,7 @@ public class ManualTemperatureActivity extends ActionBarActivity implements Cust
 		degreesLabel.setTypeface(type);	
 		
 		//KEYBOARD
-		mCustomKeyboard= new CustomKeyboard(this, this, R.id.keyboardview, R.xml.keyboard_layout );        
+        CustomKeyboard mCustomKeyboard= new CustomKeyboard(this, this, R.id.keyboardview, R.xml.keyboard_layout );
         mCustomKeyboard.registerEditText(R.id.temperature_edit_text);      
 		
 		//etTemperature.findFocus();
@@ -114,17 +107,13 @@ public class ManualTemperatureActivity extends ActionBarActivity implements Cust
 
 	public void send() {
 		String value = etTemperature.getText().toString();
-		
+
 		if(isValidValue(value)){
-			ArrayList<String> values = new ArrayList<String>();					
-			values.add(""+value);		
-						
+			value = value.replace(",",".");
+			Double temp = Double.parseDouble(value);
 			Intent intent = new Intent();
-			String pkg = getPackageName();
-			intent.putExtra(pkg + ".measure", GWConst.KMsrTemp);
-			intent.putStringArrayListExtra(pkg + ".values", values);
+			intent.putExtra(TEMPERATURE_VALUE, temp);
 			setResult(RESULT_OK, intent);
-			
 			finish();
 		} else {
 			etTemperature.setError("Errore");

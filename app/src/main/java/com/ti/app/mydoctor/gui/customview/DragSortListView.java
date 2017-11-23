@@ -3107,7 +3107,7 @@ public class DragSortListView extends ListView {
 
                 mNumFlushes++;
             } catch (IOException e) {
-                // do nothing
+                e.printStackTrace();
             }
         }
 

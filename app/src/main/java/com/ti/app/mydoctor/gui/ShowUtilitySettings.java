@@ -210,8 +210,6 @@ public class ShowUtilitySettings extends ActionBarActivity {
 				ServerConf sc = MyDoctorApp.getConfigurationManager().getConfiguration();
 				sc.setIp(hostEt.getText().toString());
 				sc.setPort(portEt.getText().toString());
-				sc.setTargetCfg(sc.getTargetCfgDef());
-				sc.setTargetSend(sc.getTargetSendDef());
 				MyDoctorApp.getConfigurationManager().updateConfiguration(sc);
 				Util.setDemoRocheMode(demoRocheSw.isChecked());
 				if (btAddrResetSw.isChecked())

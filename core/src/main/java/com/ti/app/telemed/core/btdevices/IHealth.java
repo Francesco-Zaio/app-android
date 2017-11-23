@@ -232,6 +232,9 @@ public class IHealth extends DeviceHandler {
                     msg.what = HANDLER_DISCONNECTED;
                     devOpHandler.sendMessage(msg);
                     break;
+                case iHealthDevicesManager.DEVICE_STATE_CONNECTIONFAIL:
+                    devOpHandler.sendEmptyMessage(HANDLER_ERROR);
+                    break;
             }
         }
     };

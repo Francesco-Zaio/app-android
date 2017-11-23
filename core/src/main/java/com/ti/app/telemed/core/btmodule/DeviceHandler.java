@@ -89,20 +89,21 @@ public abstract class DeviceHandler {
 	}
 
     /**
-     * Specifica il tipo di operazione che deve essere effettuata sul dispositivo
+     * Specifica il tipo di operazione che deve essere effettuata sul dispositivo.
      */
 	public enum OperationType {
         /**
-         * Eseguire una misura
+         * Eseguire una misura.
          */
 		Measure,
         /**
-         * Eseguire solo il Pairing
+         * Eseguire solo il Pairing.
          */
 		Pair,
         /**
          * Eseguire la configurazione del dispositivo.
-         * Questa operazione è necessaria solo per alcuni dispositivi. (es. spirometro per cui devono venire preventivamente configurati i dati del paziente)
+         * Questa operazione è necessaria solo per alcuni dispositivi. (es. spirometro per cui
+         * devono venire preventivamente configurati i dati del paziente).
          */
 		Config
 	}
@@ -123,7 +124,7 @@ public abstract class DeviceHandler {
      *
      * @param listener Istanza di una classe che implementa l'interfaccia {@link DeviceListener} che
      *                 ricevera' le notifiche durante l'esecuzione dell'operazione sul dispositivo.
-     * @param ud       UserDevice {@link com.ti.app.telemed.core.common.UserDevice} che deve essere gestito dalla nuova istanza di DeviceHandler
+     * @param ud       UserDevice {@link com.ti.app.telemed.core.common.UserDevice} che deve essere gestito dalla nuova istanza di DeviceHandler.
      * @return         La nuova istanza di DeviceHandler o <code>null</code> in caso di errore.
      */
     public static DeviceHandler getInstance(DeviceListener listener, UserDevice ud) {
@@ -155,8 +156,8 @@ public abstract class DeviceHandler {
     /**
      * Indica se, prima di eseguire una misura, e' necessario eseguire il pairing con il dispositivo.
      *
-     * @param  ud {@see com.ti.app.telemed.core.common.UserDevice} a cui si riferisce la richiesta
-     * @return    <code>true</code> nel caso il pairing sia necessario <code>false</code> in caso contrario
+     * @param  ud {@see com.ti.app.telemed.core.common.UserDevice} a cui si riferisce la richiesta.
+     * @return    <code>true</code> nel caso il pairing sia necessario <code>false</code> in caso contrario.
      */
     public static boolean needPairing(UserDevice ud){
         try {
@@ -179,7 +180,7 @@ public abstract class DeviceHandler {
      * Indica se, prima di eseguire una misura, e' necessario eseguire la configurazione del dispositivo.
      *
      * @param  ud {@see com.ti.app.telemed.core.common.UserDevice} a cui si riferisce la richiesta.
-     * @return    <code>true</code> nel caso la configurazione sia necessaria <code>false</code> in caso contrario
+     * @return    <code>true</code> nel caso la configurazione sia necessaria <code>false</code> in caso contrario.
      */
     public static boolean needConfig(UserDevice ud){
         try {
@@ -207,21 +208,21 @@ public abstract class DeviceHandler {
      * In questo caso dovra' poi essere invocato il metodo {@link #selectDevice(BluetoothDevice bd) selectDevice}
      * per indicare il dispositivo selezionato per eseguire l'operazione.
      *
-     * @param  ot               {@see OperationType} tipo di operazione che deve essere eseguita.
-     * @param  btSearchListener listenere che implementa l'interfaccia {@see com.ti.app.telemed.core.btmodule.BTSearcherEventListener}
+     * @param  ot               {@link OperationType} tipo di operazione che deve essere eseguita.
+     * @param  btSearchListener {@link BTSearcherEventListener} listener che viene notificato durante il discovery.
      * @return                  <code>true</code> se l'operazione viene avviata o <code>false</code> in caso di errore.
      */
     abstract public boolean startOperation(OperationType ot, BTSearcherEventListener btSearchListener);
 
     /**
-     * Termina l'operazione in corso
+     * Termina l'operazione in corso.
      */
     abstract public void stopOperation();
 
     /**
      * Permette di indicare il dispositivo bluetooth su cui eseguire l'operazione avviata con
      * il metodo {@link #startOperation(OperationType ot, BTSearcherEventListener btSearchListener) startOperation}
-     * @param bd dispositivo selezionato
+     * @param bd {@link BluetoothDevice} dispositivo selezionato.
      */
     abstract public void selectDevice(BluetoothDevice bd);
 
@@ -236,7 +237,7 @@ public abstract class DeviceHandler {
     abstract public void cancelDialog();
 
     /**
-     * Indica se è in corso un operazione
+     * Indica se è in corso un operazione.
      * @return      <code>true</code> se c'e' un operazione avviata altrimenti <code>false</code>.
      */
     public boolean operationRunning() {

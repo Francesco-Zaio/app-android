@@ -143,15 +143,6 @@ public class UserManager {
 	}
 
     /**
-     * Restituisce lo User con l'id specificato corrente loggato
-     * @param id            Identificaticvo utente da caricare
-     * @return              Lo User corrispondente o null se non esiste
-     */
-	public User  getUser(String id) {
-        return DbManager.getDbManager().getUser(id);
-    }
-
-    /**
      * Effettua l'autenticazione verso la piattaforma utilizzando le credenziali passate.
      * L'operazione e' asincrona e l'esito viene notificato all'Handler passato
      * precedentemente con il metodo {@link #setHandler(Handler handler) setHandler}.

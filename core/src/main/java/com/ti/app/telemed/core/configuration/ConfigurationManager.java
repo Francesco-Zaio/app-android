@@ -5,7 +5,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.URI;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -41,20 +41,8 @@ public class ConfigurationManager {
 	private static final String PORT = "port";
 	private static final String TARGETCFG = "targetCfg";
 	private static final String TARGETSEND = "targetSend";
-    private static final String IP_DEF = "IP_def";
-    private static final String PORT_DEF = "port_def";
-    private static final String TARGETCFG_DEF = "targetCfg_def";
-	private static final String TARGETSEND_DEF = "targetSend_def";
 
-	private String ipValue;
-	private String portValue;
-	private String targetCfgValue;
-    private String targetSendValue;
-
-	private String ipDefaultValue;
-	private String portDefaultValue;
-	private String targetCfgDefaultValue;
-    private String targetSendDefaultValue;
+    private ServerConf serverConf, defaultServerConf = null;
 
 	private Logger logger = Logger.getLogger(ConfigurationManager.class.getName());
 
@@ -140,21 +128,21 @@ public class ConfigurationManager {
 	}
 
     private void readConfigurations() throws  IOException {
-        ServerConf dbServerConf = DbManager.getDbManager().getServerConf();
-        if (dbServerConf != null) {
-            setDbServerConf(dbServerConf);
-        } else {
-            readIniFile();
-            insertDbServerConf();
+        defaultServerConf = readIniFile();
+        serverConf = DbManager.getDbManager().getServerConf();
+        if (serverConf == null) {
+            serverConf = defaultServerConf;
+            DbManager.getDbManager().insertServerConf(serverConf);
         }
     }
 
-    private void readIniFile() throws IOException {
+    private ServerConf readIniFile() throws IOException {
 		String fileBuffer;
         String currentSection, key, value;
         boolean inSection = false;
         key = null;
         value = null;
+        ServerConf sc = new ServerConf();
         try {
         	// open the file
         	Resources resources = MyApp.getContext().getResources();
@@ -197,21 +185,13 @@ public class ConfigurationManager {
                                 }
                                 if (hadTokens) {
                                 	if (key.equalsIgnoreCase(IP)) {
-                                        ipValue = value;
+                                        sc.setIp(value);
                                 	} else if (key.equalsIgnoreCase(PORT)) {
-                                        portValue = value;
+                                        sc.setPort(value);
                                 	} else if (key.equalsIgnoreCase(TARGETCFG)) {
-                                        targetCfgValue = value;
+                                        sc.setTargetCfg(value);
                                 	} else if (key.equalsIgnoreCase(TARGETSEND)) {
-                                        targetSendValue = value;
-                                    } else if (key.equalsIgnoreCase(IP_DEF)) {
-                                        ipDefaultValue = value;
-                                    } else if (key.equalsIgnoreCase(PORT_DEF)) {
-                                        portDefaultValue = value;
-                                    } else if (key.equalsIgnoreCase(TARGETCFG_DEF)) {
-                                        targetCfgDefaultValue = value;
-                                    } else if (key.equalsIgnoreCase(TARGETSEND_DEF)) {
-                                        targetSendDefaultValue = value;
+                                        sc.setTargetSend(value);
                                     }
                                 }
                             }
@@ -219,11 +199,9 @@ public class ConfigurationManager {
                     }
                 }
             }
-            
             // close all opened reader
             in.close();
             br.close();
-            
        } catch (FileNotFoundException fnfe) {
             logger.log(Level.SEVERE,"FILE NON ESISTENTE");
             throw fnfe;
@@ -235,37 +213,8 @@ public class ConfigurationManager {
         	logger.log(Level.SEVERE,"ERROR PARSING INI FILE:" + e.getMessage());
             throw e;
 		}
+		return sc;
     }
-
-	private void insertDbServerConf() {
-		ServerConf sc = new ServerConf();
-		sc.setIp(ipValue);
-		sc.setPort(portValue);
-		sc.setTargetCfg(targetCfgValue);
-        sc.setTargetSend(targetSendValue);
-		sc.setIpDef(ipDefaultValue);
-		sc.setPortDef(portDefaultValue);
-        sc.setTargetCfgDef(targetCfgDefaultValue);
-        sc.setTargetSendDef(targetSendDefaultValue);
-		DbManager.getDbManager().insertServerConf(sc);
-		logger.log(Level.INFO, "Configuration inserted into DB");
-	}
-
-	private void setDbServerConf(ServerConf dbServerConf) {
-		// Sovrascrivo tutti i valori che ho letto dal file ini con quelli del DB
-
-		ipValue = dbServerConf.getIp();
-		portValue = dbServerConf.getPort();
-		targetCfgValue = dbServerConf.getTargetCfg();
-		targetSendValue = dbServerConf.getTargetSend();
-
-		ipDefaultValue = dbServerConf.getIpDef();
-		portDefaultValue = dbServerConf.getPortDef();
-		targetCfgDefaultValue = dbServerConf.getTargetCfgDef();
-		targetSendDefaultValue = dbServerConf.getTargetSendDef();
-
-		logger.log(Level.INFO, "Configuration loaded from DB");
-	}
 
 
     /**
@@ -273,52 +222,60 @@ public class ConfigurationManager {
      * @return      {@link ServerConf}
      */
     public ServerConf getConfiguration() {
-        return DbManager.getDbManager().getServerConf();
+        return new ServerConf(serverConf.getIp(),
+                serverConf.getPort(),
+                serverConf.getTargetCfg(),
+                serverConf.getTargetSend());
     }
 
     /**
      * Aggiorna la configurazione sul DB.
-     *
      * @param conf      Configurzione da aggiornare.
      */
     public void updateConfiguration(ServerConf conf) {
-        ipValue = conf.getIp();
-        portValue = conf.getPort();
-        targetCfgValue = conf.getTargetCfg();
-        DbManager.getDbManager().updateServerConf(conf);
-        logger.log(Level.INFO, "Configuration updated");
+        serverConf.setIp(conf.getIp());
+        serverConf.setPort(conf.getPort());
+        serverConf.setTargetCfg(conf.getTargetCfg());
+        serverConf.setTargetSend(conf.getTargetSend());
+        DbManager.getDbManager().updateServerConf(serverConf);
     }
 
     /**
      * Resetta la configurazione ai valori di default
      */
     public void resetConfiguration() {
-        DbManager.getDbManager().resetServerConf();
-        ServerConf dbServerConf = DbManager.getDbManager().getServerConf();
-        setDbServerConf(dbServerConf);
+        serverConf.setIp(defaultServerConf.getIp());
+        serverConf.setPort(defaultServerConf.getPort());
+        serverConf.setTargetCfg(defaultServerConf.getTargetCfg());
+        serverConf.setTargetSend(defaultServerConf.getTargetSend());
+        DbManager.getDbManager().updateServerConf(serverConf);
     }
 
     /**
      * Restituisce la URL a cui inviare le richieste dei dati di configurazione
-     * @return      {@link URL}
-     * @throws Exception
+     * @return      {@link URL} o null in caso di errore
      */
-	public URL getConfigurationPlatformUrl() throws Exception {
-        ServerConf sc = getConfiguration();
-        URL url = new URL("https",sc.getIp(),Integer.parseInt(sc.getPort()),sc.getTargetCfg());
-        logger.log(Level.INFO, "Configuration Platfom URL = " + url.toString());
-		return url;
+	public URL getConfigurationPlatformUrl() {
+        try {
+            URL url = new URL("https", serverConf.getIp(), Integer.parseInt(serverConf.getPort()), serverConf.getTargetCfg());
+            logger.log(Level.INFO, "Configuration Platfom URL = " + url.toString());
+            return url;
+        } catch (MalformedURLException e) {
+            return null;
+        }
 	}
 
     /**
      * Restituisce la URL a cui inviare le misure
-     * @return      {@link URL}
-     * @throws Exception
+     * @return      {@link URL} o null in caso di errore
      */
-    public URL getSendPlatformUrl() throws Exception {
-        ServerConf sc = getConfiguration();
-        URL url = new URL("https",sc.getIp(),Integer.parseInt(sc.getPort()),sc.getTargetSend());
-        logger.log(Level.INFO, "Configuration Platfom URL = " + url.toString());
-        return url;
+    public URL getSendPlatformUrl() {
+        try {
+            URL url = new URL("https", serverConf.getIp(), Integer.parseInt(serverConf.getPort()), serverConf.getTargetSend());
+            logger.log(Level.INFO, "Configuration Platfom URL = " + url.toString());
+            return url;
+        }catch (MalformedURLException e) {
+            return null;
+        }
     }
 }

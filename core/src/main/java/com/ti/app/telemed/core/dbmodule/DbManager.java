@@ -62,12 +62,7 @@ public class DbManager {
             + "PROTOCOL text, "
             + "PORT text, "
             + "TARGETCFG text, "
-            + "TARGETSEND text, "
-            + "IP_DEF text, "
-            + "PROTOCOL_DEF text, "
-            + "PORT_DEF text, "
-            + "TARGETCFG_DEF text, "
-            + "TARGETSEND_DEF text )";
+            + "TARGETSEND text )";
 
     private static final String CREATE_MEASURE_PROTOCOL_CFG_TBL = "CREATE table MEASURE_PROTOCOL_CFG ("
             + "UPDATE_INTERVAL integer, "
@@ -545,10 +540,6 @@ public class DbManager {
             values.put("PORT", sc.getPort());
             values.put("TARGETCFG", sc.getTargetCfg());
             values.put("TARGETSEND", sc.getTargetSend());
-            values.put("IP_DEF", sc.getIpDef());
-            values.put("PORT_DEF", sc.getPortDef());
-            values.put("TARGETCFG_DEF", sc.getTargetCfgDef());
-            values.put("TARGETSEND_DEF", sc.getTargetSendDef());
             mDb.insert("SERVER_CONF", null, values);
         }
 	}
@@ -564,54 +555,7 @@ public class DbManager {
             logger.log(Level.INFO, "ServerConf updated");
         }
 	}
-	
-	/**
-	 * Metodo che permette di ottenere le impostazioni di default della configurazione del server
-	 * @return ServerConf
-	 */
-	public ServerConf getDefaultServerConf() {
-        synchronized (this) {
-            ServerConf sc = null;
-            Cursor c = null;
-            try {
-                c = mDb.query("SERVER_CONF", new String[]{"IP_DEF", "PROTOCOL_DEF", "PORT_DEF", "TARGETCFG_DEF", "TARGETSEND_DEF"}, null, null, null, null, null);
-                if (c.moveToFirst()) {
-                    int ipColumnIndex = c.getColumnIndexOrThrow("IP_DEF");
-                    int portColumnIndex = c.getColumnIndexOrThrow("PORT_DEF");
-                    int targetCfgColumnIndex = c.getColumnIndexOrThrow("TARGETCFG_DEF");
-                    int targetSendColumnIndex = c.getColumnIndexOrThrow("TARGETSEND_DEF");
 
-                    String ip = c.getString(ipColumnIndex);
-                    String port = c.getString(portColumnIndex);
-                    String targetCfg = c.getString(targetCfgColumnIndex);
-                    String targetSend = c.getString(targetSendColumnIndex);
-
-                    sc = new ServerConf(ip, port, targetCfg, targetSend);
-                }
-            } finally {
-                if (c != null)
-                    c.close();
-            }
-            return sc;
-        }
-	}
-	
-	/**
-	 * Metodo che permette di ripristinare le impostazioni del server ai valori iniziali
-	 */
-	public void resetServerConf() {
-        synchronized (this) {
-            ServerConf defaultSC = getDefaultServerConf();
-            ContentValues values = new ContentValues();
-            values.put("IP", defaultSC.getIpDef());
-            values.put("PORT", defaultSC.getPortDef());
-            values.put("TARGETCFG", defaultSC.getTargetCfgDef());
-            values.put("TARGETSEND", defaultSC.getTargetSendDef());
-            mDb.update("SERVER_CONF", values, null, null);
-        }
-	}
-
-    ///////////
     private ServerConf getServerConfObject(Cursor c) {
         synchronized (this) {
             ServerConf ret = new ServerConf();
@@ -619,10 +563,6 @@ public class DbManager {
             ret.setPort(c.getString(c.getColumnIndex("PORT")));
             ret.setTargetCfg(c.getString(c.getColumnIndex("TARGETCFG")));
             ret.setTargetSend(c.getString(c.getColumnIndex("TARGETSEND")));
-            ret.setIpDef(c.getString(c.getColumnIndex("IP_DEF")));
-            ret.setPortDef(c.getString(c.getColumnIndex("PORT_DEF")));
-            ret.setTargetCfgDef(c.getString(c.getColumnIndex("TARGETCFG_DEF")));
-            ret.setTargetSendDef(c.getString(c.getColumnIndex("TARGETSEND_DEF")));
             return ret;
         }
     }
@@ -764,7 +704,7 @@ public class DbManager {
         }
 	}
 
-    private User createDefaultUser() {
+    public User createDefaultUser() {
         Vector<Object> dataContainer = new Vector<>();
 
         User defaultUser = new User();

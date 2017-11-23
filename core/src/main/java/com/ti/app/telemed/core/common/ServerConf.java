@@ -5,19 +5,15 @@ public class ServerConf {
 	private String port;
 	private String targetCfg;
 	private String targetSend;
-	private String ipDef;
-	private String portDef;
-	private String targetCfgDef;
-	private String targetSendDef;
-
-	public ServerConf(String ip, String port, String targetCfg, String targetSend) {
-		this.ipDef = ip;
-		this.portDef = port;
-		this.targetCfgDef = targetCfg;
-		this.targetSendDef = targetSend;
-	}
 
 	public ServerConf() {
+	}
+
+	public ServerConf(String ip, String port, String targetCfg, String targetSend) {
+		this.ip = ip;
+		this.port = port;
+		this.targetCfg = targetCfg;
+		this.targetSend = targetSend;
 	}
 
 	public String getIp() {
@@ -50,38 +46,6 @@ public class ServerConf {
 
 	public void setTargetSend(String targetSend) {
 		this.targetSend = targetSend;
-	}
-
-	public String getIpDef() {
-		return ipDef;
-	}
-
-	public void setIpDef(String ipDef) {
-		this.ipDef = ipDef;
-	}
-
-	public String getPortDef() {
-		return portDef;
-	}
-
-	public void setPortDef(String portDef) {
-		this.portDef = portDef;
-	}
-
-	public String getTargetCfgDef() {
-		return targetCfgDef;
-	}
-
-	public void setTargetCfgDef(String targetCfgDef) {
-		this.targetCfgDef = targetCfgDef;
-	}
-
-	public String getTargetSendDef() {
-		return targetSendDef;
-	}
-
-	public void setTargetSendDef(String targetSendDef) {
-		this.targetSendDef = targetSendDef;
 	}
 
 	@Override

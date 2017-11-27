@@ -48,6 +48,7 @@
 -keep public class com.ti.app.telemed.core.util.** { *; }
 -keep public class com.ti.app.telemed.core.usermodule.** { *; }
 -keep public class com.ti.app.telemed.core.measuremodule.** { *; }
+-keep public class com.ti.app.telemed.core.devicemodule.** { *; }
 -keep public class com.ti.app.telemed.core.configuration.** { *; }
 -keep public class com.ti.app.telemed.core.common.** { *; }
 -keep public class com.ti.app.telemed.core.btmodule.Device** { *; }

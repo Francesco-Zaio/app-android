@@ -24,7 +24,12 @@ import static com.ti.app.telemed.core.xmlmodule.XmlManager.IMG_FILE_TYPE;
 
 // this is a singleton
 public class WebMessageManager {
-	
+
+    class WebResponse {
+        WebMessageType type;
+        Vector<Object> responseObjects;
+    }
+
 	public enum WebMessageType {
         LOGIN_RESPONSE,
         CONF_UPDATE_RESPONSE,
@@ -37,7 +42,6 @@ public class WebMessageManager {
 	public enum WebMessageRequest {
         LOGIN_CONF_REQUEST,
         CHANGE_PASSWORD_REQUEST,
-        SEND_CFG_REQUEST,
         SEND_MEASURE_REQUEST,
     }
 
@@ -211,58 +215,49 @@ public class WebMessageManager {
 	
 	// this method must evaluate a web message response and return the message type; the result of
 	// evaluation are saved on db if there are
-	public WebMessageType evaluateWebMessageResponse(String responseBody) throws XmlException {
-		WebMessageType ret = WebMessageType.LOGIN_RESPONSE;
+	WebResponse evaluateWebMessageResponse(String responseBody) throws XmlException {
+        WebResponse response = new WebResponse();
+        response.type  = WebMessageType.LOGIN_RESPONSE;
 		xmlManager.parse(responseBody);
 		logger.log(Level.INFO, "WebMessageManager evaluateWebMessageResponse ENTER");
 		logger.log(Level.INFO, "responseTimestamp=" + xmlManager.getResponseTimestamp());
-		SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
-		
-		if (xmlManager.getResponseTimestamp() != null && xmlManager.getResponseTimestamp().length() > 0) {
-			long diffHoursTimestamp = -1;
-			try {
-				diffHoursTimestamp = Util.getDiffHours(new Date().getTime(), sdf.parse(xmlManager.getResponseTimestamp()).getTime());
-			} catch (ParseException e) {
-				e.printStackTrace();
-			}
-			logger.log(Level.INFO, "diffHoursTimestamp=" + diffHoursTimestamp);
-		}
-		
+
 		xmlResultCode = xmlManager.getResponseResultCode();
 		if (xmlResultCode == XmlManager.XmlErrorCode.COMMAND_SUCCESSFULLY_EXEC) {		
 			// a response to a login or a response to configuration or update
-			Vector<Object> tmp = xmlManager.getParsedData();			
-			if (tmp != null) {
+			response.responseObjects = xmlManager.getParsedData();
+			if (response.responseObjects != null) {
                 switch (currentRequest){
                     case SEND_MEASURE_REQUEST:
                         // it was a response to sending measure data and so we have to update the db
                         logger.log(Level.INFO, "WebMessageManager evaluateWebMessageResponse message: " +xmlManager.getResponseMessage());
-                        ret = WebMessageType.SEND_MEASURE_RESPONSE;
+                        response.type = WebMessageType.SEND_MEASURE_RESPONSE;
                         break;
                     case CHANGE_PASSWORD_REQUEST:
-                        ret = WebMessageType.CHANGE_PASSWORD_RESPONSE;
+                        response.type = WebMessageType.CHANGE_PASSWORD_RESPONSE;
                         break;
-                    case SEND_CFG_REQUEST:
                     case LOGIN_CONF_REQUEST:
                         // it was a response to configuration or update and so we have to update the db
-                        ret = WebMessageType.CONF_UPDATE_RESPONSE;
-                        DbManager.getDbManager().updateConfiguration(tmp);
+                        response.type = WebMessageType.CONF_UPDATE_RESPONSE;
                         break;
                 }
 			}
+			else {
+                response.type = WebMessageType.LOGIN_ERROR_RESPONSE;
+            }
 			// if not enter in any if case it was a login response and so the default
 			// return value;
 			
 		} else if (xmlResultCode == XmlManager.XmlErrorCode.BAD_ARGUMENTS) {
-			ret = WebMessageType.LOGIN_ERROR_RESPONSE;
+            response.type = WebMessageType.LOGIN_ERROR_RESPONSE;
 		} else if (xmlResultCode == XmlManager.XmlErrorCode.UNRECOGNIZED_COMMAND) {
 			logger.log(Level.INFO, "WebMessageManager evaluateWebMessageResponse UNRECOGNIZED_COMMAND");
-			ret = WebMessageType.LOGIN_ERROR_RESPONSE;
+            response.type = WebMessageType.LOGIN_ERROR_RESPONSE;
 		} else if (xmlResultCode == XmlManager.XmlErrorCode.EXECUTION_FAILED){
-			ret = WebMessageType.SEND_ERROR_RESPONSE;
+            response.type = WebMessageType.SEND_ERROR_RESPONSE;
 		}
 
-		return ret;
+		return response;
 	}
 	
 	public String getBody() {

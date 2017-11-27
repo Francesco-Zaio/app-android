@@ -10,7 +10,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import com.ti.app.telemed.core.MyApp;
-import com.ti.app.telemed.core.webmodule.WebMessageManager.WebMessageType;
+import com.ti.app.telemed.core.dbmodule.DbManager;
 import com.ti.app.telemed.core.webmodule.webmanagerevents.WebManagerResultEvent;
 import com.ti.app.telemed.core.webmodule.webmanagerevents.WebManagerResultEventListener;
 import com.ti.app.telemed.core.webmodule.webmanagerevents.WebManagerSendingResultEvent;
@@ -25,8 +25,11 @@ import com.ti.app.telemed.core.util.Base64;
 
 // this is a singleton
 public class WebManager implements Runnable, WebSocketTransactionEventListener {
-	
+
 	class WebData {
+        private String login;
+        private String password;
+        private String newPassword;
 		private String authorization;
 		private URL url;
 		private String body;
@@ -158,6 +161,8 @@ public class WebManager implements Runnable, WebSocketTransactionEventListener {
 		synchronized (currT) {
             Log.d(TAG, "askOperatorData enqueued");
             WebData currServed = new WebData();
+            currServed.login = login;
+            currServed.password = password;
             String tmp = String.format("%s:%s", login, password);
             String encoded = Base64.encodeBytes(tmp.getBytes());
             currServed.setAuthorization(encoded);
@@ -177,11 +182,14 @@ public class WebManager implements Runnable, WebSocketTransactionEventListener {
         }
 	}
 
-	public void changePassword(String login, String password, String newPassword, WebManagerResultEventListener listener) throws Exception {
+	public void changePassword(String login, String oldPassword, String newPassword, WebManagerResultEventListener listener) throws Exception {
         synchronized (currT) {
             Log.d(TAG, "changePassword enqueued");
             WebData currServed = new WebData();
-            String tmp = String.format("%s:%s", login, password);
+            currServed.login = login;
+            currServed.password = oldPassword;
+            currServed.newPassword = newPassword;
+            String tmp = String.format("%s:%s", login, oldPassword);
             String encoded = Base64.encodeBytes(tmp.getBytes());
             currServed.setAuthorization(encoded);
             currServed.setUrl(MyApp.getConfigurationManager().getConfigurationPlatformUrl());
@@ -198,31 +206,11 @@ public class WebManager implements Runnable, WebSocketTransactionEventListener {
         }
     }
 
-    /* Invio messaggio con orario schedulazione misure scelto dal paziente
-    public void sendCfg(String login, String password, String schedule, WebManagerResultEventListener listener) throws Exception {
-        synchronized (currT) {
-            WebData currServed = new WebData();
-            String tmp = String.format("%s:%s", login, password);
-            String encoded = Base64.encodeBytes(tmp.getBytes());
-            currServed.setAuthorization(encoded);
-            currServed.setUrl(MyApp.getConfigurationManager().getConfigurationPlatformUrl());
-            webMessageManager.generateSetScheduledWebMessage(schedule);
-            currServed.setContentType(webMessageManager.getContentType());
-            currServed.setBody(webMessageManager.getBody());
-            currServed.setRequestMethod(WebSocket.REQUEST_METHOD_POST);
-            currServed.setWebManagerResultEventListener(listener);
-            // this kind of request is always interactive so add
-            // the request at the top of the List (maximum priority)
-            list.add(0,currServed);
-            Log.d(TAG, "sendCfg enqueued");
-            currT.notifyAll();
-        }
-    }
-    */
-
 	public void sendMeasureData(String login, String password, String xmlMessage, byte[] xmlFileContent, String fileType, WebManagerSendingResultEventListener listener) throws Exception {
 		synchronized (currT) {
             WebData currServed = new WebData();
+            currServed.login = login;
+            currServed.password = password;
             String tmp = String.format("%s:%s", login, password);
             String encoded = Base64.encodeBytes(tmp.getBytes());
             currServed.setAuthorization(encoded);
@@ -383,28 +371,27 @@ public class WebManager implements Runnable, WebSocketTransactionEventListener {
     private void manageResponse() {
         try {
             if (!receiveError) {
-                WebMessageManager.WebMessageType webMsgType = webMessageManager
-                        .evaluateWebMessageResponse(responseBody);
+                WebMessageManager.WebResponse response = webMessageManager.evaluateWebMessageResponse(responseBody);
                 //logger.log(Level.INFO,responseBody);
-                logger.log(Level.INFO, webMsgType.toString());
+                logger.log(Level.INFO, response.type.toString());
 
-                if (webMsgType == WebMessageType.LOGIN_RESPONSE) {
-                    // this response doesn't need other web operations
-                    fireWebAuthenticationSucceeded();
-                } else if (webMsgType == WebMessageType.CHANGE_PASSWORD_RESPONSE) {
-                    // this response needs to deal newly with platform
-                    fireChangePasswordSucceeded();
-                } else if (webMsgType == WebMessageType.CONF_UPDATE_RESPONSE) {
-                    // this response needs to deal newly with platform
-                    fireWebAuthenticationSucceeded();
-                } else if (webMsgType == WebMessageType.SEND_MEASURE_RESPONSE) {
-                    // this response doesn't need other web operations
-                    fireSendingMeasureSucceededSending();
-                } else if (webMsgType == WebMessageType.LOGIN_ERROR_RESPONSE) {
-                    // this response needs to deal newly with platform
-                    receiveError = true;
-                } else if (webMsgType == WebMessageType.SEND_ERROR_RESPONSE) {
-                    receiveError = true;
+                switch (response.type) {
+                    case CONF_UPDATE_RESPONSE:
+                        DbManager.getDbManager().updateConfiguration(response.responseObjects, currServed.login, currServed.password);
+                    case LOGIN_RESPONSE:
+                        fireWebAuthenticationSucceeded();
+                        break;
+                    case CHANGE_PASSWORD_RESPONSE:
+                        DbManager.getDbManager().updateConfiguration(response.responseObjects, currServed.login, currServed.newPassword);
+                        fireChangePasswordSucceeded();
+                        break;
+                    case SEND_MEASURE_RESPONSE:
+                        fireSendingMeasureSucceededSending();
+                        break;
+                    case LOGIN_ERROR_RESPONSE:
+                    case SEND_ERROR_RESPONSE:
+                        receiveError = true;
+                        break;
                 }
             }
             if (receiveError) {

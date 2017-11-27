@@ -18,15 +18,16 @@ import com.ti.app.telemed.core.common.User;
 import com.ti.app.telemed.core.common.UserDevice;
 import com.ti.app.mydoctor.gui.DeviceScanActivity;
 import com.ti.app.mydoctor.util.AppConst;
+import com.ti.app.telemed.core.devicemodule.DeviceManager;
 import com.ti.app.telemed.core.measuremodule.MeasureManager;
+import com.ti.app.telemed.core.usermodule.UserManager;
 
 
-public class DeviceManager implements DeviceListener {
+public class DeviceOperations implements DeviceListener {
 
-	private static final String TAG = "DeviceManager";
+	private static final String TAG = "DeviceOperations";
 
     private UserDevice currentDevice;
-	private User currentUser;
 	private DeviceHandler currentDeviceHandler;
 	private BTSearcherEventListener btSearcherListener;
 	
@@ -46,7 +47,7 @@ public class DeviceManager implements DeviceListener {
 
 	private boolean operationRunning;
 	
-	public DeviceManager() {		
+	public DeviceOperations() {
 	}
 
 	// usa la reflection per invocare il metodo statico needPairing della classe che gestisce il device
@@ -124,10 +125,11 @@ public class DeviceManager implements DeviceListener {
 	}
 	
 	private void startOperation() {
-		Log.i(TAG, "DeviceManager: startOperation");
+		Log.i(TAG, "DeviceOperations: startOperation");
 		if (BluetoothAdapter.getDefaultAdapter().isEnabled()) {
 			if (currentDevice != null) {
-				if (pairingMode || (currentUser != null)) {
+                User currentUser = UserManager.getUserManager().getCurrentUser();
+				if (pairingMode || (currentUser != null && !currentUser.isDefaultUser())) {
 					try {
 						operationRunning = true;
 						executeOp();
@@ -188,20 +190,12 @@ public class DeviceManager implements DeviceListener {
     	}
 	}
 
-	public User getCurrentUser() {
-		return currentUser;
-	}
-
-	public void setCurrentUser(User currentUser) {
-		this.currentUser = currentUser;
-	}
-
     // DeviceListener methods
     @Override
     public void setBtMAC(String aMac) {
         Log.i(TAG, "setBtMac: " + aMac);
         currentDevice.setBtAddress(aMac);
-        MeasureManager.getMeasureManager().updateBtAddressDevice(currentDevice);
+        DeviceManager.getDeviceManager().updateBtAddressDevice(currentDevice);
     }
 
     @Override

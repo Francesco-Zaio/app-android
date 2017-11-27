@@ -27,11 +27,8 @@ import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 
 import com.ti.app.mydoctor.R;
-import com.ti.app.mydoctor.util.AppConst;
 import com.ti.app.mydoctor.AppResourceManager;
 import com.ti.app.telemed.core.common.Patient;
-import com.ti.app.telemed.core.common.UserPatient;
-import com.ti.app.telemed.core.dbmodule.DbManager;
 import com.ti.app.telemed.core.usermodule.UserManager;
 import com.ti.app.mydoctor.gui.alphabeticalindex.IndexableListView;
 import com.ti.app.mydoctor.gui.customview.ActionBarListActivity;
@@ -40,9 +37,7 @@ import com.ti.app.mydoctor.gui.listadapter.PatientListAdapter;
 
 public class SelectPatient extends ActionBarListActivity implements SearchView.OnQueryTextListener {
 
-	public static final String USER_ID = "USER_ID";
 	public static final String PATIENT = "PATIENT";
-	public static final String PATIENT_ID = "PATIENT_ID";
 	
 	private static final String TAG = "SelectPatient";
 	
@@ -54,21 +49,11 @@ public class SelectPatient extends ActionBarListActivity implements SearchView.O
 	private static final String KEY_PATIENT_SURNAME = "patient_surname";
 	private static final String KEY_ID = "id";
 
-	//Elementi che compongono la GUI
-	private GWTextView titleTV;
-	private List<UserPatient> patientList;
-	private List<Patient> patientNameList;
-		
+	private List<Patient> patientList;
 	private List<HashMap<String, String>> fillMaps;
 	private PatientListAdapter patientListAdapter;
 	
 	private boolean hasCurrentPatient;
-	
-	//SEARCH VIEW
-	private SearchView mSearchView;
-	
-	//Nome dell'utente da usare come title dell'activity
-	private CharSequence mCurrentUserName = "TEST";
 	
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -78,10 +63,7 @@ public class SelectPatient extends ActionBarListActivity implements SearchView.O
 
 		//Flag per mantenere attivo lo schermo finchè l'activity è in primo piano
 		getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-				
-		/**
-		 * ACTION BAR
-		 */
+
 		//Inizializza l'ActionBAr
 		ActionBar actionBar = this.getSupportActionBar();
 		//Setta il gradiente di sfondo della action bar
@@ -97,62 +79,40 @@ public class SelectPatient extends ActionBarListActivity implements SearchView.O
 		//Settare il font e il titolo della Activity
 		LayoutInflater inflator = (LayoutInflater)this.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 		View titleView = inflator.inflate(R.layout.actionbar_title, null);
-		titleTV = (GWTextView)titleView.findViewById(R.id.actionbar_title_label);
+		GWTextView titleTV = (GWTextView)titleView.findViewById(R.id.actionbar_title_label);
 		actionBar.setCustomView(titleView);
 		
 		//L'icona dell'App diventa tasto per tornare nella Home
 		actionBar.setHomeButtonEnabled(true);
 		actionBar.setDisplayHomeAsUpEnabled(true);
-		/*************************************************/
-		
+
 		// create the grid item mapping
-		//String[] from = new String[] { KEY_CF, KEY_PATIENT };
-		//int[] to = new int[] { R.id.cf, R.id.patient };
 		String[] from = new String[] { KEY_CF, KEY_PATIENT_SURNAME, KEY_PATIENT_NAME };
 		int[] to = new int[] { R.id.cf, R.id.patient_surname, R.id.patient_name };
 
 		fillMaps = new ArrayList<>();
-
-		String userId = getIntent().getExtras().getString(USER_ID);
-		patientList = DbManager.getDbManager().getUserPatients(userId);
+		patientList = UserManager.getUserManager().getCurrentUser().getPatients();
 		
-		//ricava il nome dell'utente attivo per la title dell'ActionBar
-		mCurrentUserName = UserManager.getUserManager().getCurrentUser().getName() + "\n" + UserManager.getUserManager().getCurrentUser().getSurname();
+        //Nome dell'utente da usare come title dell'activity
+        CharSequence mCurrentUserName = UserManager.getUserManager().getCurrentUser().getName() + "\n" + UserManager.getUserManager().getCurrentUser().getSurname();
 		titleTV.setText(mCurrentUserName);
-		
-		
-		//Ordinamento della lista
-		patientNameList = new ArrayList<Patient>();		
-		for (UserPatient up : patientList) {
-			Patient p;
 
-			p = DbManager.getDbManager().getPatientData(up.getIdPatient());
-			patientNameList.add(p);
-		}
-		Collections.sort(patientNameList, new Comparator() {
-
+		Collections.sort(patientList, new Comparator<Patient>() {
 			@Override
-			public int compare(Object arg0, Object arg1) {
-				// TODO Auto-generated method stub
-				Patient p1 = (Patient)arg0;
-				Patient p2 = (Patient)arg1;
-				
+			public int compare(Patient p1, Patient p2) {
 				int ret = p1.getSurname().compareToIgnoreCase(p2.getSurname());
-				
 				if(ret == 0) {
 					ret = p1.getName().compareToIgnoreCase(p2.getName());
 				}
-				
 				return ret;
 			}
-			
 		});
 		
 		final Patient currentPatient = UserManager.getUserManager().getCurrentPatient();
 		hasCurrentPatient = false;
-		for (Patient p : patientNameList) {
+		for (Patient p : patientList) {
 			if(currentPatient == null || !currentPatient.getId().equals(p.getId())) {
-				HashMap<String, String> map = new HashMap<String, String>();
+				HashMap<String, String> map = new HashMap<>();
 				
 				String cfValue = p.getCf();
 				if (cfValue == null || cfValue.equalsIgnoreCase("null"))
@@ -168,7 +128,6 @@ public class SelectPatient extends ActionBarListActivity implements SearchView.O
 			else
 				hasCurrentPatient = true;
 		}
-		
 
 		IndexableListView lv = (IndexableListView)getListView();
 		lv.setFastScrollEnabled(true);
@@ -179,20 +138,15 @@ public class SelectPatient extends ActionBarListActivity implements SearchView.O
 					Log.i(TAG, "Selezionato paziente corrente. Non faccio nulla");
 				}
 				else {
-					HashMap<String, String> map = fillMaps.get(position);
-					Log.i(TAG, "Nome paziente: " + map.get(KEY_PATIENT));
+                    Patient p = patientList.get(position);
+                    Log.i(TAG, "Nome paziente: " + p.getName());
 					Intent result = new Intent();
-					String idPatient = map.get(KEY_ID);
-					idPatient = idPatient.replace("[", "");
-					idPatient = idPatient.replace("]", "");
-					result.putExtra(PATIENT_ID, idPatient);
-					result.putExtra(PATIENT, map.get(KEY_PATIENT));
+					result.putExtra(PATIENT, p);
 					setResult(RESULT_OK, result);
 					finish();
 				}
 			}
 		});
-		
 		patientListAdapter = new PatientListAdapter(this, fillMaps, R.layout.patient_item, from, to);
 		setListAdapter(patientListAdapter);
 	}	
@@ -200,29 +154,20 @@ public class SelectPatient extends ActionBarListActivity implements SearchView.O
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		super.onCreateOptionsMenu(menu);
-		
-		//MenuInflater menuInflater = getSupportMenuInflater();
 		MenuInflater menuInflater = getMenuInflater();
 		menuInflater.inflate(R.menu.patient_list_menu, menu);
-		
-		//SEARCH VIEW
-		//createSearchView(menu);
-		
 		return true;
 	}
 	
 	@Override
 	public boolean onPrepareOptionsMenu(Menu menu) {
-		
 		super.onPrepareOptionsMenu(menu);
 		createSearchView(menu);
 		return true;
 	}
-	
 
 	private void createSearchView(Menu menu) {
-		//mSearchView = (SearchView) menu.findItem(R.id.patient_list_action_bar_menu_search).getActionView();
-		mSearchView = (SearchView) MenuItemCompat.getActionView(menu.findItem(R.id.patient_list_action_bar_menu_search));
+        SearchView mSearchView = (SearchView) MenuItemCompat.getActionView(menu.findItem(R.id.patient_list_action_bar_menu_search));
 		mSearchView.setQueryHint(getResources().getString(R.string.searchPatients));
         mSearchView.setOnQueryTextListener(this);		
 	}
@@ -284,11 +229,11 @@ public class SelectPatient extends ActionBarListActivity implements SearchView.O
 		//Ciclare nella lista pazienti per trovare newText e aggiornare la lista fillMaps
 		fillMaps.clear();
 		
-		for (Patient p : patientNameList) {
+		for (Patient p : patientList) {
 			
 			if( p.getSurname().regionMatches(true, 0, newText, 0, newText.length()) ) {
 				//Controlla cognome
-				HashMap<String, String> map = new HashMap<String, String>();
+				HashMap<String, String> map = new HashMap<>();
 				
 				String cfValue = p.getCf();
 				if (cfValue == null || cfValue.equalsIgnoreCase("null"))
@@ -302,7 +247,7 @@ public class SelectPatient extends ActionBarListActivity implements SearchView.O
 				fillMaps.add(map);
 			} else if( p.getName().regionMatches(true, 0, newText, 0, newText.length()) ) {
 				//Controlla nome
-				HashMap<String, String> map = new HashMap<String, String>();
+				HashMap<String, String> map = new HashMap<>();
 				
 				String cfValue = p.getCf();
 				if (cfValue == null || cfValue.equalsIgnoreCase("null"))
@@ -316,7 +261,7 @@ public class SelectPatient extends ActionBarListActivity implements SearchView.O
 				fillMaps.add(map);
 			} else if( p.getCf().regionMatches(true, 0, newText, 0, newText.length()) ) {
 				//Controlla CF
-				HashMap<String, String> map = new HashMap<String, String>();
+				HashMap<String, String> map = new HashMap<>();
 				
 				String cfValue = p.getCf();
 				if (cfValue == null || cfValue.equalsIgnoreCase("null"))
@@ -329,26 +274,8 @@ public class SelectPatient extends ActionBarListActivity implements SearchView.O
 				map.put(KEY_PATIENT_NAME, p.getName());
 				fillMaps.add(map);
 			}
-			
-			
-			/*if(p.getSurname().toLowerCase().contains(newText)) {
-				HashMap<String, String> map = new HashMap<String, String>();
-				
-				String cfValue = p.getCf();
-				if (cfValue == null || cfValue.equalsIgnoreCase("null"))
-					cfValue = "";	
-				
-				map.put(KEY_CF, "[" + cfValue + "]");
-				map.put(KEY_ID, "[" + p.getId() + "]");
-				map.put(KEY_PATIENT, p.getName() + " " + p.getSurname());
-				map.put(KEY_PATIENT_SURNAME, p.getSurname());
-				map.put(KEY_PATIENT_NAME, p.getName());
-				fillMaps.add(map);
-			}*/			
 		}
-		
 		patientListAdapter.notifyDataSetChanged();
-		
 		return true;
 	}	
 }

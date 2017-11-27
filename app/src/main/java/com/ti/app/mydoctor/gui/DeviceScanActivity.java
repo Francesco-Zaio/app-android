@@ -64,7 +64,7 @@ public class DeviceScanActivity extends Activity implements BTSearcherEventListe
 		// Indicate scanning in the title
         setProgressBarIndeterminateVisibility(true);
         setTitle(R.string.scanning);        
-        MyDoctorApp.getDeviceManager().startDiscovery(this);
+        MyDoctorApp.getDeviceOperations().startDiscovery(this);
 	}
 
     // The on-click listener for all devices in the ListViews

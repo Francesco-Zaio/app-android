@@ -32,17 +32,6 @@
                     android:inputType="textVisiblePassword"
                     android:maxLines="1" />
             </LinearLayout>
-
-
-            <ImageButton
-                android:id="@+id/user_list_button"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:background="@android:color/transparent"
-                android:visibility="gone"
-                android:src="@drawable/ic_menu_moreoverflow_normal_holo_light" />
-
         </LinearLayout>
         
         <TextView

@@ -11,9 +11,9 @@ import com.ti.app.mydoctor.AppResourceManager;
 import com.ti.app.telemed.core.common.Measure;
 import com.ti.app.telemed.core.common.MeasureDetail;
 import com.ti.app.telemed.core.common.Patient;
-import com.ti.app.telemed.core.dbmodule.DbManager;
 import com.ti.app.mydoctor.gui.listadapter.MeasureDetailsListAdapter;
 import com.ti.app.mydoctor.util.AppUtil;
+import com.ti.app.telemed.core.usermodule.UserManager;
 import com.ti.app.telemed.core.util.Util;
 
 import android.app.AlertDialog;
@@ -47,12 +47,12 @@ public class MeasureDetails extends ListActivity {
 		Bundle extras = getIntent().getExtras();
 		
 		if (extras != null) {
-			Measure currentMeasure = (Measure)extras.get(ShowMeasure.SELECTED_MEASURE_KEY);
+			Measure currentMeasure = (Measure)extras.get(ShowMeasure.MEASURE_KEY);
 			if (currentMeasure == null)
 				return;
 
 			//Ricava il paziente relativo a questa misura
-			Patient p = DbManager.getDbManager().getPatientData(currentMeasure.getIdPatient());
+			Patient p = UserManager.getUserManager().getPatientData(currentMeasure.getIdPatient());
 			String patientName = p.getSurname() + " " + p.getName();
 			
 			//Setta l'icona

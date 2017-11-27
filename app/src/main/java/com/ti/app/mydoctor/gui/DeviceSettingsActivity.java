@@ -34,17 +34,14 @@ import android.widget.Toast;
 
 import com.ti.app.mydoctor.R;
 import com.ti.app.mydoctor.MyDoctorApp;
+import com.ti.app.mydoctor.devicemodule.DeviceOperations;
 import com.ti.app.mydoctor.util.AppConst;
 import com.ti.app.mydoctor.AppResourceManager;
 import com.ti.app.mydoctor.util.AppUtil;
-import com.ti.app.telemed.core.common.Patient;
 import com.ti.app.telemed.core.common.User;
 import com.ti.app.telemed.core.common.UserDevice;
-import com.ti.app.telemed.core.common.UserPatient;
-import com.ti.app.telemed.core.dbmodule.DbManager;
-import com.ti.app.telemed.core.measuremodule.MeasureManager;
+import com.ti.app.telemed.core.devicemodule.DeviceManager;
 import com.ti.app.telemed.core.usermodule.UserManager;
-import com.ti.app.mydoctor.devicemodule.DeviceManager;
 import com.ti.app.mydoctor.gui.customview.ActionBarListActivity;
 import com.ti.app.mydoctor.gui.customview.GWTextView;
 import com.ti.app.mydoctor.gui.listadapter.DeviceListAdapter;
@@ -71,7 +68,10 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
 	private static final String KEY_ICON = "icon";
 	private static final String KEY_LABEL = "label";
 	private static final String KEY_MODEL = "model";
-	
+
+    // Utente
+    private User defaultUser;
+
 	//Gestione lista misure
 	private List<String> measureList;
 	private HashMap<String, UserDevice> deviceMap;
@@ -88,7 +88,7 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
 	private DeviceListAdapter listAdapter;
 	
 	//Device Manager
-	private DeviceManager deviceManager;
+	private DeviceOperations deviceOperations;
 	private DeviceManagerMessageHandler deviceManagerHandler = new DeviceManagerMessageHandler(this);
 
     //Controlla se l'operazione di pairing è stata avviata
@@ -126,11 +126,10 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
             Log.e(TAG, "ActionBar is NULL!!");
         }
 
-		deviceManager = MyDoctorApp.getDeviceManager();
-		deviceManager.setHandler(deviceManagerHandler);
+		deviceOperations = MyDoctorApp.getDeviceOperations();
+		deviceOperations.setHandler(deviceManagerHandler);
 
 		setupDeviceList();
-
 	}
 	
 	@Override
@@ -148,7 +147,7 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
 	@Override
 	public void onCreateContextMenu(ContextMenu menu, View v, ContextMenuInfo menuInfo) {
 				
-		if(deviceManager.isOperationRunning()){
+		if(deviceOperations.isOperationRunning()){
 			super.onCreateContextMenu(menu, v, menuInfo);
 			return;
 		}
@@ -183,9 +182,9 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
 
         UserDevice ud = deviceMap.get(selectedMeasureType);
         if(ud.isActive()){
-            deviceManager.setCurrentDevice(ud);
+            deviceOperations.setCurrentDevice(ud);
         } else {
-            deviceManager.setCurrentDevice(null);
+            deviceOperations.setCurrentDevice(null);
         }
     	
 	    switch (item.getItemId()) {
@@ -203,12 +202,12 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
 	//Inizializza mappa dei dispositivi
 	private void initDeviceMap() {
 		deviceMap = new HashMap<>();
-		List<UserDevice> dList = MeasureManager.getMeasureManager().getCurrentUserDevices();
+		List<UserDevice> dList = DeviceManager.getDeviceManager().getCurrentUserDevices();
 		for (UserDevice pDevice : dList) {
-            UserDevice tmpDev = deviceMap.get(pDevice.getMeasure());
-            if (tmpDev == null || pDevice.isActive()) {
+            if (!measureList.contains(pDevice.getMeasure()))
+                measureList.add(pDevice.getMeasure());
+            if (!deviceMap.containsKey(pDevice.getMeasure()) || pDevice.isActive())
                 deviceMap.put(pDevice.getMeasure(), pDevice);
-            }
 		}
 	}
 	
@@ -216,7 +215,7 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
 	private void initMeasureModelsMap(String userId) {
 		measureModelsMap = new HashMap<>();
 		for (String measure : measureList) {
-			List<UserDevice> modelList = DbManager.getDbManager().getModelsForMeasure(measure, userId);
+			List<UserDevice> modelList = DeviceManager.getDeviceManager().getModelsForMeasure(measure, userId);
 			measureModelsMap.put(measure, modelList);			
 		}		
 	}
@@ -237,28 +236,14 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
 	}	
 	
 	private void setupDeviceList() {
-		User defaultUser = DbManager.getDbManager().getUser( DbManager.DEFAULT_USER_ID );
+        // Imposta l'utente di amministrazione
+		defaultUser = UserManager.getUserManager().setDefaultUser();
 		if(defaultUser != null){
 			//L'utente corrente diventa utente attivo
-			defaultUser.setActive(true);
-			
-			//Modifica il DB
-			DbManager.getDbManager().setCurrentUser(defaultUser);
-			
-			deviceManager.setCurrentUser(defaultUser);
-
-            measureList = DbManager.getDbManager().getCfgMeasureTypes();
+			// defaultUser.setActive(true);
 			initDeviceMap();
 			initMeasureModelsMap(defaultUser.getId());
-
-            List<UserPatient> patientList = DbManager.getDbManager().getUserPatients(defaultUser.getId());
-			if( patientList.size() == 1 ) {
-				//L'utente default ha un solo paziente, se stesso
-				Patient p = DbManager.getDbManager().getPatientData(patientList.get(0).getIdPatient()); 
-				UserManager.getUserManager().setCurrentPatient(p);
-			}
-						
-			setupListView();					
+			setupListView();
 			registerForContextMenu(getListView());			
 		}
 	}	
@@ -289,7 +274,7 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
 				Log.i(TAG, "parent.getItemAtPosition: "+parent.getItemAtPosition(position));
 				initDeviceMap();
 				
-				if(!deviceManager.isOperationRunning()){
+				if(!deviceOperations.isOperationRunning()){
 					selectedMeasureType = measureList.get(position);
 					selectedMeasurePosition = position;		
 					
@@ -298,9 +283,9 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
 					} else {
 						UserDevice ud = deviceMap.get(selectedMeasureType);
 						if(ud.isActive()){
-							deviceManager.setCurrentDevice(ud);
+							deviceOperations.setCurrentDevice(ud);
 						} else {
-							deviceManager.setCurrentDevice(null);
+							deviceOperations.setCurrentDevice(null);
 						}
                         if (ud.getDevice().isBTDevice()) {
 							doScan();
@@ -372,7 +357,7 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
 			    	//DbManager.getDbManager().updateUserDeviceModel(selectedMeasureType, selectedUserDevice.getDevice().getId());
 			    	
 			    	try {
-			    		DbManager.getDbManager().updateUserDeviceModel(selectedMeasureType, selectedUserDevice.getDevice().getId());
+			    		DeviceManager.getDeviceManager().updateUserDeviceModel(defaultUser.getId(),selectedMeasureType, selectedUserDevice.getDevice().getId());
 					} catch (Exception e) {
                         e.printStackTrace();
 					}
@@ -430,8 +415,8 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
 		UserDevice ud = deviceMap.get(selectedMeasureType);
 		UserDevice tmpUd = (UserDevice) ud.clone();
 		tmpUd.setBtAddress(null);
-		deviceManager.setCurrentDevice(tmpUd);
-        deviceManager.setPairingMode(isPairing);
+		deviceOperations.setCurrentDevice(tmpUd);
+        deviceOperations.setPairingMode(isPairing);
 		// Launch the DeviceScanActivity to see devices and do scan
 		Intent serverIntent = new Intent(this, DeviceScanActivity.class);
 		//startActivity(serverIntent);
@@ -462,9 +447,9 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
     	case REQUEST_SCAN_DEVICES:
 			if (resultCode == Activity.RESULT_OK){
 				BluetoothDevice bd = data.getExtras().getParcelable(SELECTED_DEVICE);
-				deviceManager.selectDevice(bd);
+				deviceOperations.selectDevice(bd);
 			} else {
-				deviceManager.abortOperation();
+				deviceOperations.abortOperation();
 				closeProgressDialog();
 			}
 			refreshList();
@@ -490,24 +475,24 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
         	Log.d(TAG, "DeviceManagerMessageHandler what="+msg.what+" bundle=" + dataBundle);
         	
             switch (msg.what) {
-				case DeviceManager.MESSAGE_STATE:
+				case DeviceOperations.MESSAGE_STATE:
 					dataBundle.putBoolean(AppConst.IS_MEASURE, true);
 					if( progressDialog == null )
 						activity.createProgressDialog(dataBundle);
 					//getActivity().showDialog(PROGRESS_DIALOG);
 					break;
-				case DeviceManager.MESSAGE_STATE_WAIT:
+				case DeviceOperations.MESSAGE_STATE_WAIT:
 					dataBundle.putBoolean(AppConst.IS_MEASURE, true);
 					if( progressDialog == null )
 						activity.createProgressDialog(dataBundle);
 					//getActivity().showDialog(PROGRESS_DIALOG);
 					break;
-				case DeviceManager.CONFIG_READY:
+				case DeviceOperations.CONFIG_READY:
 					activity.refreshList();
 					activity.closeProgressDialog();
 					activity.createAlertDialog(dataBundle);
 					break;
-				case DeviceManager.ERROR_STATE:
+				case DeviceOperations.ERROR_STATE:
 					activity.refreshList();
 					activity.closeProgressDialog();
 					activity.createAlertDialog(dataBundle);
@@ -553,7 +538,7 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
     private class ProgressDialogClickListener implements DialogInterface.OnClickListener {			
 		public void onClick(DialogInterface dialog, int which) {
             closeProgressDialog();
-            deviceManager.abortOperation();
+            deviceOperations.abortOperation();
             refreshList();
 		}		
 	}
@@ -568,7 +553,6 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
 	}	
     
     private AlertDialog createAlert(String msg, String title) {
-    	
     	Log.d(TAG, "createAlert() msg=" + msg);
     	
     	AlertDialog.Builder builder = new AlertDialog.Builder( this );

@@ -35,10 +35,10 @@ import com.ti.app.mydoctor.MyDoctorApp;
 import com.ti.app.mydoctor.R;
 import com.ti.app.mydoctor.AppResourceManager;
 import com.ti.app.telemed.core.common.User;
-import com.ti.app.telemed.core.dbmodule.DbManager;
 import com.ti.app.mydoctor.gui.customview.ActionBarListActivity;
 import com.ti.app.mydoctor.gui.customview.GWTextView;
 import com.ti.app.mydoctor.gui.listadapter.UserListAdapter;
+import com.ti.app.telemed.core.usermodule.UserManager;
 
 public class UsersList extends ActionBarListActivity {
 	
@@ -59,14 +59,8 @@ public class UsersList extends ActionBarListActivity {
 		
 	private List<User> users;
 	private List<HashMap<String, String>> fillMaps;
-	//private DeviceListAdapter listAdapter;	
 	private UserListAdapter listAdapter;
-	
-	private ActionBar customActionBar;
-	private GWTextView titleTV;
-	
-	private LinearLayout newUserSelectedLL;
-	
+
 	private AdapterContextMenuInfo mAdapterContextMenuInfo;
 
 	/** Called when the activity is first created. */
@@ -82,9 +76,9 @@ public class UsersList extends ActionBarListActivity {
 		
 		//Flag per mantenere attivo lo schermo finchè l'activity è in primo piano
 		getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-		
-		//Inizializza l'ActionBAr
-		customActionBar = this.getSupportActionBar();
+
+        //Inizializza l'ActionBAr
+        ActionBar customActionBar = this.getSupportActionBar();
 		//Setta il gradiente di sfondo della action bar
 		Drawable cd = this.getResources().getDrawable(R.drawable.action_bar_background_color);
 		customActionBar.setBackgroundDrawable(cd);
@@ -95,31 +89,23 @@ public class UsersList extends ActionBarListActivity {
 		//Setta l'icon
 		customActionBar.setIcon(R.drawable.icon_action_bar);
 
+
 		//Ricava la TextView dell'ActionBar
 		LayoutInflater inflator = (LayoutInflater)this.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 		View titleView = inflator.inflate(R.layout.actionbar_title, null);
-		titleTV = (GWTextView)titleView.findViewById(R.id.actionbar_title_label);
-		
-		User cu = DbManager.getDbManager().getCurrentUser();
-		if( cu != null) {
-			if( cu.getId().equalsIgnoreCase(DbManager.DEFAULT_USER_ID))
-				titleTV.setText(R.string.users_title);
-			else
-				titleTV.setText(cu.getName() + "\n" + cu.getSurname());
-		} else {
-			titleTV.setText(R.string.users_title);
-		}				
+        GWTextView titleTV = (GWTextView)titleView.findViewById(R.id.actionbar_title_label);
+		titleTV.setText(R.string.users_title);
 		customActionBar.setCustomView(titleView);
 		
 		//L'icona dell'App diventa tasto per tornare nella Home
 		customActionBar.setHomeButtonEnabled(true);
 		customActionBar.setDisplayHomeAsUpEnabled(true);
-		
-		//Ottengo il riferimento agli elementi che compongono la view
-		newUserSelectedLL = (LinearLayout) findViewById(R.id.new_user_linear_layout);
+
+        //Ottengo il riferimento agli elementi che compongono la view
+        LinearLayout newUserSelectedLL = (LinearLayout) findViewById(R.id.new_user_linear_layout);
 		newUserSelectedLL.setOnClickListener(newUserSelectedClickListener);
 
-        users = DbManager.getDbManager().getNotLoggedUsers();
+        users = UserManager.getUserManager().getAllUsers();
 
 		if(users != null && users.size() > 0){
 			// create the grid item mapping
@@ -178,26 +164,19 @@ public class UsersList extends ActionBarListActivity {
 			});
 			builder.show();
 		}
-
-		//getWindow().setFeatureInt(Window.FEATURE_CUSTOM_TITLE, R.layout.custom_title);
-		//titleTV = (TextView) findViewById(R.id.title);
-		//titleTV.setText(R.string.users_title);
-
 	}
 	
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		switch(item.getItemId()) {
 		case android.R.id.home: //Ritorna alla Home quando si clicca sull'icona della App
+            setResult(Activity.RESULT_CANCELED);
             finish();
-            return true;  
-            
+            return true;
 		default:
             return super.onOptionsItemSelected(item);
 		}
 	}
-
-
 
 	@Override
 	public void onCreateContextMenu(ContextMenu menu, View v, ContextMenuInfo menuInfo) {
@@ -231,23 +210,16 @@ public class UsersList extends ActionBarListActivity {
         AlertDialog.Builder builder = new AlertDialog.Builder(ctx);
         LayoutInflater inflater = (LayoutInflater) ctx.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         
-		/*AlertDialog.Builder builder = new AlertDialog.Builder(this);
-		LayoutInflater inflater = (LayoutInflater) getApplicationContext().getSystemService(LAYOUT_INFLATER_SERVICE);*/
-		
 		switch (id) {
 		case DELETE_USER_DIALOG:
-			
 			final User userToDelete = users.get(mAdapterContextMenuInfo.position);
-			
 			builder.setTitle(R.string.confirmDelete);
 			builder.setMessage(getString(R.string.insertUserPassword) + " " + userToDelete.getName() + " " + userToDelete.getSurname());
-			
 			View delete_user_view = inflater.inflate(R.layout.new_user, null);
 			EditText userLoginET = (EditText) delete_user_view.findViewById(R.id.login);
 			final EditText userPwdET = (EditText) delete_user_view.findViewById(R.id.password);
 			userLoginET.setText(userToDelete.getLogin());
 			userLoginET.setEnabled(false);
-			
 			CheckBox userPwdCB = (CheckBox) delete_user_view.findViewById(R.id.passwordCheckBox);
 			userPwdCB.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
 				
@@ -263,9 +235,7 @@ public class UsersList extends ActionBarListActivity {
 					userPwdET.setSelection(userPwdET.getText().length());
 				}
 			});
-			
 			builder.setView(delete_user_view);
-			
 			builder.setPositiveButton(AppResourceManager.getResource().getString("EGwnurseOk"),
 					new DialogInterface.OnClickListener(){
 						public void onClick(DialogInterface arg0,
@@ -284,7 +254,6 @@ public class UsersList extends ActionBarListActivity {
 			
 			return builder.create();
 		case PASSWORD_ERROR_DIALOG:
-			
 			builder.setTitle(AppResourceManager.getResource().getString("warningTitle"));
 			builder.setMessage(R.string.passwordError);
 			builder.setNeutralButton("Ok", new DialogInterface.OnClickListener() {
@@ -294,7 +263,6 @@ public class UsersList extends ActionBarListActivity {
 					removeDialog(PASSWORD_ERROR_DIALOG);
 				}
 			});
-			
 			return builder.create();
 		default:
 			return null;
@@ -304,10 +272,16 @@ public class UsersList extends ActionBarListActivity {
 	private void deleteUser(User userToDelete, String insertedPwd) {
 		try {
 			if (userToDelete.getPassword().equals(insertedPwd)) {
-				DbManager.getDbManager().deleteUser(userToDelete.getId());
-				users = DbManager.getDbManager().getUsers();
-				fillMaps.remove(mAdapterContextMenuInfo.position);
-				listAdapter.notifyDataSetChanged();	
+                if (UserManager.getUserManager().deleteUser(userToDelete.getId())) {
+                    users = UserManager.getUserManager().getAllUsers();
+                    fillMaps.remove(mAdapterContextMenuInfo.position);
+                    listAdapter.notifyDataSetChanged();
+                } else {
+                    AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                    builder.setMessage(AppResourceManager.getResource().getString("deleteUserFailure"));
+                    builder.setCancelable(true);
+                    builder.show();
+                }
 			}
 			else
 				showDialog(PASSWORD_ERROR_DIALOG);

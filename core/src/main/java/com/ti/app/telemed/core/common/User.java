@@ -3,6 +3,7 @@ package com.ti.app.telemed.core.common;
 import com.ti.app.telemed.core.dbmodule.DbManager;
 
 import java.io.Serializable;
+import java.util.List;
 
 public class User implements Serializable {
 	/**
@@ -111,5 +112,9 @@ public class User implements Serializable {
 
 	public String getCf() {
 		return cf;
+	}
+
+	public List<Patient> getPatients() {
+		return DbManager.getDbManager().getUserPatients(id);
 	}
 }

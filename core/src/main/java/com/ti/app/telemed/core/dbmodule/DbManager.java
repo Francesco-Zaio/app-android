@@ -38,7 +38,6 @@ public class DbManager {
     //ID for default user
     public static final String DEFAULT_USER_ID = "-1";
 
-
     private Logger logger = Logger.getLogger(DbManager.class.getName());
 	
 	private static final String TAG = "DbManager";
@@ -172,8 +171,6 @@ public class DbManager {
     	+ "PUBLIC_KEY BLOB, "
     	+ "FOREIGN KEY (ID_USER) REFERENCES USER (ID) ON DELETE CASCADE )";
 
-	private User currentUser;      
-    
 	private static class DatabaseHelper extends SQLiteOpenHelper {
 
         DatabaseHelper(Context context) {
@@ -353,7 +350,7 @@ public class DbManager {
         }
 	}
 	
-	public Vector<Device> getAllDevices() {
+	private Vector<Device> getAllDevices() {
         synchronized (this) {
             Vector<Device> ret = new Vector<>();
             Device tmpDv;
@@ -587,7 +584,7 @@ public class DbManager {
         }
     }
 
-    public void insertMeasureProtocolCfg(MeasureProtocolCfg sc) {
+    private void insertMeasureProtocolCfg(MeasureProtocolCfg sc) {
         synchronized (this) {
             ContentValues values = new ContentValues();
             values.put("UPDATE_INTERVAL", sc.getUpdateInterval());
@@ -601,7 +598,7 @@ public class DbManager {
         }
     }
 
-    public void updateMeasureProtocolCfg(MeasureProtocolCfg sc) {
+    private void updateMeasureProtocolCfg(MeasureProtocolCfg sc) {
         synchronized (this) {
             ContentValues values = new ContentValues();
             values.put("UPDATE_INTERVAL", sc.getUpdateInterval());
@@ -631,21 +628,28 @@ public class DbManager {
         }
     }
 
-    public void  updateConfiguration(Vector<Object> dataContainer) {
+    public void updateConfiguration(Vector<Object> dataContainer, String login, String password) {
+        if (dataContainer == null || dataContainer.isEmpty())
+            return;
         synchronized (this) {
+            String userId = null;
             Enumeration<Object> en = dataContainer.elements();
             Object tmp;
             List<String> associatedMeasures = new ArrayList<>();
             while (en.hasMoreElements()) {
                 tmp = en.nextElement();
                 if (tmp instanceof User) {
-                    setUser((User) tmp);
-                    setCurrentUser((User) tmp);
-                    deleteUserPatientByIdUser(getCurrentUser().getId());
+                    User u = (User)tmp;
+                    u.setLogin(login);
+                    u.setPassword(password);
+                    userId = u.getId();
+                    setUser(u);
+                    updateActiveUser(userId);
+                    deleteUserPatientByIdUser(u.getId());
                 } else if (tmp instanceof Patient) {
                     Patient p = (Patient) tmp;
                     setPatient(p);
-                    setUserPatient(p);
+                    setUserPatient(userId, p.getId());
                 } else if (tmp instanceof MeasureProtocolCfg) {
                     if (getMeasureProtocolCfg() == null)
                         insertMeasureProtocolCfg((MeasureProtocolCfg)tmp);
@@ -654,6 +658,7 @@ public class DbManager {
                 }
                 else if (tmp instanceof UserMeasure) {
                     UserMeasure um = (UserMeasure) tmp;
+                    um.setIdUser(userId);
                     setUserMeasure(um);
                     List<Device> dList = getDeviceByMeasure(um.getMeasure());
 
@@ -664,33 +669,19 @@ public class DbManager {
                             //Se c'è un solo modello per quel tipo di misura
                             //associo all'utente quel preciso strumento ponendo il flag ACTIVE = true
                             Device dev = dList.get(0);
-                            setUserDevice(dev, true);
+                            setUserDevice(userId, dev, true);
                         } else {
                             for (Device dev : dList) {
                                 //Se ci sono più modelli per quel tipo di misura
                                 //inserisco quelli che non sono già presenti ma ponendo il flag ACTIVE = false
-                                setUserDevice(dev, false);
+                                setUserDevice(userId, dev, false);
                             }
                         }
                         associatedMeasures.add(um.getMeasure());
                     }
                 }
             }
-            deleteOldUserDeviceData(associatedMeasures);
-        }
-	}
-    
-    public User getCurrentUser() {
-        synchronized (this) {
-            return currentUser;
-        }
-	}
-
-	public void setCurrentUser(User currentUser) {
-        synchronized (this) {
-            this.currentUser = currentUser;
-            if (currentUser != null)
-                updateActiveUser(currentUser);
+            deleteOldUserDeviceData(userId, associatedMeasures);
         }
 	}
     
@@ -704,7 +695,7 @@ public class DbManager {
         }
 	}
 
-    public User createDefaultUser() {
+    private User createDefaultUser() {
         Vector<Object> dataContainer = new Vector<>();
 
         User defaultUser = new User();
@@ -736,7 +727,7 @@ public class DbManager {
             dataContainer.add( um );
         }
 
-        updateConfiguration(dataContainer);
+        updateConfiguration(dataContainer, "default", "default");
 
         return getUser( DEFAULT_USER_ID );
     }
@@ -780,17 +771,6 @@ public class DbManager {
         }
     }
 
-    public void updateUserCredentials(String login, String password) {
-        synchronized (this) {
-            ContentValues values = new ContentValues();
-            values.put("LOGIN", login);
-            values.put("PASSWORD", password);
-            values.put("BLOCKED", 0);
-            String[] args = new String[]{"" + getCurrentUser().getId()};
-            mDb.update("USER", values, "ID = ? ", args);
-        }
-    }
-
     public void resetActiveUser(String userId) {
         synchronized (this) {
             int count;
@@ -801,19 +781,19 @@ public class DbManager {
         }
     }
 
-    public void updateActiveUser(User u) {
+    private void updateActiveUser(String userId) {
         synchronized (this) {
             int count;
             ContentValues values = new ContentValues();
             values.put("ACTIVE", 1);
-            mDb.update("USER", values, "ID = ? ", new String[]{u.getId()});
-            logger.log(Level.INFO, "Active user updated: " + u.getId());
+            mDb.update("USER", values, "ID = ? ", new String[]{userId});
+            logger.log(Level.INFO, "Active user updated: " + userId);
 
             values = new ContentValues();
             values.put("ACTIVE", 0);
-            count = mDb.update("USER", values, "ID <> ? ", new String[]{u.getId()});
+            count = mDb.update("USER", values, "ID <> ? ", new String[]{userId});
             logger.log(Level.INFO, "Inactive users updated count: " + count);
-            alignActiveUserToCurrentDevices();
+            alignActiveUserToCurrentDevices(userId);
         }
     }
 
@@ -822,29 +802,6 @@ public class DbManager {
             ContentValues values = new ContentValues();
             values.put("BLOCKED", blocked ?  1 : 0);
             mDb.update("USER", values, "LOGIN = ? ", new String[]{login});
-        }
-    }
-
-    public List<User> getNotLoggedUsers() {
-        synchronized (this) {
-            List<User> ret = new ArrayList<>();
-            Cursor c = null;
-            try {
-                c = mDb.query("USER", null, null, null, null, null, null);
-                if (c != null) {
-                    while (c.moveToNext()) {
-                        User u = getUserObject(c);
-                        if ((u.getId().equalsIgnoreCase( DEFAULT_USER_ID ))
-                                || (currentUser!=null && currentUser.getId().equalsIgnoreCase(u.getId())))
-                            continue;
-                        ret.add(u);
-                    }
-                }
-            } finally {
-                if (c != null)
-                    c.close();
-            }
-            return ret;
         }
     }
 
@@ -870,36 +827,14 @@ public class DbManager {
         }
     }
 
-    public List<User> getUsers() {
-        List<User> ret = new ArrayList<>();
-        Cursor c = null;
-        try {
-            if(currentUser != null){
-                c = mDb.query("USER", null, "ID  <> ? ", new String[]{""+currentUser.getId()}, null, null, null);
-            } else {
-                c = mDb.query("USER", null, null, null, null, null, null);
-            }
-            if (c != null) {
-                while(c.moveToNext()){
-                    User u = getUserObject(c);
-                    if ( !u.getId().equalsIgnoreCase( DEFAULT_USER_ID ) )
-                        ret.add(u);
-                }
-            }
-        } finally {
-            if (c != null)
-                c.close();
-        }
-        return ret;
-    }
-
-    public void deleteUser(String idUser) {
+    public int deleteUser(String idUser) {
         synchronized (this) {
             // on delete cascade clause ensures all related rows are also removed.
             // Only Patient table should be checked due to the many to many relationship
             int rows = mDb.delete("USER", "ID = ?", new String[] {idUser});
             rows += mDb.delete("PATIENT", "ID NOT IN (SELECT ID_PATIENT FROM USER_PATIENT)", null);
             Log.i(TAG, "Eliminate " + rows + " righe dell utente " + idUser + " dal db");
+            return rows;
         }
     }
 
@@ -933,6 +868,9 @@ public class DbManager {
             values.put("TIMESTAMP", System.currentTimeMillis());
             values.put("AUTO_LOGIN",u.getHasAutoLogin()? 1:0);
             values.put("IS_PATIENT",u.getIsPatient()? 1:0);
+            values.put("LOGIN", u.getLogin());
+            values.put("PASSWORD", u.getPassword());
+            values.put("BLOCKED", 0);
             mDb.insert("USER", null, values);
             logger.log(Level.INFO, "User inserted");
         }
@@ -945,6 +883,9 @@ public class DbManager {
             values.put("NAME", u.getName());
             values.put("SURNAME", u.getSurname());
             values.put("TIMESTAMP", System.currentTimeMillis());
+            values.put("LOGIN", u.getLogin());
+            values.put("PASSWORD", u.getPassword());
+            values.put("BLOCKED", 0);
             mDb.update("USER", values, " ID = ? ", new String[]{u.getId()});
             logger.log(Level.INFO, "User updated");
         }
@@ -1088,21 +1029,20 @@ public class DbManager {
         }
 	}
 	
-	private void setUserPatient(Patient patient) {
+	private void setUserPatient(String userId, String patientId) {
         synchronized (this) {
-
-            UserPatient up = getUserPatient(getCurrentUser().getId(), patient.getId());
+            UserPatient up = getUserPatient(userId, patientId);
             if (up == null) {
-                insertUserPatientData(patient);
+                insertUserPatientData(userId, patientId);
             }
         }
 	}
 
-	private void insertUserPatientData(Patient p) {
+	private void insertUserPatientData(String userId, String patientId) {
         synchronized (this) {
             ContentValues values = new ContentValues();
-            values.put("ID_USER", getCurrentUser().getId());
-            values.put("ID_PATIENT", p.getId());
+            values.put("ID_USER", userId);
+            values.put("ID_PATIENT", patientId);
             mDb.insert("USER_PATIENT", null, values);
         }
 	}
@@ -1130,20 +1070,21 @@ public class DbManager {
 	/**
 	 * Metodo che restituisce tutti i pazienti associati ad un utente
 	 * @param idUser variabile di tipo {@code String} che contiene l'identificatore dell'operatore
-	 * @return Listaoggetti di tipo {@code UserPatient} riferiti all'idUser passato
+	 * @return Listaoggetti di tipo {@code Patient} riferiti all'idUser passato
 	 */
-	public List<UserPatient> getUserPatients(String idUser) {
+	public List<Patient> getUserPatients(String idUser) {
         synchronized (this) {
-            List<UserPatient> patients = null;
-            UserPatient p;
+            List<Patient> patients = null;
+            Patient p;
             Cursor c = null;
+            String rawQuery = "SELECT * FROM PATIENT WHERE ID IN (SELECT ID_PATIENT FROM USER_PATIENT WHERE ID_USER=" + idUser + ")";
 
             try {
-                c = mDb.query("USER_PATIENT", null, "ID_USER = ?", new String[]{idUser}, null, null, null);
+                c = mDb.rawQuery(rawQuery, null);
                 if (c != null) {
                     if (c.moveToFirst()) {
                         do {
-                            p = getUserPatientObject(c);
+                            p = getPatientObject(c);
                             if (patients == null)
                                 patients = new ArrayList<>();
                             patients.add(p);
@@ -1212,7 +1153,7 @@ public class DbManager {
         }
     }
 
-    public List<UserMeasure> getUserMeasuresByMeasure (String measure) {
+    private List<UserMeasure> getUserMeasuresByMeasure (String measure) {
         synchronized (this) {
             Vector<UserMeasure> ret = new Vector<>();
             Cursor c = null;
@@ -1231,7 +1172,7 @@ public class DbManager {
         }
     }
 
-	public UserMeasure getUserMeasure (String userId, String measure) {
+	private UserMeasure getUserMeasure (String userId, String measure) {
         synchronized (this) {
             UserMeasure ret = null;
             Cursor c = null;
@@ -1253,7 +1194,7 @@ public class DbManager {
 	private void insertUserMeasureData(UserMeasure um) {
         synchronized (this) {
             ContentValues values = new ContentValues();
-            values.put("ID_USER", getCurrentUser().getId());
+            values.put("ID_USER", um.getIdUser());
             values.put("MEASURE", um.getMeasure());
             // Configuration values
             values.put("FAMILY", um.getFamily().getValue());
@@ -1303,25 +1244,6 @@ public class DbManager {
         }
 	}
 
-	private int getUserMeasureId (String idUser, String measure) {
-        synchronized (this) {
-            Cursor c = null;
-            int ret = -1;
-            try {
-                c = mDb.rawQuery("SELECT ID FROM USER_MEASURE um WHERE um.ID_USER = ? AND um.MEASURE = ?", new String[]{idUser, measure});
-                if (c != null) {
-                    if (c.moveToFirst()) {
-                        ret = c.getInt(c.getColumnIndex("ID"));
-                    }
-                }
-            } finally {
-                if (c != null)
-                    c.close();
-            }
-            return ret;
-        }
-	}
-
 	private UserMeasure getUserMeasureObject(Cursor c) {
         synchronized (this) {
             UserMeasure ud = new UserMeasure();
@@ -1339,12 +1261,12 @@ public class DbManager {
 	}
 
     // UserDevice methods
-	private void setUserDevice(Device device, boolean active) {
+	private void setUserDevice(String userId, Device device, boolean active) {
         synchronized (this) {
-            UserDevice ud = getUserDevice(getCurrentUser().getId(), device.getMeasure(), device.getModel());
+            UserDevice ud = getUserDevice(userId, device.getMeasure(), device.getModel());
             if (ud == null) {
                 ud = new UserDevice();
-                ud.setIdUser(getCurrentUser().getId());
+                ud.setIdUser(userId);
                 ud.setMeasure(device.getMeasure());
                 ud.setDevice(device);
                 ud.setActive(active);
@@ -1400,7 +1322,7 @@ public class DbManager {
         }
 	}
 
-	private void deleteOldUserDeviceData(List<String> associatedMeasures) {
+	private void deleteOldUserDeviceData(String userId, List<String> associatedMeasures) {
         synchronized (this) {
             if (associatedMeasures != null && associatedMeasures.size() > 0) {
                 String measureList = "";
@@ -1413,16 +1335,16 @@ public class DbManager {
 
                 String whereClause = "ID_USER = ? AND MEASURE NOT IN (" + measureList + ")";
 
-                int rows = mDb.delete("USER_DEVICE", whereClause, new String[]{getCurrentUser().getId()});
+                int rows = mDb.delete("USER_DEVICE", whereClause, new String[]{userId});
                 logger.log(Level.INFO, "deleteOldUserDeviceData rows deleted: " + rows);
-                rows = mDb.delete("USER_MEASURE", whereClause, new String[]{getCurrentUser().getId()});
+                rows = mDb.delete("USER_MEASURE", whereClause, new String[]{userId});
                 logger.log(Level.INFO, "deleteOldUserMeasureData rows deleted: " + rows);
             }
         }
 	}
 
     //////////////////////////////////////////////
-    private void alignActiveUserToCurrentDevices() {
+    private void alignActiveUserToCurrentDevices(String userId) {
         synchronized (this) {
             Cursor c = null;
             try {
@@ -1441,13 +1363,13 @@ public class DbManager {
                         //Prima metto tutti i flag a N
                         ContentValues values = new ContentValues();
                         values.put("ACTIVE", "N");
-                        mDb.update("USER_DEVICE", values, "MEASURE = ? AND ID_USER = ?", new String[]{measure, ""+currentUser.getId()});
+                        mDb.update("USER_DEVICE", values, "MEASURE = ? AND ID_USER = ?", new String[]{measure, ""+userId});
 
                         //Poi metto il flag a 's' e valorizzo il btAddress per il device corrente
                         values = new ContentValues();
                         values.put("ACTIVE", "S");
                         values.put("BTADDRESS", btAddress);
-                        String[] args = new String[]{measure, ""+currentUser.getId(), ""+idDevice};
+                        String[] args = new String[]{measure, ""+userId, ""+idDevice};
                         mDb.update("USER_DEVICE", values, "MEASURE = ? AND ID_USER = ? AND ID_DEVICE = ? ", args);
                     }
                 }
@@ -1460,12 +1382,12 @@ public class DbManager {
     }
     /////////////////////////////////////////////
 
-    public List<UserDevice> getCurrentUserDevices() {
+    public List<UserDevice> getUserDevices(String userId) {
         synchronized (this) {
             List<UserDevice> ret = new ArrayList<>();
             Cursor c = null;
             try {
-                c = mDb.query("USER_DEVICE", null, "ID_USER  = ? ", new String[]{"" + currentUser.getId()}, null, null, "MEASURE");
+                c = mDb.query("USER_DEVICE", null, "ID_USER  = ? ", new String[]{"" + userId}, null, null, "MEASURE");
                 if (c != null) {
                     while (c.moveToNext()) {
                         ret.add(getUserDeviceObject(c));
@@ -1478,28 +1400,7 @@ public class DbManager {
             return ret;
         }
 	}
-	
-	public List<UserDevice> getCurrentUserDevicesActives(String userId) {
-        synchronized (this) {
-            List<UserDevice> ret = new ArrayList<>();
-            Cursor c = null;
-            try {
-                c = mDb.query("USER_DEVICE", null, "ID_USER  = ? ", new String[]{userId}, null, null, "MEASURE");
-                if (c != null) {
-                    while (c.moveToNext()) {
-                        UserDevice ud = getUserDeviceObject(c);
-                        if (ud.isActive())
-                            ret.add(ud);
-                    }
-                }
-            } finally {
-                if (c != null)
-                    c.close();
-            }
-            return ret;
-        }
-	}
-	
+
 	public List<UserDevice> getModelsForMeasure(String measure, String userId) {
         synchronized (this) {//SELECT * from USER_DEVICE where MEASURE = ? AND ID_USER = ?
             List<UserDevice> ret = new ArrayList<>();
@@ -1520,25 +1421,25 @@ public class DbManager {
         }
 	}
 	
-	public void updateUserDeviceModel(String measure, Integer idDevice) {
+	public void updateUserDeviceModel(String userId, String measure, Integer idDevice) {
         synchronized (this) {
             //Prima metto tutti i flag a N
             ContentValues values = new ContentValues();
             values.put("ACTIVE", "N");
-            mDb.update("USER_DEVICE", values, "MEASURE = ? AND ID_USER = ?", new String[]{measure, "" + currentUser.getId()});
+            mDb.update("USER_DEVICE", values, "MEASURE = ? AND ID_USER = ?", new String[]{measure, "" + userId});
 
             //Poi se idDevice non è nullo metto il falg a s per il device selezionato
             if (idDevice != null) {
                 values = new ContentValues();
                 values.put("ACTIVE", "S");
-                String[] args = new String[]{measure, "" + currentUser.getId(), "" + idDevice};
+                String[] args = new String[]{measure, "" + userId, "" + idDevice};
                 mDb.update("USER_DEVICE", values, "MEASURE = ? AND ID_USER = ? AND ID_DEVICE = ? ", args);
             }
 
             //In fine aggiorno l'idDevice per la misura sulla tabella current device
            String btAddress;
             if (idDevice != null) {
-                btAddress = getCurrentDeviceBt(getCurrentUser().getId(), "" + idDevice);
+                btAddress = getCurrentDeviceBt(userId, "" + idDevice);
                 storeCurrentDeviceData(measure, "" + idDevice, btAddress);
             }
         }
@@ -1561,34 +1462,13 @@ public class DbManager {
         return ret;
     }
 
-	public List<String> getMeasureTypesForUser() {
-        synchronized (this) {
-            //select distinct measure from user_device where id_user= ?
-            List<String> ret = new ArrayList<>();
-            Cursor c = null;
-            try {
-                c = mDb.rawQuery("SELECT DISTINCT MEASURE FROM USER_DEVICE WHERE ID_USER = ? ORDER BY MEASURE ASC", new String[]{"" + currentUser.getId()});
-                if (c != null) {
-                    while (c.moveToNext()) {
-                        ret.add(c.getString(c.getColumnIndex("MEASURE")));
-                    }
-                }
-
-            } finally {
-                if (c != null)
-                    c.close();
-            }
-            return ret;
-        }
-	}
-
     public void resetAllBtAddressDevice() {
         synchronized (this) {
             ContentValues values = new ContentValues();
             values.put("BTADDRESS", "");
             int n = mDb.update("USER_DEVICE", values, null, null);
             Log.i(TAG, "resetAllBtAddressDevice: " + n + " USER_DEVICE records updated");
-            n = mDb.update("CURRENT_DEVICE", values, null, null);
+            n = mDb.delete("CURRENT_DEVICE", null, null);
             Log.i(TAG, "resetAllBtAddressDevice: " + n + " CURRENT_DEVICE records updated");
         }
     }
@@ -1623,7 +1503,7 @@ public class DbManager {
             values.putNull("BTADDRESS");
             String[] args = new String[]{"" + ud.getId()};
             mDb.update("USER_DEVICE", values, "ID = ? ", args);
-            mDb.delete("CURRENT_DEVICE", "MEASURE = ?", new String[] {ud.getMeasure()});
+            mDb.delete("CURRENT_DEVICE", "MEASURE = ? AND ID_DEVICE = ?", new String[] {ud.getMeasure(),""+ud.getDevice().getId()});
         }
 	}
 
@@ -1831,10 +1711,17 @@ public class DbManager {
      */
     public int getNumNotSentMeasures(String idUser) {
         final String SQL_STATEMENT = "SELECT COUNT(*) FROM MEASURE WHERE ID_USER = ? AND SENT = 0 AND SEND_FAIL_COUNT < ? AND SEND_FAIL_TIMESTAMP < ?";
+        final String SQL_STATEMENT2 = "SELECT COUNT(*) FROM MEASURE WHERE SENT = 0 AND SEND_FAIL_COUNT < ? AND SEND_FAIL_TIMESTAMP < ?";
         Cursor c = null;
         int count = 0;
         try {
-            c = mDb.rawQuery(SQL_STATEMENT, new String[]{idUser,
+            if (idUser == null || idUser.isEmpty())
+                c = mDb.rawQuery(SQL_STATEMENT2,
+                        new String[]{ String.valueOf(GWConst.MEASURE_SEND_RETRY),
+                        String.valueOf(System.currentTimeMillis() / 1000 - GWConst.MEASURE_SEND_TIMEOUT)
+                });
+            else
+                c = mDb.rawQuery(SQL_STATEMENT, new String[]{idUser,
                     String.valueOf(GWConst.MEASURE_SEND_RETRY),
                     String.valueOf(System.currentTimeMillis() / 1000 - GWConst.MEASURE_SEND_TIMEOUT)
             });
@@ -1893,25 +1780,4 @@ public class DbManager {
             return ret;
         }
     }
-
-	/**
-	 * Metodo che permette di verificare se l'utente corrente è un paziente
-	 * @param idUser variabile di tipo {@code String} che contiene l'identificatore dell'utente
-	 * @return variabile di tipo {@code boolean} che indica se l'utente è un paziente o meno
-	 */
-	public boolean getIsPatient(String idUser) {
-        synchronized (this) {
-            Cursor c = null;
-            boolean status = false;
-            try {
-                c = mDb.query("USER", new String[]{"IS_PATIENT"}, "ID = ?", new String[]{idUser}, null, null, null);
-                c.moveToFirst();
-                status = c.getInt(c.getColumnIndex("IS_PATIENT")) == 1;
-            } finally {
-                if (c!=null)
-                    c.close();
-            }
-            return status;
-        }
-	}
 }

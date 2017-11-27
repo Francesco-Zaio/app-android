@@ -7,7 +7,6 @@ import java.util.logging.Logger;
 import com.ti.app.telemed.core.ResourceManager;
 import com.ti.app.telemed.core.common.Patient;
 import com.ti.app.telemed.core.common.User;
-import com.ti.app.telemed.core.common.UserPatient;
 import com.ti.app.telemed.core.dbmodule.DbManager;
 import com.ti.app.telemed.core.webmodule.WebManager;
 import com.ti.app.telemed.core.webmodule.webmanagerevents.WebManagerResultEvent;
@@ -133,14 +132,13 @@ public class UserManager {
 	}
 
     /**
-     * Restituisce l'utente corrente loggato
-     * @return               Utente corrente
+     * Legge dal DB locale il Paziente con l'id specificato.
+     * @param patientId identificativo del paziente.
+     * @return  il paziente selezioneato o null se non esiste un paziente con l'id specificato.
      */
-	public User getCurrentUser(){
-        synchronized (currT) {
-            return currentUser;
-        }
-	}
+    public Patient getPatientData(String patientId) {
+        return DbManager.getDbManager().getPatientData(patientId);
+    }
 
     /**
      * Effettua l'autenticazione verso la piattaforma utilizzando le credenziali passate.
@@ -185,6 +183,53 @@ public class UserManager {
             currT.notifyAll();
         }
 	}
+
+    /**
+     * Restituisce l'utente corrente loggato
+     * @return               Utente corrente
+     */
+    public User getCurrentUser(){
+        synchronized (currT) {
+            return currentUser;
+        }
+    }
+
+    /**
+     * Imposta l'utente di amministrazione utilizzato solo per il setup dei devices
+     * @return Utente di amministrazione devices
+     */
+    public User setDefaultUser(){
+        synchronized (currT) {
+            currentUser = DbManager.getDbManager().getUser(DbManager.DEFAULT_USER_ID);
+            currentPatient = currentUser.getPatients().get(0);
+            return currentUser;
+        }
+    }
+
+    /**
+     * Restituisce la lista di tutti gli utenti configurati nel DB locale.
+     * @return Lista utenti.
+     */
+    public List<User> getAllUsers() {
+        return DbManager.getDbManager().getAllUsers();
+    }
+
+    /**
+     * Cancella l'utente con l'id specificato dal DB locale.
+     * @param idUser id utente.
+     * @return true in caso di successo o false in caso di errore.
+     */
+    public boolean deleteUser(String idUser) {
+        return DbManager.getDbManager().deleteUser(idUser) > 0;
+    }
+
+    /**
+     * Restituisce l'ultimo utente che ha effettuato un login.
+     * @return {@link User} o null se non è mai stato effettuato un login.
+     */
+    public User getActiveUser() {
+        return DbManager.getDbManager().getActiveUser();
+    }
 
     /**
      * Modifica la password dell'utente corrente.
@@ -260,6 +305,17 @@ public class UserManager {
     }
 
     /**
+     * Imposta il flag di auto-login per l'utente passato.
+     * @param userId identificatvo utente.
+     * @param autoLogin valore da impostare.
+     */
+    public void saveAutoLoginStatus(String userId, boolean autoLogin) {
+        if (currentUser != null && currentUser.getId().equals(userId))
+            currentUser.setHasAutoLogin(autoLogin);
+        DbManager.getDbManager().saveAutoLoginStatus(userId, autoLogin);
+    }
+
+    /**
      * Resetta tutti i dati relativi all'utente e paziente corrente
      */
     public void reset() {
@@ -303,14 +359,12 @@ public class UserManager {
 	private void selectUser(User user, boolean silent) {
         synchronized (currT) {
             currentUser = user;
-
             if (currentUser != null) {
                 Log.i(TAG, "selectUser --> utente corrente: " + user.getName() + " " + user.getSurname());
                 try {
-                    DbManager.getDbManager().setCurrentUser(currentUser);
-                    List<UserPatient> patientList = DbManager.getDbManager().getUserPatients(currentUser.getId());
+                    List<Patient> patientList = currentUser.getPatients();
                     if(patientList != null && patientList.size() == 1)
-                        currentPatient = DbManager.getDbManager().getPatientData(patientList.get(0).getIdPatient());
+                        currentPatient = patientList.get(0);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -320,14 +374,6 @@ public class UserManager {
         }
 	}
 
-    private void updateUserCredentials() {
-        synchronized (currT) {
-            if (login != null && password != null) {
-                DbManager.getDbManager().updateUserCredentials(login, password);
-            }
-        }
-    }
-
     private class MyListener implements WebManagerResultEventListener {
         // methods of WebManagerResultEventListener interface
         @Override
@@ -335,7 +381,6 @@ public class UserManager {
             // the web operations had success, so we must only extract the new operator
             // from database
             try {
-                updateUserCredentials();
                 logInUserFromDb();
             } catch (Exception e) {
                 logger.log(Level.SEVERE, "Error encoding password");
@@ -345,11 +390,11 @@ public class UserManager {
 
         @Override
         public void webChangePasswordSucceded(WebManagerResultEvent evt) {
-            // the change password had success, so we must update the current user on the DB
+            // the change password had success, so we must update the current password
             synchronized (currT) {
                 password = newPassword;
+                logInUserFromDb();
             }
-            webAuthenticationSucceeded(evt);
         }
 
 

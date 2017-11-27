@@ -20,7 +20,6 @@ import com.ti.app.mydoctor.R;
 import com.ti.app.mydoctor.AppResourceManager;
 import com.ti.app.mydoctor.gui.customview.GWTextView;
 import com.ti.app.telemed.core.common.User;
-import com.ti.app.telemed.core.dbmodule.DbManager;
 import com.ti.app.telemed.core.usermodule.UserManager;
 
 public class ShowUserSettings extends ActionBarActivity {
@@ -70,7 +69,7 @@ public class ShowUserSettings extends ActionBarActivity {
 
         autoLoginCB = (CheckBox) findViewById(R.id.autoLoginCB);
         User currentUser = UserManager.getUserManager().getCurrentUser();
-        autoLoginCB.setChecked(DbManager.getDbManager().getAutoLoginStatus(currentUser.getId()));
+        autoLoginCB.setChecked(currentUser.getHasAutoLogin());
 
         Button okButton = (Button) findViewById(R.id.confirm_button);
         Button cancelButton = (Button) findViewById(R.id.cancel_button);
@@ -147,7 +146,7 @@ public class ShowUserSettings extends ActionBarActivity {
 			switch(v.getId()) {
 			case R.id.confirm_button:
 				try {
-					DbManager.getDbManager().saveAutoLoginStatus(UserManager.getUserManager().getCurrentUser().getId(), autoLoginCB.isChecked());
+					UserManager.getUserManager().saveAutoLoginStatus(UserManager.getUserManager().getCurrentUser().getId(), autoLoginCB.isChecked());
 					finish();
 				} catch (Exception e) {
 					showError();

@@ -49,7 +49,6 @@ public class MeasureManager {
 		return measureManager;
 	}
 
-
     /**
      * Tipo di misura non biometrica.
      */
@@ -69,7 +68,6 @@ public class MeasureManager {
             return this.id;
         }
 	}
-
 
 	/**
      * Tipo di documento.
@@ -308,27 +306,6 @@ public class MeasureManager {
     }
 
     /**
-     * Restituisce la lista di tutti i dispositivi utilizzabili dall'utente corrente.
-     * @return          Lista di oggetti {@link UserDevice} o {@code null} in caso di errore.
-     */
-    public List<UserDevice> getCurrentUserDevices() {
-        return DbManager.getDbManager().getCurrentUserDevices();
-    }
-
-    /**
-     * Restituisce la lista dei dispositivi utilizzabili per l'utente e tipo
-     * di misura specificati.
-     * @param measure   Tipo di misura (non puo' essere null).
-     * @param userId    Identificativo dell utente (vedi {@link User#getId() User.getId()}) (non puo' essere null).
-     * @return          Lista di oggetti {@link UserDevice} o {@code null} in caso di errore.
-     */
-    public List<UserDevice> getModelsForMeasure(String measure, String userId) {
-        if (measure== null || userId==null)
-            return null;
-        return DbManager.getDbManager().getModelsForMeasure(measure, userId);
-    }
-
-    /**
      * Restituisce la configurazione dei diversi tipi di misura biometriche abilitati per l'utente specificato.
      * @param userId        Identificativo dell'utente (vedi {@link User#getId() User.getId()}) (non puo' essere null).
      * @return              Lista di oggetti {@link UserMeasure}.
@@ -340,32 +317,12 @@ public class MeasureManager {
     }
 
     /**
-     * Restituisce lo UserDevice corrispondente ai paramtri passati.
-     * @param idUser        Identificativo dell utente (vedi {@link User#getId() User.getId()}) (non puo' essere null).
-     * @param measureType   Tipo di misura (vedi {@link UserMeasure#getMeasure()}  UserMeasure.getMeasure()}) (non puo' essere null).
-     * @param deviceModel   Modello del dispositivo (vedi {@link com.ti.app.telemed.core.common.Device#getModel() Device.getModel()}) (non puo' essere null).
-     * @return              Oggetto {@link UserDevice} o {@code null} in caso di errore.
+     * Verifica se ci sono misure da spedire dell'utente userId passato com parametro o di qualsiasi utente
+     * se viene passato null o una stringa vuota e ne ritorna il numero.
+     * @param userId        Identificativo dell'utente o null per qualsiasi utente.
+     * @return              Numero di misure che non sono ancora state spedite.
      */
-    public UserDevice getUserDevice(String idUser, String measureType, String deviceModel) {
-        if (idUser== null || measureType==null || deviceModel==null)
-            return null;
-        return DbManager.getDbManager().getUserDevice(idUser, measureType, deviceModel);
-    }
-
-    /**
-     * Resetta sul DB il campo relativo all'indirizzo Bluetooth dello UserDevice passato.
-     * @param userDevice    {@link UserDevice}.
-     */
-    public void cleanBtAddressDevice(UserDevice userDevice) {
-        if (userDevice != null)
-            DbManager.getDbManager().cleanBtAddressDevice(userDevice);
-    }
-
-    /**
-     * Aggiorna sul DB il campo relativo all'indirizzo Bluetooth dello UserDevice passato.
-     * @param userDevice    {@link UserDevice}.
-     */
-    public void updateBtAddressDevice(UserDevice userDevice) {
-        DbManager.getDbManager().updateBtAddressDevice(userDevice);
+    public int getNumNotSentMeasures(String userId) {
+        return DbManager.getDbManager().getNumNotSentMeasures(userId);
     }
 }

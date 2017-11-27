@@ -50,7 +50,7 @@ public class BootReceiver extends BroadcastReceiver implements  WebManagerResult
             User u = UserManager.getUserManager().getCurrentUser();
             if (u == null)
                 u = DbManager.getDbManager().getActiveUser();
-            if (u != null && !u.isBlocked()) {
+            if (u != null && !u.isDefaultUser() && !u.isBlocked()) {
                 try {
                     userId = u.getId();
                     login = u.getLogin();

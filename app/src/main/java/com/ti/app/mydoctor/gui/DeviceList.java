@@ -60,7 +60,6 @@ import android.widget.EditText;
 import android.widget.ExpandableListView;
 import android.widget.ExpandableListView.OnChildClickListener;
 import android.widget.GridView;
-import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -68,20 +67,20 @@ import android.widget.Toast;
 
 import com.ti.app.mydoctor.R;
 import com.ti.app.mydoctor.AppResourceManager;
+import com.ti.app.mydoctor.devicemodule.DeviceOperations;
 import com.ti.app.mydoctor.util.AppUtil;
 import com.ti.app.telemed.core.common.Measure;
 import com.ti.app.telemed.core.common.MeasureDetail;
 import com.ti.app.telemed.core.common.Patient;
 import com.ti.app.telemed.core.common.User;
 import com.ti.app.telemed.core.common.UserDevice;
-import com.ti.app.telemed.core.common.UserPatient;
-import com.ti.app.telemed.core.dbmodule.DbManager;
+import com.ti.app.telemed.core.common.UserMeasure;
+import com.ti.app.telemed.core.devicemodule.DeviceManager;
 import com.ti.app.telemed.core.measuremodule.MeasureManager;
 import com.ti.app.telemed.core.usermodule.UserManager;
 import com.ti.app.telemed.core.util.GWConst;
 import com.ti.app.mydoctor.MyDoctorApp;
 import com.ti.app.mydoctor.util.AppConst;
-import com.ti.app.mydoctor.devicemodule.DeviceManager;
 import com.ti.app.mydoctor.gui.customview.GWTextView;
 import com.ti.app.mydoctor.gui.listadapter.DeviceListAdapter;
 import com.ti.app.mydoctor.gui.listadapter.MainMenuListAdapter;
@@ -156,7 +155,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 
     private UserManager userManager;
     private MeasureManager measureManager;
-	private DeviceManager deviceManager;
+	private DeviceOperations deviceOperations;
 
     private DeviceManagerMessageHandler deviceManagerHandler = new DeviceManagerMessageHandler(this);
     private UserManagerMessageHandler userManagerHandler = new UserManagerMessageHandler(this);
@@ -178,7 +177,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	private Bundle startMeasureBundle;
 	private Bundle userDataBundle;
 
-	private List<String> measureList; // list of enabled measures types of the current User
+	private List<UserMeasure> measureList; // list of enabled measures types of the current User
 	private HashMap<String, List<UserDevice>> userDevicesMap; // list of UserDevices for every measure type of the current User
 
 	private boolean runningConfig;
@@ -186,7 +185,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	private GWTextView patientNameTV;
 	
 	private String[] patients;
-	private List<UserPatient> patientList;
+	private List<Patient> patientList;
 	
 	//Gestione menu laterale sinistro
 	private DrawerLayout mDrawerLayout;
@@ -250,6 +249,12 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
             customActionBar.setCustomView(titleView);
         }
 
+        deviceOperations = MyDoctorApp.getDeviceOperations();
+        deviceOperations.setHandler(deviceManagerHandler);
+        measureManager = MeasureManager.getMeasureManager();
+        userManager = UserManager.getUserManager();
+        userManager.setHandler(userManagerHandler);
+
 		//Ottengo il riferimento agli elementi che compongono la view
 		mDrawerLayout = (DrawerLayout) findViewById(R.id.device_list_drawer_layout);
 		mMenuDrawerList = (ExpandableListView) findViewById(R.id.device_list_left_menu);
@@ -305,24 +310,14 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
         //Inizializza la ListFragment con l'elenco dei dispositivi
         setFragmentView();
 
-		deviceManager = MyDoctorApp.getDeviceManager();
-		deviceManager.setHandler(deviceManagerHandler);
-
-		measureManager = MeasureManager.getMeasureManager();
-
-		userManager = UserManager.getUserManager();
-		userManager.setHandler(userManagerHandler);
-
         if ((ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_WIFI_STATE) != PackageManager.PERMISSION_GRANTED) ||
                 (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) ||
                 (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_NETWORK_STATE) != PackageManager.PERMISSION_GRANTED) ||
                 (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) ||
                 (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) ) {
-
             new Handler().postDelayed(new Runnable() {
                 @Override
                 public void run() {
-
                     ActivityCompat.requestPermissions(DeviceList.this,
                             new String[]{
                                     Manifest.permission.ACCESS_WIFI_STATE,
@@ -334,7 +329,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                             PERMISSIONS_REQUEST);
                 }
             }, 500);
-
         } else {
             new InitTask().execute();
         }
@@ -375,14 +369,12 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	}
 
     private class InitTask extends AsyncTask<Void, Void, Void> {
-
         private boolean errorFound;
-
         @Override
         protected Void doInBackground(Void... unused) {
             try {
                 errorFound = false;
-                checkUser(DbManager.getDbManager().getActiveUser());
+                checkUser(userManager.getActiveUser());
             } catch (Exception e) {
                 e.printStackTrace();
                 Log.e(TAG, "ERROR on doInBackground: " + e.getMessage());
@@ -412,19 +404,19 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 		super.onResume();
 		Log.i(TAG, "onResume()");
 		try {
-			deviceManager.setHandler(deviceManagerHandler);
+			deviceOperations.setHandler(deviceManagerHandler);
 			userManager.setHandler(userManagerHandler);
 		} catch (Exception e) {
 			Log.e(TAG, "ERROR on onResume: " + e.getMessage());
 		}
 
-		User u = UserManager.getUserManager().getCurrentUser();
+		User u = userManager.getCurrentUser();
 		if ((u != null) && u.isBlocked()) {
     		DialogManager.showToastMessage(DeviceList.this, AppResourceManager.getResource().getString("userBlocked"));
 			measureList = new ArrayList<>();
 			setupView();
 			resetView();
-			UserManager.getUserManager().setCurrentPatient(null);
+			userManager.setCurrentPatient(null);
 			doLogout();
     	}
 	}
@@ -433,7 +425,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	public void onDestroy(){
 		super.onDestroy();
 		Log.i(TAG, "onDestroy()");
-		UserManager.getUserManager().setCurrentPatient(null);
+        userManager.reset();
 	}
 
 	/**
@@ -486,73 +478,65 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	}
 
 	private void prepareMenuListView() {
-		User loggedUser;
-		synchronized (this) {
-            loggedUser = DbManager.getDbManager().getCurrentUser();
-		}
+		User loggedUser = userManager.getCurrentUser();
 
 		ArrayList<String> iconGroupArray = new ArrayList<>();
-		iconGroupArray.add(""+R.drawable.ic_menu_archive_dark);
-		iconGroupArray.add(""+R.drawable.ic_menu_user_list);
-		iconGroupArray.add(""+R.drawable.icon_menu_preferences);
-		iconGroupArray.add(""+R.drawable.ic_menu_about_dark);
-		iconGroupArray.add(""+R.drawable.ic_menu_logout_dark);
-		iconGroupArray.add(""+R.drawable.ic_menu_power_off_dark);
-
 		ArrayList<String> labelGroupArray = new ArrayList<>();
-		labelGroupArray.add(getResources().getString(R.string.mi_measure));
-		labelGroupArray.add(getResources().getString(R.string.mi_user));
-		labelGroupArray.add(getResources().getString(R.string.mi_devices_man));
-		labelGroupArray.add(getResources().getString(R.string.info));
-		labelGroupArray.add(getResources().getString(R.string.mi_logout));
-		labelGroupArray.add(getResources().getString(R.string.mi_exit));
-
 		ArrayList<String> labelUserOptionsArray = new ArrayList<>();
-		labelUserOptionsArray.add(getResources().getString(R.string.update_user));
-		labelUserOptionsArray.add(getResources().getString(R.string.list_users));
-		labelUserOptionsArray.add(getResources().getString(R.string.new_user));
-		labelUserOptionsArray.add(getResources().getString(R.string.settings));
-
 		ArrayList<ArrayList<String>> labelChildArray = new ArrayList<>();
-		labelChildArray.add(new ArrayList<String>());
-		labelChildArray.add(labelUserOptionsArray);
-		labelChildArray.add(new ArrayList<String>());
-		labelChildArray.add(new ArrayList<String>());
-		labelChildArray.add(new ArrayList<String>());
-		labelChildArray.add(new ArrayList<String>());
 
-		if(loggedUser == null || (loggedUser.getId().equalsIgnoreCase( DbManager.DEFAULT_USER_ID )) ){
-			iconGroupArray.remove(4); //remove icona Logout*
-			iconGroupArray.remove(0); //remove icona Misure
+		if(loggedUser == null || loggedUser.isDefaultUser()){
+            iconGroupArray.add(""+R.drawable.ic_menu_user_list);
+            labelGroupArray.add(getResources().getString(R.string.mi_user));
+            labelChildArray.add(labelUserOptionsArray);
 
-			labelGroupArray.remove(4); //remove etichetta Logout*
-			labelGroupArray.remove(0); //remove etichetta Misure
+            iconGroupArray.add(""+R.drawable.icon_menu_preferences);
+            labelGroupArray.add(getResources().getString(R.string.mi_devices_man));
+            labelChildArray.add(new ArrayList<String>());
 
-			if(DbManager.getDbManager().getNotLoggedUsers().size() != 0) {
-				labelUserOptionsArray.remove(3); //remove etichetta Impostazioni*
-				labelUserOptionsArray.remove(0); //remove etichetta Aggiorna
-			} else {
-				labelUserOptionsArray.remove(3); //remove etichetta Impostazioni*
-				labelUserOptionsArray.remove(1); //remove etichetta Elenco
-				labelUserOptionsArray.remove(0); //remove etichetta Aggiorna
-			}
+            iconGroupArray.add(""+R.drawable.ic_menu_about_dark);
+            labelGroupArray.add(getResources().getString(R.string.info));
+            labelChildArray.add(new ArrayList<String>());
 
-			labelChildArray.remove(4);
-			labelChildArray.remove(0);
+            iconGroupArray.add(""+R.drawable.ic_menu_power_off_dark);
+            labelGroupArray.add(getResources().getString(R.string.mi_exit));
+            labelChildArray.add(new ArrayList<String>());
+
+            if(userManager.getAllUsers().size() > 0)
+                labelUserOptionsArray.add(getResources().getString(R.string.list_users));
+            labelUserOptionsArray.add(getResources().getString(R.string.new_user));
 		} else {
-			iconGroupArray.remove(2); //remove icona Gestione Dispositivi*
-			labelGroupArray.remove(2); //remove etichetta Gestione Dispositivi*
-			labelChildArray.remove(2);
+            iconGroupArray.add(""+R.drawable.ic_menu_archive_dark);
+            labelGroupArray.add(getResources().getString(R.string.mi_measure));
+            labelChildArray.add(new ArrayList<String>());
+
+            iconGroupArray.add(""+R.drawable.ic_menu_user_list);
+            labelGroupArray.add(getResources().getString(R.string.mi_user));
+            labelChildArray.add(labelUserOptionsArray);
+
+            iconGroupArray.add(""+R.drawable.ic_menu_about_dark);
+            labelGroupArray.add(getResources().getString(R.string.info));
+            labelChildArray.add(new ArrayList<String>());
+
+            iconGroupArray.add(""+R.drawable.ic_menu_logout_dark);
+            labelGroupArray.add(getResources().getString(R.string.mi_logout));
+            labelChildArray.add(new ArrayList<String>());
+
+            iconGroupArray.add(""+R.drawable.ic_menu_power_off_dark);
+            labelGroupArray.add(getResources().getString(R.string.mi_exit));
+            labelChildArray.add(new ArrayList<String>());
+
+            labelUserOptionsArray.add(getResources().getString(R.string.update_user));
+            labelUserOptionsArray.add(getResources().getString(R.string.settings));
 
 			//La voce "Misure" viene abilitata solo se ci sono misure caricate nel DB
 			String idUser = loggedUser.getId();
 
-
 			//Contollo se la lista paziente � stata attivata
 			if( patientList != null ){
 				//Controllo se il paziente � stato scelto
-				if ( UserManager.getUserManager().getCurrentPatient() != null ) {
-					String idPatient = UserManager.getUserManager().getCurrentPatient().getId();
+				if ( userManager.getCurrentPatient() != null ) {
+					String idPatient = userManager.getCurrentPatient().getId();
 					ArrayList<Measure> ml = measureManager.getMeasureData(idUser, null, null, null, idPatient, false);
 					if(ml == null) {
 						//Non ci sono misure
@@ -567,12 +551,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 					labelChildArray.remove(0);
 				}
 			}
-
-			if(DbManager.getDbManager().getNotLoggedUsers().size() == 0) {
-				labelUserOptionsArray.remove(1); //remove etichetta Elenco
-			}
 		}
-
 		//Settare le liste iniziali
 		List<? extends Map<String, ?>> fillMapsGroupItem = createGroupList(iconGroupArray, labelGroupArray);
 		ArrayList< List<? extends Map<String, ?>> > fillMapsChildItem = createChildList(labelChildArray);
@@ -607,13 +586,13 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 				registerForContextMenu(deviceListFragment.getListView());
 			}
 
-			Patient p = UserManager.getUserManager().getCurrentPatient();
+			Patient p = userManager.getCurrentPatient();
 			if( p != null )
 				setCurrentUserLabel(p.getName() + " " + p.getSurname());
 			else
 				setCurrentUserLabel( "" );
 
-			if (UserManager.getUserManager().getCurrentUser().getIsPatient()) {
+			if (userManager.getCurrentUser().getIsPatient()) {
 				currentPatientLL.setVisibility(View.GONE);
 			} else {
 				currentPatientLL.setVisibility(View.VISIBLE);
@@ -724,7 +703,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                 else {
                     Log.i(TAG, "Mostrare le misure di " + patientNameTV.getText().toString());
                     intent = new Intent(DeviceList.this, ShowMeasure.class);
-                    intent.putExtra(ShowMeasure.SHOW_MEASURE_KEY, ShowMeasure.ALL_MEASURES);
+                    intent.putExtra(ShowMeasure.MEASURE_TYPE_KEY, "");
                     startActivity(intent);
                 }
                 break;
@@ -750,16 +729,8 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                 break;
             case ITEM_DEVICES_MANAGEMENT:
                 //Verifica che l'utente attivo sia quello di default
-                User loggedUser = UserManager.getUserManager().getCurrentUser();
-                if( loggedUser == null || DbManager.DEFAULT_USER_ID.equalsIgnoreCase(loggedUser.getId())){
-                    //Non ci sono utenti registrati, quindi crea l'utente di default
-                    try {
-                        DbManager.getDbManager().createDefaultUser();
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        showErrorDialog(AppResourceManager.getResource().getString("errorDb"));
-                    }
-
+                User loggedUser = userManager.getCurrentUser();
+                if( loggedUser == null || loggedUser.isDefaultUser()){
                     intent = new Intent(DeviceList.this, DeviceSettingsActivity.class);
                     startActivity(intent);
                 }
@@ -811,9 +782,9 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 
 	private void initMeasureModelsMap() {
 		userDevicesMap = new HashMap<>();
-		for (String measure : measureList) {
-			List<UserDevice> modelList = DbManager.getDbManager().getModelsForMeasure(measure, UserManager.getUserManager().getCurrentUser().getId());
-			userDevicesMap.put(measure, modelList);
+		for (UserMeasure um : measureList) {
+			List<UserDevice> modelList = DeviceManager.getDeviceManager().getModelsForMeasure(um.getMeasure(), userManager.getCurrentUser().getId());
+			userDevicesMap.put(um.getMeasure(), modelList);
 		}
 	}
 
@@ -838,8 +809,8 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 		int[] to = new int[] { R.id.grid_item_image, R.id.grid_item_label };
 
 		fillMaps = new ArrayList<>();
-		for (String measureType : measureList) {
-			HashMap<String, String> map = setFieldsMap(measureType);
+		for (UserMeasure um : measureList) {
+			HashMap<String, String> map = setFieldsMap(um.getMeasure());
 			fillMaps.add(map);
 		}
 
@@ -850,13 +821,13 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                 Log.i(TAG, "position: " + position);
                 Log.i(TAG, "parent.getItemAtPosition: " + parent.getItemAtPosition(position));
 
-                if (!deviceManager.isOperationRunning()) {
-                    selectedMeasureType = measureList.get(position);
+                if (!deviceOperations.isOperationRunning()) {
+                    selectedMeasureType = measureList.get(position).getMeasure();
                     selectedMeasurePosition = position;
                     if (getActiveUserDevice(selectedMeasureType) == null) {
                         showSelectModelDialog();
                     } else {
-                        deviceManager.setCurrentDevice(getActiveUserDevice(selectedMeasureType));
+                        deviceOperations.setCurrentDevice(getActiveUserDevice(selectedMeasureType));
                         operationType = DeviceListOperationType.measure;
                         selectPatient();
                     }
@@ -919,8 +890,8 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 		int[] to = new int[] { R.id.icon, R.id.label, R.id.model };
 
 		fillMaps = new ArrayList<>();
-		for (String measureType : measureList) {
-			HashMap<String, String> map = setFieldsMap(measureType);
+		for (UserMeasure um : measureList) {
+			HashMap<String, String> map = setFieldsMap(um.getMeasure());
 			fillMaps.add(map);
 		}
 
@@ -944,13 +915,13 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 				Log.i(TAG, "position: "+position);
 				Log.i(TAG, "parent.getItemAtPosition: "+parent.getItemAtPosition(position));
 
-				if(!deviceManager.isOperationRunning()){
-					selectedMeasureType = measureList.get(position);
+				if(!deviceOperations.isOperationRunning()){
+					selectedMeasureType = measureList.get(position).getMeasure();
 					selectedMeasurePosition = position;
 					if(getActiveUserDevice(selectedMeasureType) == null){
 						showSelectModelDialog();
 					} else {
-                        deviceManager.setCurrentDevice(getActiveUserDevice(selectedMeasureType));
+                        deviceOperations.setCurrentDevice(getActiveUserDevice(selectedMeasureType));
                         operationType = DeviceListOperationType.measure;
 						selectPatient();
 					}
@@ -963,16 +934,14 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	}
 
 	private void selectPatient() {
-		User currentUser = UserManager.getUserManager().getCurrentUser();
+		User currentUser = userManager.getCurrentUser();
 		if(patientNameTV.getText().toString().trim().equals(getText(R.string.selectPatient))) {
 
-			patientList = DbManager.getDbManager().getUserPatients(currentUser.getId());
+			patientList = currentUser.getPatients();
 			if (patientList != null && patientList.size() != 1) {
 				patients = new String[patientList.size()];
 				int counter = 0;
-				for (UserPatient up : patientList) {
-					Patient p;
-					p = DbManager.getDbManager().getPatientData(up.getIdPatient());
+				for (Patient p : patientList) {
 					patients[counter++] = "[" + p.getId() + "] " + p.getSurname() + " " + p.getName();
 				}
 			}
@@ -1028,9 +997,9 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 
 		mActionBarMenu = menu;
 
-		User activeUser = DbManager.getDbManager().getActiveUser();
+		User activeUser = UserManager.getUserManager().getActiveUser();
 
-		if( activeUser == null || activeUser.getId().equalsIgnoreCase( DbManager.DEFAULT_USER_ID ) ){
+		if( activeUser == null || activeUser.isDefaultUser() ){
 			MenuItemCompat.setShowAsAction(mActionBarMenu.findItem(R.id.action_bar_menu), MenuItemCompat.SHOW_AS_ACTION_NEVER);
 			mActionBarMenu.findItem(R.id.action_bar_menu).setVisible(false);
 		} else {
@@ -1055,13 +1024,13 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	public void onCreateContextMenu(ContextMenu menu, View v,
 			ContextMenuInfo menuInfo) {
 
-		if(deviceManager.isOperationRunning()){
+		if(deviceOperations.isOperationRunning()){
 			super.onCreateContextMenu(menu, v, menuInfo);
 			return;
 		}
 
 		AdapterContextMenuInfo info = (AdapterContextMenuInfo) menuInfo;
-		selectedMeasureType = measureList.get(info.position);
+		selectedMeasureType = measureList.get(info.position).getMeasure();
 		selectedMeasurePosition = info.position;
 
         UserDevice pd = getActiveUserDevice(selectedMeasureType);
@@ -1089,7 +1058,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
         }
 
         if (pd != null && pd.getDevice().isBTDevice()) {
-            boolean needCfg = deviceManager.needCfg(pd);
+            boolean needCfg = deviceOperations.needCfg(pd);
 			MenuItem mi;
 
             //Visibiltà voce Configura"
@@ -1154,7 +1123,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 			deviceListFragment.getListView().setSelection(info.position);
 		}
 
-        deviceManager.setCurrentDevice(getActiveUserDevice(selectedMeasureType));
+        deviceOperations.setCurrentDevice(getActiveUserDevice(selectedMeasureType));
 
 	    switch (item.getItemId()) {
 		    case R.id.pair:
@@ -1312,9 +1281,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 		}
 
 		//Rimuove paziente e utenti
-		UserManager.getUserManager().setCurrentPatient(null);
-        DbManager.getDbManager().setCurrentUser(null);
-
+		userManager.reset();
 	}
 
 	private void executeOperation() {
@@ -1328,8 +1295,8 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                 case pair:
                     UserDevice tmpUd = (UserDevice) ud.clone();
                     tmpUd.setBtAddress(null);
-                    deviceManager.setCurrentDevice(tmpUd);
-                    deviceManager.setPairingMode(true);
+                    deviceOperations.setCurrentDevice(tmpUd);
+                    deviceOperations.setPairingMode(true);
                     startScan();
                     break;
                 case measure:
@@ -1337,24 +1304,24 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                         if(AppUtil.isManualMeasure(ud.getDevice())){
                             startManualMeasure();
                         } else {
-                            deviceManager.setPairingMode(false);
+                            deviceOperations.setPairingMode(false);
                             startDeviceMeasure();
                         }
                     } else {
-                        deviceManager.setPairingMode(deviceManager.needPairing(ud));
+                        deviceOperations.setPairingMode(deviceOperations.needPairing(ud));
                         startScan();
                     }
                     break;
                 case config:
-                    deviceManager.setPairingMode(false);
-                    deviceManager.startConfig();
+                    deviceOperations.setPairingMode(false);
+                    deviceOperations.startConfig();
                     break;
             }
         }
 	}
 
 	private void startScan() {
-		if (!AppUtil.isCamera(deviceManager.getCurrentDevice().getDevice())) {
+		if (!AppUtil.isCamera(deviceOperations.getCurrentDevice().getDevice())) {
 			// Launch the DeviceScanActivity to see devices and do scan
 			Intent serverIntent = new Intent(this, DeviceScanActivity.class);
 			//startActivity(serverIntent);
@@ -1363,24 +1330,24 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	}
 
     private void startDeviceMeasure() {
-        User currentUser = UserManager.getUserManager().getCurrentUser();
+        User currentUser = userManager.getCurrentUser();
 
-        //La richiesta di conferma deve essere visualizzata se l'utente � un nurse, se il nurse ha pi� di un paziente e se la misura da effettuare � una spirometria
+        //La richiesta di conferma deve essere visualizzata se l'utente è un nurse, se il nurse ha più di un paziente e se la misura da effettuare è una spirometria
         if(!currentUser.getIsPatient() && selectedMeasureType.equalsIgnoreCase(GWConst.KMsrSpir)) {
-            List<UserPatient> userPatients = DbManager.getDbManager().getUserPatients(currentUser.getId());
+            List<Patient> userPatients = currentUser.getPatients();
             if (userPatients != null && userPatients.size() != 1){
                 myShowDialog(CONFIRM_PATIENT_DIALOG);
                 return;
             }
         }
-        deviceManager.startMeasure();
+        deviceOperations.startMeasure();
     }
 
     private void startManualMeasure() {
         UserDevice uDevice = getActiveUserDevice(selectedMeasureType);
-        if(UserManager.getUserManager().getCurrentPatient() != null && uDevice != null){
+        if(userManager.getCurrentPatient() != null && uDevice != null){
             //We set the current device in device Manager
-            deviceManager.setCurrentDevice(uDevice);
+            deviceOperations.setCurrentDevice(uDevice);
             if (uDevice.getMeasure().equalsIgnoreCase(GWConst.KMsrTemp)) {
                 Intent intent = new Intent(DeviceList.this, ManualTemperatureActivity.class);
                 startActivityForResult(intent, MANUAL_TEMPERATURE_ENTRY);
@@ -1395,11 +1362,10 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 
 	private void showMeasures(int position) {
 		Intent myIntent = new Intent(DeviceList.this, ShowMeasure.class);
-		if(viewMeasureBundle != null && viewMeasureBundle.getInt(POSITION) == -1)
-			myIntent.putExtra(ShowMeasure.SHOW_MEASURE_KEY, ShowMeasure.ALL_MEASURES);
-		else {
-			myIntent.putExtra(ShowMeasure.SHOW_MEASURE_KEY, AppResourceManager.getResource().getString("measureType." + measureList.get(position)));
-			myIntent.putExtra(ShowMeasure.SELECTED_MEASURE_KEY, measureList.get(position));
+		if(viewMeasureBundle != null && viewMeasureBundle.getInt(POSITION) == -1) {
+            myIntent.putExtra(ShowMeasure.MEASURE_TYPE_KEY, "");
+        } else {
+			myIntent.putExtra(ShowMeasure.MEASURE_TYPE_KEY, measureList.get(position).getMeasure());
 		}
 		startActivity(myIntent);
 	}
@@ -1415,12 +1381,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 			myIntent.putExtra(UsersList.ENABLE_DELETE_USER_ID, 1);
 		}
 		startActivityForResult(myIntent, intentMode);
-	}
-
-	public void showUserDialog(/*View button*/) {
-		myRemoveDialog(PRECOMPILED_LOGIN_DIALOG);
-		myRemoveDialog(LOGIN_DIALOG);
-		showUsers(USER_SELECTION);
 	}
 
 	@Override
@@ -1472,13 +1432,14 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
     		if (resultCode == RESULT_OK) {
     			if (data != null) {
     				Bundle extras = data.getExtras();
-    				String patientName = extras.getString(SelectPatient.PATIENT);
-    				String patientID = extras.getString(SelectPatient.PATIENT_ID);
-    				fitTextInPatientNameLabel(patientName);
-
-					Patient p = DbManager.getDbManager().getPatientData(patientID);
+					Patient p = (Patient)extras.getSerializable(SelectPatient.PATIENT);
+                    if (p == null) {
+                        Log.e(TAG, "Il paziente selezionato è NULL");
+                        return;
+                    }
+                    fitTextInPatientNameLabel(p.getName());
 					Log.i(TAG, "Selezionato il paziente " + p.getName() + " " + p.getSurname());
-					UserManager.getUserManager().setCurrentPatient(p);
+					userManager.setCurrentPatient(p);
     				if(viewMeasureBundle != null && viewMeasureBundle.getBoolean(VIEW_MEASURE, false)) {
 						Log.d(TAG, "Visualizzo le misure di " + p.getName() + " " + p.getSurname());
 						showMeasures(viewMeasureBundle.getInt(POSITION));
@@ -1494,13 +1455,14 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
     		if (resultCode == RESULT_OK) {
     			if (data != null) {
     				Bundle extras = data.getExtras();
-    				String patientName = extras.getString(SelectPatient.PATIENT);
-    				String patientID = extras.getString(SelectPatient.PATIENT_ID);
-    				fitTextInPatientNameLabel(patientName);
-
-					Patient p = DbManager.getDbManager().getPatientData(patientID);
+                    Patient p = (Patient)extras.getSerializable(SelectPatient.PATIENT);
+                    if (p == null) {
+                        Log.e(TAG, "Il paziente selezionato è NULL");
+                        return;
+                    }
+                    fitTextInPatientNameLabel(p.getName());
 					Log.i(TAG, "Selezionato il paziente " + p.getName() + " " + p.getSurname());
-					UserManager.getUserManager().setCurrentPatient(p);
+					userManager.setCurrentPatient(p);
     			}
     		}
     		myShowDialog(MEASURE_RESULT_DIALOG);
@@ -1518,9 +1480,9 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
     	case REQUEST_SCAN_DEVICES:
     		if (resultCode == Activity.RESULT_OK){
                 BluetoothDevice bd = data.getExtras().getParcelable(SELECTED_DEVICE);
-                deviceManager.selectDevice(bd);
+                deviceOperations.selectDevice(bd);
     		} else {
-                deviceManager.abortOperation();
+                deviceOperations.abortOperation();
                 myRemoveDialog(PROGRESS_DIALOG);
     		}
             refreshList();
@@ -1531,7 +1493,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                 MeasureManager.getMeasureManager().saveManualTemperature(temp, true);
     	     }
     	     if (resultCode == RESULT_CANCELED) {
-                 deviceManager.setCurrentDevice(null);
+                 deviceOperations.setCurrentDevice(null);
     	     }
     		 break;
     	}
@@ -1583,7 +1545,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 		builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
-
 				if (selectedModelPosition != -1) {
 					UserDevice selectedUserDevice = userDevices.get(selectedModelPosition);
 
@@ -1592,11 +1553,11 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 					}
 			    	selectedUserDevice.setActive(true);
 
-					DbManager.getDbManager().updateUserDeviceModel(selectedMeasureType, selectedUserDevice.getDevice().getId());
+					DeviceManager.getDeviceManager().updateUserDeviceModel(userManager.getCurrentUser().getId(),
+                            selectedMeasureType,
+                            selectedUserDevice.getDevice().getId());
 					initMeasureModelsMap();
-
 			    	refreshList();
-
 					dialog.dismiss();
 				}
 			}
@@ -1647,10 +1608,10 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 
 		@Override
 		public void onClick(View v) {
-			User currentUser = DbManager.getDbManager().getActiveUser();
+			User currentUser = userManager.getCurrentUser();
 			if(currentUser != null) {
 				Log.d(TAG, "Utente corrente: " + currentUser.getName() + " " + currentUser.getSurname());
-				patientList = DbManager.getDbManager().getUserPatients(currentUser.getId());
+				patientList = currentUser.getPatients();
 				if (patientList == null) {
 					dataBundle = new Bundle();
 					dataBundle.putString(AppConst.MESSAGE, getString(R.string.noPatient));
@@ -1659,9 +1620,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 				else if (patientList.size() != 1) {
 					patients = new String[patientList.size()];
 					int counter = 0;
-					for (UserPatient up : patientList) {
-						Patient p;
-						p = DbManager.getDbManager().getPatientData(up.getIdPatient());
+					for (Patient p : patientList) {
 						patients[counter++] = "[" + p.getId() + "] " + p.getSurname() + " " + p.getName();
 					}
 					viewMeasureBundle = null;
@@ -1681,9 +1640,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 
 	private void startSelectPatientActivity() {
 		Log.d(TAG, "startSelectPatientActivity()");
-		User currentUser = DbManager.getDbManager().getActiveUser();
 		Intent selectPatientIntent = new Intent(DeviceList.this, SelectPatient.class);
-		selectPatientIntent.putExtra(SelectPatient.USER_ID, currentUser.getId());
 		startActivityForResult(selectPatientIntent, PATIENT_SELECTION);
 	}
 
@@ -1714,24 +1671,24 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
         	Log.d(TAG, "DeviceManagerMessageHandler d=" + dataBundle);
 
             switch (msg.what) {
-                case DeviceManager.MESSAGE_STATE:
+                case DeviceOperations.MESSAGE_STATE:
                     dataBundle.putBoolean(AppConst.IS_MEASURE, true);
                     activity.myShowDialog(PROGRESS_DIALOG);
                     break;
-                case DeviceManager.MESSAGE_STATE_WAIT:
+                case DeviceOperations.MESSAGE_STATE_WAIT:
                     dataBundle.putBoolean(AppConst.IS_MEASURE, true);
                     activity.myShowDialog(PROGRESS_DIALOG);
                     break;
-                case DeviceManager.ASK_SOMETHING:
+                case DeviceOperations.ASK_SOMETHING:
                     activity.askSomething(
                             dataBundle.getString(AppConst.ASK_MESSAGE),
                             dataBundle.getString(AppConst.ASK_POSITIVE),
                             dataBundle.getString(AppConst.ASK_NEGATIVE));
                     break;
-                case DeviceManager.REFRESH_LIST:
+                case DeviceOperations.REFRESH_LIST:
                     activity.refreshList();
                     break;
-                case DeviceManager.MEASURE_RESULT:
+                case DeviceOperations.MEASURE_RESULT:
                     activity.refreshList();
                     activity.myRemoveDialog(PROGRESS_DIALOG);
                     if (ECGDrawActivity.getInstance() != null)
@@ -1739,19 +1696,19 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 					activity.measureData = (Measure) msg.obj;
                     activity.myShowDialog(MEASURE_RESULT_DIALOG);
                     break;
-                case DeviceManager.ERROR_STATE:
+                case DeviceOperations.ERROR_STATE:
                     activity.myRemoveDialog(PROGRESS_DIALOG);
                     if (ECGDrawActivity.getInstance() != null)
                         ECGDrawActivity.getInstance().finish();
                     activity.myShowDialog(ALERT_DIALOG);
                     break;
-                case DeviceManager.CONFIG_READY:
+                case DeviceOperations.CONFIG_READY:
 					activity.initMeasureModelsMap();
                     activity.refreshList();
                     activity.myRemoveDialog(PROGRESS_DIALOG);
                     activity.myShowDialog(ALERT_DIALOG);
                     break;
-				case DeviceManager.START_ECG_DRAW:
+				case DeviceOperations.START_ECG_DRAW:
                     activity.myRemoveDialog(PROGRESS_DIALOG);
                     Intent ecgDrawIntent = new Intent(activity, ECGDrawActivity.class);
                     activity.startActivity(ecgDrawIntent);
@@ -1779,10 +1736,10 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 			case UserManager.USER_CHANGED:
 				Log.d(TAG, " UserManager.USER_CHANGED: runningConfig=" + activity.runningConfig);
                 activity.resetView();
-				UserManager.getUserManager().setCurrentPatient(null);
+                activity.userManager.setCurrentPatient(null);
 				Log.i(TAG, "userManangerHandler: user changed");
 
-				activity.titleTV.setText(UserManager.getUserManager().getCurrentUser().getName() + "\n" + UserManager.getUserManager().getCurrentUser().getSurname());
+				activity.titleTV.setText(activity.userManager.getCurrentUser().getName() + "\n" + activity.userManager.getCurrentUser().getSurname());
 				activity.fitTextInPatientNameLabel(activity.getString(R.string.selectPatient));
 				activity.myRemoveDialog(PROGRESS_DIALOG);
 				activity.setupDeviceList();
@@ -1790,7 +1747,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 				//Forzo la ricostruzione del menu
 				activity.supportInvalidateOptionsMenu();
 
-				if (UserManager.getUserManager().getCurrentUser().getIsPatient()) {
+				if (activity.userManager.getCurrentUser().getIsPatient()) {
                     activity.currentPatientLL.setVisibility(View.GONE);
 				} else {
                     activity.currentPatientLL.setVisibility(View.VISIBLE);
@@ -1824,7 +1781,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                 activity.measureList = new ArrayList<>();
                 activity.setupView();
                 activity.resetView();
-                UserManager.getUserManager().setCurrentPatient(null);
+                activity.userManager.setCurrentPatient(null);
                 activity.setCurrentUserLabel("");
                 activity.currentPatientLL.setVisibility(View.GONE);
                 activity.doLogout();
@@ -1843,19 +1800,15 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	}
 
 	private void setupDeviceList() {
-		User currentUser = UserManager.getUserManager().getCurrentUser();
+		User currentUser = userManager.getCurrentUser();
 		if(currentUser != null){
 			//L'utente corrente diventa utente attivo
 			currentUser.setActive(true);
-			//Modifica il DB
-			DbManager.getDbManager().setCurrentUser(currentUser);
 
-			deviceManager.setCurrentUser(currentUser);
-
-            measureList = DbManager.getDbManager().getMeasureTypesForUser();
+            measureList = measureManager.getUserMeasures(currentUser.getId());
 			initMeasureModelsMap();
 
-			patientList = DbManager.getDbManager().getUserPatients(currentUser.getId());
+			patientList = currentUser.getPatients();
 			if (patientList == null || patientList.size() == 0) {
 				dataBundle = new Bundle();
 				dataBundle.putString(AppConst.MESSAGE, getString(R.string.noPatient));
@@ -1865,11 +1818,8 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 				setCurrentUserLabel(AppResourceManager.getResource().getString("selectPatient"));
 				patients = new String[patientList.size()];
 	        	int counter = 0;
-	        	for (UserPatient up : patientList) {
-	        		Patient p;
-
-	        		p = DbManager.getDbManager().getPatientData(up.getIdPatient());
-	        		patients[counter++] = "[" + p.getId() + "] " + p.getSurname() + " " + p.getName();
+	        	for (Patient p : patientList) {
+                    patients[counter++] = "[" + p.getId() + "] " + p.getSurname() + " " + p.getName();
 	        	}
 
 	        	if (patients == null || patients.length == 0) {
@@ -1882,9 +1832,9 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	        	}
 			}
 			else {
-				Patient p = DbManager.getDbManager().getPatientData(patientList.get(0).getIdPatient());
+				Patient p = patientList.get(0);
 				setCurrentUserLabel(p.getName() + " " + p.getSurname());
-				UserManager.getUserManager().setCurrentPatient(p);
+				userManager.setCurrentPatient(p);
 			}
 
 			setupView();
@@ -1937,7 +1887,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 		switch (id) {
             case LIST_OR_NEW_USER_DIALOG:
                 builder.setTitle(R.string.new_user_title);
-                if (DbManager.getDbManager().getNotLoggedUsers().size() != 0)
+                if (userManager.getAllUsers().size() != 0)
                     builder.setItems(new String[] {getString(R.string.newUser), getString(R.string.users_title)}, list_or_new_user_dialog_click_listener);
                 else
                     builder.setItems(new String[] {getString(R.string.newUser)}, list_or_new_user_dialog_click_listener);
@@ -1953,13 +1903,14 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                 builder.setTitle(null);
                 beep();
                 return builder.create();
+            case LOGIN_DIALOG:
             case PRECOMPILED_LOGIN_DIALOG:
                 builder.setTitle(R.string.authentication);
                 View login_dialog_v = inflater.inflate(R.layout.new_user, null);
                 loginET = (EditText) login_dialog_v.findViewById(R.id.login);
                 pwdET = (EditText) login_dialog_v.findViewById(R.id.password);
 
-                if( userDataBundle != null ) {
+                if (id == PRECOMPILED_LOGIN_DIALOG && userDataBundle != null) {
                     loginET.setText(userDataBundle.getString("LOGIN"));
                     if (!userDataBundle.getBoolean("CHANGEABLE"))
                         loginET.setEnabled(false);
@@ -1971,7 +1922,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 
                 pwdCB = (CheckBox) login_dialog_v.findViewById(R.id.passwordCheckBox);
                 pwdCB.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-
                     @Override
                     public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                         // Controlla se rendere visibile o meno la password
@@ -1984,65 +1934,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                         pwdET.setSelection(pwdET.getText().length());
                     }
                 });
-
-                //Controlla se ci sono altri utente registrati
-                if((DbManager.getDbManager().getNotLoggedUsers()).size() != 0) {
-                    //Abilita il button per la lista utenti
-                    ImageButton iv = (ImageButton) login_dialog_v.findViewById(R.id.user_list_button);
-                    iv.setVisibility(View.VISIBLE);
-
-                    iv.setOnClickListener( new OnClickListener() {
-
-                        @Override
-                        public void onClick(View v) {
-                            showUserDialog();
-                        }
-                    });
-                }
-
                 builder.setView(login_dialog_v);
-                builder.setPositiveButton(R.string.okButton, login_dialog_click_listener);
-                builder.setNegativeButton(R.string.cancelButton, login_dialog_click_listener);
-                beep();
-                return builder.create();
-            case LOGIN_DIALOG:
-                builder.setTitle(R.string.authentication);
-                View login_dialog_view = inflater.inflate(R.layout.new_user, null);
-                loginET = (EditText) login_dialog_view.findViewById(R.id.login);
-                pwdET = (EditText) login_dialog_view.findViewById(R.id.password);
-
-                pwdCB = (CheckBox) login_dialog_view.findViewById(R.id.passwordCheckBox);
-                pwdCB.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-
-                    @Override
-                    public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                        // Controlla se rendere visibile o meno la password
-                        if( isChecked ) {
-                            pwdET.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
-                        } else {
-                            pwdET.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
-                        }
-
-                        pwdET.setSelection(pwdET.getText().length());
-                    }
-                });
-
-                //Controlla se ci sono altri utente registrati
-                if((DbManager.getDbManager().getNotLoggedUsers()).size() != 0) {
-                    //Abilita il button per la lista utenti
-                    ImageButton iv = (ImageButton) login_dialog_view.findViewById(R.id.user_list_button);
-                    iv.setVisibility(View.VISIBLE);
-
-                    iv.setOnClickListener( new OnClickListener() {
-
-                        @Override
-                        public void onClick(View v) {
-                            showUserDialog();
-                        }
-                    });
-                }
-
-                builder.setView(login_dialog_view);
                 builder.setPositiveButton(R.string.okButton, login_dialog_click_listener);
                 builder.setNegativeButton(R.string.cancelButton, login_dialog_click_listener);
                 beep();
@@ -2199,7 +2091,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 
     	builder.setTitle(AppResourceManager.getResource().getString("confirmPatient"));
 
-    	Patient currentPatient = UserManager.getUserManager().getCurrentPatient();
+    	Patient currentPatient = userManager.getCurrentPatient();
     	String measureStr = AppResourceManager.getResource().getString("confirmChangeQuestion") + " " + currentPatient.getName() + " " + currentPatient.getSurname() + "?";
 		builder.setMessage(measureStr);
 
@@ -2241,7 +2133,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
         builder.setTitle(title);
 
         String txt = AppResourceManager.getResource().getString("MeasureResultDialog.sendMeasureMsg");
-        Patient patient = UserManager.getUserManager().getCurrentPatient();
+        Patient patient = userManager.getCurrentPatient();
         String msg = String.format(txt, patient.getName(), patient.getSurname());
         String okBtnMsg = AppResourceManager.getResource().getString("MeasureResultDialog.sendBtn");
         String action = MeasureDialogClickListener.SAVE_ACTION;
@@ -2252,14 +2144,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
         MeasureDialogClickListener measureDialogListener = new MeasureDialogClickListener(action, measureData.getMeasureType());
         builder.setPositiveButton(okBtnMsg, measureDialogListener);
         builder.setNegativeButton(AppResourceManager.getResource().getString("MeasureResultDialog.cancelBtn"), measureDialogListener);
-        /*
-        if (!deviceManager.getCurrentUser().getIsPatient() && !deviceManager.getCurrentDevice().getMeasure().equals(GWConst.KMsrSpir)) {
-            List<UserPatient> patients = DbManager.getDbManager().getUserPatients(UserManager.getUserManager().getCurrentUser().getId());
-            if (patients != null && patients.size() != 1) {
-                builder.setNeutralButton(R.string.changePatientQuestion, measureDialogListener);
-            }
-        }
-        */
         beep();
         builder.setCancelable(false);
         return builder.create();
@@ -2290,11 +2174,11 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	};
 
 	private void setOperationCompleted(){
-		//imposto il current device a null per segnalare al DeviceManager
+		//imposto il current device a null per segnalare al DeviceOperations
 		//che la misura corrente � terminata (eventualmente inviata e/o salvata su DB)
-		if(deviceManager.getCurrentDevice() != null) {
-			Log.i(TAG, "setOperationCompleted: " + deviceManager.getCurrentDevice().getDevice().getDescription() + " ha terminato");
-			deviceManager.setCurrentDevice(null);
+		if(deviceOperations.getCurrentDevice() != null) {
+			Log.i(TAG, "setOperationCompleted: " + deviceOperations.getCurrentDevice().getDevice().getDescription() + " ha terminato");
+			deviceOperations.setCurrentDevice(null);
 		}
 	}
 
@@ -2305,7 +2189,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 			myRemoveDialog(PROGRESS_DIALOG);
 			if(AppConst.IS_MEASURE.equals(tag)){
                 // annullo l'acquisizione di una misura
-                deviceManager.abortOperation();
+                deviceOperations.abortOperation();
                 myRemoveDialog(PROGRESS_DIALOG);
                 refreshList();
 			}
@@ -2322,7 +2206,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 			switch(which) {
                 case DialogInterface.BUTTON_POSITIVE:
                     Log.i(TAG, "Conferma paziente");
-                    deviceManager.startMeasure();
+                    deviceOperations.startMeasure();
                     break;
                 case DialogInterface.BUTTON_NEGATIVE:
                     Log.i(TAG, "Annulla misura");
@@ -2371,7 +2255,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                     myRemoveDialog(MEASURE_RESULT_DIALOG);
                     if(action.equals(SAVE_ACTION)){
                         // reimposto il paziente che potrebbeessere stato modificato dall'utente (vedi sotto: case DialogInterface.BUTTON_NEUTRAL)
-                        Patient p = UserManager.getUserManager().getCurrentPatient();
+                        Patient p = userManager.getCurrentPatient();
                         if (p != null)
                             measureData.setIdPatient(p.getId());
                         setOperationCompleted();
@@ -2388,12 +2272,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                         // TODO chiedere conferma dello scarto della misura
                         setOperationCompleted();
                     }
-                    break;
-                case DialogInterface.BUTTON_NEUTRAL:
-                    myRemoveDialog(MEASURE_RESULT_DIALOG);
-                    Intent selectPatientIntent = new Intent(DeviceList.this, SelectPatient.class);
-                    selectPatientIntent.putExtra(SelectPatient.USER_ID, deviceManager.getCurrentUser().getId());
-                    startActivityForResult(selectPatientIntent, PATIENT_SELECTION_2);
                     break;
             }
 
@@ -2424,7 +2302,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
         } else {
             long lastUpdateTime = user.getTimestamp();
             int diffHours = AppUtil.getDiffHours(new Date().getTime(), lastUpdateTime);
-			// riesegue il login da piattaforma solo se l'ultimo è stato effettuato da più di un ora
+			// Se l'ultimo è stato effettuato da più di un ora forza la login da piattaforma
             if (diffHours > 1) {
                 runningConfig = true;
                 //l'update della configurazione equivale a rifare il login (senza pero' chiedere user e pwd)
@@ -2451,13 +2329,13 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 		builder.setPositiveButton(positive, 
 				new DialogInterface.OnClickListener(){
 					public void onClick(DialogInterface arg0, int arg1) {		
-						deviceManager.confirmDialog();
+						deviceOperations.confirmDialog();
 					}
 		});
 		builder.setNegativeButton(negative, 
 				new DialogInterface.OnClickListener(){
 					public void onClick(DialogInterface arg0, int arg1) {		
-						deviceManager.cancelDialog();
+						deviceOperations.cancelDialog();
 						myRemoveDialog(PROGRESS_DIALOG);
 					}
 		});
@@ -2466,7 +2344,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	}
 
 	private void refreshList() {
-		HashMap<String, String> map = setFieldsMap(measureList.get(selectedMeasurePosition));
+		HashMap<String, String> map = setFieldsMap(measureList.get(selectedMeasurePosition).getMeasure());
 		fillMaps.remove(selectedMeasurePosition);
 		fillMaps.add(selectedMeasurePosition, map);
 		listAdapter.notifyDataSetChanged();

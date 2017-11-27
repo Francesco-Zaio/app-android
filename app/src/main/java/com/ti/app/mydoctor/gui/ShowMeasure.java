@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
-import java.util.Vector;
 
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -18,8 +17,6 @@ import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.ActionBar;
 import android.util.Log;
@@ -42,7 +39,6 @@ import com.ti.app.mydoctor.util.AppConst;
 import com.ti.app.mydoctor.AppResourceManager;
 import com.ti.app.mydoctor.util.AppUtil;
 import com.ti.app.telemed.core.common.Measure;
-import com.ti.app.telemed.core.dbmodule.DbManager;
 import com.ti.app.telemed.core.measuremodule.MeasureManager;
 import com.ti.app.telemed.core.syncmodule.SendMeasuresService;
 import com.ti.app.telemed.core.usermodule.UserManager;
@@ -56,9 +52,8 @@ import com.ti.app.mydoctor.util.MediaScannerNotifier;
 
 public class ShowMeasure extends ActionBarListActivity{
 
-    public static final String ALL_MEASURES = "ALL";
-    public static final String SHOW_MEASURE_KEY = "SHOW_MEASURE_KEY";
-    public static final String SELECTED_MEASURE_KEY = "SELECTED_MEASURE_KEY";
+    public static final String MEASURE_TYPE_KEY = "MEASURE_TYPE_KEY";
+    public static final String MEASURE_KEY = "MEASURE_KEY";
 
 	private static final String TAG = "ShowMeasure";
 	
@@ -92,10 +87,9 @@ public class ShowMeasure extends ActionBarListActivity{
 	private ArrayList<Measure> listaMisure = null;
     int numMeasureToSend;
 	private DragSortListView mListView;
-	private String currentOperation = "";
+	private String currentMeasureType = null;
 	private MeasureManager measureManager;
 	private GWTextView titleTV;
-	private boolean silent = false;
 	private Context context;
 	private String[] filterIds = null;
 	private boolean isImageManager = false;
@@ -108,7 +102,7 @@ public class ShowMeasure extends ActionBarListActivity{
 		    		selected_measure = listaMisure.get(which);
 					measureManager.deleteMeasure(selected_measure);
 					measures.clear();
-					populateActivity(currentOperation);
+					populateActivity(currentMeasureType);
 					if(!measures.isEmpty())
 						Toast.makeText(context, AppResourceManager.getResource().getString("KMsgDeleteMeasureConfirm"), Toast.LENGTH_SHORT).show();
 		        }
@@ -117,13 +111,10 @@ public class ShowMeasure extends ActionBarListActivity{
 				public void removingRequest(int which, Direction direction) {
 					selected_measure = listaMisure.get(which);					
                     Log.i(TAG, "Elimino misura: " + selected_measure.getMeasureType());
-                    if (!silent){
-                        dataBundle = new Bundle();
-                        dataBundle.putString(AppConst.TITLE, AppResourceManager.getResource().getString("warningTitle"));
-                        dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("showMeasureDialogDeleteQuestion1") + " " + AppResourceManager.getResource().getString("measureType." + selected_measure.getMeasureType()) + "?");
-                        showDialog(SWIPE_DELETE_CONFIRM_DIALOG);
-                    }
-
+                    dataBundle = new Bundle();
+                    dataBundle.putString(AppConst.TITLE, AppResourceManager.getResource().getString("warningTitle"));
+                    dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("showMeasureDialogDeleteQuestion1") + " " + AppResourceManager.getResource().getString("measureType." + selected_measure.getMeasureType()) + "?");
+                    showDialog(SWIPE_DELETE_CONFIRM_DIALOG);
 				}
 
 				@Override
@@ -149,57 +140,49 @@ public class ShowMeasure extends ActionBarListActivity{
 		measures = new ArrayList<>();
 		
 		Bundle data = getIntent().getExtras();
-		String activityTitle = data.getString(SHOW_MEASURE_KEY);
+		currentMeasureType = data.getString(MEASURE_TYPE_KEY);
 		
-		if(activityTitle != null) {			
-			if(activityTitle.equals("ALL")) {
-				from = new String[] { KEY_ICON_SENT, KEY_LABEL, KEY_TIMESTAMP };
-				to = new int[] { R.id.icon_sent, R.id.label, R.id.timestamp };
-				listAdapter = new MeasureListAdapter(this, measures, R.layout.all_measure_item_layout, from, to);
-				setListAdapter(listAdapter);
-				populateActivity("ALL");
-				currentOperation = "ALL";
-			}
-			else {
-				from = new String[] { KEY_ICON_SENT, KEY_DATE, KEY_HOUR };
-				to = new int[] { R.id.icon_sent, R.id.date_timestamp, R.id.hour_timestamp };
-				//listAdapter = new DeviceListAdapter(this, measures, R.layout.measure_item_layout, from, to);
-				listAdapter = new MeasureListAdapter(this, measures, R.layout.measure_item_layout, from, to);
-				setListAdapter(listAdapter);
-				populateActivity(data.getString(SELECTED_MEASURE_KEY));
-				currentOperation = data.getString(SELECTED_MEASURE_KEY);
-			}
+		if(currentMeasureType == null || currentMeasureType.isEmpty()) {
+			from = new String[] { KEY_ICON_SENT, KEY_LABEL, KEY_TIMESTAMP };
+			to = new int[] { R.id.icon_sent, R.id.label, R.id.timestamp };
+			listAdapter = new MeasureListAdapter(this, measures, R.layout.all_measure_item_layout, from, to);
+			setListAdapter(listAdapter);
+			populateActivity(currentMeasureType);
+			setTitle(getString(R.string.manageMeasure));
+		}
+		else {
+			from = new String[] { KEY_ICON_SENT, KEY_DATE, KEY_HOUR };
+			to = new int[] { R.id.icon_sent, R.id.date_timestamp, R.id.hour_timestamp };
+			//listAdapter = new DeviceListAdapter(this, measures, R.layout.measure_item_layout, from, to);
+			listAdapter = new MeasureListAdapter(this, measures, R.layout.measure_item_layout, from, to);
+			setListAdapter(listAdapter);
+			populateActivity(currentMeasureType);
+            String s = AppResourceManager.getResource().getString("measureType."+currentMeasureType);
+			setTitle(getString(R.string.measure_title) + " " + s);
+		}
 
-            ActionBar customActionBar = this.getSupportActionBar();
-            if (customActionBar != null) {
-                //Setta il gradiente di sfondo della action bar
-                Drawable cd = ContextCompat.getDrawable(getApplicationContext(),R.drawable.action_bar_background_color);
-                customActionBar.setBackgroundDrawable(cd);
+		ActionBar customActionBar = this.getSupportActionBar();
+		if (customActionBar != null) {
+			//Setta il gradiente di sfondo della action bar
+			Drawable cd = ContextCompat.getDrawable(getApplicationContext(),R.drawable.action_bar_background_color);
+			customActionBar.setBackgroundDrawable(cd);
 
-                customActionBar.setDisplayShowCustomEnabled(true);
-                customActionBar.setDisplayShowTitleEnabled(false);
+			customActionBar.setDisplayShowCustomEnabled(true);
+			customActionBar.setDisplayShowTitleEnabled(false);
 
-                //Setta l'icon
-                customActionBar.setIcon(R.drawable.icon_action_bar);
+			//Setta l'icon
+			customActionBar.setIcon(R.drawable.icon_action_bar);
 
-                //Ricava la TextView dell'ActionBar
-                LayoutInflater inflator = (LayoutInflater) this.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                View titleView = inflator.inflate(R.layout.actionbar_title, null);
-                titleTV = (GWTextView) titleView.findViewById(R.id.actionbar_title_label);
-                titleTV.setText(R.string.show_measures);
-                customActionBar.setCustomView(titleView);
+			//Ricava la TextView dell'ActionBar
+			LayoutInflater inflator = (LayoutInflater) this.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+			View titleView = inflator.inflate(R.layout.actionbar_title, null);
+			titleTV = (GWTextView) titleView.findViewById(R.id.actionbar_title_label);
+			titleTV.setText(R.string.show_measures);
+			customActionBar.setCustomView(titleView);
 
-                //L'icona dell'App diventa tasto per tornare nella Home
-                customActionBar.setHomeButtonEnabled(true);
-                customActionBar.setDisplayHomeAsUpEnabled(true);
-            }
-			
-			if (activityTitle.equals("ALL")) {
-				setTitle(getString(R.string.manageMeasure));
-			}
-			else {
-				setTitle(getString(R.string.measure_title) + " " + activityTitle);
-			}
+			//L'icona dell'App diventa tasto per tornare nella Home
+			customActionBar.setHomeButtonEnabled(true);
+			customActionBar.setDisplayHomeAsUpEnabled(true);
 		}
 		
 		mListView = (DragSortListView) getListView();
@@ -208,30 +191,21 @@ public class ShowMeasure extends ActionBarListActivity{
 
 		mListView.setDivider(null); //rimuove la linea di bordo
 		mListView.setCacheColorHint(Color.TRANSPARENT); //il background della lista non cambia colore durante lo scroll
-		registerForContextMenu(mListView);	
-		
-		silent = false;
+		registerForContextMenu(mListView);
 
-        String selecteMeasType = data.getString(SELECTED_MEASURE_KEY);
-        if (selecteMeasType != null) {
-            isImageManager = selecteMeasType.equalsIgnoreCase(GWConst.KMsrImg);
-		}
+        isImageManager = GWConst.KMsrImg.equals(currentMeasureType);
 	}
 
 	private void retrySendAllMeasure() {
      	String idUser = UserManager.getUserManager().getCurrentUser().getId();
-        int numMeasures = DbManager.getDbManager().getNumNotSentMeasures(idUser);
+        int numMeasures = MeasureManager.getMeasureManager().getNumNotSentMeasures(idUser);
     	if(numMeasures == 0) {
-    		if (!silent)
-    			showDialog(SIMPLE_DIALOG);
-    	}
-    	else {
-    		if (!silent){
-	    		measuresResultBundle = new Bundle();
-	    		measuresResultBundle.putString(AppConst.TITLE, AppResourceManager.getResource().getString("warningTitle"));
-	    		measuresResultBundle.putInt(MEASURE_NUMBER, numMeasures);
-    			showDialog(SEND_MEASURES_DIALOG);
-    		}
+            showDialog(SIMPLE_DIALOG);
+    	} else {
+            measuresResultBundle = new Bundle();
+            measuresResultBundle.putString(AppConst.TITLE, AppResourceManager.getResource().getString("warningTitle"));
+            measuresResultBundle.putInt(MEASURE_NUMBER, numMeasures);
+            showDialog(SEND_MEASURES_DIALOG);
     	}
 	}
 
@@ -312,7 +286,7 @@ public class ShowMeasure extends ActionBarListActivity{
 	public boolean onPrepareOptionsMenu(Menu menu) {
 		//Controllo se la lista misura è stata inizializzata
 		if(listaMisure != null) {
-		     numMeasureToSend = DbManager.getDbManager().getNumNotSentMeasures(UserManager.getUserManager().getCurrentUser().getId());
+		     numMeasureToSend = MeasureManager.getMeasureManager().getNumNotSentMeasures(UserManager.getUserManager().getCurrentUser().getId());
 			//Controllo se nella lista ci sono misure da inviare
 			if(numMeasureToSend == 0) {
 				menu.findItem(R.id.retry_send_all_measure).setVisible(false);
@@ -348,20 +322,17 @@ public class ShowMeasure extends ActionBarListActivity{
 	    switch (item.getItemId()) {
 	    case android.R.id.home: //Ritorna alla Home quando si clicca sull'icona della App
             finish();
-            return true; 
-            
+            return true;
 	    case R.id.delete_all_measure:
-	    	if (!silent){
-		    	dataBundle = new Bundle();
-		    	dataBundle.putInt(DELETE_TYPE, 2);
-		    	dataBundle.putString(AppConst.TITLE, AppResourceManager.getResource().getString("warningTitle"));
-		    	if(currentOperation.equals("ALL"))
-		    		dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("showMeasureDialogDeleteQuestion3") + "?");
-		    	else
-		    		dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("showMeasureDialogDeleteQuestion2") + " " + AppResourceManager.getResource().getString("measureType." + currentOperation) + "?");
-		    	
-	    		showDialog(DELETE_CONFIRM_DIALOG);
-	    	}
+            dataBundle = new Bundle();
+            dataBundle.putInt(DELETE_TYPE, 2);
+            dataBundle.putString(AppConst.TITLE, AppResourceManager.getResource().getString("warningTitle"));
+            if(currentMeasureType==null || currentMeasureType.isEmpty())
+                dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("showMeasureDialogDeleteQuestion3") + "?");
+            else
+                dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("showMeasureDialogDeleteQuestion2") + " " + AppResourceManager.getResource().getString("measureType." + currentMeasureType) + "?");
+
+            showDialog(DELETE_CONFIRM_DIALOG);
 	        return true;
 	    case R.id.retry_send_all_measure:
 	    	retrySendAllMeasure();
@@ -391,13 +362,11 @@ public class ShowMeasure extends ActionBarListActivity{
 	    case R.id.delete_measure:
 	    	//L'utente ha selezionato la voce "Elimina misura"
 			Log.i(TAG, "Elimino misura: " + selected_measure.getMeasureType());
-	    	if (!silent){
-	    		dataBundle = new Bundle();
-				dataBundle.putInt(DELETE_TYPE, 1);
-		    	dataBundle.putString(AppConst.TITLE, AppResourceManager.getResource().getString("warningTitle"));
-		    	dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("showMeasureDialogDeleteQuestion1") + " " + AppResourceManager.getResource().getString("measureType." + selected_measure.getMeasureType()) + "?");
-	    		showDialog(DELETE_CONFIRM_DIALOG);
-	    	}
+            dataBundle = new Bundle();
+            dataBundle.putInt(DELETE_TYPE, 1);
+            dataBundle.putString(AppConst.TITLE, AppResourceManager.getResource().getString("warningTitle"));
+            dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("showMeasureDialogDeleteQuestion1") + " " + AppResourceManager.getResource().getString("measureType." + selected_measure.getMeasureType()) + "?");
+            showDialog(DELETE_CONFIRM_DIALOG);
 	    	return true;
 		default:
 		    return super.onOptionsItemSelected(item);
@@ -413,15 +382,12 @@ public class ShowMeasure extends ActionBarListActivity{
 					//Viene eliminata la singola misura
 					measureManager.deleteMeasure(selected_measure);
 					measures.clear();
-					populateActivity(currentOperation);
+					populateActivity(currentMeasureType);
 					if(!measures.isEmpty())
 						Toast.makeText(context, AppResourceManager.getResource().getString("KMsgDeleteMeasureConfirm"), Toast.LENGTH_LONG).show();
 					
 					listAdapter.notifyDataSetChanged();
 				}
-			}
-			if (resultCode == RESULT_CANCELED) {    
-				//Write your code if there's no result
 			}
 		}
 	}
@@ -455,15 +421,15 @@ public class ShowMeasure extends ActionBarListActivity{
 					measureManager.deleteMeasure(selected_measure);
 					
 					if (selected_measure.getFile() != null && selected_measure.getFile().length < Byte.MAX_VALUE) {
-						
-						Log.d(TAG, "deleteMeasure delete-file=" + new String(selected_measure.getFile()));			
+						// TODO
+                        Log.d(TAG, "deleteMeasure delete-file=" + new String(selected_measure.getFile()));
 						File fileToDelete = new File(new String(selected_measure.getFile()));
 						new MediaScannerNotifier().delete(ShowMeasure.this, fileToDelete.getAbsolutePath());	
 						fileToDelete.delete();						
 					}
 					
 					measures.clear();
-					populateActivity(currentOperation);
+					populateActivity(currentMeasureType);
 					if(!measures.isEmpty())
 						Toast.makeText(context, AppResourceManager.getResource().getString("KMsgDeleteMeasureConfirm"), Toast.LENGTH_SHORT).show();
 					break;
@@ -471,7 +437,7 @@ public class ShowMeasure extends ActionBarListActivity{
 					//Vengono eliminate tutte le misure di un certo tipo
 					String idUser = UserManager.getUserManager().getCurrentUser().getId();
 					String idPatient = UserManager.getUserManager().getCurrentPatient().getId();
-					measureManager.deleteMeasures(idUser, idPatient, currentOperation);
+					measureManager.deleteMeasures(idUser, idPatient, null);
 					
 					if (isImageManager) {
 						final File[] files = AppUtil.getDir().listFiles();
@@ -482,7 +448,7 @@ public class ShowMeasure extends ActionBarListActivity{
 					}
 					
 					measures.clear();
-					populateActivity(currentOperation);
+					populateActivity(currentMeasureType);
 					break;
 				}
 
@@ -507,7 +473,7 @@ public class ShowMeasure extends ActionBarListActivity{
 				//Viene eliminata la singola misura
 				measureManager.deleteMeasure(selected_measure);
 				measures.clear();
-				populateActivity(currentOperation);
+				populateActivity(currentMeasureType);
 				if(!measures.isEmpty())
 					Toast.makeText(context, AppResourceManager.getResource().getString("KMsgDeleteMeasureConfirm"), Toast.LENGTH_SHORT).show();
 				
@@ -575,7 +541,7 @@ public class ShowMeasure extends ActionBarListActivity{
 				}
 				else {
 					Intent intent = new Intent(ShowMeasure.this, MeasureDetails.class);
-					intent.putExtra(SELECTED_MEASURE_KEY, selected_measure);
+					intent.putExtra(MEASURE_KEY, selected_measure);
 					startActivityForResult(intent, MEASURE_DETAILS);
 				}
 			}
@@ -590,11 +556,10 @@ public class ShowMeasure extends ActionBarListActivity{
 	/**
 	 * Metodo che permette di riempire il contenuto dell'activity con gli opportuni valori
 	 */
-	private void populateActivity(String idMisura) {
+	private void populateActivity(String measureType) {
 		String idUser = UserManager.getUserManager().getCurrentUser().getId();
 		
 		String idPatient = UserManager.getUserManager().getCurrentPatient().getId();
-		String measureType = idMisura.equals("ALL")? null:idMisura;
 		listaMisure = measureManager.getMeasureData(idUser, null, null, measureType, idPatient, false);
 		if(listaMisure != null) {
             for (Measure misura : listaMisure) {
@@ -672,9 +637,7 @@ public class ShowMeasure extends ActionBarListActivity{
 		dataBundle = new Bundle();
 		dataBundle.putString(AppConst.TITLE, title);
 		dataBundle.putString(AppConst.MESSAGE, message);
-		
-		if (!silent)
-			showDialog(ALERT_DIALOG);
+        showDialog(ALERT_DIALOG);
 	}
 	
 	/**

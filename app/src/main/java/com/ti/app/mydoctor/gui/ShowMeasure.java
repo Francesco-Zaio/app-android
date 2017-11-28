@@ -56,7 +56,7 @@ public class ShowMeasure extends ActionBarListActivity{
     public static final String MEASURE_KEY = "MEASURE_KEY";
 
 	private static final String TAG = "ShowMeasure";
-	
+
 	//La misura selezionata dall'utente: Si possono visualizzare i dettagli della misura, eliminarla oppure riprovare l'invio
 	private Measure selected_measure;
 
@@ -141,8 +141,32 @@ public class ShowMeasure extends ActionBarListActivity{
 		
 		Bundle data = getIntent().getExtras();
 		currentMeasureType = data.getString(MEASURE_TYPE_KEY);
-		
-		if(currentMeasureType == null || currentMeasureType.isEmpty()) {
+
+        ActionBar customActionBar = this.getSupportActionBar();
+        if (customActionBar != null) {
+            //Setta il gradiente di sfondo della action bar
+            Drawable cd = ContextCompat.getDrawable(getApplicationContext(),R.drawable.action_bar_background_color);
+            customActionBar.setBackgroundDrawable(cd);
+
+            customActionBar.setDisplayShowCustomEnabled(true);
+            customActionBar.setDisplayShowTitleEnabled(false);
+
+            //Setta l'icon
+            customActionBar.setIcon(R.drawable.icon_action_bar);
+
+            //Ricava la TextView dell'ActionBar
+            LayoutInflater inflator = (LayoutInflater) this.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+            View titleView = inflator.inflate(R.layout.actionbar_title, null);
+            titleTV = (GWTextView) titleView.findViewById(R.id.actionbar_title_label);
+            titleTV.setText(R.string.show_measures);
+            customActionBar.setCustomView(titleView);
+
+            //L'icona dell'App diventa tasto per tornare nella Home
+            customActionBar.setHomeButtonEnabled(true);
+            customActionBar.setDisplayHomeAsUpEnabled(true);
+        }
+
+        if(currentMeasureType == null || currentMeasureType.isEmpty()) {
 			from = new String[] { KEY_ICON_SENT, KEY_LABEL, KEY_TIMESTAMP };
 			to = new int[] { R.id.icon_sent, R.id.label, R.id.timestamp };
 			listAdapter = new MeasureListAdapter(this, measures, R.layout.all_measure_item_layout, from, to);
@@ -161,30 +185,6 @@ public class ShowMeasure extends ActionBarListActivity{
 			setTitle(getString(R.string.measure_title) + " " + s);
 		}
 
-		ActionBar customActionBar = this.getSupportActionBar();
-		if (customActionBar != null) {
-			//Setta il gradiente di sfondo della action bar
-			Drawable cd = ContextCompat.getDrawable(getApplicationContext(),R.drawable.action_bar_background_color);
-			customActionBar.setBackgroundDrawable(cd);
-
-			customActionBar.setDisplayShowCustomEnabled(true);
-			customActionBar.setDisplayShowTitleEnabled(false);
-
-			//Setta l'icon
-			customActionBar.setIcon(R.drawable.icon_action_bar);
-
-			//Ricava la TextView dell'ActionBar
-			LayoutInflater inflator = (LayoutInflater) this.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-			View titleView = inflator.inflate(R.layout.actionbar_title, null);
-			titleTV = (GWTextView) titleView.findViewById(R.id.actionbar_title_label);
-			titleTV.setText(R.string.show_measures);
-			customActionBar.setCustomView(titleView);
-
-			//L'icona dell'App diventa tasto per tornare nella Home
-			customActionBar.setHomeButtonEnabled(true);
-			customActionBar.setDisplayHomeAsUpEnabled(true);
-		}
-		
 		mListView = (DragSortListView) getListView();
 		mListView.setRemoveListener(onRemove);
 		mListView.setOnItemClickListener(listViewItemClickListener);

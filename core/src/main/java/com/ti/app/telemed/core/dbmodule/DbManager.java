@@ -163,13 +163,6 @@ public class DbManager {
         + "PRIMARY KEY (TIMESTAMP, MEASURE_TYPE), "
 		+ "FOREIGN KEY (ID_PATIENT) REFERENCES PATIENT (ID) ON DELETE CASCADE, "
 		+ "FOREIGN KEY (ID_USER) REFERENCES USER (ID) ON DELETE CASCADE )";
-    
-    private static final String CREATE_CERTIFICATES_TBL = "CREATE TABLE CERTIFICATES ("
-    	+ "ID integer primary key autoincrement, "
-    	+ "ID_USER text, "
-    	+ "HOSTNAME text, "
-    	+ "PUBLIC_KEY BLOB, "
-    	+ "FOREIGN KEY (ID_USER) REFERENCES USER (ID) ON DELETE CASCADE )";
 
 	private static class DatabaseHelper extends SQLiteOpenHelper {
 
@@ -189,7 +182,6 @@ public class DbManager {
             db.execSQL(CREATE_CURRENT_DEVICE_TBL);
             db.execSQL(CREATE_SERVER_CONF_TBL);
             db.execSQL(CREATE_MEASURE_PROTOCOL_CFG_TBL);
-            db.execSQL(CREATE_CERTIFICATES_TBL);
             Log.i(TAG, "Database created");
         }
 
@@ -226,6 +218,7 @@ public class DbManager {
                         // rimossa colonna DEVICE_TYPE da MEASURE non serve fare nulla
                     case 15:
                         db.execSQL("ALTER TABLE DEVICE ADD COLUMN CLASS_NAME text");
+                        db.execSQL("DROP TABLE IF EXISTS CERTIFICATES");
                 }
             }
         }
@@ -271,12 +264,10 @@ public class DbManager {
     	dbManager = null;
     }
 
-    public static DbManager getDbManager(){
-        if(dbManager == null){
+    public synchronized static DbManager getDbManager(){
+        if (dbManager == null) {
             dbManager = new DbManager();
             dbManager.open();
-            if (dbManager.getUser(DEFAULT_USER_ID) == null)
-                dbManager.createDefaultUser();
         }
         return dbManager;
     }
@@ -695,7 +686,7 @@ public class DbManager {
         }
 	}
 
-    private User createDefaultUser() {
+    public User createDefaultUser() {
         Vector<Object> dataContainer = new Vector<>();
 
         User defaultUser = new User();
@@ -911,20 +902,6 @@ public class DbManager {
 	}
 
     /**
-     * Metodo che permette di ricavare le impostazioni di auto-login dell'utente
-     * @param idUser variabile di tipo {@code String} che contiene l'identificatore dell'utente
-     * @return variabile di tipo {@code boolean} che indica se l'utente ha abilitato o meno l'auto-login
-     */
-    public boolean getAutoLoginStatus(String idUser) {
-        boolean status;
-        Cursor c = mDb.query("USER", new String[] {"AUTO_LOGIN"}, "ID = ?", new String[] {idUser}, null, null, null);
-        c.moveToFirst();
-        status = (c.getInt(c.getColumnIndex("AUTO_LOGIN")) == 1);
-        c.close();
-        return status;
-    }
-
-    /**
      * Metodo che permette di salvare le impostazioni di auto-login dell'utente
      * @param idUser variabile di tipo {@code String} che contiene l'identificatore dell'utente
      * @param checked variabile di tipo {@code boolean} che indica se l'utente ha abilitato o meno l'auto-login
@@ -1004,8 +981,8 @@ public class DbManager {
             values.put("SYMPTOMS", p.getSymptoms());
             values.put("QUESTIONS", p.getQuestions());
 
-            mDb.insert("PATIENT", null, values);
-            logger.log(Level.INFO, "Patient " + p.getId() + " inserted");
+            long rowid = mDb.insert("PATIENT", null, values);
+            logger.log(Level.INFO, "Patient " + p.getId() + " inserted: rowId="+rowid);
         }
 	}
 	
@@ -1043,7 +1020,8 @@ public class DbManager {
             ContentValues values = new ContentValues();
             values.put("ID_USER", userId);
             values.put("ID_PATIENT", patientId);
-            mDb.insert("USER_PATIENT", null, values);
+            long rowid = mDb.insert("USER_PATIENT", null, values);
+            logger.log(Level.INFO, "Userpatient inserted: rowId="+rowid);
         }
 	}
 

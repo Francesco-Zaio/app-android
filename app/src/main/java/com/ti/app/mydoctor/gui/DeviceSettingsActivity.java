@@ -38,6 +38,7 @@ import com.ti.app.mydoctor.devicemodule.DeviceOperations;
 import com.ti.app.mydoctor.util.AppConst;
 import com.ti.app.mydoctor.AppResourceManager;
 import com.ti.app.mydoctor.util.AppUtil;
+import com.ti.app.telemed.core.common.Patient;
 import com.ti.app.telemed.core.common.User;
 import com.ti.app.telemed.core.common.UserDevice;
 import com.ti.app.telemed.core.devicemodule.DeviceManager;
@@ -202,6 +203,7 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
 	//Inizializza mappa dei dispositivi
 	private void initDeviceMap() {
 		deviceMap = new HashMap<>();
+		measureList = new ArrayList<>();
 		List<UserDevice> dList = DeviceManager.getDeviceManager().getCurrentUserDevices();
 		for (UserDevice pDevice : dList) {
             if (!measureList.contains(pDevice.getMeasure()))
@@ -237,8 +239,11 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
 	
 	private void setupDeviceList() {
         // Imposta l'utente di amministrazione
+		Log.d(TAG, "setupDeviceList");
 		defaultUser = UserManager.getUserManager().setDefaultUser();
 		if(defaultUser != null){
+			User curru = UserManager.getUserManager().getCurrentUser();
+			Patient currp = UserManager.getUserManager().getCurrentPatient();
 			//L'utente corrente diventa utente attivo
 			// defaultUser.setActive(true);
 			initDeviceMap();

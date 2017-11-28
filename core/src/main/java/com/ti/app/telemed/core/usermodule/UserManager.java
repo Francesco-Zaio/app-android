@@ -201,6 +201,8 @@ public class UserManager {
     public User setDefaultUser(){
         synchronized (currT) {
             currentUser = DbManager.getDbManager().getUser(DbManager.DEFAULT_USER_ID);
+            if (currentUser == null)
+                currentUser = DbManager.getDbManager().createDefaultUser();
             currentPatient = currentUser.getPatients().get(0);
             return currentUser;
         }

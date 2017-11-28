@@ -2,12 +2,6 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
       android:layout_width="fill_parent"
       android:layout_height="fill_parent">
-    	  
-    <!-- <ListView 
-		android:id="@+id/android:list"
-	    android:layout_width="fill_parent"
-	    android:layout_height="fill_parent"
-	    android:background="@drawable/gw_listview_background_color"/>  -->
 	    
     <com.ti.app.mydoctor.gui.customview.DragSortListView
 	    xmlns:dslv="http://schemas.android.com/apk/res/com.ti.app.mydoctor"

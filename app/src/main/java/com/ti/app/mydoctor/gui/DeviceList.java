@@ -1942,6 +1942,9 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                     }
                 });
                 builder.setView(new_password_dialog);
+                // utilizzo questo modo di impostare i listener dei bottoni per evitare che il
+                // il dialogo si chiuda sul click su OK nel caso in cui le due password non coincidono.
+                // in questo caso il dialogo resta aperto e compare un Toast di warning
                 builder.setPositiveButton(R.string.okButton, null);
                 builder.setNegativeButton(R.string.cancelButton, null);
                 final AlertDialog d = builder.create();
@@ -1984,7 +1987,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                         } else {
                             pwdET.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
                         }
-
                         pwdET.setSelection(pwdET.getText().length());
                     }
                 });

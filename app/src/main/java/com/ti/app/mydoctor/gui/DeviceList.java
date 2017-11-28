@@ -120,6 +120,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	private static final int ITEM_USER_LIST = 4;
 	private static final int ITEM_USER_NEW = 5;
 	private static final int ITEM_USER_OPTIONS = 6;
+	private static final int ITEM_CHANGE_PASSWORD = 7;
 	private static final int ITEM_DEVICES_MANAGEMENT = 8;
 	private static final int ITEM_ABOUT = 9;
 	private static final int ITEM_LOGOUT = 10;
@@ -139,6 +140,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
     private static final int PROGRESS_DIALOG = 2;
     private static final int ALERT_DIALOG = 3;
 	private static final int LOGIN_DIALOG = 8;
+	private static final int CHANGE_PASSWORD_DIALOG = 9;
 	private static final int ERROR_EXIT_APP_DIALOG = 10;
 	private static final int CONFIRM_PATIENT_DIALOG = 11;
 	private static final int LIST_OR_NEW_USER_DIALOG = 13;
@@ -149,7 +151,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
     
     private GWTextView titleTV;
     private EditText loginET;
-    private EditText pwdET;
+    private EditText pwdET,newPwdET,newPwd2ET;
     private LinearLayout currentPatientLL;
     private Menu mActionBarMenu;
 
@@ -180,7 +182,10 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	private List<UserMeasure> measureList; // list of enabled measures types of the current User
 	private HashMap<String, List<UserDevice>> userDevicesMap; // list of UserDevices for every measure type of the current User
 
+    // TODO verificarese effettivamente serve
 	private boolean runningConfig;
+    // indica se l'operazione in corso è una richiesta di cambi password
+    private boolean changePassword = false;
 
 	private GWTextView patientNameTV;
 	
@@ -528,6 +533,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 
             labelUserOptionsArray.add(getResources().getString(R.string.update_user));
             labelUserOptionsArray.add(getResources().getString(R.string.settings));
+			labelUserOptionsArray.add(getResources().getString(R.string.change_password));
 
 			//La voce "Misure" viene abilitata solo se ci sono misure caricate nel DB
 			String idUser = loggedUser.getId();
@@ -670,8 +676,10 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
     	} else if( tv.getText().toString().equalsIgnoreCase(getResources().getString(R.string.new_user)) ){
     		selectedItemBundle.putInt(SELECTED_MENU_ITEM, ITEM_USER_NEW);
     	} else if( tv.getText().toString().equalsIgnoreCase(getResources().getString(R.string.settings)) ){
-    		selectedItemBundle.putInt(SELECTED_MENU_ITEM, ITEM_USER_OPTIONS);
-    	}
+			selectedItemBundle.putInt(SELECTED_MENU_ITEM, ITEM_USER_OPTIONS);
+		} else if( tv.getText().toString().equalsIgnoreCase(getResources().getString(R.string.change_password)) ){
+			selectedItemBundle.putInt(SELECTED_MENU_ITEM, ITEM_CHANGE_PASSWORD);
+		}
 	}
 
     private void selectedMenuItemAction() {
@@ -714,6 +722,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                 dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("KMsgConf"));
                 dataBundle.putBoolean(AppConst.MESSAGE_CANCELLABLE, true);
                 dataBundle.putBoolean(AppConst.IS_CONFIGURATION, true);
+                changePassword = false;
                 userManager.logInUser();
                 break;
             case ITEM_USER_LIST:
@@ -722,6 +731,9 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
             case ITEM_USER_NEW:
                 myShowDialog(LOGIN_DIALOG);
                 break;
+			case ITEM_CHANGE_PASSWORD:
+				myShowDialog(CHANGE_PASSWORD_DIALOG);
+				break;
             case ITEM_USER_OPTIONS:
                 Intent intentSettingsUser = new Intent(DeviceList.this, ShowUserSettings.class);
                 intentSettingsUser.putExtra("TYPE_SETTINGS", "USER");
@@ -1761,7 +1773,8 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                 activity.myRemoveDialog(PROGRESS_DIALOG);
                 dataBundle = new Bundle();
                 dataBundle.putString(AppConst.MESSAGE, (String)msg.obj);
-                dataBundle.putBoolean(AppConst.LOGIN_ERROR, false);
+                if (!activity.changePassword)
+                    dataBundle.putBoolean(AppConst.LOGIN_ERROR, false);
                 activity.myShowDialog(ALERT_DIALOG);
                 activity.runningConfig = false;
 				break;
@@ -1770,7 +1783,8 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                 activity.myRemoveDialog(PROGRESS_DIALOG);
                 dataBundle = new Bundle();
                 dataBundle.putString(AppConst.MESSAGE, (String)msg.obj);
-                dataBundle.putBoolean(AppConst.LOGIN_ERROR, true);
+                if (!activity.changePassword)
+                    dataBundle.putBoolean(AppConst.LOGIN_ERROR, true);
                 activity.myShowDialog(ALERT_DIALOG);
                 activity.runningConfig = false;
                 break;
@@ -1791,7 +1805,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                 activity.myRemoveDialog(PROGRESS_DIALOG);
                 dataBundle = new Bundle();
                 dataBundle.putString(AppConst.MESSAGE, (String)msg.obj);
-                dataBundle.putBoolean(AppConst.LOGIN_ERROR, false);
                 activity.myShowDialog(ALERT_DIALOG);
                 activity.runningConfig = false;
 				break;
@@ -1903,13 +1916,55 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                 builder.setTitle(null);
                 beep();
                 return builder.create();
+            case CHANGE_PASSWORD_DIALOG:
+                builder.setTitle(R.string.changePassword);
+                View new_password_dialog = inflater.inflate(R.layout.change_password, null);
+                pwdET = (EditText) new_password_dialog.findViewById(R.id.password);
+                newPwdET = (EditText) new_password_dialog.findViewById(R.id.newPassword1);
+                newPwd2ET = (EditText) new_password_dialog.findViewById(R.id.newPassword2);
+                pwdCB = (CheckBox) new_password_dialog.findViewById(R.id.passwordCheckBox);
+                pwdCB.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                    @Override
+                    public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                        // Controlla se rendere visibile o meno la password
+                        if( isChecked ) {
+                            pwdET.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
+                            newPwdET.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
+                            newPwd2ET.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
+                        } else {
+                            pwdET.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+                            newPwdET.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+                            newPwd2ET.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+                        }
+                        pwdET.setSelection(pwdET.getText().length());
+                        newPwdET.setSelection(newPwdET.getText().length());
+                        newPwd2ET.setSelection(newPwd2ET.getText().length());
+                    }
+                });
+                builder.setView(new_password_dialog);
+                builder.setPositiveButton(R.string.okButton, null);
+                builder.setNegativeButton(R.string.cancelButton, null);
+                final AlertDialog d = builder.create();
+                d.setOnShowListener(new DialogInterface.OnShowListener() {
+                    @Override
+                    public void onShow(DialogInterface dialog) {
+                        Button b = d.getButton(AlertDialog.BUTTON_POSITIVE);
+                        b.setOnClickListener(password_dialog_ok_click_listener);
+                        d.getButton(AlertDialog.BUTTON_NEGATIVE).setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View view) {
+                                myRemoveDialog(CHANGE_PASSWORD_DIALOG);
+                            }
+                        });
+                    }
+                });
+                return d;
             case LOGIN_DIALOG:
             case PRECOMPILED_LOGIN_DIALOG:
                 builder.setTitle(R.string.authentication);
                 View login_dialog_v = inflater.inflate(R.layout.new_user, null);
                 loginET = (EditText) login_dialog_v.findViewById(R.id.login);
                 pwdET = (EditText) login_dialog_v.findViewById(R.id.password);
-
                 if (id == PRECOMPILED_LOGIN_DIALOG && userDataBundle != null) {
                     loginET.setText(userDataBundle.getString("LOGIN"));
                     if (!userDataBundle.getBoolean("CHANGEABLE"))
@@ -1919,7 +1974,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                 } else {
                     loginET.setText("");
                 }
-
                 pwdCB = (CheckBox) login_dialog_v.findViewById(R.id.passwordCheckBox);
                 pwdCB.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                     @Override
@@ -1991,10 +2045,31 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	}
 
     /**
-     * Listener per i click sulla dialog LOGIN_DIALOG
+     * Listener per i click sulla dialog CHANGE_PASSWORD_DIALOG
+     */
+    private View.OnClickListener password_dialog_ok_click_listener = new View.OnClickListener() {
+        @Override
+        public void onClick(View view) {
+            if (!newPwdET.getText().toString().equals(newPwd2ET.getText().toString())) {
+                Toast.makeText(DeviceList.this, AppResourceManager.getResource().getString("KPasswordMismatch"), Toast.LENGTH_LONG).show();
+                beep();
+                return;
+            }
+            dataBundle = new Bundle();
+            dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("KMsgConf"));
+            dataBundle.putBoolean(AppConst.MESSAGE_CANCELLABLE, true);
+            dataBundle.putBoolean(AppConst.IS_CONFIGURATION, true);
+            runningConfig = true;
+            changePassword = true;
+            userManager.changePassword(pwdET.getText().toString(),  newPwdET.getText().toString());
+            myRemoveDialog(CHANGE_PASSWORD_DIALOG);
+        }
+    };
+
+    /**
+     * Listener per i click sulla dialog LOGIN_DIALOG o PRECOMPILED_LOGIN_DIALOG
      */
     private DialogInterface.OnClickListener login_dialog_click_listener = new DialogInterface.OnClickListener() {
-
 		@Override
 		public void onClick(DialogInterface dialog, int which) {
 			myRemoveDialog(PRECOMPILED_LOGIN_DIALOG);
@@ -2006,6 +2081,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 				dataBundle.putBoolean(AppConst.MESSAGE_CANCELLABLE, true);
 				dataBundle.putBoolean(AppConst.IS_CONFIGURATION, true);
 				runningConfig = true;
+                changePassword = false;
                 userManager.logInUser(loginET.getText().toString(),  pwdET.getText().toString());
                 break;
 			}
@@ -2310,10 +2386,12 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                 dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("KMsgConf"));
                 dataBundle.putBoolean(AppConst.MESSAGE_CANCELLABLE, false);
                 dataBundle.putBoolean(AppConst.IS_CONFIGURATION, true);
+                changePassword = false;
                 userManager.logInUser(user.getLogin(), user.getPassword());
             }
             else {
                 try {
+                    changePassword = false;
                     userManager.logInUserFromDb(user.getLogin(), user.getPassword());
                 } catch (Exception e) {
                     Log.e(TAG, "logInUserFromDb: " + e);

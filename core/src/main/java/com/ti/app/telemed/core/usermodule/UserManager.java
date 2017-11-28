@@ -204,6 +204,7 @@ public class UserManager {
             if (currentUser == null)
                 currentUser = DbManager.getDbManager().createDefaultUser();
             currentPatient = currentUser.getPatients().get(0);
+            DbManager.getDbManager().alignUserToCurrentDevices(DbManager.DEFAULT_USER_ID);
             return currentUser;
         }
     }
@@ -361,6 +362,7 @@ public class UserManager {
 	private void selectUser(User user, boolean silent) {
         synchronized (currT) {
             currentUser = user;
+            DbManager.getDbManager().updateActiveUser(currentUser.getId());
             if (currentUser != null) {
                 Log.i(TAG, "selectUser --> utente corrente: " + user.getName() + " " + user.getSurname());
                 try {

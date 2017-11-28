@@ -12,21 +12,25 @@
     <string name="update_user">Aggiorna</string>
     <string name="list_users">Elenco</string>
     <string name="new_user">Nuovo</string>
+	<string name="change_password">Cambia Password</string>
     <string name="new_device_first_run">Associa e misura</string>
     <string name="new_device">Nuova associazione</string>
     
     <string name="settings">Impostazioni</string>
 	<string name="shealth_settings">Impostazioni S Health</string>
-    <string name="info">Info</string>    
+    <string name="info">Info</string>
     <string name="measure_title">Misure di</string>
-    <string name="measure_detail_title">Misura di</string>    
+    <string name="measure_detail_title">Misura di</string>
     <string name="users_title">Elenco Utenti</string>
-    <string name="username">Utente</string>    
+    <string name="username">Utente</string>
     <string name="password">Password</string>
-    <string name="passwordCBLabel">Mostra password</string> 
-    <string name="okButton">OK</string> 
-    <string name="cancelButton">Annulla</string>    
+	<string name="newPassword">Nuova Password</string>
+	<string name="newPasswordConfirm">Conferma Nuova Password</string>
+    <string name="passwordCBLabel">Mostra password</string>
+    <string name="okButton">OK</string>
+    <string name="cancelButton">Annulla</string>
     <string name="authentication">Autenticazione</string>
+	<string name="changePassword">Cambio Password</string>
     <string name="newUser">Nuovo Utente</string>
     <string name="new_user_title">Utente</string>
     

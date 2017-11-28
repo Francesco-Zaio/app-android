@@ -12,6 +12,7 @@
     <string name="update_user">Update</string>
     <string name="list_users">List</string>
     <string name="new_user">New</string>
+	<string name="change_password">Change Password</string>
     <string name="new_device_first_run">Pairing and measure</string>
     <string name="new_device">New pairing</string>
     
@@ -22,12 +23,15 @@
     <string name="measure_detail_title">Measurement of</string>    
     <string name="users_title">Users</string>
     <string name="username">User</string>    
-    <string name="password">Password</string> 
+    <string name="password">Password</string>
+    <string name="newPassword">New Password</string>
+    <string name="newPasswordConfirm">Confirm New Password</string>
     <string name="passwordCBLabel">Show password</string>
     <string name="okButton">OK</string> 
     <string name="cancelButton">Cancel</string>    
     <string name="authentication">Authentication</string>
-    <string name="newUser">New User</string>
+	<string name="changePassword">Change Password</string>
+	<string name="newUser">New User</string>
     <string name="new_user_title">User</string>
     
     <!-- Menu principale laterale sinistro  -->

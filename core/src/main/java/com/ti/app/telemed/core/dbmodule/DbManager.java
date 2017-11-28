@@ -635,7 +635,6 @@ public class DbManager {
                     u.setPassword(password);
                     userId = u.getId();
                     setUser(u);
-                    updateActiveUser(userId);
                     deleteUserPatientByIdUser(u.getId());
                 } else if (tmp instanceof Patient) {
                     Patient p = (Patient) tmp;
@@ -772,7 +771,7 @@ public class DbManager {
         }
     }
 
-    private void updateActiveUser(String userId) {
+    public void updateActiveUser(String userId) {
         synchronized (this) {
             int count;
             ContentValues values = new ContentValues();
@@ -784,7 +783,7 @@ public class DbManager {
             values.put("ACTIVE", 0);
             count = mDb.update("USER", values, "ID <> ? ", new String[]{userId});
             logger.log(Level.INFO, "Inactive users updated count: " + count);
-            alignActiveUserToCurrentDevices(userId);
+            alignUserToCurrentDevices(userId);
         }
     }
 
@@ -1322,7 +1321,7 @@ public class DbManager {
 	}
 
     //////////////////////////////////////////////
-    private void alignActiveUserToCurrentDevices(String userId) {
+    public void alignUserToCurrentDevices(String userId) {
         synchronized (this) {
             Cursor c = null;
             try {

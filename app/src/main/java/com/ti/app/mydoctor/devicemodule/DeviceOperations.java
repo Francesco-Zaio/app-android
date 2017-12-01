@@ -4,6 +4,7 @@ import java.lang.reflect.Method;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -13,6 +14,7 @@ import com.ti.app.mydoctor.AppResourceManager;
 import com.ti.app.telemed.core.btmodule.BTSearcherEventListener;
 import com.ti.app.telemed.core.btmodule.DeviceHandler;
 import com.ti.app.telemed.core.btmodule.DeviceListener;
+import com.ti.app.telemed.core.common.Device;
 import com.ti.app.telemed.core.common.Measure;
 import com.ti.app.telemed.core.common.User;
 import com.ti.app.telemed.core.common.UserDevice;
@@ -42,8 +44,7 @@ public class DeviceOperations implements DeviceListener {
 	public static final int CONFIG_READY = 5;
 	public static final int ASK_SOMETHING = 7;
     public static final int START_ECG_DRAW = 8;
-
-    public static final int REFRESH_LIST = 10;
+    public static final int START_ACTIVITY = 9;
 
 	private boolean operationRunning;
 	
@@ -126,7 +127,7 @@ public class DeviceOperations implements DeviceListener {
 	
 	private void startOperation() {
 		Log.i(TAG, "DeviceOperations: startOperation");
-		if (BluetoothAdapter.getDefaultAdapter().isEnabled()) {
+		if (currentDevice.getDevice().getDevType() != Device.DevType.BT || BluetoothAdapter.getDefaultAdapter().isEnabled()) {
 			if (currentDevice != null) {
                 User currentUser = UserManager.getUserManager().getCurrentUser();
 				if (pairingMode || (currentUser != null && !currentUser.isDefaultUser())) {
@@ -150,24 +151,28 @@ public class DeviceOperations implements DeviceListener {
 	private void executeOp() throws Exception {
         currentDeviceHandler = DeviceHandler.getInstance(this,currentDevice);
         DeviceHandler.OperationType op;
+        boolean result;
         String btAddr = currentDevice.getBtAddress();
         if (isConfig) {
             op = DeviceHandler.OperationType.Config;
             if (btAddr != null && !btAddr.isEmpty())
-                currentDeviceHandler.startOperation(op, null);
+                result = currentDeviceHandler.startOperation(op, null);
             else
-                currentDeviceHandler.startOperation(op, btSearcherListener);
+                result = currentDeviceHandler.startOperation(op, btSearcherListener);
         } else if (pairingMode) {
             op = DeviceHandler.OperationType.Pair;
-            currentDeviceHandler.startOperation(op, btSearcherListener);
+            result = currentDeviceHandler.startOperation(op, btSearcherListener);
         } else {
             op = DeviceHandler.OperationType.Measure;
             if (btAddr != null && !btAddr.isEmpty())
-                currentDeviceHandler.startOperation(op, null);
+                result = currentDeviceHandler.startOperation(op, null);
             else
-                currentDeviceHandler.startOperation(op, btSearcherListener);
+                result = currentDeviceHandler.startOperation(op, btSearcherListener);
         }
-        notifyToUi(AppResourceManager.getResource().getString("KSearchingDev"));
+        if (result)
+            notifyToUi(AppResourceManager.getResource().getString("KSearchingDev"));
+        else
+            notifyError("",AppResourceManager.getResource().getString("KNoMesurement"));
 	}
 
 	public void abortOperation() {
@@ -179,7 +184,11 @@ public class DeviceOperations implements DeviceListener {
         currentDeviceHandler.selectDevice(bd);
     }
 
-	public UserDevice getCurrentDevice() {
+    public void onActivityResult(int resultCode, Intent data) {
+	    currentDeviceHandler.onActivityResult(resultCode, data);
+    }
+
+    public UserDevice getCurrentDevice() {
 		return currentDevice;
 	}
 
@@ -256,6 +265,12 @@ public class DeviceOperations implements DeviceListener {
     @Override
     public void startEcgDraw() {
         Message message = handler.obtainMessage(START_ECG_DRAW);
+        handler.sendMessage(message);
+    }
+    @Override
+    public void startActivity(Intent intent){
+        Message message = handler.obtainMessage(START_ACTIVITY);
+        message.obj = intent;
         handler.sendMessage(message);
     }
 

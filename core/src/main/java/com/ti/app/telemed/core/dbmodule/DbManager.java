@@ -298,7 +298,7 @@ public class DbManager {
             values.put("MEASURE", d.getMeasure());
             values.put("MODEL", d.getModel());
             values.put("DESCRIPTION", d.getDescription());
-            values.put("IS_BT_DEV", d.isBTDevice()? 1:0);
+            values.put("IS_BT_DEV", d.getDevType().getValue());
             values.put("CLASS_NAME", d.getClassName());
             if (mDb.insert("DEVICE", null, values) > 0) {
                 logger.log(Level.INFO, "Device inserted: " + d.toString());
@@ -320,7 +320,7 @@ public class DbManager {
         synchronized (this) {
             ContentValues values = new ContentValues();
             values.put("DESCRIPTION", d.getDescription());
-            values.put("IS_BT_DEV", d.isBTDevice()? 1:0);
+            values.put("IS_BT_DEV", d.getDevType().getValue());
             values.put("CLASS_NAME", d.getClassName());
             String[] args = new String[]{d.getMeasure(), d.getModel()};
             mDb.update("DEVICE", values, "MEASURE = ? AND MODEL =  ? ", args);
@@ -370,7 +370,7 @@ public class DbManager {
             ret.setMeasure(c.getString(c.getColumnIndex("MEASURE")));
             ret.setModel(c.getString(c.getColumnIndex("MODEL")));
             ret.setDescription(c.getString(c.getColumnIndex("DESCRIPTION")));
-            ret.setIsBTDevice(c.getInt(c.getColumnIndex("IS_BT_DEV")) == 1);
+            ret.setDevType(Device.DevType.fromInteger(c.getInt(c.getColumnIndex("IS_BT_DEV"))));
             ret.setClassName(c.getString(c.getColumnIndex("CLASS_NAME")));
             return ret;
         }

@@ -1,8 +1,10 @@
 package com.ti.app.telemed.core.btmodule;
 
 import android.bluetooth.BluetoothDevice;
+import android.content.Intent;
 import android.util.Log;
 
+import com.ti.app.telemed.core.common.Device;
 import com.ti.app.telemed.core.common.Measure;
 import com.ti.app.telemed.core.common.Patient;
 import com.ti.app.telemed.core.common.User;
@@ -10,7 +12,6 @@ import com.ti.app.telemed.core.common.UserDevice;
 import com.ti.app.telemed.core.dbmodule.DbManager;
 import com.ti.app.telemed.core.usermodule.UserManager;
 import com.ti.app.telemed.core.util.Util;
-import com.ti.app.telemed.core.xmlmodule.XmlManager;
 
 import java.lang.reflect.Method;
 
@@ -128,7 +129,7 @@ public abstract class DeviceHandler {
      * @return         La nuova istanza di DeviceHandler o <code>null</code> in caso di errore.
      */
     public static DeviceHandler getInstance(DeviceListener listener, UserDevice ud) {
-        if (listener==null || ud == null || !ud.getDevice().isBTDevice()) {
+        if (listener==null || ud == null || ud.getDevice().getDevType()== Device.DevType.NONE) {
             Log.e(TAG, "getInstance: DeviceListener or UserDevice is null or not valid.");
             return null;
         }
@@ -198,6 +199,10 @@ public abstract class DeviceHandler {
             return false;
         }
     }
+
+    public void onActivityResult(int resultCode, Intent data) {
+    }
+
     /**
      * Avvia l'operazione richiesta sul dispositivo.
      * <p> Se il parametro btSearchListener e' <code>null</code>, lo UserDevice indicato
@@ -268,17 +273,15 @@ public abstract class DeviceHandler {
             Log.e(TAG,"startOperation: UserDevice or DeviceListener is null!");
             return false;
         }
-        if (ot != OperationType.Pair) {
-            user = UserManager.getUserManager().getCurrentUser();
-            patient = UserManager.getUserManager().getCurrentPatient();
-            if ((patient == null) && (user != null)) {
-                if (user.getIsPatient())
-                    patient = DbManager.getDbManager().getPatientData(user.getId());
-            }
-            if ((user == null) || (patient==null)) {
-                Log.e(TAG, "startOperation: User or Patient is null!");
-                return false;
-            }
+        user = UserManager.getUserManager().getCurrentUser();
+        patient = UserManager.getUserManager().getCurrentPatient();
+        if ((patient == null) && (user != null)) {
+            if (user.getIsPatient())
+                patient = DbManager.getDbManager().getPatientData(user.getId());
+        }
+        if ((user == null) || (patient==null)) {
+            Log.e(TAG, "startOperation: User or Patient is null!");
+            return false;
         }
 
         operationType = ot;
@@ -288,13 +291,17 @@ public abstract class DeviceHandler {
             iBtDevAddr = iUserDevice.getBtAddress();
         else
             iBtDevAddr = "";
-        if (iBTSearchListener != null){
-            iCmdCode = TCmd.ECmdConnByUser;
-        } else if (iBtDevAddr != null && !iBtDevAddr.isEmpty()) {
+        if (iUserDevice.getDevice().getDevType()== Device.DevType.BT) {
+            if (iBTSearchListener != null) {
+                iCmdCode = TCmd.ECmdConnByUser;
+            } else if (iBtDevAddr != null && !iBtDevAddr.isEmpty()) {
+                iCmdCode = TCmd.ECmdConnByAddr;
+            } else {
+                Log.e(TAG, "startOperation: BTSearcherEventListener is null!");
+                return false;
+            }
+        } else
             iCmdCode = TCmd.ECmdConnByAddr;
-        } else {
-            Log.e(TAG, "startOperation: BTSearcherEventListener is null!");return false;
-        }
         return true;
     }
 }

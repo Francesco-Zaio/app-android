@@ -29,7 +29,6 @@ import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.res.ResourcesCompat;
 import android.support.v4.view.GravityCompat;
-import android.support.v4.view.MenuItemCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarDrawerToggle;
@@ -69,6 +68,7 @@ import com.ti.app.mydoctor.R;
 import com.ti.app.mydoctor.AppResourceManager;
 import com.ti.app.mydoctor.devicemodule.DeviceOperations;
 import com.ti.app.mydoctor.util.AppUtil;
+import com.ti.app.telemed.core.common.Device;
 import com.ti.app.telemed.core.common.Measure;
 import com.ti.app.telemed.core.common.MeasureDetail;
 import com.ti.app.telemed.core.common.Patient;
@@ -134,7 +134,8 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
     public static final int PATIENT_SELECTION = 6;
     public static final int PATIENT_SELECTION_2 = 7;
     public static final int MANUAL_TEMPERATURE_ENTRY = 9;
-        
+    private static final int EXTERNAL_APP = 10;
+
     //Dialog
     private static final int MEASURE_RESULT_DIALOG = 1;
     private static final int PROGRESS_DIALOG = 2;
@@ -249,7 +250,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
             //Ricava la TextView dell'ActionBar
             LayoutInflater inflator = (LayoutInflater)this.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
             View titleView = inflator.inflate(R.layout.actionbar_title, null);
-            titleTV = (GWTextView)titleView.findViewById(R.id.actionbar_title_label);
+            titleTV = titleView.findViewById(R.id.actionbar_title_label);
             titleTV.setText(R.string.app_name);
             customActionBar.setCustomView(titleView);
         }
@@ -261,8 +262,8 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
         userManager.setHandler(userManagerHandler);
 
 		//Ottengo il riferimento agli elementi che compongono la view
-		mDrawerLayout = (DrawerLayout) findViewById(R.id.device_list_drawer_layout);
-		mMenuDrawerList = (ExpandableListView) findViewById(R.id.device_list_left_menu);
+		mDrawerLayout = findViewById(R.id.device_list_drawer_layout);
+		mMenuDrawerList = findViewById(R.id.device_list_left_menu);
 
         // set a custom shadow that overlays the main content when the drawer opens
 		// setta il background del menu laterale
@@ -464,7 +465,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
             @Override
             public boolean onGroupClick(ExpandableListView parent, View view,
                                         int position, long id) {
-                TextView tv = (TextView) view.findViewById(R.id.groupname);
+                TextView tv = view.findViewById(R.id.groupname);
 
                 //return false; il gruppo si apre
                 if (tv.getText().toString().equalsIgnoreCase(getResources().getString(R.string.mi_user))) {
@@ -647,7 +648,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	public boolean onChildClick(ExpandableListView parent, View v,
 			int groupPosition, int childPosition, long id) {
 
-		TextView tv = (TextView)v.findViewById(R.id.childname);
+		TextView tv = v.findViewById(R.id.childname);
 		selectItem(tv);
 		return true;
 	}
@@ -1012,7 +1013,8 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 		User activeUser = UserManager.getUserManager().getActiveUser();
 
 		if( activeUser == null || activeUser.isDefaultUser() ){
-			MenuItemCompat.setShowAsAction(mActionBarMenu.findItem(R.id.action_bar_menu), MenuItemCompat.SHOW_AS_ACTION_NEVER);
+            mActionBarMenu.findItem(R.id.action_bar_menu).setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER);
+//			MenuItemCompat.setShowAsAction(mActionBarMenu.findItem(R.id.action_bar_menu), MenuItemCompat.SHOW_AS_ACTION_NEVER);
 			mActionBarMenu.findItem(R.id.action_bar_menu).setVisible(false);
 		} else {
 			mActionBarMenu.findItem(R.id.action_bar_menu).setVisible(true);
@@ -1069,27 +1071,38 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
             mi.setVisible(true);
         }
 
-        if (pd != null && pd.getDevice().isBTDevice()) {
-            boolean needCfg = deviceOperations.needCfg(pd);
-			MenuItem mi;
+        if (pd == null)
+        	return;
+		MenuItem mi;
+        switch (pd.getDevice().getDevType()) {
+			case NONE:
+			case APP:
+				mi = menu.findItem(R.id.config);
+				mi.setVisible(false);
+				mi = menu.findItem(R.id.new_pairing);
+				mi.setVisible(false);
+				mi = menu.findItem(R.id.pair);
+				mi.setVisible(false);
+				break;
+			case BT:
+				boolean needCfg = deviceOperations.needCfg(pd);
+				//Visibiltà voce Configura"
+				if (needCfg) {
+					mi = menu.findItem(R.id.config);
+					mi.setVisible(true);
+				}
 
-            //Visibiltà voce Configura"
-            if (needCfg) {
-                mi = menu.findItem(R.id.config);
-                mi.setVisible(true);
-            }
-
-            //Visibiltà voci Associa, Associa e Misura, Nuova Associazione"
-            String btAddr = pd.getBtAddress();
-            if (btAddr!=null && !btAddr.isEmpty()) {
-                mi = menu.findItem(R.id.new_pairing);
-                mi.setVisible(true);
-            } else {
-                mi = menu.findItem(R.id.pair);
-                mi.setVisible(true);
-            }
-
-        }
+				//Visibiltà voci Associa, Associa e Misura, Nuova Associazione"
+				String btAddr = pd.getBtAddress();
+				if (btAddr!=null && !btAddr.isEmpty()) {
+					mi = menu.findItem(R.id.new_pairing);
+					mi.setVisible(true);
+				} else {
+					mi = menu.findItem(R.id.pair);
+					mi.setVisible(true);
+				}
+				break;
+		}
 	}
 
 	@Override
@@ -1284,7 +1297,8 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 			listAdapter.notifyDataSetChanged();
 			//Nasconde l'icona dell'Action Bar Menu
 			mActionBarMenu.findItem(R.id.action_bar_menu).setVisible(false);
-			MenuItemCompat.setShowAsAction(mActionBarMenu.findItem(R.id.action_bar_menu), MenuItemCompat.SHOW_AS_ACTION_NEVER);
+            mActionBarMenu.findItem(R.id.action_bar_menu).setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER);
+            //MenuItemCompat.setShowAsAction(mActionBarMenu.findItem(R.id.action_bar_menu), MenuItemCompat.SHOW_AS_ACTION_NEVER);
 			//Cambia titolo nella Action Bar
 			titleTV.setText(R.string.app_name);
 		}
@@ -1297,12 +1311,12 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	}
 
 	private void executeOperation() {
-        if (!BluetoothAdapter.getDefaultAdapter().isEnabled()) {
+        UserDevice ud = getActiveUserDevice(selectedMeasureType);
+        if (ud == null)
+            return;
+        if (ud.getDevice().getDevType()== Device.DevType.BT && !BluetoothAdapter.getDefaultAdapter().isEnabled()) {
             requestEnableBT();
         } else {
-            UserDevice ud = getActiveUserDevice(selectedMeasureType);
-            if (ud == null)
-                return;
             switch (operationType) {
                 case pair:
                     UserDevice tmpUd = (UserDevice) ud.clone();
@@ -1312,7 +1326,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                     startScan();
                     break;
                 case measure:
-                    if(measureEnabled(getActiveUserDevice(selectedMeasureType))){
+                    if(measureEnabled(ud)){
                         if(AppUtil.isManualMeasure(ud.getDevice())){
                             startManualMeasure();
                         } else {
@@ -1369,7 +1383,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 
     private boolean measureEnabled(UserDevice device) {
         return device != null && ((device.getBtAddress()!= null && device.getBtAddress().length() > 0)
-                || AppUtil.isManualMeasure(device.getDevice()));
+                || AppUtil.isManualMeasure(device.getDevice())|| device.getDevice().getDevType()== Device.DevType.APP);
     }
 
 	private void showMeasures(int position) {
@@ -1398,116 +1412,118 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 		super.onActivityResult(requestCode, resultCode, data);
-
 		Log.d(TAG, "onActivityResult requestCode=" + requestCode + " resultCode=" + resultCode);
 
     	switch(requestCode) {
-    	case USER_LIST:
-    		if(resultCode == RESULT_OK){
-                User user = null;
-	    		if(data != null) {
-                    Bundle extras = data.getExtras();
-                    user = (User) extras.get(UsersList.SELECTED_USER);
+            case USER_LIST:
+                if(resultCode == RESULT_OK){
+                    User user = null;
+                    if(data != null) {
+                        Bundle extras = data.getExtras();
+                        user = (User) extras.get(UsersList.SELECTED_USER);
+                    }
+                    checkUser(user);
+                } else if(resultCode == UsersList.RESULT_DB_ERROR){
+                    showErrorDialog(AppResourceManager.getResource().getString("errorDb"));
                 }
-                checkUser(user);
-    		} else if(resultCode == UsersList.RESULT_DB_ERROR){
-    			showErrorDialog(AppResourceManager.getResource().getString("errorDb"));
-    		}
-    	    break;
-    	case USER_SELECTION:
-    		if(resultCode == RESULT_OK){
-	    		if(data != null){
-	    			Bundle extras = data.getExtras();
-	    			User user = (User) extras.get(UsersList.SELECTED_USER);
-					if (user != null) {
-						Log.i(TAG, "Login utente " + user.getName() + " da db");
+                break;
+            case USER_SELECTION:
+                if(resultCode == RESULT_OK){
+                    if(data != null){
+                        Bundle extras = data.getExtras();
+                        User user = (User) extras.get(UsersList.SELECTED_USER);
+                        if (user != null) {
+                            Log.i(TAG, "Login utente " + user.getName() + " da db");
 
-						if (!user.getHasAutoLogin() || user.isBlocked()) {
-							userDataBundle = new Bundle();
-							userDataBundle.putBoolean("CHANGEABLE", false);
-							userDataBundle.putString("LOGIN", user.getLogin());
-							myShowDialog(PRECOMPILED_LOGIN_DIALOG);
-						}
-					}
-	    			else
-	    				userManager.reset();
-	    		} else {
-	    			myShowDialog(LOGIN_DIALOG);
-	    		}
-    		} else if(resultCode == UsersList.RESULT_DB_ERROR){
-    			showErrorDialog(AppResourceManager.getResource().getString("errorDb"));
-    		} else {
-    			myShowDialog(PRECOMPILED_LOGIN_DIALOG);
-    		}
-    		break;
-    	case PATIENT_SELECTION:
-    		if (resultCode == RESULT_OK) {
-    			if (data != null) {
-    				Bundle extras = data.getExtras();
-					Patient p = (Patient)extras.getSerializable(SelectPatient.PATIENT);
-                    if (p == null) {
-                        Log.e(TAG, "Il paziente selezionato è NULL");
-                        return;
+                            if (!user.getHasAutoLogin() || user.isBlocked()) {
+                                userDataBundle = new Bundle();
+                                userDataBundle.putBoolean("CHANGEABLE", false);
+                                userDataBundle.putString("LOGIN", user.getLogin());
+                                myShowDialog(PRECOMPILED_LOGIN_DIALOG);
+                            }
+                        }
+                        else
+                            userManager.reset();
+                    } else {
+                        myShowDialog(LOGIN_DIALOG);
                     }
-                    fitTextInPatientNameLabel(p.getName());
-					Log.i(TAG, "Selezionato il paziente " + p.getName() + " " + p.getSurname());
-					userManager.setCurrentPatient(p);
-    				if(viewMeasureBundle != null && viewMeasureBundle.getBoolean(VIEW_MEASURE, false)) {
-						Log.d(TAG, "Visualizzo le misure di " + p.getName() + " " + p.getSurname());
-						showMeasures(viewMeasureBundle.getInt(POSITION));
-					}
-					else if (startMeasureBundle != null && startMeasureBundle.getBoolean(START_MEASURE, false)) {
-						Log.d(TAG, "Inizio la misura di " + p.getName() + " " + p.getSurname());
-                        executeOperation();
-					}
-    			}
-    		}
-    		break;
-    	case PATIENT_SELECTION_2:
-    		if (resultCode == RESULT_OK) {
-    			if (data != null) {
-    				Bundle extras = data.getExtras();
-                    Patient p = (Patient)extras.getSerializable(SelectPatient.PATIENT);
-                    if (p == null) {
-                        Log.e(TAG, "Il paziente selezionato è NULL");
-                        return;
+                } else if(resultCode == UsersList.RESULT_DB_ERROR){
+                    showErrorDialog(AppResourceManager.getResource().getString("errorDb"));
+                } else {
+                    myShowDialog(PRECOMPILED_LOGIN_DIALOG);
+                }
+                break;
+            case PATIENT_SELECTION:
+                if (resultCode == RESULT_OK) {
+                    if (data != null) {
+                        Bundle extras = data.getExtras();
+                        Patient p = (Patient)extras.getSerializable(SelectPatient.PATIENT);
+                        if (p == null) {
+                            Log.e(TAG, "Il paziente selezionato è NULL");
+                            return;
+                        }
+                        fitTextInPatientNameLabel(p.getName());
+                        Log.i(TAG, "Selezionato il paziente " + p.getName() + " " + p.getSurname());
+                        userManager.setCurrentPatient(p);
+                        if(viewMeasureBundle != null && viewMeasureBundle.getBoolean(VIEW_MEASURE, false)) {
+                            Log.d(TAG, "Visualizzo le misure di " + p.getName() + " " + p.getSurname());
+                            showMeasures(viewMeasureBundle.getInt(POSITION));
+                        }
+                        else if (startMeasureBundle != null && startMeasureBundle.getBoolean(START_MEASURE, false)) {
+                            Log.d(TAG, "Inizio la misura di " + p.getName() + " " + p.getSurname());
+                            executeOperation();
+                        }
                     }
-                    fitTextInPatientNameLabel(p.getName());
-					Log.i(TAG, "Selezionato il paziente " + p.getName() + " " + p.getSurname());
-					userManager.setCurrentPatient(p);
-    			}
-    		}
-    		myShowDialog(MEASURE_RESULT_DIALOG);
-    		break;
-    	case REQUEST_ENABLE_BT:
-            // When the request to enable Bluetooth returns
-            if (resultCode == Activity.RESULT_OK) {
-                executeOperation();
-            } else {
-            	// User did not enable Bluetooth or an error occured
-                Log.d(TAG, "BT not enabled");
-                Toast.makeText(this, R.string.bt_not_enabled, Toast.LENGTH_SHORT).show();
-            }
-            break;
-    	case REQUEST_SCAN_DEVICES:
-    		if (resultCode == Activity.RESULT_OK){
-                BluetoothDevice bd = data.getExtras().getParcelable(SELECTED_DEVICE);
-                deviceOperations.selectDevice(bd);
-    		} else {
-                deviceOperations.abortOperation();
-                myRemoveDialog(PROGRESS_DIALOG);
-    		}
-            refreshList();
-    		break;
-    	case MANUAL_TEMPERATURE_ENTRY:
-    		if(resultCode == RESULT_OK){
-                double temp = data.getExtras().getDouble( ManualTemperatureActivity.TEMPERATURE_VALUE );
-                MeasureManager.getMeasureManager().saveManualTemperature(temp, true);
-    	     }
-    	     if (resultCode == RESULT_CANCELED) {
-                 deviceOperations.setCurrentDevice(null);
-    	     }
-    		 break;
+                }
+                break;
+            case PATIENT_SELECTION_2:
+                if (resultCode == RESULT_OK) {
+                    if (data != null) {
+                        Bundle extras = data.getExtras();
+                        Patient p = (Patient)extras.getSerializable(SelectPatient.PATIENT);
+                        if (p == null) {
+                            Log.e(TAG, "Il paziente selezionato è NULL");
+                            return;
+                        }
+                        fitTextInPatientNameLabel(p.getName());
+                        Log.i(TAG, "Selezionato il paziente " + p.getName() + " " + p.getSurname());
+                        userManager.setCurrentPatient(p);
+                    }
+                }
+                myShowDialog(MEASURE_RESULT_DIALOG);
+                break;
+            case REQUEST_ENABLE_BT:
+                // When the request to enable Bluetooth returns
+                if (resultCode == Activity.RESULT_OK) {
+                    executeOperation();
+                } else {
+                    // User did not enable Bluetooth or an error occured
+                    Log.d(TAG, "BT not enabled");
+                    Toast.makeText(this, R.string.bt_not_enabled, Toast.LENGTH_SHORT).show();
+                }
+                break;
+            case REQUEST_SCAN_DEVICES:
+                if (resultCode == Activity.RESULT_OK){
+                    BluetoothDevice bd = data.getExtras().getParcelable(SELECTED_DEVICE);
+                    deviceOperations.selectDevice(bd);
+                } else {
+                    deviceOperations.abortOperation();
+                    myRemoveDialog(PROGRESS_DIALOG);
+                }
+                refreshList();
+                break;
+            case MANUAL_TEMPERATURE_ENTRY:
+                if(resultCode == RESULT_OK){
+                    double temp = data.getExtras().getDouble( ManualTemperatureActivity.TEMPERATURE_VALUE );
+                    MeasureManager.getMeasureManager().saveManualTemperature(temp, true);
+                 }
+                 if (resultCode == RESULT_CANCELED) {
+                     deviceOperations.setCurrentDevice(null);
+                 }
+                 break;
+            case EXTERNAL_APP:
+                deviceOperations.onActivityResult(resultCode,data);
+                break;
     	}
 	}
 
@@ -1697,9 +1713,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                             dataBundle.getString(AppConst.ASK_POSITIVE),
                             dataBundle.getString(AppConst.ASK_NEGATIVE));
                     break;
-                case DeviceOperations.REFRESH_LIST:
-                    activity.refreshList();
-                    break;
                 case DeviceOperations.MEASURE_RESULT:
                     activity.refreshList();
                     activity.myRemoveDialog(PROGRESS_DIALOG);
@@ -1724,6 +1737,11 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                     activity.myRemoveDialog(PROGRESS_DIALOG);
                     Intent ecgDrawIntent = new Intent(activity, ECGDrawActivity.class);
                     activity.startActivity(ecgDrawIntent);
+					break;
+				case DeviceOperations.START_ACTIVITY:
+					activity.myRemoveDialog(PROGRESS_DIALOG);
+					Intent i = (Intent)msg.obj;
+					activity.startActivityForResult(i, EXTERNAL_APP);
 					break;
             }
         }
@@ -1919,10 +1937,10 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
             case CHANGE_PASSWORD_DIALOG:
                 builder.setTitle(R.string.changePassword);
                 View new_password_dialog = inflater.inflate(R.layout.change_password, null);
-                pwdET = (EditText) new_password_dialog.findViewById(R.id.password);
-                newPwdET = (EditText) new_password_dialog.findViewById(R.id.newPassword1);
-                newPwd2ET = (EditText) new_password_dialog.findViewById(R.id.newPassword2);
-                pwdCB = (CheckBox) new_password_dialog.findViewById(R.id.passwordCheckBox);
+                pwdET = new_password_dialog.findViewById(R.id.password);
+                newPwdET = new_password_dialog.findViewById(R.id.newPassword1);
+                newPwd2ET = new_password_dialog.findViewById(R.id.newPassword2);
+                pwdCB = new_password_dialog.findViewById(R.id.passwordCheckBox);
                 pwdCB.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                     @Override
                     public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
@@ -1966,8 +1984,8 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
             case PRECOMPILED_LOGIN_DIALOG:
                 builder.setTitle(R.string.authentication);
                 View login_dialog_v = inflater.inflate(R.layout.new_user, null);
-                loginET = (EditText) login_dialog_v.findViewById(R.id.login);
-                pwdET = (EditText) login_dialog_v.findViewById(R.id.password);
+                loginET = login_dialog_v.findViewById(R.id.login);
+                pwdET = login_dialog_v.findViewById(R.id.password);
                 if (id == PRECOMPILED_LOGIN_DIALOG && userDataBundle != null) {
                     loginET.setText(userDataBundle.getString("LOGIN"));
                     if (!userDataBundle.getBoolean("CHANGEABLE"))
@@ -1977,7 +1995,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                 } else {
                     loginET.setText("");
                 }
-                pwdCB = (CheckBox) login_dialog_v.findViewById(R.id.passwordCheckBox);
+                pwdCB = login_dialog_v.findViewById(R.id.passwordCheckBox);
                 pwdCB.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                     @Override
                     public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {

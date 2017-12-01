@@ -8,7 +8,7 @@ import android.content.Intent;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.support.v7.app.ActionBar;
-import android.support.v7.app.ActionBarActivity;
+import android.support.v7.app.AppCompatActivity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -26,11 +26,10 @@ import com.ti.app.mydoctor.MyDoctorApp;
 import com.ti.app.mydoctor.AppResourceManager;
 import com.ti.app.mydoctor.util.AppUtil;
 import com.ti.app.telemed.core.common.ServerConf;
-import com.ti.app.telemed.core.configuration.ConfigurationManager;
 import com.ti.app.mydoctor.gui.customview.GWTextView;
 import com.ti.app.telemed.core.util.Util;
 
-public class ShowUtilitySettings extends ActionBarActivity {
+public class ShowUtilitySettings extends AppCompatActivity {
 	//Elementi che compongono la GUI
 	private EditText hostEt;
 	private EditText portEt;

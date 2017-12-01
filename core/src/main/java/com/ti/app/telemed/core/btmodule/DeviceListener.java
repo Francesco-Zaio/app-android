@@ -1,5 +1,7 @@
 package com.ti.app.telemed.core.btmodule;
 
+import android.content.Intent;
+
 import com.ti.app.telemed.core.common.Measure;
 
 /**
@@ -18,6 +20,7 @@ public interface DeviceListener {
     String DEVICE_MEMORY_EXHAUSTED = "E09";
     String USER_CFG_ERROR = "E10";
     String INTERNAL_ERROR = "E11";
+    String PACKAGE_NOT_FOUND_ERROR = "E12";
 
     /**
      * Invocato in caso di errore
@@ -82,4 +85,11 @@ public interface DeviceListener {
      *  TBD
      */
     void startEcgDraw();
+
+    /**
+     * Richiede di lanciare un attivita esterna alla app con il metodo startActivityForResult
+     * e di restituire il risultato poi tramite il metodo DeviceHandler.onActivityResult
+     * @param intent intent da lanciare
+     */
+    void startActivity(Intent intent);
 }

@@ -23,7 +23,7 @@ import android.app.Activity;
 import android.inputmethodservice.Keyboard;
 import android.inputmethodservice.KeyboardView;
 import android.inputmethodservice.KeyboardView.OnKeyboardActionListener;
-import android.support.v7.app.ActionBarActivity;
+import android.support.v7.app.AppCompatActivity;
 import android.text.Editable;
 import android.text.InputType;
 import android.util.Log;
@@ -43,7 +43,7 @@ public class CustomKeyboard {
 	/** A link to the KeyboardView that is used to render this CustomKeyboard. */
     private KeyboardView mKeyboardView;
     /** A link to the activity that hosts the {@link #mKeyboardView}. */
-    private ActionBarActivity mHostActivity;
+    private AppCompatActivity mHostActivity;
     private CustomKeyboardListener mKeyboardListener;
 
     /** The key (code) handler. */
@@ -115,7 +115,7 @@ public class CustomKeyboard {
      * @param viewid The id of the KeyboardView.
      * @param layoutid The id of the xml file containing the keyboard layout.
      */
-    public CustomKeyboard(ActionBarActivity host, CustomKeyboardListener listener, int viewid, int layoutid) {
+    public CustomKeyboard(AppCompatActivity host, CustomKeyboardListener listener, int viewid, int layoutid) {
         mHostActivity= host;
         mKeyboardListener = listener;
         mKeyboardView= (KeyboardView)mHostActivity.findViewById(viewid);

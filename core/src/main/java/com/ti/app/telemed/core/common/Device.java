@@ -5,9 +5,32 @@ public class Device implements Cloneable {
 	private String measure;
 	private String model;
 	private String description;
-    private boolean isBTDevice;
+    private DevType devType;
 	private String className;
 
+	public enum DevType {
+		NONE(0), BT(1), APP(2);
+
+		private final int value;
+		private DevType(int value) {
+			this.value = value;
+		}
+		public int getValue() {
+			return value;
+		}
+
+		public static DevType fromInteger(int x) {
+			switch(x) {
+				case 0:
+					return NONE;
+				case 1:
+					return BT;
+				case 2:
+					return APP;
+			}
+			return null;
+		}
+	}
 	public Integer getId() {
 		return id;
 	}
@@ -40,12 +63,12 @@ public class Device implements Cloneable {
 		this.description = description;
 	}
 
-	public void setIsBTDevice(boolean isBTDevice) {
-        this.isBTDevice = isBTDevice;
+	public void setDevType(DevType devType) {
+        this.devType = devType;
     }
 
-    public boolean isBTDevice() {
-        return isBTDevice;
+    public DevType getDevType() {
+        return devType;
     }
 
     public String getClassName() {
@@ -65,7 +88,7 @@ public class Device implements Cloneable {
 			newDevice.setModel(this.model);
 			newDevice.setDescription(this.description);
 			newDevice.setMeasure(this.measure);
-            newDevice.setIsBTDevice(this.isBTDevice);
+            newDevice.setDevType(this.devType);
 			return newDevice;
 		} catch (CloneNotSupportedException e) {
 			e.printStackTrace();

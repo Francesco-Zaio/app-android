@@ -6,7 +6,7 @@ import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.support.v7.app.ActionBar;
-import android.support.v7.app.ActionBarActivity;
+import android.support.v7.app.AppCompatActivity;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
@@ -21,7 +21,7 @@ import com.ti.app.mydoctor.gui.customview.CustomKeyboardListener;
 import com.ti.app.mydoctor.gui.customview.GWTextView;
 import com.ti.app.mydoctor.gui.customview.CustomKeyboard;
 
-public class ManualTemperatureActivity extends ActionBarActivity implements CustomKeyboardListener {
+public class ManualTemperatureActivity extends AppCompatActivity implements CustomKeyboardListener {
 
 	static final String TEMPERATURE_VALUE = "TEMPERATURE_VALUE";
 

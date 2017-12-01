@@ -38,6 +38,7 @@ import com.ti.app.mydoctor.devicemodule.DeviceOperations;
 import com.ti.app.mydoctor.util.AppConst;
 import com.ti.app.mydoctor.AppResourceManager;
 import com.ti.app.mydoctor.util.AppUtil;
+import com.ti.app.telemed.core.common.Device;
 import com.ti.app.telemed.core.common.Patient;
 import com.ti.app.telemed.core.common.User;
 import com.ti.app.telemed.core.common.UserDevice;
@@ -120,7 +121,7 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
 			//Settare il font e il titolo della Activity
 			LayoutInflater inflator = (LayoutInflater)this.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 			View titleView = inflator.inflate(R.layout.actionbar_title, null);
-            GWTextView titleTV = (GWTextView)titleView.findViewById(R.id.actionbar_title_label);
+            GWTextView titleTV = titleView.findViewById(R.id.actionbar_title_label);
 			titleTV.setText(R.string.app_name);
 			actionBar.setCustomView(titleView);
 		} else {
@@ -147,47 +148,45 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
 
 	@Override
 	public void onCreateContextMenu(ContextMenu menu, View v, ContextMenuInfo menuInfo) {
-				
 		if(deviceOperations.isOperationRunning()){
 			super.onCreateContextMenu(menu, v, menuInfo);
 			return;
 		}
-		
 		AdapterContextMenuInfo info = (AdapterContextMenuInfo) menuInfo;
 		selectedMeasureType = measureList.get(info.position);
 		selectedMeasurePosition = info.position;
-
 		initDeviceMap();
 		UserDevice pd = deviceMap.get(selectedMeasureType);
-
 		MenuInflater inflater = getMenuInflater();
 		inflater.inflate(R.menu.context_menu_device_settings_advanced, menu);
 		menu.setHeaderTitle(AppResourceManager.getResource().getString("measureType." + selectedMeasureType));
 		menu.setHeaderIcon(AppUtil.getSmallIconId(selectedMeasureType));
-
-		if (pd.getBtAddress() == null){
-			menu.setGroupVisible(R.id.pair_group, false);
-		}
-
-		if (AppUtil.isCamera(pd.getDevice())) {
-			menu.setGroupVisible(R.id.pair_group, false);
-			menu.setGroupVisible(R.id.select_model_group, false);
-		}
-	}
+		switch (pd.getDevice().getDevType()) {
+            case NONE:
+            case APP:
+                menu.setGroupVisible(R.id.pair_group, false);
+                break;
+            case BT:
+                if (pd.getBtAddress() == null) {
+                    menu.setGroupVisible(R.id.pair_group, false);
+                }
+                break;
+        }
+        List<UserDevice> userDevices = measureModelsMap.get(selectedMeasureType);
+		if (userDevices.size() < 2)
+            menu.setGroupVisible(R.id.select_model_group, false);
+    }
 	
 	@Override
 	public boolean onContextItemSelected(MenuItem item) {
-		
 		AdapterContextMenuInfo info = (AdapterContextMenuInfo) item.getMenuInfo();
 		getListView().setSelection(info.position);
-
         UserDevice ud = deviceMap.get(selectedMeasureType);
         if(ud.isActive()){
             deviceOperations.setCurrentDevice(ud);
         } else {
             deviceOperations.setCurrentDevice(null);
         }
-    	
 	    switch (item.getItemId()) {
 		    case R.id.pair:
 	    		doScan();
@@ -242,10 +241,6 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
 		Log.d(TAG, "setupDeviceList");
 		defaultUser = UserManager.getUserManager().setDefaultUser();
 		if(defaultUser != null){
-			User curru = UserManager.getUserManager().getCurrentUser();
-			Patient currp = UserManager.getUserManager().getCurrentPatient();
-			//L'utente corrente diventa utente attivo
-			// defaultUser.setActive(true);
 			initDeviceMap();
 			initMeasureModelsMap(defaultUser.getId());
 			setupListView();
@@ -278,11 +273,9 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
 				Log.i(TAG, "position: "+position);
 				Log.i(TAG, "parent.getItemAtPosition: "+parent.getItemAtPosition(position));
 				initDeviceMap();
-				
 				if(!deviceOperations.isOperationRunning()){
 					selectedMeasureType = measureList.get(position);
-					selectedMeasurePosition = position;		
-					
+					selectedMeasurePosition = position;
 					if(!deviceMap.get(selectedMeasureType).isActive()){
 						showSelectModelDialog();
 					} else {
@@ -292,11 +285,10 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
 						} else {
 							deviceOperations.setCurrentDevice(null);
 						}
-                        if (ud.getDevice().isBTDevice()) {
+                        if (ud.getDevice().getDevType() == Device.DevType.BT) {
 							doScan();
 						}
                     }
-
 				} else {
 					Log.i(TAG, "operation running: click ignored");	
 					Toast.makeText(getApplicationContext(), AppResourceManager.getResource().getString("KOperationRunning"), Toast.LENGTH_LONG).show();
@@ -435,7 +427,6 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
 		Log.d(TAG, "onActivityResult requestCode=" + requestCode + " resultCode=" + resultCode);
 		
 		switch(requestCode) {
-    	
     	case REQUEST_ENABLE_BT:
             // When the request to enable Bluetooth returns
             if (resultCode == Activity.RESULT_OK) {
@@ -448,11 +439,10 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
                 Toast.makeText(this, R.string.bt_not_enabled, Toast.LENGTH_SHORT).show();
             }    
             break;
-    	
     	case REQUEST_SCAN_DEVICES:
-			if (resultCode == Activity.RESULT_OK){
-				BluetoothDevice bd = data.getExtras().getParcelable(SELECTED_DEVICE);
-				deviceOperations.selectDevice(bd);
+			if (resultCode == Activity.RESULT_OK && data.getExtras() != null){
+                    BluetoothDevice bd = data.getExtras().getParcelable(SELECTED_DEVICE);
+                    deviceOperations.selectDevice(bd);
 			} else {
 				deviceOperations.abortOperation();
 				closeProgressDialog();
@@ -478,29 +468,28 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
 
         	Bundle dataBundle = msg.getData();
         	Log.d(TAG, "DeviceManagerMessageHandler what="+msg.what+" bundle=" + dataBundle);
-        	
+
+            String text = dataBundle.getString( AppConst.MESSAGE );
             switch (msg.what) {
 				case DeviceOperations.MESSAGE_STATE:
 					dataBundle.putBoolean(AppConst.IS_MEASURE, true);
 					if( progressDialog == null )
-						activity.createProgressDialog(dataBundle);
-					//getActivity().showDialog(PROGRESS_DIALOG);
+						activity.createProgressDialog(text);
 					break;
 				case DeviceOperations.MESSAGE_STATE_WAIT:
 					dataBundle.putBoolean(AppConst.IS_MEASURE, true);
 					if( progressDialog == null )
-						activity.createProgressDialog(dataBundle);
-					//getActivity().showDialog(PROGRESS_DIALOG);
+						activity.createProgressDialog(text);
 					break;
 				case DeviceOperations.CONFIG_READY:
 					activity.refreshList();
 					activity.closeProgressDialog();
-					activity.createAlertDialog(dataBundle);
+					activity.createAlertDialog(text);
 					break;
 				case DeviceOperations.ERROR_STATE:
 					activity.refreshList();
 					activity.closeProgressDialog();
-					activity.createAlertDialog(dataBundle);
+					activity.createAlertDialog(text);
 					break;
             }
         }
@@ -511,26 +500,20 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
      * 
      */
     
-    private void createProgressDialog(Bundle data) {
+    private void createProgressDialog(String msg) {
 		progressDialog = new ProgressDialog( this );
-		
-		String msg = data.getString( AppConst.MESSAGE );
-		Log.d(TAG, "createProgressDialog msg=" + msg);
-		
+        Log.d(TAG, "createProgressDialog msg=" + msg);
 		progressDialog.setIndeterminate(true);
 		progressDialog.setCancelable(false);
-		progressDialog.setMessage(data.getString(AppConst.MESSAGE));
+		progressDialog.setMessage(msg);
 		progressDialog.setButton(DialogInterface.BUTTON_NEGATIVE, AppResourceManager.getResource().getString("EGwnurseCancel"),  new ProgressDialogClickListener());
-		
 		progressDialog.setOnKeyListener(new DialogInterface.OnKeyListener() {			
 			@Override
 			public boolean onKey(DialogInterface dialog, int keyCode, KeyEvent event) {				
 				return true;
 			}
 		});
-		
 		progressDialog.show();
-    	//return progressDialog;
 	}
     
     private void closeProgressDialog() {
@@ -551,20 +534,13 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
     /**
      * ALERT DIALOG
      */
-    private void createAlertDialog(Bundle data) {
-    	String msg = data.getString(AppConst.MESSAGE);
-    	alertDialog = createAlert(msg, null);
+    private void createAlertDialog(String msg) {
+        Log.d(TAG, "createAlert() msg=" + msg);
+        AlertDialog.Builder builder = new AlertDialog.Builder( this );
+        builder.setMessage(msg);
+        builder.setPositiveButton("Ok", new AlertDialogClickListener());
+        alertDialog = builder.create();
     	alertDialog.show();
-	}	
-    
-    private AlertDialog createAlert(String msg, String title) {
-    	Log.d(TAG, "createAlert() msg=" + msg);
-    	
-    	AlertDialog.Builder builder = new AlertDialog.Builder( this );
-		builder.setMessage(msg);
-		builder.setPositiveButton("Ok", new AlertDialogClickListener());                       
-		builder.setTitle(title);
-		return builder.create();
 	}
     
     private void closeAlertDialog() {

@@ -22,3 +22,4 @@ PR, PC300, PC-300 - GIMA, 1, GIMAPC300SpotCheck
 // EC, PC80B, PC80B - GIMA, 1, GIMAPC80B
 // EC, ECGTest, ECGTest, 1, ECGTest
 GL, AGAMATRIXJAZZ, Jazz 2 - AgaMatrix, 1, AgamatrixJazz
+EC, TOUCHECG, TouchECG - Cardioline, 2, TouchECG

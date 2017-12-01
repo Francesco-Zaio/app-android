@@ -7,7 +7,7 @@ import android.content.DialogInterface;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.support.v7.app.ActionBar;
-import android.support.v7.app.ActionBarActivity;
+import android.support.v7.app.AppCompatActivity;
 import android.view.LayoutInflater;
 import android.view.KeyEvent;
 import android.view.MenuItem;
@@ -22,7 +22,7 @@ import com.ti.app.mydoctor.gui.customview.GWTextView;
 import com.ti.app.telemed.core.common.User;
 import com.ti.app.telemed.core.usermodule.UserManager;
 
-public class ShowUserSettings extends ActionBarActivity {
+public class ShowUserSettings extends AppCompatActivity {
 	
 	//Dialog
 	private static final int ERROR_DIALOG = 0;

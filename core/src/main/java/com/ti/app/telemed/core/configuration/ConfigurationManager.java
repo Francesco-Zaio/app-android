@@ -97,13 +97,13 @@ public class ConfigurationManager {
 	            	String measure = st.nextToken().trim();
 	            	String model = st.nextToken().trim();
 	            	String description = st.nextToken().trim();
-					int needCfg = Integer.parseInt(st.nextToken().trim());
+					int devType = Integer.parseInt(st.nextToken().trim());
 					String className = st.nextToken().trim();
 	            	Device tmpDev = new Device();
 	            	tmpDev.setMeasure(measure);
 	            	tmpDev.setModel(model);
 	            	tmpDev.setDescription(description);
-					tmpDev.setIsBTDevice(needCfg == 1);
+					tmpDev.setDevType(Device.DevType.fromInteger(devType));
 					tmpDev.setClassName(className);
 	            	currentDev.add(tmpDev);
 	            	

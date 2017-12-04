@@ -171,8 +171,6 @@ public class DeviceOperations implements DeviceListener {
         }
         if (result)
             notifyToUi(AppResourceManager.getResource().getString("KSearchingDev"));
-        else
-            notifyError("",AppResourceManager.getResource().getString("KNoMesurement"));
 	}
 
 	public void abortOperation() {

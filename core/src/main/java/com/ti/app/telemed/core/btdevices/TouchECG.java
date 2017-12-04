@@ -94,8 +94,10 @@ public class TouchECG extends DeviceHandler {
 
         PackageManager pm = MyApp.getContext().getPackageManager();
         Intent intent = pm.getLaunchIntentForPackage(TOUCH_ECG_PACKAGE);
-        if (intent == null)
+        if (intent == null) {
+            deviceListener.notifyError(DeviceListener.PACKAGE_NOT_FOUND_ERROR,ResourceManager.getResource().getString("ENoTouchECG"));
             return false;
+        }
         startActivity(intent);
         return true;
     }

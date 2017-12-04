@@ -1836,7 +1836,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 			//L'utente corrente diventa utente attivo
 			currentUser.setActive(true);
 
-            measureList = measureManager.getUserMeasures(currentUser.getId());
+            measureList = measureManager.getBiometricUserMeasures(currentUser.getId());
 			initMeasureModelsMap();
 
 			patientList = currentUser.getPatients();

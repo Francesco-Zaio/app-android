@@ -172,15 +172,6 @@ public class RocheProthrombineTimeClient extends DeviceHandler implements
 	private static final String TAG = "RocheProthrombineClient";
 
 
-	public static boolean needPairing(UserDevice userDevice) {
-		return false;
-	}
-
-	public static boolean needConfig(UserDevice userDevice) {
-		return false;
-	}
-
-
 	public RocheProthrombineTimeClient(DeviceListener listener, UserDevice ud) {
         super(listener, ud);
 

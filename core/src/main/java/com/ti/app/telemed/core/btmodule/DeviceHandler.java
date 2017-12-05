@@ -4,6 +4,15 @@ import android.bluetooth.BluetoothDevice;
 import android.content.Intent;
 import android.util.Log;
 
+import com.ti.app.telemed.core.btdevices.AgamatrixJazz;
+import com.ti.app.telemed.core.btdevices.EcgProtocol;
+import com.ti.app.telemed.core.btdevices.ForaThermometerClient;
+import com.ti.app.telemed.core.btdevices.GIMAPC300SpotCheck;
+import com.ti.app.telemed.core.btdevices.IHealth;
+import com.ti.app.telemed.core.btdevices.MIRSpirodoc;
+import com.ti.app.telemed.core.btdevices.NoninOximeter;
+import com.ti.app.telemed.core.btdevices.RocheProthrombineTimeClient;
+import com.ti.app.telemed.core.btdevices.TouchECG;
 import com.ti.app.telemed.core.common.Device;
 import com.ti.app.telemed.core.common.Measure;
 import com.ti.app.telemed.core.common.Patient;
@@ -11,6 +20,7 @@ import com.ti.app.telemed.core.common.User;
 import com.ti.app.telemed.core.common.UserDevice;
 import com.ti.app.telemed.core.dbmodule.DbManager;
 import com.ti.app.telemed.core.usermodule.UserManager;
+import com.ti.app.telemed.core.util.GWConst;
 import com.ti.app.telemed.core.util.Util;
 
 import java.lang.reflect.Method;
@@ -133,12 +143,30 @@ public abstract class DeviceHandler {
             Log.e(TAG, "getInstance: DeviceListener or UserDevice is null or not valid.");
             return null;
         }
-        try {
-            Class<?> c = Class.forName("com.ti.app.telemed.core.btdevices." + ud.getDevice().getClassName());
-            return (DeviceHandler) c.getDeclaredConstructor(DeviceListener.class, UserDevice.class ).newInstance(listener, ud);
-        } catch (Exception e) {
-            Log.e(TAG, "getInstance: reflection Error! Cannot instantiate class " + ud.getDevice().getClassName());
-            return null;
+        switch(ud.getDevice().getModel()) {
+            case GWConst.KPO3IHealth:
+            case GWConst.KBP5IHealth:
+            case GWConst.KHS4SIHealth:
+            case GWConst.KBP550BTIHealth:
+                return new IHealth(listener, ud);
+            case GWConst.KEcgMicro:
+                return new EcgProtocol(listener, ud);
+            case GWConst.KCcxsRoche:
+                return new RocheProthrombineTimeClient(listener, ud);
+            case GWConst.KFORATherm:
+                return new ForaThermometerClient(listener, ud);
+            case GWConst.KSpirodoc:
+                return new MIRSpirodoc(listener, ud);
+            case GWConst.KOximeterNon:
+                return new NoninOximeter(listener, ud);
+            case GWConst.KPC300SpotCheck:
+                return new GIMAPC300SpotCheck(listener, ud);
+            case GWConst.KAgamtrixJazz:
+                return new AgamatrixJazz(listener, ud);
+            case GWConst.KTouchECG:
+                return new TouchECG(listener, ud);
+            default:
+                return null;
         }
     }
 
@@ -151,8 +179,6 @@ public abstract class DeviceHandler {
         patient = null;
     }
 
-    // NB !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    // DeviceHandler sub classes MUST IMPLEMENT also the following two static methods
 
     /**
      * Indica se, prima di eseguire una misura, e' necessario eseguire il pairing con il dispositivo.
@@ -161,19 +187,12 @@ public abstract class DeviceHandler {
      * @return    <code>true</code> nel caso il pairing sia necessario <code>false</code> in caso contrario.
      */
     public static boolean needPairing(UserDevice ud){
-        try {
-            Class<?> c = Class.forName("com.ti.app.telemed.core.btdevices." + ud.getDevice().getClassName());
-            Method m = c.getMethod("needPairing", UserDevice.class);
-            return (boolean) m.invoke(null, ud);
-        } catch (ClassNotFoundException e) {
-            Log.e(TAG,"Class Not Found!! : " + ud.getDevice().getClassName());
-            return false;
-        } catch (NoSuchMethodException e) {
-            Log.e(TAG,"Method Not Found!! : " + ud.getDevice().getClassName());
-            return false;
-        } catch (Exception e) {
-            Log.e(TAG,"Method Invocation Exception! : " + ud.getDevice().getClassName());
-            return false;
+        switch(ud.getDevice().getModel()) {
+            case GWConst.KSpirodoc:
+            case GWConst.KPC300SpotCheck:
+                return true;
+            default:
+                return false;
         }
     }
 
@@ -184,19 +203,11 @@ public abstract class DeviceHandler {
      * @return    <code>true</code> nel caso la configurazione sia necessaria <code>false</code> in caso contrario.
      */
     public static boolean needConfig(UserDevice ud){
-        try {
-            Class<?> c = Class.forName("com.ti.app.telemed.core.btdevices." + ud.getDevice().getClassName());
-            Method m = c.getMethod("needConfig", UserDevice.class);
-            return (boolean) m.invoke(null, ud);
-        } catch (ClassNotFoundException e) {
-            Log.e(TAG,"Class Not Found!! : " + ud.getDevice().getClassName());
-            return false;
-        } catch (NoSuchMethodException e) {
-            Log.e(TAG,"Method Not Found!! : " + ud.getDevice().getClassName());
-            return false;
-        } catch (Exception e) {
-            Log.e(TAG,"Method Invocation Exception! : " + ud.getDevice().getClassName());
-            return false;
+        switch(ud.getDevice().getModel()) {
+            case GWConst.KSpirodoc:
+                return MIRSpirodoc.needConfig(ud);
+            default:
+                return false;
         }
     }
 

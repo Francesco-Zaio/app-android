@@ -1,6 +1,14 @@
 apply plugin: 'com.android.application'
 
 android {
+    signingConfigs {
+        release {
+            keyAlias 'mydoctorkeystore'
+            keyPassword 'mydoctor'
+            storeFile file('C:/Users/SO000228/Desktop/TMED/Sviluppo/GWAndroid/AndroidCore/myDoctor.keystore')
+            storePassword 'mydoctor'
+        }
+    }
     compileSdkVersion 26
     buildToolsVersion "26.0.3"
     useLibrary 'org.apache.http.legacy'
@@ -8,8 +16,8 @@ android {
         applicationId "com.ti.app.mydoctor"
         minSdkVersion 14
         targetSdkVersion 26
-        versionCode 401
-        versionName "4.0.1.a"
+        versionCode 402
+        versionName "4.0.2.a"
         setProperty("archivesBaseName", "NuvolaItHomeDoctor-$versionName")
     }
     buildTypes {
@@ -23,10 +31,8 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt')
         }
     }
-
     productFlavors {
     }
-
 }
 
 dependencies {

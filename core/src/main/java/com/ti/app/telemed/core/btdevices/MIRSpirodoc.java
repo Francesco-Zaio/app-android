@@ -108,13 +108,9 @@ public class MIRSpirodoc extends DeviceHandler implements
         return spirodocType == TSpirodocType.DEV_STANDARD;
     }
 
-	public static boolean needPairing(UserDevice userDevice) {
-		return true;
-	}
-
 	public static boolean needConfig(UserDevice userDevice) {
 		TSpirodocType spirodocType = TSpirodocType.DEV_SIMPLE;
-		if (userDevice != null) {
+		if (userDevice != null && GWConst.KMsrSpir.equals(userDevice.getMeasure())) {
 			String btAddr = userDevice.getBtAddress();
 			if (btAddr != null && !btAddr.isEmpty()) {
 				String typeString = Util.getRegistryValue(REGKEY + btAddr);

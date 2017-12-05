@@ -40,14 +40,6 @@ public class IHealth extends DeviceHandler {
     private IHealtDevice deviceController = null;
     private Timer timer;
 
-    public static boolean needPairing(UserDevice userDevice) {
-        return false;
-    }
-
-    public static boolean needConfig(UserDevice userDevice) {
-        return false;
-    }
-
     public IHealth(DeviceListener listener, UserDevice ud) {
         super(listener, ud);
         deviceList = new Vector<>();

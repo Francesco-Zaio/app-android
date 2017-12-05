@@ -585,7 +585,8 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 
 		if( isFragmentCreatedInSwitch ){
 			isFragmentCreatedInSwitch = false;
-			setupView();
+            User currentUser = userManager.getCurrentUser();
+            setupView();
 
 			if( isGrid ) {
 				registerForContextMenu(deviceGridFragment.getGridView());
@@ -599,7 +600,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 			else
 				setCurrentUserLabel( "" );
 
-			if (userManager.getCurrentUser().getIsPatient()) {
+			if (currentUser == null || currentUser.getIsPatient()) {
 				currentPatientLL.setVisibility(View.GONE);
 			} else {
 				currentPatientLL.setVisibility(View.VISIBLE);
@@ -809,7 +810,10 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
     }
 
 	private void setupView() {
-		if( isGrid ) {
+	    User u = userManager.getCurrentUser();
+        if (u == null || u.isBlocked())
+            return;
+        if( isGrid ) {
 			setupGridView();
 		} else {
 			setupListView();

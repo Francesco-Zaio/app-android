@@ -111,8 +111,7 @@ public class DbManager {
 		+ "MEASURE text, " 
 		+ "MODEL text, "
 		+ "DESCRIPTION text, "
-        + "IS_BT_DEV integer, "
-        + "CLASS_NAME text )";
+        + "IS_BT_DEV integer )";
     
     private static final String CREATE_USER_DEVICE_TBL = "CREATE table USER_DEVICE ("
             + "ID integer primary key autoincrement, "
@@ -217,7 +216,6 @@ public class DbManager {
                     case 14:
                         // rimossa colonna DEVICE_TYPE da MEASURE non serve fare nulla
                     case 15:
-                        db.execSQL("ALTER TABLE DEVICE ADD COLUMN CLASS_NAME text");
                         db.execSQL("DROP TABLE IF EXISTS CERTIFICATES");
                 }
             }
@@ -299,7 +297,6 @@ public class DbManager {
             values.put("MODEL", d.getModel());
             values.put("DESCRIPTION", d.getDescription());
             values.put("IS_BT_DEV", d.getDevType().getValue());
-            values.put("CLASS_NAME", d.getClassName());
             if (mDb.insert("DEVICE", null, values) > 0) {
                 logger.log(Level.INFO, "Device inserted: " + d.toString());
                 Device d2 = getDeviceWhereMeasureModel(d.getMeasure(), d.getModel());
@@ -321,7 +318,6 @@ public class DbManager {
             ContentValues values = new ContentValues();
             values.put("DESCRIPTION", d.getDescription());
             values.put("IS_BT_DEV", d.getDevType().getValue());
-            values.put("CLASS_NAME", d.getClassName());
             String[] args = new String[]{d.getMeasure(), d.getModel()};
             mDb.update("DEVICE", values, "MEASURE = ? AND MODEL =  ? ", args);
             logger.log(Level.INFO, "Device updated: "+ d.toString());
@@ -371,7 +367,6 @@ public class DbManager {
             ret.setModel(c.getString(c.getColumnIndex("MODEL")));
             ret.setDescription(c.getString(c.getColumnIndex("DESCRIPTION")));
             ret.setDevType(Device.DevType.fromInteger(c.getInt(c.getColumnIndex("IS_BT_DEV"))));
-            ret.setClassName(c.getString(c.getColumnIndex("CLASS_NAME")));
             return ret;
         }
     }

@@ -72,13 +72,6 @@ public class AgamatrixJazz extends DeviceHandler implements
 
     private static final String TAG = "AgamatrixJazz";
 
-    public static boolean needPairing(UserDevice userDevice) {
-        return false;
-    }
-
-    public static boolean needConfig(UserDevice userDevice) {
-        return false;
-    }
 
     public AgamatrixJazz(DeviceListener listener, UserDevice ud) {
             super(listener, ud);

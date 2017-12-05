@@ -81,13 +81,6 @@ public class ForaThermometerClient extends DeviceHandler implements
 
     private Logger logger = Logger.getLogger(ForaThermometerClient.class.getName());
 
-	public static boolean needPairing(UserDevice userDevice) {
-		return false;
-	}
-
-	public static boolean needConfig(UserDevice userDevice) {
-		return false;
-	}
 
     public ForaThermometerClient(DeviceListener listener, UserDevice ud) {
         super(listener, ud);

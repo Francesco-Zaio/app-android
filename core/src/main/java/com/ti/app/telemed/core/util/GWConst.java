@@ -28,27 +28,19 @@ public interface GWConst {
      */
     String DEVICE_CAMERA = "CAMERA";
 
-    /*
+
     String KPO3IHealth = "PO3";
     String KBP5IHealth = "BP5";
     String KHS4SIHealth = "HS4S";
     String KBP550BTIHealth = "BP550BT";
 	String KEcgMicro = "MICROTELBT";
-	String KOximeterNon = "NONIN4100";
-	String KTDCC = "CLEVERCHEK";
 	String KCcxsRoche = "CCXS";
-	String KIEMWS = "IEMWS";
-	String KIEMBP = "IEMBP";
 	String KFORATherm = "FORAIR21B";
-	String KForaWS = "FORAW310";
     String KSpirodoc = "SPIRODOC";
-    String KANDPS = "ANDPS";
-    String KANDPR = "ANDPR";
-    String KAEROTEL = "AEROTEL";
-    String KMYGLUCOHEALTH = "MYGLUCOHEALTH";
-	String K8000GW = "8000GW";
+	String KOximeterNon = "NONIN4100";
 	String KPC300SpotCheck = "PC300";
-	*/
+	String KAgamtrixJazz = "AGAMATRIXJAZZ";
+	String KTouchECG = "TOUCHECG";
 
 	/**
 	 * Misura di Ossimetria.

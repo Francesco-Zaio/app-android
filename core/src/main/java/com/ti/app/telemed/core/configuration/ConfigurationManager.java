@@ -98,13 +98,11 @@ public class ConfigurationManager {
 	            	String model = st.nextToken().trim();
 	            	String description = st.nextToken().trim();
 					int devType = Integer.parseInt(st.nextToken().trim());
-					String className = st.nextToken().trim();
 	            	Device tmpDev = new Device();
 	            	tmpDev.setMeasure(measure);
 	            	tmpDev.setModel(model);
 	            	tmpDev.setDescription(description);
 					tmpDev.setDevType(Device.DevType.fromInteger(devType));
-					tmpDev.setClassName(className);
 	            	currentDev.add(tmpDev);
 	            	
 	            	Device d = DbManager.getDbManager().getDeviceWhereMeasureModel(measure, model);

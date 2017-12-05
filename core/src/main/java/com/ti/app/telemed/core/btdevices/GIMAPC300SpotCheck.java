@@ -76,13 +76,6 @@ public class GIMAPC300SpotCheck
 	private String iBodyTemperature;
     private int iBattery = 0;
 
-    public static boolean needPairing(UserDevice userDevice) {
-        return true;
-    }
-
-    public static boolean needConfig(UserDevice userDevice) {
-        return false;
-    }
 
     public GIMAPC300SpotCheck(DeviceListener listener, UserDevice ud) {
         super(listener, ud);

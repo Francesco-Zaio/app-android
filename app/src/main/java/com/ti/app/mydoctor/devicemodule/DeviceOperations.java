@@ -51,40 +51,12 @@ public class DeviceOperations implements DeviceListener {
 	public DeviceOperations() {
 	}
 
-	// usa la reflection per invocare il metodo statico needPairing della classe che gestisce il device
     public boolean needPairing(UserDevice ud) {
-        try {
-            Class<?> c = Class.forName("com.ti.app.telemed.core.btdevices." + ud.getDevice().getClassName());
-            Method m = c.getMethod("needPairing", UserDevice.class);
-            return (boolean) m.invoke(null, ud);
-        } catch (ClassNotFoundException e) {
-            Log.e(TAG,"Class Not Found!! : " + ud.getDevice().getClassName());
-            return false;
-        } catch (NoSuchMethodException e) {
-            Log.e(TAG,"Method Not Found!! : " + ud.getDevice().getClassName());
-            return false;
-        } catch (Exception e) {
-            Log.e(TAG,"Method Invocation Exception! : " + ud.getDevice().getClassName());
-            return false;
-        }
+        return DeviceHandler.needPairing(ud);
     }
 
-    // usa la reflection per invocare il metodo statico needCfg della classe che gestisce il device
     public boolean needCfg(UserDevice ud) {
-        try {
-            Class<?> c = Class.forName("com.ti.app.telemed.core.btdevices." + ud.getDevice().getClassName());
-            Method m = c.getMethod("needConfig", UserDevice.class);
-            return (boolean) m.invoke(null, ud);
-        } catch (ClassNotFoundException e) {
-            Log.e(TAG,"Class Not Found!! : " + ud.getDevice().getClassName());
-            return false;
-        } catch (NoSuchMethodException e) {
-            Log.e(TAG,"Method Not Found!! : " + ud.getDevice().getClassName());
-            return false;
-        } catch (Exception e) {
-            Log.e(TAG,"Method Invocation Exception! : " + ud.getDevice().getClassName());
-            return false;
-        }
+	    return DeviceHandler.needConfig(ud);
     }
 
 

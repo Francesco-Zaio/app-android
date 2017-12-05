@@ -135,14 +135,6 @@ public class EcgProtocol extends DeviceHandler implements
 
     private static final String TAG = "EcgProtocol";
 
-    public static boolean needPairing(UserDevice userDevice) {
-        return false;
-    }
-
-    public static boolean needConfig(UserDevice userDevice) {
-        return false;
-    }
-
     public EcgProtocol(DeviceListener listener, UserDevice ud) {
         super(listener, ud);
 

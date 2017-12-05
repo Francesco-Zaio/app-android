@@ -1,40 +1,28 @@
 package com.ti.app.telemed.core.btdevices;
 
 import android.bluetooth.BluetoothDevice;
-import android.content.BroadcastReceiver;
-import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.util.Log;
 
 import com.ti.app.telemed.core.MyApp;
 import com.ti.app.telemed.core.ResourceManager;
-import com.ti.app.telemed.core.btmodule.BTSearcher;
 import com.ti.app.telemed.core.btmodule.BTSearcherEventListener;
-import com.ti.app.telemed.core.btmodule.BTSocket;
-import com.ti.app.telemed.core.btmodule.BTSocketEventListener;
 import com.ti.app.telemed.core.btmodule.DeviceHandler;
 import com.ti.app.telemed.core.btmodule.DeviceListener;
 import com.ti.app.telemed.core.common.Measure;
 import com.ti.app.telemed.core.common.UserDevice;
-import com.ti.app.telemed.core.devicesactivities.Contec8000GWActivity;
 import com.ti.app.telemed.core.util.GWConst;
 import com.ti.app.telemed.core.util.Util;
 import com.ti.app.telemed.core.xmlmodule.XmlManager;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
-import java.util.Vector;
 
 
 public class TouchECG extends DeviceHandler {
@@ -48,6 +36,7 @@ public class TouchECG extends DeviceHandler {
     private static final String KEY_RETURN = "RETURN";
 
     // Codifica chiavi attributo passati alla app
+    private static final String KEY_BUNDLE = "CARDIOLINE_BUNDLE";
     private static final String KEY_ID = "ID"; // Codice Fiscale paziente MaxLength = 24
     private static final String KEY_FIRSTNAME = "FIRSTNAME"; // Nome paziente MaxLength = 16
     private static final String KEY_LASTNAME = "LASTNAME"; // Cognome paziente MaxLength = 24
@@ -63,13 +52,6 @@ public class TouchECG extends DeviceHandler {
     private static final String KEY_PATH_SCP  = "PATH_SCP"; // string, this permit to specify where the touchECG save the scp file when save
     private static final String KEY_APPLICATION = "APPLICATION"; // int , this will be set to 2= SEMI  see enum APPLICATION
 
-    public static boolean needPairing(UserDevice userDevice) {
-        return true;
-    }
-
-    public static boolean needConfig(UserDevice userDevice) {
-        return false;
-    }
 
     private String filename;
 
@@ -157,24 +139,26 @@ public class TouchECG extends DeviceHandler {
 
     private void startActivity(Intent intent) {
         intent.setFlags(0);
-        intent.putExtra(KEY_ID, truncate(patient.getCf(),24));
-        intent.putExtra(KEY_FIRSTNAME, truncate(patient.getName(),16));
-        intent.putExtra(KEY_LASTNAME, truncate(patient.getSurname(),24));
-        intent.putExtra(KEY_SEX, patient.getSex().equals("M")?1:2);
-        intent.putExtra(KEY_BIRTHDATE, patient.getBirthdayDate());
-        intent.putExtra(KEY_RACE, decodeRace(patient.getEthnic()));
+        Bundle b = new Bundle();
+        b.putString(KEY_ID, truncate(patient.getCf(),24));
+        b.putString(KEY_FIRSTNAME, truncate(patient.getName(),16));
+        b.putString(KEY_LASTNAME, truncate(patient.getSurname(),24));
+        b.putInt(KEY_SEX, patient.getSex().equals("M")?1:2);
+        b.putString(KEY_BIRTHDATE, patient.getBirthdayDate());
+        b.putInt(KEY_RACE, decodeRace(patient.getEthnic()));
         double weight = Double.parseDouble( patient.getWeight().replace(",",".") );
-        intent.putExtra(KEY_WEIGHT, (int)(weight + 0.5));
-        intent.putExtra(KEY_WEIGHTUM, 1); //Kg
-        intent.putExtra(KEY_HEIGHT, Integer.parseInt(patient.getHeight()));
-        intent.putExtra(KEY_HEIGHTUM, 1); // cm
+        b.putInt(KEY_WEIGHT, (int)(weight + 0.5));
+        b.putInt(KEY_WEIGHTUM, 1); //Kg
+        b.putInt(KEY_HEIGHT, Integer.parseInt(patient.getHeight()));
+        b.putInt(KEY_HEIGHTUM, 1); // cm
         String technician = user.getId()+"|"+user.getName()+" "+user.getSurname();
-        intent.putExtra(KEY_TECHNICIAN, truncate(technician,30));
-        intent.putExtra(KEY_PATTERN, patient.getId() + "-"
+        b.putString(KEY_TECHNICIAN, truncate(technician,30));
+        b.putString(KEY_PATTERN, patient.getId() + "-"
                 + new SimpleDateFormat("yyyyMMddhhmmss",Locale.ITALIAN).format(new Date()));
-        intent.putExtra(KEY_PATH_SCP, Util.getMeasuresDir().getAbsolutePath());
-        intent.putExtra(KEY_APPLICATION, 2); // tc get passing parameter and remain in realtime mode
+        b.putString(KEY_PATH_SCP, Util.getMeasuresDir().getAbsolutePath());
+        b.putInt(KEY_APPLICATION, 2); // tc get passing parameter and remain in realtime mode
 
+        intent.putExtra(KEY_BUNDLE,b);
         deviceListener.startActivity(intent);
     }
 

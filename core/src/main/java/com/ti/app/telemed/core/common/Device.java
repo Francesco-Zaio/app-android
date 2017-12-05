@@ -6,7 +6,6 @@ public class Device implements Cloneable {
 	private String model;
 	private String description;
     private DevType devType;
-	private String className;
 
 	public enum DevType {
 		NONE(0), BT(1), APP(2);
@@ -69,14 +68,6 @@ public class Device implements Cloneable {
 
     public DevType getDevType() {
         return devType;
-    }
-
-    public String getClassName() {
-        return className;
-    }
-
-    public void setClassName(String className) {
-        this.className = className;
     }
 
 	@Override

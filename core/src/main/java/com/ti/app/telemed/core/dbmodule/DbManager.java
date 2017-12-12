@@ -1144,7 +1144,7 @@ public class DbManager {
         }
     }
 
-	private UserMeasure getUserMeasure (String userId, String measure) {
+	public UserMeasure getUserMeasure (String userId, String measure) {
         synchronized (this) {
             UserMeasure ret = null;
             Cursor c = null;

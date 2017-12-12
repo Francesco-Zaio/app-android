@@ -2,6 +2,8 @@ package com.ti.app.telemed.core.common;
 
 import android.util.Log;
 
+import com.ti.app.telemed.core.dbmodule.DbManager;
+
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
@@ -39,6 +41,7 @@ public class Measure implements Serializable{
         NONE,
         RED,
         ORANGE,
+        YELLOW,
         GREEN
     }
 
@@ -180,13 +183,23 @@ public class Measure implements Serializable{
 
     /**
      * Metodo che restituisce i valori delle soglie calcolati per ogni valore della misura
-     * @return hashmap di oggetti {@code ThresholdLevel} che contiene le soglie calcolate per ogni valore della misura o (@code null) se i valori sono null
+     * @return hashmap di oggetti {@code ThresholdLevel} che contiene le soglie calcolate per ogni chiave della misura
      */
     public Map<String,ThresholdLevel> checkTresholds() {
-        if ((measures == null) || (thresholds == null))
-            return null;
-
         HashMap<String,ThresholdLevel> ret = new HashMap<>();
+        if ((measures == null))
+            return ret;
+
+        if (thresholds == null) {
+            thresholds = new HashMap<>();
+            UserMeasure um = DbManager.getDbManager().getUserMeasure(idUser, measureType);
+            if (um != null) {
+                for (Map.Entry<String, String> entry : measures.entrySet())
+                    if (um.getThresholds().containsKey(entry.getKey()))
+                        thresholds.put(entry.getKey(), um.getThresholds().get(entry.getKey()));
+            }
+        }
+
         for (Map.Entry<String, String> entry : measures.entrySet())
         {
             if (thresholds.containsKey(entry.getKey()))
@@ -225,6 +238,14 @@ public class Measure implements Serializable{
                         } else if (measureValue <= thValue)
                             return ret;
                         break;
+                    case "Y":
+                        ret = ThresholdLevel.YELLOW;
+                        if (oldVal.ordinal() < ret.ordinal()) {
+                            if (measureValue < thValue)
+                                return ret;
+                        } else if (measureValue <= thValue)
+                            return ret;
+                        break;
                     case "G":
                         ret = ThresholdLevel.GREEN;
                         if (measureValue <= thValue)
@@ -239,7 +260,6 @@ public class Measure implements Serializable{
         }
         return ret;
     }
-
 
     @Override
     public boolean equals(Object obj) {

@@ -1,7 +1,10 @@
 package com.ti.app.telemed.core.btdevices;
 
 import android.bluetooth.BluetoothDevice;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.util.Log;
@@ -30,7 +33,10 @@ public class TouchECG extends DeviceHandler {
 
     private static final String TOUCH_ECG_PACKAGE = "com.cardioline.touchECG";
 
+    // Broadcast inviato dalla app TouchECG al termine della sua attiita'
+    private static final String TOUCHECG_BROADCAST_EVENT = "com.cardioline.touchECG.broadcast";
     // Codifica esito restituito dalla app
+    private static final String KEY_RESULT = "RESULT";
     private static final int RESULT_OK = -1;
     private static final int RESULT_ABORT = 0;
     private static final String KEY_RETURN = "RETURN";
@@ -73,15 +79,7 @@ public class TouchECG extends DeviceHandler {
         if (!startInit(ot, btSearchListener))
             return false;
         Log.d(TAG,"startOperation: iBtDevAddr="+iBtDevAddr + " iCmdCode="+iCmdCode.toString());
-
-        PackageManager pm = MyApp.getContext().getPackageManager();
-        Intent intent = pm.getLaunchIntentForPackage(TOUCH_ECG_PACKAGE);
-        if (intent == null) {
-            deviceListener.notifyError(DeviceListener.PACKAGE_NOT_FOUND_ERROR,ResourceManager.getResource().getString("ENoTouchECG"));
-            return false;
-        }
-        startActivity(intent);
-        return true;
+        return startActivity();
     }
 
     @Override
@@ -96,49 +94,14 @@ public class TouchECG extends DeviceHandler {
         iState = TState.EGettingService;
     }
 
-    @Override
-    public void onActivityResult(int resultCode, Intent data) {
-        if (resultCode == RESULT_OK) {
-            filename = data.getStringExtra(KEY_RETURN);
-            FileInputStream fis = null;
-            byte[] fileContent = null;
-            try {
-                File file = new File(filename);
-                fileContent = new byte[(int) file.length()];
-                fis = new FileInputStream(file);
-                long n = fis.read(fileContent);
-                if (n != fileContent.length) {
-                    deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR, ResourceManager.getResource().getString("EDataReadError"));
-                    return;
-                }
-            } catch (Exception e) {
-                deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR, ResourceManager.getResource().getString("EDataReadError"));
-                return;
-            } finally {
-                try {
-                    if (fis != null)
-                        fis.close();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-            Measure m = getMeasure();
-            HashMap<String,String> tmpVal = new HashMap<>();
-            String [] tokens  = filename.split(File.separator);
-            tmpVal.put(GWConst.EGwCode_0G, tokens[tokens.length-1]);  //nome file
-            m.setMeasures(tmpVal);
-            m.setFile(fileContent);
-            m.setFileType(XmlManager.ECG_FILE_TYPE);
-            m.setFailed(false);
-            m.setBtAddress("N.A.");
-            deviceListener.showMeasurementResults(m);
-        } else {
-            deviceListener.notifyError(DeviceListener.NO_MEASURES_FOUND, ResourceManager.getResource().getString("ENoMeasurementDone"));
+    private boolean startActivity() {
+        PackageManager pm = MyApp.getContext().getPackageManager();
+        Intent intent = pm.getLaunchIntentForPackage(TOUCH_ECG_PACKAGE);
+        if (intent == null) {
+            deviceListener.notifyError(DeviceListener.PACKAGE_NOT_FOUND_ERROR,ResourceManager.getResource().getString("ENoTouchECG"));
+            return false;
         }
-    }
 
-    private void startActivity(Intent intent) {
-        intent.setFlags(0);
         Bundle b = new Bundle();
         b.putString(KEY_ID, truncate(patient.getCf(),24));
         b.putString(KEY_FIRSTNAME, truncate(patient.getName(),16));
@@ -157,9 +120,12 @@ public class TouchECG extends DeviceHandler {
                 + new SimpleDateFormat("yyyyMMddhhmmss",Locale.ITALIAN).format(new Date()));
         b.putString(KEY_PATH_SCP, Util.getMeasuresDir().getAbsolutePath());
         b.putInt(KEY_APPLICATION, 2); // tc get passing parameter and remain in realtime mode
-
         intent.putExtra(KEY_BUNDLE,b);
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(TOUCHECG_BROADCAST_EVENT);
+        MyApp.getContext().registerReceiver(receiver,intentFilter);
         deviceListener.startActivity(intent);
+        return true;
     }
 
     private void reset() {
@@ -167,6 +133,11 @@ public class TouchECG extends DeviceHandler {
     }
 
     private void stop() {
+        try {
+            MyApp.getContext().unregisterReceiver(receiver);
+        } catch (Exception e){
+            // ignore exception
+        }
         reset();
     }
 
@@ -197,4 +168,48 @@ public class TouchECG extends DeviceHandler {
         }
     }
 
+    private final BroadcastReceiver receiver = new BroadcastReceiver () {
+        @Override
+        public void onReceive(Context context, Intent data) {
+            int resultCode = data.getExtras().getInt(KEY_RESULT);
+            if (resultCode == RESULT_OK) {
+                filename = data.getStringExtra(KEY_RETURN);
+                FileInputStream fis = null;
+                byte[] fileContent = null;
+                try {
+                    File file = new File(filename);
+                    fileContent = new byte[(int) file.length()];
+                    fis = new FileInputStream(file);
+                    long n = fis.read(fileContent);
+                    if (n != fileContent.length) {
+                        deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR, ResourceManager.getResource().getString("EDataReadError"));
+                        return;
+                    }
+                } catch (Exception e) {
+                    deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR, ResourceManager.getResource().getString("EDataReadError"));
+                    return;
+                } finally {
+                    try {
+                        if (fis != null)
+                            fis.close();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+                Measure m = getMeasure();
+                HashMap<String,String> tmpVal = new HashMap<>();
+                String [] tokens  = filename.split(File.separator);
+                tmpVal.put(GWConst.EGwCode_0G, tokens[tokens.length-1]);  //nome file
+                m.setMeasures(tmpVal);
+                m.setFile(fileContent);
+                m.setFileType(XmlManager.ECG_FILE_TYPE);
+                m.setFailed(false);
+                m.setBtAddress("N.A.");
+                deviceListener.showMeasurementResults(m);
+            } else {
+                deviceListener.notifyError(DeviceListener.NO_MEASURES_FOUND, ResourceManager.getResource().getString("ENoMeasurementDone"));
+            }
+            MyApp.getContext().unregisterReceiver(receiver);
+        }
+    };
 }

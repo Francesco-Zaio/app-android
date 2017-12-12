@@ -154,10 +154,6 @@ public class DeviceOperations implements DeviceListener {
         currentDeviceHandler.selectDevice(bd);
     }
 
-    public void onActivityResult(int resultCode, Intent data) {
-	    currentDeviceHandler.onActivityResult(resultCode, data);
-    }
-
     public UserDevice getCurrentDevice() {
 		return currentDevice;
 	}

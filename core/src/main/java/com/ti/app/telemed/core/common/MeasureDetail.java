@@ -29,6 +29,7 @@ public class MeasureDetail {
 	private String name; 
 	private String value;
 	private String unit;
+	private Measure.ThresholdLevel thresholdLevel;
 
 	static public Vector<MeasureDetail> getMeasureDetails(Measure m, boolean detailed){
         String[] toShow;
@@ -81,6 +82,7 @@ public class MeasureDetail {
 		}
 
         Vector<MeasureDetail> ret = new Vector<>();
+        Map<String,Measure.ThresholdLevel> thls = m.checkTresholds();
 		String val;
 		for (String key : toShow) {
             MeasureDetail md;
@@ -89,6 +91,7 @@ public class MeasureDetail {
                     case GWConst.KMsrSpir:
                         if (detailed) {
                             md = spirDetail(m.getMeasures(), key);
+                            md.setThresholdLevel(thls.get(key)==null? Measure.ThresholdLevel.NONE:thls.get(key));
                             break;
                         }
                         // se non devo visualizzare il dettaglio vale il ramo default:
@@ -97,6 +100,7 @@ public class MeasureDetail {
                         md.setName(ResourceManager.getResource().getString("MeasureName_" + key));
                         md.setValue(val);
                         md.setUnit(ResourceManager.getResource().getString("MeasureUnit_" + key));
+                        md.setThresholdLevel(thls.get(key)==null? Measure.ThresholdLevel.NONE:thls.get(key));
                         break;
                 }
                 ret.add(md);
@@ -162,7 +166,11 @@ public class MeasureDetail {
 	public void setUnit(String unit) {
 		this.unit = unit;
 	}
-	
+
+    public void setThresholdLevel(Measure.ThresholdLevel thresholdLevel) {
+        this.thresholdLevel = thresholdLevel;
+    }
+
 	public String getName() {
 		return name;
 	}
@@ -174,4 +182,8 @@ public class MeasureDetail {
 	public String getUnit() {
 		return unit;
 	}
+
+    public Measure.ThresholdLevel getThresholdLevel() {
+        return thresholdLevel;
+    }
 }

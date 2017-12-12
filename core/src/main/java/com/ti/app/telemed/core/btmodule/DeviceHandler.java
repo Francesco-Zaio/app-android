@@ -1,7 +1,6 @@
 package com.ti.app.telemed.core.btmodule;
 
 import android.bluetooth.BluetoothDevice;
-import android.content.Intent;
 import android.util.Log;
 
 import com.ti.app.telemed.core.btdevices.AgamatrixJazz;
@@ -209,9 +208,6 @@ public abstract class DeviceHandler {
             default:
                 return false;
         }
-    }
-
-    public void onActivityResult(int resultCode, Intent data) {
     }
 
     /**

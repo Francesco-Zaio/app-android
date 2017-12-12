@@ -50,14 +50,6 @@ public class Contec8000GW extends DeviceHandler implements  BTSearcherEventListe
     private boolean deviceSearchCompleted;
 
 
-    public static boolean needPairing(UserDevice userDevice) {
-        return true;
-    }
-
-    public static boolean needConfig(UserDevice userDevice) {
-        return false;
-    }
-
     public Contec8000GW (DeviceListener listener, UserDevice ud) {
         super(listener, ud);
 
@@ -72,6 +64,7 @@ public class Contec8000GW extends DeviceHandler implements  BTSearcherEventListe
     @Override
     public void confirmDialog() {
     }
+
     @Override
     public void cancelDialog(){
     }
@@ -231,8 +224,6 @@ public class Contec8000GW extends DeviceHandler implements  BTSearcherEventListe
         }
         reset();
     }
-
-
 
 
     // Methods of BTSocketEventListener interface

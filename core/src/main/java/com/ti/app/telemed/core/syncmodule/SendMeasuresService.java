@@ -11,12 +11,14 @@ import android.util.Log;
 import com.ti.app.telemed.core.common.Measure;
 import com.ti.app.telemed.core.common.User;
 import com.ti.app.telemed.core.dbmodule.DbManager;
+import com.ti.app.telemed.core.measuremodule.MeasureManager;
 import com.ti.app.telemed.core.usermodule.UserManager;
 import com.ti.app.telemed.core.webmodule.WebManager;
 import com.ti.app.telemed.core.webmodule.webmanagerevents.WebManagerSendingResultEvent;
 import com.ti.app.telemed.core.webmodule.webmanagerevents.WebManagerSendingResultEventListener;
 import com.ti.app.telemed.core.xmlmodule.XmlManager;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -183,12 +185,19 @@ public class SendMeasuresService extends Service implements Runnable, WebManager
             else
                 xml = XmlManager.getXmlManager().getFailedMeasureXml(currentMeasure);
             try {
-            WebManager.getWebManager().sendMeasureData(currentUser.getLogin(),
-                    currentUser.getPassword(),
-                    xml,
-                    currentMeasure.getFile(),
-                    currentMeasure.getFileType(),
-                    this);
+                byte[] data = currentMeasure.getFile();
+                if (XmlManager.DOCUMENT_FILE_TYPE.equals(currentMeasure.getFileType())) {
+                    File f = new File(new String(currentMeasure.getFile(), "UTF-8"));
+                    if (f.exists() && f.isDirectory()) {
+                        data = new File(f, MeasureManager.DOCUMENT_SEND_TMPFILE).getAbsolutePath().getBytes("UTF-8");
+                    }
+                }
+                WebManager.getWebManager().sendMeasureData(currentUser.getLogin(),
+                        currentUser.getPassword(),
+                        xml,
+                        data,
+                        currentMeasure.getFileType(),
+                        this);
             } catch (Exception e) {
                 logger.log(Level.SEVERE, "WebManager error sendMeasureData");
                 logger.log(Level.SEVERE, e.toString());
@@ -200,6 +209,16 @@ public class SendMeasuresService extends Service implements Runnable, WebManager
         try {
             if (!receiveError) {
                 currentMeasure.setSent(true);
+                if (XmlManager.DOCUMENT_FILE_TYPE.equals(currentMeasure.getFileType())) {
+                    try {
+                        // rimuovo il file zip temporaneo utilizzato per l'invio di tutti i files nella directory
+                        File f = new File(new String(currentMeasure.getFile(), "UTF-8"));
+                        if (f.exists() && f.isDirectory())
+                            new File(f, MeasureManager.DOCUMENT_SEND_TMPFILE).delete();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
             } else {
                 currentMeasure.setSendFailReason(Integer.toString(errorCode));
                 currentMeasure.setSendFailCount(currentMeasure.getSendFailCount()+1);

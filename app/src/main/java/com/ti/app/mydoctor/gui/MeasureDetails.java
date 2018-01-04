@@ -11,7 +11,7 @@ import com.ti.app.mydoctor.AppResourceManager;
 import com.ti.app.telemed.core.common.Measure;
 import com.ti.app.telemed.core.common.MeasureDetail;
 import com.ti.app.telemed.core.common.Patient;
-import com.ti.app.mydoctor.gui.listadapter.MeasureDetailsListAdapter;
+import com.ti.app.mydoctor.gui.adapter.MeasureDetailsListAdapter;
 import com.ti.app.mydoctor.util.AppUtil;
 import com.ti.app.telemed.core.usermodule.UserManager;
 import com.ti.app.telemed.core.util.Util;
@@ -88,7 +88,7 @@ public class MeasureDetails extends ListActivity {
 					//Crea la dialog per la conferma della cancellazione della misura		
 					deleteBundle = new Bundle();
 					deleteBundle.putString(AppConst.TITLE, AppResourceManager.getResource().getString("warningTitle"));
-					deleteBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("showMeasureDialogDeleteQuestion1") + " " + title + "?");
+					deleteBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("deleteMeasureConfirm") + "?");
 		    		showDialog(DELETE_CONFIRM_DIALOG);
 				}
 			});

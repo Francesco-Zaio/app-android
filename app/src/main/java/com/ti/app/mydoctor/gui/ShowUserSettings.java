@@ -145,12 +145,8 @@ public class ShowUserSettings extends AppCompatActivity {
 			//Identifico quale button è stato selezionato
 			switch(v.getId()) {
 			case R.id.confirm_button:
-				try {
-					UserManager.getUserManager().saveAutoLoginStatus(UserManager.getUserManager().getCurrentUser().getId(), autoLoginCB.isChecked());
-					finish();
-				} catch (Exception e) {
-					showError();
-				}
+				UserManager.getUserManager().saveAutoLoginStatus(UserManager.getUserManager().getCurrentUser().getId(), autoLoginCB.isChecked());
+				finish();
 				break;
 			case R.id.cancel_button:
 				finish();
@@ -158,12 +154,4 @@ public class ShowUserSettings extends AppCompatActivity {
 			}
 		}
 	};
-	
-	private void showError(){
-		AlertDialog.Builder builder = new AlertDialog.Builder(this);
-    	builder.setTitle(AppResourceManager.getResource().getString("ShowSettings.userSettings.errTitle"));
-		builder.setMessage(AppResourceManager.getResource().getString("ShowSettings.userSettings.errMsg"));
-		builder.setPositiveButton(AppResourceManager.getResource().getString("EGwnurseOk"), null);
-		builder.show();	
-	}
 }

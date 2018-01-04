@@ -21,6 +21,7 @@ public class Measure implements Serializable{
     private String btAddress = "N.A.";
     private String timestamp;
     private String measureType;
+    private MeasureFamily family;
     private boolean standardProtocol = false;
     private Map<String,String> measures = null;
     private Map<String,String> thresholds = null;
@@ -83,6 +84,20 @@ public class Measure implements Serializable{
 
     public void setMeasureType(String measureType) {
         this.measureType = measureType;
+        if (measureType.matches("D\\d+"))
+            family = MeasureFamily.DOCUMENTO;
+        else if (measureType.matches("Q\\d+"))
+            family = MeasureFamily.NONBIOMETRICA;
+        else
+            family = MeasureFamily.BIOMETRICA;
+    }
+
+    public MeasureFamily getFamily() {
+        return family;
+    }
+
+    public void setFamily(MeasureFamily family) {
+        this.family = family;
     }
 
     public boolean getStandardProtocol() {
@@ -270,6 +285,37 @@ public class Measure implements Serializable{
                     && this.measureType.equals(m.getMeasureType());
         } else {
             return false;
+        }
+    }
+
+    public enum MeasureFamily {
+        MEDICAZIONE(0),
+        BIOMETRICA(1),
+        NONBIOMETRICA(2),
+        DOCUMENTO(3);
+
+        private final int value;
+            MeasureFamily(int value) {
+            this.value = value;
+        }
+
+        public int getValue() {
+            return value;
+        }
+
+        public static MeasureFamily get(int value) {
+            switch (value) {
+                case 0:
+                    return MEDICAZIONE;
+                case 1:
+                    return BIOMETRICA;
+                case 2:
+                    return NONBIOMETRICA;
+                case 3:
+                    return DOCUMENTO;
+                default:
+                    return BIOMETRICA;
+            }
         }
     }
 }

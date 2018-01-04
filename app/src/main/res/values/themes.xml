@@ -5,7 +5,8 @@
 		<item name="android:buttonStyle">@style/MyButtonStyle</item>
 	</style>
     
-	<style name="Theme.MyDoctorAtHome.Light" parent="Theme.AppCompat.Light">                
+	<style name="Theme.MyDoctorAtHome.Light" parent="Theme.AppCompat.Light">
+		<item name="android:activatedBackgroundIndicator">@drawable/multiple_selector_backgroung</item>
     </style>
     
     <style name="GwMenuOverflowTheme" parent="android:Theme.Holo.Dialog">

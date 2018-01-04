@@ -1,4 +1,4 @@
-package com.ti.app.mydoctor.gui.listadapter;
+package com.ti.app.mydoctor.gui.adapter;
 
 import java.util.ArrayList;
 import java.util.List;

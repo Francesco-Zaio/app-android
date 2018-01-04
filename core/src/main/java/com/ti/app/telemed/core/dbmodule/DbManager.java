@@ -46,7 +46,7 @@ public class DbManager {
 
     // Versione del DB: incrementare il nr se vi sono modifiche allo schema ed inserire le modifice
     // nel metoto onUpgrade
-    private static final int DATABASE_VERSION = 16;
+    private static final int DATABASE_VERSION = 17;
     // versione DB minima richiesta per cui è possibile effettuare un upgrade del DB senza
     // dover droppare e ricreare tutte le tabelle (vedi metodo onUpgrade)
     private static final int MIN_OLD_VERSION = 10;
@@ -132,7 +132,6 @@ public class DbManager {
 			+ "ID integer primary key autoincrement, "
 			+ "ID_USER text, "
 			+ "MEASURE text, "
-            + "FAMILY integer, "
 			+ "SCHEDULE text, "
 			+ "OUT_OF_RANGE integer, "
 			+ "LAST_DAY int, "
@@ -143,6 +142,7 @@ public class DbManager {
     private static final String CREATE_MEASURE_TBL = "CREATE table MEASURE ("
 		+ "TIMESTAMP text NOT NULL, "
 		+ "MEASURE_TYPE text, "
+        + "FAMILY integer, "
         + "STANDARD integer, "
         + "DEVICE_DESC text, "
         + "BTADDRESS text, "
@@ -217,6 +217,11 @@ public class DbManager {
                         // rimossa colonna DEVICE_TYPE da MEASURE non serve fare nulla
                     case 15:
                         db.execSQL("DROP TABLE IF EXISTS CERTIFICATES");
+                    case 16:
+                        db.execSQL("ALTER TABLE MEASURE ADD COLUMN FAMILY integer");
+                        db.execSQL("UPDATE MEASURE SET FAMILY=1");
+                        db.execSQL("UPDATE MEASURE SET FAMILY=2 WHERE MEASURE_TYPE LIKE 'Q_'");
+                        db.execSQL("UPDATE MEASURE SET FAMILY=3 WHERE MEASURE_TYPE LIKE 'D_'");
                 }
             }
         }
@@ -708,7 +713,6 @@ public class DbManager {
             UserMeasure um = new UserMeasure();
             um.setIdUser(DEFAULT_USER_ID);
             um.setMeasure(mt);
-            um.setFamily(UserMeasure.MeasureFamily.BIOMETRICA);
             dataContainer.add( um );
         }
 
@@ -1088,30 +1092,12 @@ public class DbManager {
         }
 	}
 
-	public List<UserMeasure> getUserMeasures (String userId) {
-        synchronized (this) {
-            Vector<UserMeasure> ret = new Vector<>();
-            Cursor c = null;
-            try {
-                c = mDb.query("USER_MEASURE", null, "ID_USER  = ? ", new String[]{userId}, null, null, null);
-                if (c != null) {
-                    while (c.moveToNext()) {
-                        ret.add(getUserMeasureObject(c));
-                    }
-                }
-            } finally {
-                if (c != null)
-                    c.close();
-            }
-            return ret;
-        }
-	}
     public List<UserMeasure> getBiometricUserMeasures (String userId) {
         synchronized (this) {
             Vector<UserMeasure> ret = new Vector<>();
             Cursor c = null;
             try {
-                c = mDb.query("USER_MEASURE", null, "ID_USER  = ? AND FAMILY = ?", new String[]{userId, Integer.toString(UserMeasure.MeasureFamily.BIOMETRICA.getValue())}, null, null, null);
+                c = mDb.query("USER_MEASURE", null, "ID_USER  = ? AND FAMILY = ?", new String[]{userId, Integer.toString(Measure.MeasureFamily.BIOMETRICA.getValue())}, null, null, null);
                 if (c != null) {
                     while (c.moveToNext()) {
                         ret.add(getUserMeasureObject(c));
@@ -1169,7 +1155,6 @@ public class DbManager {
             values.put("ID_USER", um.getIdUser());
             values.put("MEASURE", um.getMeasure());
             // Configuration values
-            values.put("FAMILY", um.getFamily().getValue());
             values.put("SCHEDULE", um.getSchedule());
             values.put("THRESHOLDS", new JSONObject(um.getThresholds()).toString());
             // Status Values
@@ -1186,7 +1171,6 @@ public class DbManager {
             ContentValues values = new ContentValues();
             values.put("SCHEDULE", um.getSchedule());
             values.put("THRESHOLDS", new JSONObject(um.getThresholds()).toString());
-            values.put("FAMILY", um.getFamily().getValue());
             String[] args = new String[]{ um.getIdUser(), um.getMeasure() };
             mDb.update("USER_MEASURE", values, " ID_USER = ? AND MEASURE = ? ", args);
             logger.log(Level.INFO, "UserMeasure cfg updated: "+ um.toString());
@@ -1222,7 +1206,6 @@ public class DbManager {
             ud.setId(c.getInt(c.getColumnIndex("ID")));
             ud.setIdUser(c.getString(c.getColumnIndex("ID_USER")));
             ud.setMeasure(c.getString(c.getColumnIndex("MEASURE")));
-            ud.setFamily(UserMeasure.MeasureFamily.get((c.getInt(c.getColumnIndex("FAMILY")))));
             ud.setSchedule(c.getString(c.getColumnIndex("SCHEDULE")));
             ud.setOutOfRange(c.getInt(c.getColumnIndex("OUT_OF_RANGE")) == 1);
             ud.setLastDay(new Date(c.getInt(c.getColumnIndex("LAST_DAY"))));
@@ -1487,6 +1470,7 @@ public class DbManager {
 
             m.setTimestamp(c.getString(c.getColumnIndex("TIMESTAMP")));
             m.setMeasureType(c.getString(c.getColumnIndex("MEASURE_TYPE")));
+            m.setFamily(Measure.MeasureFamily.get(c.getInt(c.getColumnIndex("FAMILY"))));
             m.setStandardProtocol(c.getInt(c.getColumnIndex("STANDARD")) == 1);
             m.setIdUser(c.getString(c.getColumnIndex("ID_USER")));
             m.setIdPatient(c.getString(c.getColumnIndex("ID_PATIENT")));
@@ -1516,7 +1500,7 @@ public class DbManager {
      * @param failed {@code int} 0 solo misure valide, 1 solo misure fallite, qualsiasi altro valore per non filtrare
 	 * @return oggetto di tipo {@code List<Measure>} che contiene la lista delle misure associate all'utente
 	 */
-	public ArrayList<Measure> getMeasureData(String idUser, String dateFrom, String dateTo, String measureType, String idPatient, Boolean failed) {
+	public ArrayList<Measure> getMeasureData(String idUser, String dateFrom, String dateTo, String measureType, String idPatient, Boolean failed, Measure.MeasureFamily family) {
         synchronized (this) {
             ArrayList<Measure> listaMisure = new ArrayList<>();
             Cursor c = null;
@@ -1553,6 +1537,9 @@ public class DbManager {
                     where = where + " AND FAILED = 1";
                 else
                     where = where + " AND FAILED = 0";
+            if (family != null) {
+                where = where + " AND FAMILY = " + family.getValue();
+            }
 
             try {
                 c = mDb.query("MEASURE", null, where, values, null, null, "TIMESTAMP DESC");
@@ -1576,6 +1563,7 @@ public class DbManager {
 
             values.put("TIMESTAMP", measure.getTimestamp());
             values.put("MEASURE_TYPE", measure.getMeasureType());
+            values.put("FAMILY", measure.getFamily().getValue());
             values.put("STANDARD", measure.getStandardProtocol()? 1:0);
             values.put("DEVICE_DESC", measure.getDeviceDesc());
             values.put("BTADDRESS", measure.getBtAddress());
@@ -1593,7 +1581,7 @@ public class DbManager {
             HashMap<String,String> map = new HashMap<>();
             if (measure.getMeasures() != null) {
                 if (measure.getThresholds() == null) {
-                    UserMeasure um = getUserMeasure(measure.getIdUser(), measure.getMeasureType());
+                    UserMeasure um = getUserMeasure(measure.getIdUser(),measure.getMeasureType());
                     if (um != null) {
                         for (Map.Entry<String, String> entry : measure.getMeasures().entrySet())
                             if (um.getThresholds().containsKey(entry.getKey()))

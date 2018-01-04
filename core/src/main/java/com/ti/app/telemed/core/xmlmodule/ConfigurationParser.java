@@ -10,11 +10,11 @@ import java.util.Vector;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import com.ti.app.telemed.core.common.Measure;
 import com.ti.app.telemed.core.common.MeasureProtocolCfg;
 import com.ti.app.telemed.core.common.Patient;
 import com.ti.app.telemed.core.common.User;
 import com.ti.app.telemed.core.common.UserMeasure;
-import com.ti.app.telemed.core.util.GWConst;
 
 import android.util.Log;
 
@@ -57,7 +57,6 @@ public class ConfigurationParser {
 	private static final String DEVICE_MEASURE_KEY = "Measure";
 	private static final String DEVICE_SCHEDULE_KEY = "Schedule";
 	private static final String DEVICE_THRESHOLD_KEY = "Tresholds";
-	private static final String DEVICE_FAMILY_KEY = "Family";
 
 
 	private Vector<Object> dataContainer;
@@ -150,8 +149,6 @@ public class ConfigurationParser {
                                 		if  (userMeasure != null) userMeasure.setMeasure(value);
                                 	} else if (key.equalsIgnoreCase(DEVICE_SCHEDULE_KEY)) {
 										if  (userMeasure != null) userMeasure.setSchedule(value);
-									} else if (key.equalsIgnoreCase(DEVICE_FAMILY_KEY)) {
-										if  (userMeasure != null) userMeasure.setFamily(UserMeasure.MeasureFamily.get(Integer.parseInt(value)));
 									} else if (key.toUpperCase().startsWith(DEVICE_THRESHOLD_KEY.toUpperCase())) {
 										thresholds.put(key.substring(DEVICE_THRESHOLD_KEY.length()),value);
 									} else if (currentSection.equalsIgnoreCase(USER_DATA_SECTION) && key.equalsIgnoreCase(USER_DATA_NAME_KEY)) {

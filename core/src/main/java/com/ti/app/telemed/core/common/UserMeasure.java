@@ -14,7 +14,6 @@ public class UserMeasure implements Cloneable {
 	private Integer id;
 	private String idUser;
 	private String measure;
-    private MeasureFamily family;
 
 	private String schedule;        // stringa in formato cron UNIX che indica lo scheduling della misura
     private Map<String,String> thresholds = new HashMap<>(); // elenco delle soglie da applicare alle diverse misure
@@ -23,35 +22,6 @@ public class UserMeasure implements Cloneable {
 	private Date lastDay;		    // Data dell'ultima misura effettuata
 	private int nrLastDay;		    // contatore misure effettuate nel 'lastDay'
 
-	public enum MeasureFamily {
-        MEDICAZIONE(0),
-        BIOMETRICA(1),
-        NONBIOMETRICA(2),
-        DOCUMENTO(3);
-
-        private final int value;
-        MeasureFamily(int value) {
-            this.value = value;
-        }
-        public int getValue() {
-            return value;
-        }
-        public static MeasureFamily get(int value) {
-            switch (value) {
-                case 0:
-                    return MEDICAZIONE;
-                case 1:
-                    return BIOMETRICA;
-                case 2:
-                    return NONBIOMETRICA;
-                case 3:
-                    return DOCUMENTO;
-                default:
-                    return BIOMETRICA;
-            }
-        }
-	}
-
 	public UserMeasure() {
 		outOfRange = false;
 		lastDay = new Date(0);
@@ -59,7 +29,6 @@ public class UserMeasure implements Cloneable {
         schedule = "";
         measure = "";
         idUser = "";
-        family = MeasureFamily.BIOMETRICA;
 	}
 
 	public Integer getId() {
@@ -118,13 +87,6 @@ public class UserMeasure implements Cloneable {
         this.thresholds = thresholds;
     }
 
-    public MeasureFamily getFamily() {
-        return family;
-    }
-    public void setFamily(MeasureFamily family) {
-        this.family = family;
-    }
-
     public  List<Date> getTodaySchedule ()  {
         if (!schedule.isEmpty()) {
             CrontabManager.parse(schedule);
@@ -154,7 +116,6 @@ public class UserMeasure implements Cloneable {
 			newDevice.setOutOfRange(this.outOfRange);
 			newDevice.setLastDay(this.lastDay);
 			newDevice.setNrLastDay(this.nrLastDay);
-            newDevice.setFamily(this.family);
 			return newDevice;
 		} catch (CloneNotSupportedException e) {
 			e.printStackTrace();

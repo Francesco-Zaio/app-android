@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/retry_send_all"
+    	  android:title="@string/retry_send_all_documents"
+    	  android:icon="@drawable/ic_menu_measure_send_light" />
+</menu>

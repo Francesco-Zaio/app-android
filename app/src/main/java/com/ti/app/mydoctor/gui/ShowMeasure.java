@@ -47,12 +47,13 @@ import com.ti.app.mydoctor.gui.customview.ActionBarListActivity;
 import com.ti.app.mydoctor.gui.customview.DragSortController.Direction;
 import com.ti.app.mydoctor.gui.customview.DragSortListView;
 import com.ti.app.mydoctor.gui.customview.GWTextView;
-import com.ti.app.mydoctor.gui.listadapter.MeasureListAdapter;
+import com.ti.app.mydoctor.gui.adapter.MeasureListAdapter;
 import com.ti.app.mydoctor.util.MediaScannerNotifier;
 
 public class ShowMeasure extends ActionBarListActivity{
 
-    public static final String MEASURE_TYPE_KEY = "MEASURE_TYPE_KEY";
+    public static final String MEASURE_TYPE_KEY = "MEASURE_TYPE";
+    public static final String MEASURE_FAMILY_KEY = "MEASURE_FAMILY";
     public static final String MEASURE_KEY = "MEASURE_KEY";
 
 	private static final String TAG = "ShowMeasure";
@@ -88,6 +89,7 @@ public class ShowMeasure extends ActionBarListActivity{
     int numMeasureToSend;
 	private DragSortListView mListView;
 	private String currentMeasureType = null;
+    private Measure.MeasureFamily currentMeasureFamily = null;
 	private MeasureManager measureManager;
 	private GWTextView titleTV;
 	private Context context;
@@ -102,7 +104,7 @@ public class ShowMeasure extends ActionBarListActivity{
 		    		selected_measure = listaMisure.get(which);
 					measureManager.deleteMeasure(selected_measure);
 					measures.clear();
-					populateActivity(currentMeasureType);
+					populateActivity();
 					if(!measures.isEmpty())
 						Toast.makeText(context, AppResourceManager.getResource().getString("KMsgDeleteMeasureConfirm"), Toast.LENGTH_SHORT).show();
 		        }
@@ -113,7 +115,10 @@ public class ShowMeasure extends ActionBarListActivity{
                     Log.i(TAG, "Elimino misura: " + selected_measure.getMeasureType());
                     dataBundle = new Bundle();
                     dataBundle.putString(AppConst.TITLE, AppResourceManager.getResource().getString("warningTitle"));
-                    dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("showMeasureDialogDeleteQuestion1") + " " + AppResourceManager.getResource().getString("measureType." + selected_measure.getMeasureType()) + "?");
+                    if (currentMeasureFamily == Measure.MeasureFamily.BIOMETRICA)
+                        dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("deleteMeasureConfirm") + "?");
+                    else
+                        dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("deleteDocumentsConfirm") + "?");
                     showDialog(SWIPE_DELETE_CONFIRM_DIALOG);
 				}
 
@@ -126,7 +131,7 @@ public class ShowMeasure extends ActionBarListActivity{
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		context = getApplicationContext();
-		setContentView(R.layout.measure_list);
+		setContentView(R.layout.drag_sort_list);
 		
 		//Flag per mantenere attivo lo schermo finchè l'activity è in primo piano
 		getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -140,7 +145,10 @@ public class ShowMeasure extends ActionBarListActivity{
 		measures = new ArrayList<>();
 		
 		Bundle data = getIntent().getExtras();
-		currentMeasureType = data.getString(MEASURE_TYPE_KEY);
+		if (data != null) {
+            currentMeasureType = data.getString(MEASURE_TYPE_KEY);
+            currentMeasureFamily = Measure.MeasureFamily.get(data.getInt(MEASURE_FAMILY_KEY));
+        }
 
         ActionBar customActionBar = this.getSupportActionBar();
         if (customActionBar != null) {
@@ -157,7 +165,7 @@ public class ShowMeasure extends ActionBarListActivity{
             //Ricava la TextView dell'ActionBar
             LayoutInflater inflator = (LayoutInflater) this.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
             View titleView = inflator.inflate(R.layout.actionbar_title, null);
-            titleTV = (GWTextView) titleView.findViewById(R.id.actionbar_title_label);
+            titleTV = titleView.findViewById(R.id.actionbar_title_label);
             titleTV.setText(R.string.show_measures);
             customActionBar.setCustomView(titleView);
 
@@ -171,18 +179,25 @@ public class ShowMeasure extends ActionBarListActivity{
 			to = new int[] { R.id.icon_sent, R.id.label, R.id.timestamp };
 			listAdapter = new MeasureListAdapter(this, measures, R.layout.all_measure_item_layout, from, to);
 			setListAdapter(listAdapter);
-			populateActivity(currentMeasureType);
-			setTitle(getString(R.string.manageMeasure));
+			populateActivity();
+			if (currentMeasureFamily == Measure.MeasureFamily.BIOMETRICA)
+				setTitle(getString(R.string.manageMeasure));
+			else
+				setTitle(getString(R.string.manageDocuments));
 		}
 		else {
 			from = new String[] { KEY_ICON_SENT, KEY_DATE, KEY_HOUR };
 			to = new int[] { R.id.icon_sent, R.id.date_timestamp, R.id.hour_timestamp };
 			//listAdapter = new DeviceListAdapter(this, measures, R.layout.measure_item_layout, from, to);
-			listAdapter = new MeasureListAdapter(this, measures, R.layout.measure_item_layout, from, to);
+			listAdapter = new MeasureListAdapter(this, measures, R.layout.measure_list_item, from, to);
 			setListAdapter(listAdapter);
-			populateActivity(currentMeasureType);
-            String s = AppResourceManager.getResource().getString("measureType."+currentMeasureType);
-			setTitle(getString(R.string.measure_title) + " " + s);
+			populateActivity();
+			String s = "";
+			if (currentMeasureFamily == Measure.MeasureFamily.BIOMETRICA) {
+				s = getString(R.string.measure_title) + " ";
+			}
+			s = s + AppResourceManager.getResource().getString("measureType."+currentMeasureType);
+			setTitle(s);
 		}
 
 		mListView = (DragSortListView) getListView();
@@ -211,7 +226,7 @@ public class ShowMeasure extends ActionBarListActivity{
 
 	private void setTitle(String title) {
 		if (titleTV == null)
-			titleTV = (GWTextView)findViewById(R.id.actionbar_title_label);
+			titleTV = findViewById(R.id.actionbar_title_label);
 		titleTV.setText(title);
 	}
 	
@@ -327,11 +342,10 @@ public class ShowMeasure extends ActionBarListActivity{
             dataBundle = new Bundle();
             dataBundle.putInt(DELETE_TYPE, 2);
             dataBundle.putString(AppConst.TITLE, AppResourceManager.getResource().getString("warningTitle"));
-            if(currentMeasureType==null || currentMeasureType.isEmpty())
-                dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("showMeasureDialogDeleteQuestion3") + "?");
+            if (currentMeasureFamily == Measure.MeasureFamily.BIOMETRICA)
+            	dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("deleteAllMeasuresConfirm") + "?");
             else
-                dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("showMeasureDialogDeleteQuestion2") + " " + AppResourceManager.getResource().getString("measureType." + currentMeasureType) + "?");
-
+				dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("deleteAllDocumentsConfirm") + "?");
             showDialog(DELETE_CONFIRM_DIALOG);
 	        return true;
 	    case R.id.retry_send_all_measure:
@@ -365,7 +379,10 @@ public class ShowMeasure extends ActionBarListActivity{
             dataBundle = new Bundle();
             dataBundle.putInt(DELETE_TYPE, 1);
             dataBundle.putString(AppConst.TITLE, AppResourceManager.getResource().getString("warningTitle"));
-            dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("showMeasureDialogDeleteQuestion1") + " " + AppResourceManager.getResource().getString("measureType." + selected_measure.getMeasureType()) + "?");
+			if (currentMeasureFamily == Measure.MeasureFamily.BIOMETRICA)
+				dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("deleteMeasureConfirm") + "?");
+			else
+				dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("deleteDocumentConfirm") + "?");
             showDialog(DELETE_CONFIRM_DIALOG);
 	    	return true;
 		default:
@@ -382,7 +399,7 @@ public class ShowMeasure extends ActionBarListActivity{
 					//Viene eliminata la singola misura
 					measureManager.deleteMeasure(selected_measure);
 					measures.clear();
-					populateActivity(currentMeasureType);
+					populateActivity();
 					if(!measures.isEmpty())
 						Toast.makeText(context, AppResourceManager.getResource().getString("KMsgDeleteMeasureConfirm"), Toast.LENGTH_LONG).show();
 					
@@ -429,7 +446,7 @@ public class ShowMeasure extends ActionBarListActivity{
 					}
 					
 					measures.clear();
-					populateActivity(currentMeasureType);
+					populateActivity();
 					if(!measures.isEmpty())
 						Toast.makeText(context, AppResourceManager.getResource().getString("KMsgDeleteMeasureConfirm"), Toast.LENGTH_SHORT).show();
 					break;
@@ -448,7 +465,7 @@ public class ShowMeasure extends ActionBarListActivity{
 					}
 					
 					measures.clear();
-					populateActivity(currentMeasureType);
+					populateActivity();
 					break;
 				}
 
@@ -473,7 +490,7 @@ public class ShowMeasure extends ActionBarListActivity{
 				//Viene eliminata la singola misura
 				measureManager.deleteMeasure(selected_measure);
 				measures.clear();
-				populateActivity(currentMeasureType);
+				populateActivity();
 				if(!measures.isEmpty())
 					Toast.makeText(context, AppResourceManager.getResource().getString("KMsgDeleteMeasureConfirm"), Toast.LENGTH_SHORT).show();
 				
@@ -556,11 +573,11 @@ public class ShowMeasure extends ActionBarListActivity{
 	/**
 	 * Metodo che permette di riempire il contenuto dell'activity con gli opportuni valori
 	 */
-	private void populateActivity(String measureType) {
+	private void populateActivity() {
 		String idUser = UserManager.getUserManager().getCurrentUser().getId();
 		
 		String idPatient = UserManager.getUserManager().getCurrentPatient().getId();
-		listaMisure = measureManager.getMeasureData(idUser, null, null, measureType, idPatient, false);
+		listaMisure = measureManager.getMeasureData(idUser, null, null, currentMeasureType, idPatient, false, currentMeasureFamily);
 		if(listaMisure != null) {
             for (Measure misura : listaMisure) {
 				HashMap<String, String> map = new HashMap<>();

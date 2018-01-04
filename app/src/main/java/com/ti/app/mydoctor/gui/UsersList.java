@@ -37,7 +37,7 @@ import com.ti.app.mydoctor.AppResourceManager;
 import com.ti.app.telemed.core.common.User;
 import com.ti.app.mydoctor.gui.customview.ActionBarListActivity;
 import com.ti.app.mydoctor.gui.customview.GWTextView;
-import com.ti.app.mydoctor.gui.listadapter.UserListAdapter;
+import com.ti.app.mydoctor.gui.adapter.UserListAdapter;
 import com.ti.app.telemed.core.usermodule.UserManager;
 
 public class UsersList extends ActionBarListActivity {

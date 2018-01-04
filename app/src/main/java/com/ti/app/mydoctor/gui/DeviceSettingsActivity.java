@@ -39,14 +39,13 @@ import com.ti.app.mydoctor.util.AppConst;
 import com.ti.app.mydoctor.AppResourceManager;
 import com.ti.app.mydoctor.util.AppUtil;
 import com.ti.app.telemed.core.common.Device;
-import com.ti.app.telemed.core.common.Patient;
 import com.ti.app.telemed.core.common.User;
 import com.ti.app.telemed.core.common.UserDevice;
 import com.ti.app.telemed.core.devicemodule.DeviceManager;
 import com.ti.app.telemed.core.usermodule.UserManager;
 import com.ti.app.mydoctor.gui.customview.ActionBarListActivity;
 import com.ti.app.mydoctor.gui.customview.GWTextView;
-import com.ti.app.mydoctor.gui.listadapter.DeviceListAdapter;
+import com.ti.app.mydoctor.gui.adapter.DeviceListAdapter;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;

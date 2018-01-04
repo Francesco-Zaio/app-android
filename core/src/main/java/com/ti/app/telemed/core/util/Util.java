@@ -7,6 +7,7 @@ import android.util.Log;
 
 import com.ti.app.telemed.core.MyApp;
 import com.ti.app.telemed.core.dbmodule.DbManager;
+import com.ti.app.telemed.core.measuremodule.MeasureManager;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -67,8 +68,9 @@ public class Util {
 
     @SuppressLint("NewApi")
 	public static File getDir() {
-		File sdDir = Environment.getExternalStorageDirectory();
-		File result = new File(sdDir, "nithd");
+		File result = MyApp.getContext().getExternalFilesDir(null);
+		//File sdDir = Environment.getExternalStorageDirectory();
+		// File result = new File(sdDir, "nithd");
         if(!result.exists())
             if (!result.mkdirs())
                 Log.e(TAG, "ERROR: unable to create Directory " + result);
@@ -84,23 +86,43 @@ public class Util {
 		return result;
 	}
 
-	public static File getAcceptanceDocDir() {
-		File sdDir = getDir();
-		File result = new File(sdDir, "AcceptanceDocument");
-        if(!result.exists())
+    public static File getDocumentDir(MeasureManager.DocumentType docType) {
+        File sdDir = getDir();
+        File result = null;
+        switch (docType) {
+            case DischargeDocument:
+                result = new File(sdDir, "DischargeDocument");
+                break;
+            case AcceptanceDocument:
+                result = new File(sdDir, "AcceptanceDocument");
+                break;
+            case LaboratoryReport:
+                result = new File(sdDir, "LaboratoryReport");
+                break;
+            case MedicalReport:
+                result = new File(sdDir, "MedicalReport");
+                break;
+            case WoundImage:
+                result = new File(sdDir, "WoundImage");
+                break;
+            case Diagnosis:
+                result = new File(sdDir, "Diagnosis");
+                break;
+            case Letter:
+                result = new File(sdDir, "Letter");
+                break;
+            case RadiologicalImage:
+                result = new File(sdDir, "RadiologicalImage");
+                break;
+            case TherapyPrescription:
+                result = new File(sdDir, "TherapyPrescription");
+                break;
+        }
+        if(result!= null && !result.exists())
             if (!result.mkdirs())
                 Log.e(TAG, "ERROR: unable to create Directory " + result);
-		return result;
-	}
-
-	public static File getDischargeDocDir() {
-		File sdDir = getDir();
-		File result = new File(sdDir, "DischargeDocument");
-        if(!result.exists())
-            if (!result.mkdirs())
-                Log.e(TAG, "ERROR: unable to create Directory " + result);
-		return result;
-	}
+        return result;
+    }
 
 	/**
 	 * Esegue il parsing di una Stringa in formato JSON in una HashMap di Stringhe.

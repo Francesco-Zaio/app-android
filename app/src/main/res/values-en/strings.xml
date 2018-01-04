@@ -2,6 +2,7 @@
 <resources>
     <string name="app_name">Nuvola It Home Doctor</string>
 	<string name="app_name_demo_version_label">Offline function active</string>
+	<string name="mi_documenti">Documents</string>
 	<string name="mi_measure">Measures</string>
     <string name="mi_user">User</string>
 	<string name="mi_devices_man">Device Management</string>
@@ -68,17 +69,20 @@
 	<string name="protocol">Protocol</string>
 	<string name="reset_settings">Factory settings</string>
 	<string name="show_measures">Manage measurements</string>
+	<string name="show_documents">Manage documents</string>
 	<string name="delete_all_measure">Delete measurements</string>
 	<string name="retry_send_all_measure">Transfer measurements</string>
+	<string name="retry_send_all_documents">Send documents</string>
 	<string name="delete_measure">Delete measurement</string>
 	<string name="retry_send_measure">Send measurement</string>
 
 	<string name="user_title">User</string>
-	<string name="delete_user">Delete</string>
+	<string name="delete">Delete</string>
 
 	<string name="selectPatient">Select patient</string>
 
 	<string name="manageMeasure">view measurements</string>
+	<string name="manageDocuments">View documents</string>
 
 	<string name="auto_login">Automatic login</string>
 	<string name="auto_send">Automatic measure transfer</string>

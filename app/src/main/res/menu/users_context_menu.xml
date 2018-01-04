@@ -2,7 +2,7 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">  
 	<item android:id="@+id/delete_user"
     	android:icon="@drawable/ic_menu_measure_cancel_light"
-       	android:title="@string/delete_user" 
+       	android:title="@string/delete"
        	android:textSize="15sp">          
     </item>
 </menu>

@@ -2,6 +2,7 @@
 <resources>
     <string name="app_name">Nuvola It Home Doctor</string>
 	<string name="app_name_demo_version_label">Desconectado función activa</string>
+	<string name="mi_documenti">Documentos</string>
 	<string name="mi_measure">Medidas</string>
     <string name="mi_user">Usuario</string>
 	<string name="mi_devices_man">Gestión de dispositivos</string>
@@ -68,17 +69,20 @@
 	<string name="protocol">Protocolo</string>
 	<string name="reset_settings">Configuración de fábrica</string>
 	<string name="show_measures">Gestionar las medidas</string>
+	<string name="show_documents">Gestionar los documentos</string>
 	<string name="delete_all_measure">Eliminar las medidas</string>
 	<string name="retry_send_all_measure">Enviar las medidas</string>
+	<string name="retry_send_all_documents">Enviar los documentos</string>
 	<string name="delete_measure">Borrar medida</string>
 	<string name="retry_send_measure">Enviar medida</string>
 
 	<string name="user_title">Usuario</string>
-	<string name="delete_user">Borrar</string>
+	<string name="delete">Borrar</string>
 
 	<string name="selectPatient">Seleccione el paciente</string>
 
 	<string name="manageMeasure">Mostrar medidas</string>
+	<string name="manageDocuments">Mostrar documentos</string>
 
 	<string name="auto_login">Login automático</string>
 	<string name="auto_send">Envio automático medidas</string>

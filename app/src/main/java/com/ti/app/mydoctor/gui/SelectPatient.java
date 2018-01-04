@@ -33,7 +33,7 @@ import com.ti.app.telemed.core.usermodule.UserManager;
 import com.ti.app.mydoctor.gui.alphabeticalindex.IndexableListView;
 import com.ti.app.mydoctor.gui.customview.ActionBarListActivity;
 import com.ti.app.mydoctor.gui.customview.GWTextView;
-import com.ti.app.mydoctor.gui.listadapter.PatientListAdapter;
+import com.ti.app.mydoctor.gui.adapter.PatientListAdapter;
 
 public class SelectPatient extends ActionBarListActivity implements SearchView.OnQueryTextListener {
 

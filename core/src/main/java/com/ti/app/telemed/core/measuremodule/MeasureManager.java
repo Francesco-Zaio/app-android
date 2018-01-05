@@ -43,6 +43,7 @@ public class MeasureManager {
     private Op currentOpOn;
     private final Thread currT;
     private String idUser, idPatient, measureType;
+    private Measure.MeasureFamily measureFamily;
     private File docFile;
 
     private enum Op {
@@ -337,6 +338,7 @@ public class MeasureManager {
                 this.idUser = idUser;
                 this.idPatient = idPatient;
                 this.measureType = measureType;
+                this.measureFamily = null;
                 currentOpOn = Op.DELETE_MANY_MEASURES;
                 currT.notifyAll();
                 return true;
@@ -344,6 +346,34 @@ public class MeasureManager {
             return false;
         }
 	}
+
+    /**
+     * Elimina dal DB le misure selezionate tramite i parametri passati.
+     * L'operazione e' asincrona e l'esito viene notificato all'Handler passato
+     * precedentemente con il metodo {@link #setHandler(Handler handler) setHandler}
+     * @param idUser        Identifivo dell'utente (non puo' essere null o vuoto).
+     * @param idPatient     Identifivo del paziente (se e' null il filtro non viene considerato).
+     * @param measureFamily        Gruppo misura da eliminare (se e' null il filtro non viene considerato).
+     * @return              {@code true} in caso di successo o altrimenti {@code false}.
+     */
+    public boolean deleteMeasures(String idUser, String idPatient, Measure.MeasureFamily measureFamily) {
+        synchronized (currT) {
+            if (currentOpOn == Op.IDLE) {
+                if (idUser == null || idUser.isEmpty()) {
+                    Log.e(TAG, "idUser is NULL or empty");
+                    return false;
+                }
+                this.idUser = idUser;
+                this.idPatient = idPatient;
+                this.measureFamily = measureFamily;
+                this.measureType = null;
+                currentOpOn = Op.DELETE_MANY_MEASURES;
+                currT.notifyAll();
+                return true;
+            }
+            return false;
+        }
+    }
 
     /**
      * Legge dal DB le misure selezionate tramite i parametri passati.
@@ -460,7 +490,7 @@ public class MeasureManager {
     private void deleteMeasures() {
         try {
             ArrayList<Measure> measures =
-                    DbManager.getDbManager().getMeasureData(idUser,null,null,measureType,idPatient,null,null);
+                    DbManager.getDbManager().getMeasureData(idUser,null,null,measureType,idPatient,null,measureFamily);
             for (Measure m:measures) {
                 if (XmlManager.DOCUMENT_FILE_TYPE.equals(m.getFileType()))
                     if (m.getFile() != null)
@@ -520,9 +550,11 @@ public class MeasureManager {
 
     private void deleteTree(File f) {
         if (f.exists())
-            if (f.isDirectory())
+            if (f.isDirectory()) {
                 for (File f2 : f.listFiles())
                     deleteTree(f2);
+                f.delete();
+            }
             else
                 f.delete();
     }

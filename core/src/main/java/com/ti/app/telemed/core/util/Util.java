@@ -2,7 +2,6 @@ package com.ti.app.telemed.core.util;
 
 import android.annotation.SuppressLint;
 import android.content.SharedPreferences;
-import android.os.Environment;
 import android.util.Log;
 
 import com.ti.app.telemed.core.MyApp;
@@ -77,50 +76,67 @@ public class Util {
 		return result;
 	}
 
-	public static File getMeasuresDir() {
+	public static File getMeasuresDir(String patientId) {
 		File sdDir = getDir();
-		File result = new File(sdDir, "measures");
+        File result = new File(sdDir, patientId);
+        if(!result.exists())
+            if (!result.mkdirs()) {
+                Log.e(TAG, "ERROR: unable to create Directory " + result);
+                return null;
+            }
+        result = new File(result, "measures");
 		if(!result.exists())
-			if (!result.mkdirs())
-				Log.e(TAG, "ERROR: unable to create Directory " + result);
+			if (!result.mkdirs()) {
+                Log.e(TAG, "ERROR: unable to create Directory " + result);
+                return null;
+            }
 		return result;
 	}
 
-    public static File getDocumentDir(MeasureManager.DocumentType docType) {
+    public static File getDocumentDir(MeasureManager.DocumentType docType, String patientId) {
         File sdDir = getDir();
-        File result = null;
+        File result = new File(sdDir, patientId);
+        if(!result.exists())
+            if (!result.mkdirs()) {
+                Log.e(TAG, "ERROR: unable to create Directory " + result);
+                return null;
+            }
         switch (docType) {
             case DischargeDocument:
-                result = new File(sdDir, "DischargeDocument");
+                result = new File(result, "DischargeDocument");
                 break;
             case AcceptanceDocument:
-                result = new File(sdDir, "AcceptanceDocument");
+                result = new File(result, "AcceptanceDocument");
                 break;
             case LaboratoryReport:
-                result = new File(sdDir, "LaboratoryReport");
+                result = new File(result, "LaboratoryReport");
                 break;
             case MedicalReport:
-                result = new File(sdDir, "MedicalReport");
+                result = new File(result, "MedicalReport");
                 break;
             case WoundImage:
-                result = new File(sdDir, "WoundImage");
+                result = new File(result, "WoundImage");
                 break;
             case Diagnosis:
-                result = new File(sdDir, "Diagnosis");
+                result = new File(result, "Diagnosis");
                 break;
             case Letter:
-                result = new File(sdDir, "Letter");
+                result = new File(result, "Letter");
                 break;
             case RadiologicalImage:
-                result = new File(sdDir, "RadiologicalImage");
+                result = new File(result, "RadiologicalImage");
                 break;
             case TherapyPrescription:
-                result = new File(sdDir, "TherapyPrescription");
+                result = new File(result, "TherapyPrescription");
                 break;
+            default:
+                return null;
         }
-        if(result!= null && !result.exists())
-            if (!result.mkdirs())
+        if(!result.exists())
+            if (!result.mkdirs()) {
                 Log.e(TAG, "ERROR: unable to create Directory " + result);
+                return null;
+            }
         return result;
     }
 

@@ -118,7 +118,7 @@ public class TouchECG extends DeviceHandler {
         b.putString(KEY_TECHNICIAN, truncate(technician,30));
         b.putString(KEY_PATTERN, patient.getId() + "-"
                 + new SimpleDateFormat("yyyyMMddhhmmss",Locale.ITALIAN).format(new Date()));
-        b.putString(KEY_PATH_SCP, Util.getMeasuresDir().getAbsolutePath());
+        b.putString(KEY_PATH_SCP, Util.getMeasuresDir(patient.getId()).getAbsolutePath());
         b.putInt(KEY_APPLICATION, 2); // tc get passing parameter and remain in realtime mode
         intent.putExtra(KEY_BUNDLE,b);
         IntentFilter intentFilter = new IntentFilter();

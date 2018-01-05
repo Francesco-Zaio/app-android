@@ -1,6 +1,7 @@
 package com.ti.app.mydoctor.gui;
 
 import java.io.File;
+import java.lang.ref.WeakReference;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -10,6 +11,7 @@ import java.util.Locale;
 
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -17,6 +19,8 @@ import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.ActionBar;
 import android.util.Log;
@@ -48,7 +52,9 @@ import com.ti.app.mydoctor.gui.customview.DragSortController.Direction;
 import com.ti.app.mydoctor.gui.customview.DragSortListView;
 import com.ti.app.mydoctor.gui.customview.GWTextView;
 import com.ti.app.mydoctor.gui.adapter.MeasureListAdapter;
-import com.ti.app.mydoctor.util.MediaScannerNotifier;
+
+
+import static com.ti.app.mydoctor.gui.DocumentSendActivity.DOCUMENT_KEY;
 
 public class ShowMeasure extends ActionBarListActivity{
 
@@ -69,14 +75,16 @@ public class ShowMeasure extends ActionBarListActivity{
 	
 	// Intent request codes
     private static final int MEASURE_DETAILS = 1;
-    
+	private static final int NEW_DOCUMENT = 2;
+
 	//Dialog
 	private static final int ALERT_DIALOG = 0;
 	private static final int DELETE_CONFIRM_DIALOG = 1;
 	private static final int SIMPLE_DIALOG = 7;
 	private static final int SEND_MEASURES_DIALOG = 8;
-	private static final int SWIPE_DELETE_CONFIRM_DIALOG = 11;
-	
+	private static final int  NEW_DOCUMENT_DIALOG = 9;
+	private static final int SWIPE_DELETE_CONFIRM_DIALOG = 10;
+
 	//Bundle
 	private static final String DELETE_TYPE = "DELETE_TYPE";
 	private static final String MEASURE_NUMBER = "MEASURE_NUMBER";
@@ -86,6 +94,9 @@ public class ShowMeasure extends ActionBarListActivity{
 	private Bundle measuresResultBundle = null;
 	private ArrayList<HashMap<String, String>> measures = null;
 	private ArrayList<Measure> listaMisure = null;
+
+	private CharSequence[] docNames = new CharSequence[MeasureManager.DocumentType.values().length];
+
     int numMeasureToSend;
 	private DragSortListView mListView;
 	private String currentMeasureType = null;
@@ -94,7 +105,7 @@ public class ShowMeasure extends ActionBarListActivity{
 	private GWTextView titleTV;
 	private Context context;
 	private String[] filterIds = null;
-	private boolean isImageManager = false;
+	ProgressDialog progressDialog = null;
 
 	private DragSortListView.RemoveListener onRemove = 
             new DragSortListView.RemoveListener() {
@@ -103,7 +114,6 @@ public class ShowMeasure extends ActionBarListActivity{
 		    		//Viene eliminata la singola misura
 		    		selected_measure = listaMisure.get(which);
 					measureManager.deleteMeasure(selected_measure);
-					measures.clear();
 					populateActivity();
 					if(!measures.isEmpty())
 						Toast.makeText(context, AppResourceManager.getResource().getString("KMsgDeleteMeasureConfirm"), Toast.LENGTH_SHORT).show();
@@ -130,6 +140,9 @@ public class ShowMeasure extends ActionBarListActivity{
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+
+		MeasureManager.getMeasureManager().setHandler(handler);
+
 		context = getApplicationContext();
 		setContentView(R.layout.drag_sort_list);
 		
@@ -200,6 +213,14 @@ public class ShowMeasure extends ActionBarListActivity{
 			setTitle(s);
 		}
 
+		if (currentMeasureFamily ==  Measure.MeasureFamily.DOCUMENTO) {
+			int i = 0;
+			for (MeasureManager.DocumentType dt : MeasureManager.DocumentType.values()) {
+				docNames[i] =  AppResourceManager.getResource().getString("measureType." + dt.toString());
+				i++;
+			}
+		}
+
 		mListView = (DragSortListView) getListView();
 		mListView.setRemoveListener(onRemove);
 		mListView.setOnItemClickListener(listViewItemClickListener);
@@ -207,8 +228,12 @@ public class ShowMeasure extends ActionBarListActivity{
 		mListView.setDivider(null); //rimuove la linea di bordo
 		mListView.setCacheColorHint(Color.TRANSPARENT); //il background della lista non cambia colore durante lo scroll
 		registerForContextMenu(mListView);
+	}
 
-        isImageManager = GWConst.KMsrImg.equals(currentMeasureType);
+	@Override
+	protected void onDestroy() {
+		super.onDestroy();
+		MeasureManager.getMeasureManager().setHandler(null);
 	}
 
 	private void retrySendAllMeasure() {
@@ -280,6 +305,9 @@ public class ShowMeasure extends ActionBarListActivity{
 				}
 			});
 			break;
+			case NEW_DOCUMENT_DIALOG:
+				builder.setTitle(R.string.show_documents);
+				builder.setItems(docNames, new_document_click_listener);
 		}
 		
 		return builder.create();
@@ -337,30 +365,31 @@ public class ShowMeasure extends ActionBarListActivity{
 	
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
-		// Handle item selection
-		
 	    switch (item.getItemId()) {
-	    case android.R.id.home: //Ritorna alla Home quando si clicca sull'icona della App
-            finish();
-            return true;
-	    case R.id.delete_all_measure:
-            dataBundle = new Bundle();
-            dataBundle.putInt(DELETE_TYPE, 2);
-            dataBundle.putString(AppConst.TITLE, AppResourceManager.getResource().getString("warningTitle"));
-            if (currentMeasureFamily == Measure.MeasureFamily.BIOMETRICA)
-            	dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("deleteAllMeasuresConfirm") + "?");
-            else
-				dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("deleteAllDocumentsConfirm") + "?");
-            showDialog(DELETE_CONFIRM_DIALOG);
-	        return true;
-	    case R.id.retry_send_all_measure:
-	    	retrySendAllMeasure();
-	    	return true;
-	    default:
-	        return super.onOptionsItemSelected(item);
+			case android.R.id.home:
+				finish();
+				return true;
+			case R.id.delete_all_measure:
+			case R.id.delete_all_documents:
+				dataBundle = new Bundle();
+				dataBundle.putInt(DELETE_TYPE, 2);
+				dataBundle.putString(AppConst.TITLE, AppResourceManager.getResource().getString("warningTitle"));
+				if (currentMeasureFamily == Measure.MeasureFamily.BIOMETRICA)
+					dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("deleteAllMeasuresConfirm") + "?");
+				else
+					dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("deleteAllDocumentsConfirm") + "?");
+				showDialog(DELETE_CONFIRM_DIALOG);
+				return true;
+			case R.id.retry_send_all_measure:
+				retrySendAllMeasure();
+				return true;
+			case R.id.new_document:
+				showDialog(NEW_DOCUMENT_DIALOG);
+			default:
+				return super.onOptionsItemSelected(item);
 	    }
 	}
-	
+
 	@Override
 	public void onCreateContextMenu(ContextMenu menu, View v, ContextMenuInfo menuInfo) {
 		
@@ -397,20 +426,25 @@ public class ShowMeasure extends ActionBarListActivity{
 
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-		if (requestCode == MEASURE_DETAILS) {
-			if(resultCode == RESULT_OK){
-				String result=data.getStringExtra("result");     
-				if(result.compareToIgnoreCase("delete") == 0){
-					//Viene eliminata la singola misura
-					measureManager.deleteMeasure(selected_measure);
-					measures.clear();
-					populateActivity();
-					if(!measures.isEmpty())
-						Toast.makeText(context, AppResourceManager.getResource().getString("KMsgDeleteMeasureConfirm"), Toast.LENGTH_LONG).show();
-					
-					listAdapter.notifyDataSetChanged();
+		switch (requestCode) {
+			case MEASURE_DETAILS:
+				if(resultCode == RESULT_OK){
+					String result=data.getStringExtra("result");
+					if(result.compareToIgnoreCase("delete") == 0){
+						//Viene eliminata la singola misura
+						measureManager.deleteMeasure(selected_measure);
+						populateActivity();
+						if(!measures.isEmpty())
+							Toast.makeText(context, AppResourceManager.getResource().getString("KMsgDeleteMeasureConfirm"), Toast.LENGTH_LONG).show();
+						listAdapter.notifyDataSetChanged();
+					}
 				}
-			}
+				break;
+			case NEW_DOCUMENT:
+				if (resultCode == RESULT_OK)
+					Toast.makeText(context, AppResourceManager.getResource().getString("KMsgSendDocumentStart"), Toast.LENGTH_LONG).show();
+				populateActivity();
+				break;
 		}
 	}
 	
@@ -440,37 +474,21 @@ public class ShowMeasure extends ActionBarListActivity{
 				switch(dataBundle.getInt(DELETE_TYPE)) {
 				case 1:
 					//Viene eliminata la singola misura
-					measureManager.deleteMeasure(selected_measure);
-					
-					if (selected_measure.getFile() != null && selected_measure.getFile().length < Byte.MAX_VALUE) {
-						// TODO
-                        Log.d(TAG, "deleteMeasure delete-file=" + new String(selected_measure.getFile()));
-						File fileToDelete = new File(new String(selected_measure.getFile()));
-						new MediaScannerNotifier().delete(ShowMeasure.this, fileToDelete.getAbsolutePath());	
-						fileToDelete.delete();						
-					}
-					
-					measures.clear();
-					populateActivity();
-					if(!measures.isEmpty())
+					if (measureManager.deleteMeasure(selected_measure))
 						Toast.makeText(context, AppResourceManager.getResource().getString("KMsgDeleteMeasureConfirm"), Toast.LENGTH_SHORT).show();
+					populateActivity();
 					break;
 				case 2:
 					//Vengono eliminate tutte le misure di un certo tipo
 					String idUser = UserManager.getUserManager().getCurrentUser().getId();
 					String idPatient = UserManager.getUserManager().getCurrentPatient().getId();
-					measureManager.deleteMeasures(idUser, idPatient, null);
-					
-					if (isImageManager) {
-						final File[] files = AppUtil.getDir().listFiles();
-						for (File fileToDelete: files){
-							new MediaScannerNotifier().delete(ShowMeasure.this, fileToDelete.getAbsolutePath());	
-							fileToDelete.delete();						
-						}
-					}
-					
-					measures.clear();
-					populateActivity();
+					measureManager.deleteMeasures(idUser, idPatient, currentMeasureFamily);
+					progressDialog = new ProgressDialog(ShowMeasure.this);
+					progressDialog.setIndeterminate(true);
+					progressDialog.setCancelable(false);
+					progressDialog.setMessage(AppResourceManager.getResource().getString("KMsgZipDocumentStart"));
+					progressDialog.show();
+
 					break;
 				}
 
@@ -494,7 +512,6 @@ public class ShowMeasure extends ActionBarListActivity{
 			case DialogInterface.BUTTON_POSITIVE:
 				//Viene eliminata la singola misura
 				measureManager.deleteMeasure(selected_measure);
-				measures.clear();
 				populateActivity();
 				if(!measures.isEmpty())
 					Toast.makeText(context, AppResourceManager.getResource().getString("KMsgDeleteMeasureConfirm"), Toast.LENGTH_SHORT).show();
@@ -541,6 +558,18 @@ public class ShowMeasure extends ActionBarListActivity{
 	};
 
 	/**
+	 * Listener per il dialogo scelta tipo di nuovo documento
+	 */
+	private DialogInterface.OnClickListener new_document_click_listener = new DialogInterface.OnClickListener() {
+		public void onClick(DialogInterface dialog, int which) {
+			Intent intent = new Intent(ShowMeasure.this, DocumentSendActivity.class);
+			intent.putExtra(DOCUMENT_KEY, MeasureManager.DocumentType.values()[which].toString());
+			startActivityForResult(intent, NEW_DOCUMENT);
+		}
+	};
+
+
+	/**
 	 * Listener per i click sulla listView
 	 */
 	private OnItemClickListener listViewItemClickListener = new OnItemClickListener() {
@@ -580,29 +609,23 @@ public class ShowMeasure extends ActionBarListActivity{
 	 */
 	private void populateActivity() {
 		String idUser = UserManager.getUserManager().getCurrentUser().getId();
-		
+		measures.clear();
 		String idPatient = UserManager.getUserManager().getCurrentPatient().getId();
 		listaMisure = measureManager.getMeasureData(idUser, null, null, currentMeasureType, idPatient, false, currentMeasureFamily);
-		if(listaMisure != null && !listaMisure.isEmpty()) {
-            for (Measure misura : listaMisure) {
-				HashMap<String, String> map = new HashMap<>();
-				map.put(KEY_ICON_SENT, String.valueOf(getIconSent(misura.getSent())));
-				map.put(KEY_LABEL, AppResourceManager.getResource().getString("measureType." + misura.getMeasureType()));
-				String date = getDate(misura.getTimestamp());
-				String hour = getHour(misura.getTimestamp());
-				map.put(KEY_DATE, date);
-				map.put(KEY_HOUR, hour);
-				map.put(KEY_TIMESTAMP, date + " " + hour);
-				
-				if (filterIds == null || containsFilterIds(misura.getTimestamp())) 
-					measures.add(map);
-			}
+		for (Measure misura : listaMisure) {
+			HashMap<String, String> map = new HashMap<>();
+			map.put(KEY_ICON_SENT, String.valueOf(getIconSent(misura.getSent())));
+			map.put(KEY_LABEL, AppResourceManager.getResource().getString("measureType." + misura.getMeasureType()));
+			String date = getDate(misura.getTimestamp());
+			String hour = getHour(misura.getTimestamp());
+			map.put(KEY_DATE, date);
+			map.put(KEY_HOUR, hour);
+			map.put(KEY_TIMESTAMP, date + " " + hour);
 
-			listAdapter.notifyDataSetChanged();
+			if (filterIds == null || containsFilterIds(misura.getTimestamp()))
+				measures.add(map);
 		}
-		else {
-			finish();
-		}
+		listAdapter.notifyDataSetChanged();
 	}
 	
 	private boolean containsFilterIds(String timestamp) {
@@ -673,4 +696,35 @@ public class ShowMeasure extends ActionBarListActivity{
 		else
 			return R.drawable.ic_menu_measure_no_sended_yellow;
 	}
+
+	private final MyHandler handler = new MyHandler(this);
+
+	private static class MyHandler extends Handler {
+		private final WeakReference<ShowMeasure> mOuter;
+
+		private MyHandler(ShowMeasure outer) {
+			mOuter = new WeakReference<>(outer);
+		}
+
+		@Override
+		public void handleMessage(Message msg) {
+			ShowMeasure outer = mOuter.get();
+			super.handleMessage(msg);
+			switch (msg.what) {
+				case MeasureManager.OPERATION_COMPLETED:
+					if (outer.progressDialog!=null)
+						outer.progressDialog.dismiss();
+					outer.populateActivity();
+					break;
+				case MeasureManager.ERROR_OCCURED:
+					if (outer.progressDialog!=null)
+						outer.progressDialog.dismiss();
+					outer.populateActivity();
+					outer.dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("ErrDeleting"));
+					outer.showDialog(ALERT_DIALOG);
+					break;
+			}
+		}
+	}
+
 }

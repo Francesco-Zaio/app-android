@@ -69,7 +69,7 @@
 	<string name="protocol">Protocol</string>
 	<string name="reset_settings">Factory settings</string>
 	<string name="show_measures">Manage measurements</string>
-	<string name="show_documents">Manage documents</string>
+	<string name="show_documents">Choose documents</string>
 	<string name="delete_all_measure">Delete all measurements</string>
 	<string name="delete_all_documents">Delete all documents</string>
 	<string name="new_document">New document</string>

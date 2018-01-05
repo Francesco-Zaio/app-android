@@ -559,7 +559,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 				if ( userManager.getCurrentPatient() != null ) {
 					String idPatient = userManager.getCurrentPatient().getId();
 					ArrayList<Measure> ml = measureManager.getMeasureData(idUser, null, null, null, idPatient, false, Measure.MeasureFamily.BIOMETRICA);
-					if(ml == null) {
+					if(ml == null || ml.isEmpty()) {
 						//Non ci sono misure
                         iconGroupArray.remove(1); //remove icona Misure
                         labelGroupArray.remove(1); //remove etichetta Misure

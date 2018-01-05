@@ -69,7 +69,7 @@
 	<string name="protocol">Protocolo</string>
 	<string name="reset_settings">Configuración de fábrica</string>
 	<string name="show_measures">Gestionar las medidas</string>
-	<string name="show_documents">Gestionar los documentos</string>
+	<string name="show_documents">Elegir documento</string>
 	<string name="delete_all_measure">Borrar todas las medidas</string>
 	<string name="delete_all_documents">Borrar todos los documentos</string>
 	<string name="new_document">Nuevo documento</string>

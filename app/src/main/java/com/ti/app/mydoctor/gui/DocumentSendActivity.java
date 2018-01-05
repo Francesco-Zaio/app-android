@@ -12,7 +12,6 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.Looper;
 import android.os.Message;
 import android.provider.MediaStore;
 import android.support.v4.content.FileProvider;
@@ -38,33 +37,24 @@ import com.ti.app.mydoctor.AppResourceManager;
 import com.ti.app.mydoctor.R;
 import com.ti.app.mydoctor.gui.adapter.GridViewAdapter;
 import com.ti.app.mydoctor.gui.customview.GWTextView;
-import com.ti.app.telemed.core.MyApp;
 import com.ti.app.telemed.core.measuremodule.MeasureManager;
 import com.ti.app.telemed.core.usermodule.UserManager;
 import com.ti.app.telemed.core.util.Util;
-import com.ti.app.telemed.core.xmlmodule.XmlManager;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.ref.WeakReference;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Locale;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 
 public class DocumentSendActivity extends AppCompatActivity implements View.OnClickListener {
     private static final String TAG = "DocumentSendActivity";
+
     private static final int MAX_IMAGES = 5;
     private static final int DP_COLUMN_WIDTH = 100;
     private GridViewAdapter gridAdapter;
@@ -74,6 +64,7 @@ public class DocumentSendActivity extends AppCompatActivity implements View.OnCl
     private ImageButton cameraButton,galleryButton;
     private Button okButton;
 
+    public static final String DOCUMENT_KEY = "DOCUMENT_KEY";
     private static final int CAMERA_REQUEST=1;
     private static final int GALLERY_REQUEST=2;
 
@@ -82,7 +73,6 @@ public class DocumentSendActivity extends AppCompatActivity implements View.OnCl
     File docBaseDir;
     private int columnWidth;
     ProgressDialog progressDialog = null;
-    File outputFile;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -90,12 +80,7 @@ public class DocumentSendActivity extends AppCompatActivity implements View.OnCl
 
         MeasureManager.getMeasureManager().setHandler(handler);
         Intent i = getIntent();
-        docType = MeasureManager.DocumentType.fromString(i.getStringExtra(DocumentTypesActivity.DOCUMENT_KEY));
-        String id = UserManager.getUserManager().getCurrentPatient().getId();
-        docBaseDir = new File(Util.getDocumentDir(docType), id);
-        if(!docBaseDir.exists())
-            if (!docBaseDir.mkdirs())
-                Log.e(TAG, "ERROR: unable to create Directory " + docBaseDir);
+        docType = MeasureManager.DocumentType.fromString(i.getStringExtra(DOCUMENT_KEY));
 
         //Flag per mantenere attivo lo schermo finchè l'activity è in primo piano
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -157,6 +142,8 @@ public class DocumentSendActivity extends AppCompatActivity implements View.OnCl
         galleryButton = findViewById(R.id.gallery);
         okButton = findViewById(R.id.confirm_button);
 
+        String id = UserManager.getUserManager().getCurrentPatient().getId();
+        docBaseDir = Util.getDocumentDir(docType, id);
         initImages();
     }
 
@@ -166,22 +153,32 @@ public class DocumentSendActivity extends AppCompatActivity implements View.OnCl
         MeasureManager.getMeasureManager().setHandler(null);
     }
 
-    private void initImages() {
-        File [] files = docBaseDir.listFiles(new FilenameFilter() {
-            @Override
-            public boolean accept(File dir, String name) {
-                return name.toLowerCase().endsWith(".jpg");
-            }
-        });
+    @Override
+    public void onBackPressed() {
+        setResult(RESULT_CANCELED);
+        finish();
+    }
 
-        imageItems.clear();
-        fileList.clear();
-        for (File file : files) {
-            Bitmap bitmap = createBitmap(file.getAbsolutePath());
-            imageItems.add(gridAdapter.new ImageItem(bitmap, "Image#"));
-            fileList.add(file);
+    private void initImages() {
+        if (docBaseDir != null) {
+            File[] files = docBaseDir.listFiles(new FilenameFilter() {
+                @Override
+                public boolean accept(File dir, String name) {
+                    return name.toLowerCase().endsWith(".jpg");
+                }
+            });
+
+            imageItems.clear();
+            fileList.clear();
+            for (File file : files) {
+                Bitmap bitmap = createBitmap(file.getAbsolutePath());
+                imageItems.add(gridAdapter.new ImageItem(bitmap, "Image#"));
+                fileList.add(file);
+            }
+            gridAdapter.notifyDataSetChanged();
+        } else {
+            Toast.makeText(this, AppResourceManager.getResource().getString("errorDb"), Toast.LENGTH_SHORT).show();
         }
-        gridAdapter.notifyDataSetChanged();
         updateButtons(false);
     }
 
@@ -208,7 +205,7 @@ public class DocumentSendActivity extends AppCompatActivity implements View.OnCl
     private void updateButtons(boolean forceDisable) {
         Drawable originalIcon;
 
-        boolean addImageEnabled = (imageItems.size() < MAX_IMAGES) && !forceDisable;
+        boolean addImageEnabled = (imageItems.size() < MAX_IMAGES) && !forceDisable && (docBaseDir!=null);
         if (addImageEnabled != cameraButton.isEnabled()) {
             cameraButton.setEnabled(addImageEnabled);
             galleryButton.setEnabled(addImageEnabled);
@@ -366,15 +363,15 @@ public class DocumentSendActivity extends AppCompatActivity implements View.OnCl
             super.handleMessage(msg);
             switch (msg.what) {
                 case MeasureManager.OPERATION_COMPLETED:
-                    outer.initImages();
                     if (outer.progressDialog!=null)
                         outer.progressDialog.dismiss();
-                    outer.showSimpleDialog(null, AppResourceManager.getResource().getString("KMsgSendDocumentStart"));
+                    outer.setResult(RESULT_OK);
+                    outer.finish();
                     break;
                 case MeasureManager.ERROR_OCCURED:
-                    outer.initImages();
                     if (outer.progressDialog!=null)
                         outer.progressDialog.dismiss();
+                    outer.initImages();
                     outer.showSimpleDialog(AppResourceManager.getResource().getString("warningTitle"), AppResourceManager.getResource().getString("ErrZipDocument"));
                     break;
             }

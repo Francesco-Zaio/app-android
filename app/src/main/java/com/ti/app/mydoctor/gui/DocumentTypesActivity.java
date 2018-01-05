@@ -36,9 +36,9 @@ import com.ti.app.telemed.core.usermodule.UserManager;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-public class DocumentTypesActivity extends ActionBarListActivity{
+import static com.ti.app.mydoctor.gui.DocumentSendActivity.DOCUMENT_KEY;
 
-    public static final String DOCUMENT_KEY = "DOCUMENT_KEY";
+public class DocumentTypesActivity extends ActionBarListActivity{
 
 	private static final String TAG = "DocumentTypesActivity";
 

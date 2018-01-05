@@ -69,7 +69,7 @@
     <string name="protocol">Protocollo</string>
     <string name="reset_settings">Impostazioni iniziali</string>
     <string name="show_measures">Gestisci misure</string>
-    <string name="show_documents">Gestisci documenti</string>
+    <string name="show_documents">Scegli documento</string>
     <string name="delete_all_measure">Elimina tutte le misure</string>
     <string name="delete_all_documents">Elimina tutti i documenti</string>
     <string name="new_document">Nuovo documento</string>

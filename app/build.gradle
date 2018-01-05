@@ -16,8 +16,8 @@ android {
         applicationId "com.ti.app.mydoctor"
         minSdkVersion 14
         targetSdkVersion 26
-        versionCode 403
-        versionName "4.0.3.a"
+        versionCode 400
+        versionName "4.0.0.a"
         setProperty("archivesBaseName", "NuvolaItHomeDoctor-$versionName")
     }
     buildTypes {

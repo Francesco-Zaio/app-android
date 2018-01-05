@@ -123,5 +123,5 @@
 
 	<string name="totalDuration">Total duration</string>
 	<string name="readLoop">Continuous sampling</string>
-
+	<string name="title_activity_document_send">Send document</string>
 </resources>

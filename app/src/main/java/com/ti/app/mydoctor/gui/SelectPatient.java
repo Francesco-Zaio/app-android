@@ -113,11 +113,9 @@ public class SelectPatient extends ActionBarListActivity implements SearchView.O
 		for (Patient p : patientList) {
 			if(currentPatient == null || !currentPatient.getId().equals(p.getId())) {
 				HashMap<String, String> map = new HashMap<>();
-				
 				String cfValue = p.getCf();
 				if (cfValue == null || cfValue.equalsIgnoreCase("null"))
-					cfValue = "";	
-				
+					cfValue = "";
 				map.put(KEY_CF, "[" + cfValue + "]");
 				map.put(KEY_ID, "[" + p.getId() + "]");
 				map.put(KEY_PATIENT, p.getName() + " " + p.getSurname());
@@ -125,26 +123,23 @@ public class SelectPatient extends ActionBarListActivity implements SearchView.O
 				map.put(KEY_PATIENT_NAME, p.getName());
 				fillMaps.add(map);
 			}
-			else
+			else {
 				hasCurrentPatient = true;
+			}
 		}
+		if (hasCurrentPatient)
+		    patientList.remove(currentPatient);
 
 		IndexableListView lv = (IndexableListView)getListView();
 		lv.setFastScrollEnabled(true);
 		lv.setOnItemClickListener(new OnItemClickListener() {
-			public void onItemClick(AdapterView<?> parent, View view,
-					int position, long id) {
-				if(hasCurrentPatient && position == fillMaps.size()) {
-					Log.i(TAG, "Selezionato paziente corrente. Non faccio nulla");
-				}
-				else {
-                    Patient p = patientList.get(position);
-                    Log.i(TAG, "Nome paziente: " + p.getName());
-					Intent result = new Intent();
-					result.putExtra(PATIENT, p);
-					setResult(RESULT_OK, result);
-					finish();
-				}
+			public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                Patient p = patientList.get(position);
+                Log.i(TAG, "Nome paziente: " + p.getName());
+                Intent result = new Intent();
+                result.putExtra(PATIENT, p);
+                setResult(RESULT_OK, result);
+                finish();
 			}
 		});
 		patientListAdapter = new PatientListAdapter(this, fillMaps, R.layout.patient_item, from, to);

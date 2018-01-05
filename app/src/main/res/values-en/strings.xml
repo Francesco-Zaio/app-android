@@ -70,7 +70,9 @@
 	<string name="reset_settings">Factory settings</string>
 	<string name="show_measures">Manage measurements</string>
 	<string name="show_documents">Manage documents</string>
-	<string name="delete_all_measure">Delete measurements</string>
+	<string name="delete_all_measure">Delete all measurements</string>
+	<string name="delete_all_documents">Delete all documents</string>
+	<string name="new_document">New document</string>
 	<string name="retry_send_all_measure">Transfer measurements</string>
 	<string name="retry_send_all_documents">Send documents</string>
 	<string name="delete_measure">Delete measurement</string>

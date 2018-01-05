@@ -3,22 +3,6 @@
 	android:layout_width="fill_parent"
 	android:layout_height="wrap_content"
 	android:orientation="horizontal">
-
-	<!-- <com.ti.app.mydoctor.gui.customview.GWTextView
-		android:id="@+id/cf"
-		android:layout_width="wrap_content"
-		android:layout_height="wrap_content"
-		style="@style/gw_fiscal_label_list_item_style"
-		app:typeface="roboto_thin" />
-
-	<com.ti.app.mydoctor.gui.customview.GWTextView
-		android:layout_below="@id/cf"
-		android:layout_alignLeft="@id/cf"
-        android:id="@+id/patient"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        style="@style/gw_name_label_list_item_style"
-        app:typeface="roboto_condensed" /> -->
         
     <com.ti.app.mydoctor.gui.customview.GWTextView
 		android:id="@+id/patient_surname"

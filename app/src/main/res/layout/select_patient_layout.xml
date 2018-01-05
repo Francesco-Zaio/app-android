@@ -2,49 +2,12 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
       android:layout_width="fill_parent"
       android:layout_height="fill_parent">
-      <!-- android:background="@drawable/btn_search_dialog_voice_default"> -->
-   	
-   	<!-- <RelativeLayout
-    	android:layout_alignParentBottom="true"
-    	android:id="@+id/patient_list_relative_layout"
-    	android:layout_width="fill_parent"
-    	android:layout_height="wrap_content"
-    	android:background="#276BAE"
-    	android:minHeight="55dip" >
-    	
-    	<TextView
-	        android:id="@+id/textview"
-	        android:layout_width="wrap_content"
-	        android:layout_height="wrap_content"
-	        android:layout_marginLeft="5dip"
-	        android:layout_marginRight="5dip"
-	        android:layout_centerVertical="true"
-	        android:textColor="@android:color/white"
-	        android:textStyle="bold"
-	        android:text="Paziente" />
-
-	    <EditText 
-	    	android:id="@+id/select_patient_edittext"
-	    	android:layout_toRightOf="@id/textview"
-	        android:layout_width="fill_parent"
-	        android:layout_height="wrap_content"
-	        android:layout_marginTop="5dip"
-	        android:layout_marginLeft="5dip"
-	        android:layout_marginRight="5dip"
-	        android:hint="@string/searchPatients"/>
-    </RelativeLayout>  -->
-   
-	<!-- <ListView 
-		android:id="@+id/android:list"
-		android:layout_above="@id/patient_list_relative_layout"
-		android:layout_alignParentTop="true"
-		android:layout_width="fill_parent"
-		android:layout_height="wrap_content" /> -->
 	
 	<com.ti.app.mydoctor.gui.alphabeticalindex.IndexableListView
 	    android:layout_width="fill_parent" 
 	    android:layout_height="fill_parent" 
 	    android:layout_alignParentLeft="true"
-        android:layout_alignParentTop="true"        
+		android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
 	    android:id="@+id/android:list" />
 </RelativeLayout>

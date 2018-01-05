@@ -110,7 +110,7 @@ public class Patient implements Serializable{
 
 	@Override
 	public boolean equals(Object obj) {
-		if(obj instanceof Patient && obj != null){
+		if(obj != null && obj instanceof Patient){
 			Patient p = (Patient)obj;
 			return id!= null && p.getId() != null && p.getId().equalsIgnoreCase(id);
 		} else {

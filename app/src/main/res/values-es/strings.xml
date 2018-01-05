@@ -70,7 +70,9 @@
 	<string name="reset_settings">Configuración de fábrica</string>
 	<string name="show_measures">Gestionar las medidas</string>
 	<string name="show_documents">Gestionar los documentos</string>
-	<string name="delete_all_measure">Eliminar las medidas</string>
+	<string name="delete_all_measure">Borrar todas las medidas</string>
+	<string name="delete_all_documents">Borrar todos los documentos</string>
+	<string name="new_document">Nuevo documento</string>
 	<string name="retry_send_all_measure">Enviar las medidas</string>
 	<string name="retry_send_all_documents">Enviar los documentos</string>
 	<string name="delete_measure">Borrar medida</string>

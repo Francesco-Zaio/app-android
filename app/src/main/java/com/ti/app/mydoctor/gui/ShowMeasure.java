@@ -299,19 +299,24 @@ public class ShowMeasure extends ActionBarListActivity{
 	
 	@Override
 	public boolean onPrepareOptionsMenu(Menu menu) {
-		//Controllo se la lista misura è stata inizializzata
-		if(listaMisure != null) {
-		     numMeasureToSend = MeasureManager.getMeasureManager().getNumNotSentMeasures(UserManager.getUserManager().getCurrentUser().getId());
-			//Controllo se nella lista ci sono misure da inviare
-			if(numMeasureToSend == 0) {
-				menu.findItem(R.id.retry_send_all_measure).setVisible(false);
-			} else {
-				menu.findItem(R.id.retry_send_all_measure).setVisible(true);
-			}			
+		if (Measure.MeasureFamily.BIOMETRICA.equals(currentMeasureFamily)) {
+			menu.findItem(R.id.new_document).setVisible(false);
+			menu.findItem(R.id.delete_all_documents).setVisible(false);
 		} else {
-			menu.findItem(R.id.retry_send_all_measure).setVisible(false);
+			menu.findItem(R.id.delete_all_measure).setVisible(false);
 		}
-		//return super.onPrepareOptionsMenu(menu);
+		if(listaMisure == null || listaMisure.isEmpty()) {
+			menu.findItem(R.id.delete_all_measure).setVisible(false);
+			menu.findItem(R.id.delete_all_documents).setVisible(false);
+		}
+
+		numMeasureToSend = MeasureManager.getMeasureManager().getNumNotSentMeasures(UserManager.getUserManager().getCurrentUser().getId());
+		//Controllo se nella lista ci sono misure da inviare
+		if(numMeasureToSend == 0) {
+			menu.findItem(R.id.retry_send_all_measure).setVisible(false);
+		} else {
+			menu.findItem(R.id.retry_send_all_measure).setVisible(true);
+		}
 		return true;
 	}
 
@@ -578,7 +583,7 @@ public class ShowMeasure extends ActionBarListActivity{
 		
 		String idPatient = UserManager.getUserManager().getCurrentPatient().getId();
 		listaMisure = measureManager.getMeasureData(idUser, null, null, currentMeasureType, idPatient, false, currentMeasureFamily);
-		if(listaMisure != null) {
+		if(listaMisure != null && !listaMisure.isEmpty()) {
             for (Measure misura : listaMisure) {
 				HashMap<String, String> map = new HashMap<>();
 				map.put(KEY_ICON_SENT, String.valueOf(getIconSent(misura.getSent())));

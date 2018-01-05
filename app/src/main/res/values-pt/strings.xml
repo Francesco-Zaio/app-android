@@ -70,7 +70,9 @@
 	<string name="reset_settings">Configurações inicial</string>
 	<string name="show_measures">Gerir medidas</string>
 	<string name="show_documents">Gerir documentos</string>
-	<string name="delete_all_measure">Excluir medidas</string>
+	<string name="delete_all_measure">Excluir todas as medidas</string>
+	<string name="delete_all_documents">Excluir todos os documentos</string>
+	<string name="new_document">Novo Documento</string>
 	<string name="retry_send_all_measure">Enviar medidas</string>
 	<string name="retry_send_all_documents">Enviar documentos</string>
 	<string name="delete_measure">Excluir medida</string>

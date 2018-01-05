@@ -553,26 +553,26 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 			//La voce "Misure" viene abilitata solo se ci sono misure caricate nel DB
 			String idUser = loggedUser.getId();
 
-			//Contollo se la lista paziente � stata attivata
+			//Contollo se la lista paziente è stata attivata
 			if( patientList != null ){
-				//Controllo se il paziente � stato scelto
+				//Controllo se il paziente è stato scelto
 				if ( userManager.getCurrentPatient() != null ) {
 					String idPatient = userManager.getCurrentPatient().getId();
 					ArrayList<Measure> ml = measureManager.getMeasureData(idUser, null, null, null, idPatient, false, Measure.MeasureFamily.BIOMETRICA);
 					if(ml == null) {
 						//Non ci sono misure
-						iconGroupArray.remove(0); //remove icona Documenti
-						labelGroupArray.remove(0); //remove etichetta Documenti
-						labelChildArray.remove(0);
-                        iconGroupArray.remove(0); //remove icona Misure
-                        labelGroupArray.remove(0); //remove etichetta Misure
-                        labelChildArray.remove(0);
+                        iconGroupArray.remove(1); //remove icona Misure
+                        labelGroupArray.remove(1); //remove etichetta Misure
+                        labelChildArray.remove(1);
 					}
 				} else {
-					//Non ci sono pazienti attivi, quindi non si possono visualizzare misure
-					iconGroupArray.remove(1); //remove icona Misure
-					labelGroupArray.remove(1); //remove etichetta Misure
-					labelChildArray.remove(1);
+                    //Non ci sono pazienti attivi, quindi non si possono visualizzare misure
+                    iconGroupArray.remove(0); //remove icona Documenti
+                    labelGroupArray.remove(0); //remove etichetta Documenti
+                    labelChildArray.remove(0);
+                    iconGroupArray.remove(0); //remove icona Misure
+                    labelGroupArray.remove(0); //remove etichetta Misure
+                    labelChildArray.remove(0);
 				}
 			}
 		}
@@ -710,9 +710,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
     		menuItem = selectedItemBundle.getInt(SELECTED_MENU_ITEM);
     		selectedItemBundle.clear();
     	}
-
     	Intent intent;
-
     	switch( menuItem ) {
             case ITEM_MEASURE:
                 if(patientNameTV.getText().toString().trim().equals(getText(R.string.selectPatient))) {

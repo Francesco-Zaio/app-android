@@ -101,6 +101,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 
     //Costants for Bundle
 	private static final String VIEW_MEASURE = "VIEW_MEASURE";
+	private static final String VIEW_DOCUMENT = "VIEW_DOCUMENT";
 	private static final String START_MEASURE = "START_MEASURE";
 	private static final String POSITION = "POSITION";
 	
@@ -560,15 +561,18 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 					ArrayList<Measure> ml = measureManager.getMeasureData(idUser, null, null, null, idPatient, false, Measure.MeasureFamily.BIOMETRICA);
 					if(ml == null) {
 						//Non ci sono misure
-						iconGroupArray.remove(0); //remove icona Misure
-						labelGroupArray.remove(0); //remove etichetta Misure
+						iconGroupArray.remove(0); //remove icona Documenti
+						labelGroupArray.remove(0); //remove etichetta Documenti
 						labelChildArray.remove(0);
+                        iconGroupArray.remove(0); //remove icona Misure
+                        labelGroupArray.remove(0); //remove etichetta Misure
+                        labelChildArray.remove(0);
 					}
 				} else {
 					//Non ci sono pazienti attivi, quindi non si possono visualizzare misure
-					iconGroupArray.remove(0); //remove icona Misure
-					labelGroupArray.remove(0); //remove etichetta Misure
-					labelChildArray.remove(0);
+					iconGroupArray.remove(1); //remove icona Misure
+					labelGroupArray.remove(1); //remove etichetta Misure
+					labelChildArray.remove(1);
 				}
 			}
 		}
@@ -726,10 +730,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                 }
                 else {
                     Log.i(TAG, "Mostrare le misure di " + patientNameTV.getText().toString());
-                    intent = new Intent(DeviceList.this, ShowMeasure.class);
-                    intent.putExtra(ShowMeasure.MEASURE_TYPE_KEY, "");
-					intent.putExtra(ShowMeasure.MEASURE_FAMILY_KEY, Measure.MeasureFamily.BIOMETRICA.getValue());
-                    startActivity(intent);
+                    showMeasures(null, Measure.MeasureFamily.BIOMETRICA);
                 }
                 break;
             case ITEM_DOCUMENTS:
@@ -741,15 +742,14 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                     }
                     else {
                         viewMeasureBundle = new Bundle();
-                        viewMeasureBundle.putBoolean(VIEW_MEASURE, true);
+                        viewMeasureBundle.putBoolean(VIEW_DOCUMENT, true);
                         viewMeasureBundle.putInt(POSITION, -1);
                         startSelectPatientActivity();
                     }
                 }
                 else {
                     Log.i(TAG, "Acquisire i documenti di " + patientNameTV.getText().toString());
-                    intent = new Intent(DeviceList.this, DocumentTypesActivity.class);
-                    startActivity(intent);
+                    showMeasures(null, Measure.MeasureFamily.DOCUMENTO);
                 }
                 break;
             case ITEM_USER_UPDATES:
@@ -1214,7 +1214,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 		    		}
 		    	}
 		    	else
-		    		showMeasures(info.position);
+		    		showMeasures(measureList.get(info.position).getMeasure(), Measure.MeasureFamily.BIOMETRICA);
 		    	return true;
 		    case R.id.select_model:
 		    	showSelectModelDialog();
@@ -1425,14 +1425,13 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                 || AppUtil.isManualMeasure(device.getDevice())|| device.getDevice().getDevType()== Device.DevType.APP);
     }
 
-	private void showMeasures(int position) {
+	private void showMeasures(String measureType, Measure.MeasureFamily family) {
 		Intent myIntent = new Intent(DeviceList.this, ShowMeasure.class);
-		if(viewMeasureBundle != null && viewMeasureBundle.getInt(POSITION) == -1) {
+        myIntent.putExtra(ShowMeasure.MEASURE_FAMILY_KEY, family.getValue());
+		if(measureType==null || measureType.isEmpty()) {
             myIntent.putExtra(ShowMeasure.MEASURE_TYPE_KEY, "");
-			myIntent.putExtra(ShowMeasure.MEASURE_FAMILY_KEY, Measure.MeasureFamily.BIOMETRICA.getValue());
 		} else {
-			myIntent.putExtra(ShowMeasure.MEASURE_TYPE_KEY, measureList.get(position).getMeasure());
-			myIntent.putExtra(ShowMeasure.MEASURE_FAMILY_KEY, Measure.MeasureFamily.BIOMETRICA.getValue());
+			myIntent.putExtra(ShowMeasure.MEASURE_TYPE_KEY, measureType);
 		}
 		startActivity(myIntent);
 	}
@@ -1507,14 +1506,20 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                         Log.i(TAG, "Selezionato il paziente " + p.getName() + " " + p.getSurname());
                         userManager.setCurrentPatient(p);
                         if(viewMeasureBundle != null && viewMeasureBundle.getBoolean(VIEW_MEASURE, false)) {
-                            Log.d(TAG, "Visualizzo le misure di " + p.getName() + " " + p.getSurname());
-                            showMeasures(viewMeasureBundle.getInt(POSITION));
+							int position = viewMeasureBundle.getInt(POSITION);
+							if (position > 0)
+							    showMeasures(measureList.get(position).getMeasure(), Measure.MeasureFamily.BIOMETRICA);
+							else
+                                showMeasures(null, Measure.MeasureFamily.BIOMETRICA);
                         }
                         else if (startMeasureBundle != null && startMeasureBundle.getBoolean(START_MEASURE, false)) {
-                            Log.d(TAG, "Inizio la misura di " + p.getName() + " " + p.getSurname());
                             executeOperation();
                         }
-                    }
+						else if (startMeasureBundle != null && startMeasureBundle.getBoolean(VIEW_DOCUMENT, false)) {
+							showMeasures(null, Measure.MeasureFamily.DOCUMENTO);
+						}
+
+					}
                 }
                 break;
             case REQUEST_ENABLE_BT:

@@ -46,6 +46,15 @@ public class Measure implements Serializable{
         GREEN
     }
 
+    public static MeasureFamily getFamily(String measureType) {
+        if (measureType.matches("D\\d+"))
+            return MeasureFamily.DOCUMENTO;
+        else if (measureType.matches("Q\\d+"))
+            return MeasureFamily.NONBIOMETRICA;
+        else
+            return MeasureFamily.BIOMETRICA;
+    }
+
     public String getDeviceDesc() {
         return deviceDesc;
     }
@@ -84,12 +93,7 @@ public class Measure implements Serializable{
 
     public void setMeasureType(String measureType) {
         this.measureType = measureType;
-        if (measureType.matches("D\\d+"))
-            family = MeasureFamily.DOCUMENTO;
-        else if (measureType.matches("Q\\d+"))
-            family = MeasureFamily.NONBIOMETRICA;
-        else
-            family = MeasureFamily.BIOMETRICA;
+        family = getFamily(measureType);
     }
 
     public MeasureFamily getFamily() {

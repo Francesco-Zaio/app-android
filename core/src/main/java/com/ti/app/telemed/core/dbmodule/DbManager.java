@@ -1097,10 +1097,12 @@ public class DbManager {
             Vector<UserMeasure> ret = new Vector<>();
             Cursor c = null;
             try {
-                c = mDb.query("USER_MEASURE", null, "ID_USER  = ? AND FAMILY = ?", new String[]{userId, Integer.toString(Measure.MeasureFamily.BIOMETRICA.getValue())}, null, null, null);
+                c = mDb.query("USER_MEASURE", null, "ID_USER  = ?", new String[]{userId}, null, null, null);
                 if (c != null) {
                     while (c.moveToNext()) {
-                        ret.add(getUserMeasureObject(c));
+                        UserMeasure um = getUserMeasureObject(c);
+                        if (Measure.MeasureFamily.BIOMETRICA.equals(Measure.getFamily(um.getMeasure())))
+                            ret.add(getUserMeasureObject(c));
                     }
                 }
             } finally {

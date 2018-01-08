@@ -27,6 +27,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.GridView;
 import android.widget.ImageButton;
@@ -120,23 +121,20 @@ public class DocumentSendActivity extends AppCompatActivity implements View.OnCl
         columnWidth = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, DP_COLUMN_WIDTH, getResources().getDisplayMetrics());
         gridView.setColumnWidth(columnWidth);
 
-        /*
+
         gridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             public void onItemClick(AdapterView<?> parent, View v, int position, long id) {
                 GridViewAdapter.ImageItem item = (GridViewAdapter.ImageItem) parent.getItemAtPosition(position);
 
                 // TODO visualizzazione/acquisizione documenti
-                //Toast.makeText(DocumentSendActivity.this, "TODO Show Image Detail", Toast.LENGTH_SHORT).show();
-                File f = fileList.get(position);
                 Intent intent = new Intent(Intent.ACTION_VIEW);
-                String s = "file://" + f.getAbsolutePath();
-                intent.setDataAndType(Uri.parse(s), "image/*");
+                Uri photoURI = FileProvider.getUriForFile(DocumentSendActivity.this, getApplicationContext().getPackageName() + ".provider", fileList.get(position));
+                intent.setDataAndType(photoURI, "image/*");
                 intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                Log.d(TAG, "showImage:" + s);
                 startActivity(intent);
             }
         });
-        */
+
         gridView.setMultiChoiceModeListener(new MultiChoiceModeListener());
         cameraButton = findViewById(R.id.camera);
         galleryButton = findViewById(R.id.gallery);

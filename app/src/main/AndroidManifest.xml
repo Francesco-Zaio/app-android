@@ -77,15 +77,6 @@
         </activity>
 
         <activity
-            android:name=".gui.DocumentTypesActivity"
-            android:configChanges="orientation|screenSize|keyboardHidden"
-            android:label="@string/show_documents">
-            <intent-filter>
-                <action android:name=".DeviceList" />
-            </intent-filter>
-        </activity>
-
-        <activity
             android:name=".gui.MeasureDetails">
         </activity>
 

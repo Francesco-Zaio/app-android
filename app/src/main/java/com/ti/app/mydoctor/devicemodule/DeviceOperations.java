@@ -104,8 +104,10 @@ public class DeviceOperations implements DeviceListener {
                 User currentUser = UserManager.getUserManager().getCurrentUser();
 				if (pairingMode || (currentUser != null && !currentUser.isDefaultUser())) {
 					try {
-						operationRunning = true;
-						executeOp();
+						if (!executeOp())
+                            showError(AppResourceManager.getResource().getString("KNoMesurement"));
+						else
+                            operationRunning = true;
 					} catch (Exception e) {
 						showError(AppResourceManager.getResource().getString("EGWNursePairingError"));
 					}
@@ -120,7 +122,7 @@ public class DeviceOperations implements DeviceListener {
 		}
 	}
 
-	private void executeOp() throws Exception {
+	private boolean executeOp() throws Exception {
         currentDeviceHandler = DeviceHandler.getInstance(this,currentDevice);
         DeviceHandler.OperationType op;
         boolean result;
@@ -143,6 +145,7 @@ public class DeviceOperations implements DeviceListener {
         }
         if (result)
             notifyToUi(AppResourceManager.getResource().getString("KSearchingDev"));
+        return result;
 	}
 
 	public void abortOperation() {

@@ -162,7 +162,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 
     private DeviceManagerMessageHandler deviceManagerHandler = new DeviceManagerMessageHandler(this);
     private UserManagerMessageHandler userManagerHandler = new UserManagerMessageHandler();
-    private UIHandler mUIHandler = new UIHandler(this);
+    //private UIHandler mUIHandler = new UIHandler(this);
 
 	private String selectedMeasureType;
 	private int selectedMeasurePosition;
@@ -360,6 +360,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
         }
     }
 
+    /*
 	private static class UIHandler extends Handler {
         private final WeakReference<DeviceList> mActivity;
 
@@ -382,7 +383,9 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
             }
 		}
 	}
+	*/
 
+	/*
     private class InitTask extends AsyncTask<Void, Void, Void> {
         private boolean errorFound;
         @Override
@@ -406,6 +409,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                 myShowDialog(ERROR_EXIT_APP_DIALOG);
         }
     }
+    */
 
     @Override
 	protected void onStop() {
@@ -1455,12 +1459,14 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
     	switch(requestCode) {
             case USER_LIST:
                 if(resultCode == RESULT_OK){
-                    User user = null;
                     if(data != null) {
                         Bundle extras = data.getExtras();
-                        user = (User) extras.get(UsersList.SELECTED_USER);
+                        if (extras!=null) {
+							checkUser((User) extras.get(UsersList.SELECTED_USER));
+							break;
+						}
                     }
-                    checkUser(user);
+					myShowDialog(LOGIN_DIALOG);
                 } else if(resultCode == UsersList.RESULT_DB_ERROR){
                     showErrorDialog(AppResourceManager.getResource().getString("errorDb"));
                 }
@@ -2054,29 +2060,28 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 
 	protected void myOnPrepareDialog(int id, Dialog dialog) {
         if (dataBundle == null) {
-            Log.e(TAG, "onPrepareDialog: dataBundle is null");
             return;
         }
 
 		switch(id) {
-        case PROGRESS_DIALOG:
-            ((ProgressDialog)dialog).setMessage(dataBundle.getString(AppConst.MESSAGE));
-            Button b = ((ProgressDialog)dialog).getButton(ProgressDialog.BUTTON_NEGATIVE);
-        	if(dataBundle.getBoolean(AppConst.MESSAGE_CANCELLABLE)){
-    			b.setEnabled(true);//Visibility(View.VISIBLE);
-    		} else {
-    			b.setEnabled(false);//setVisibility(View.INVISIBLE);
-    		}
-    		//Assegno un tag al button per poter gestire correttamente il click su Annulla
-    		if(dataBundle.getBoolean(AppConst.IS_MEASURE)){
-    			((ProgressDialog)dialog).getButton(ProgressDialog.BUTTON_NEGATIVE).setTag(AppConst.IS_MEASURE);
-    		} else if(dataBundle.getBoolean(AppConst.IS_CONFIGURATION)){
-    			((ProgressDialog)dialog).getButton(ProgressDialog.BUTTON_NEGATIVE).setTag(AppConst.IS_CONFIGURATION);
-    		}
-    		break;
-        case ALERT_DIALOG:
-            ((AlertDialog)dialog).setMessage(dataBundle.getString(AppConst.MESSAGE));
-            break;
+            case PROGRESS_DIALOG:
+                ((ProgressDialog)dialog).setMessage(dataBundle.getString(AppConst.MESSAGE));
+                Button b = ((ProgressDialog)dialog).getButton(ProgressDialog.BUTTON_NEGATIVE);
+                if(dataBundle.getBoolean(AppConst.MESSAGE_CANCELLABLE)){
+                    b.setEnabled(true);//Visibility(View.VISIBLE);
+                } else {
+                    b.setEnabled(false);//setVisibility(View.INVISIBLE);
+                }
+                //Assegno un tag al button per poter gestire correttamente il click su Annulla
+                if(dataBundle.getBoolean(AppConst.IS_MEASURE)){
+                    ((ProgressDialog)dialog).getButton(ProgressDialog.BUTTON_NEGATIVE).setTag(AppConst.IS_MEASURE);
+                } else if(dataBundle.getBoolean(AppConst.IS_CONFIGURATION)){
+                    ((ProgressDialog)dialog).getButton(ProgressDialog.BUTTON_NEGATIVE).setTag(AppConst.IS_CONFIGURATION);
+                }
+                break;
+            case ALERT_DIALOG:
+                ((AlertDialog)dialog).setMessage(dataBundle.getString(AppConst.MESSAGE));
+                break;
         }
 	}
 
@@ -2404,13 +2409,15 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 
 	private void checkUser(User user) {
         if (user == null ){
-            mUIHandler.sendEmptyMessage(LOGIN_DIALOG);
+//            mUIHandler.sendEmptyMessage(LOGIN_DIALOG);
+            myShowDialog(LIST_OR_NEW_USER_DIALOG);
         } else if ( !user.getHasAutoLogin() || user.isBlocked()) {
             //L'utente non ha l'autologin quindi appare dialog di login con solo lo userid precompilato
             userDataBundle = new Bundle();
             userDataBundle.putBoolean("CHANGEABLE", false);
             userDataBundle.putString("LOGIN", user.getLogin());
-            mUIHandler.sendEmptyMessage(PRECOMPILED_LOGIN_DIALOG);
+//            mUIHandler.sendEmptyMessage(PRECOMPILED_LOGIN_DIALOG);
+            myShowDialog(PRECOMPILED_LOGIN_DIALOG);
         } else {
             long lastUpdateTime = user.getTimestamp();
             int diffHours = AppUtil.getDiffHours(new Date().getTime(), lastUpdateTime);

@@ -87,13 +87,13 @@ public class AgamatrixJazz extends DeviceHandler implements
 
     @Override
     public void confirmDialog() {
-        prePrandial = true;
+        prePrandial = false;
         makeResultData();
     }
 
     @Override
     public void cancelDialog() {
-        prePrandial = false;
+        prePrandial = true;
         makeResultData();
     }
 
@@ -356,8 +356,8 @@ public class AgamatrixJazz extends DeviceHandler implements
 
 
             deviceListener.askSomething(message,
-                    ResourceManager.getResource().getString("MeasureGlyPREBtn"),
-                    ResourceManager.getResource().getString("MeasureGlyPOSTBtn"));
+                    ResourceManager.getResource().getString("MeasureGlyPOSTBtn"),
+                    ResourceManager.getResource().getString("MeasureGlyPREBtn"));
         } else {
                 String message = ResourceManager.getResource().getString("EDataReadError");
                 deviceListener.notifyError(DeviceListener.DEVICE_DATA_ERROR, message);

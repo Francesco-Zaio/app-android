@@ -357,13 +357,13 @@ public class GIMAPC300SpotCheck
 
     @Override
     public void confirmDialog() {
-        prePrandial = true;
+        prePrandial = false;
         makeGLUResultData();
     }
 
     @Override
     public void cancelDialog(){
-        prePrandial = false;
+        prePrandial = true;
         makeGLUResultData();
     }
 
@@ -570,8 +570,8 @@ public class GIMAPC300SpotCheck
         message = message.concat(ResourceManager.getResource().getString("GlycemiaUnit"));
 
         deviceListener.askSomething(message,
-                ResourceManager.getResource().getString("MeasureGlyPREBtn"),
-                ResourceManager.getResource().getString("MeasureGlyPOSTBtn"));
+                ResourceManager.getResource().getString("MeasureGlyPOSTBtn"),
+                ResourceManager.getResource().getString("MeasureGlyPREBtn"));
     }
 
     private void makeGLUResultData() {

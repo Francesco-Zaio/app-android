@@ -14,7 +14,7 @@ android {
     useLibrary 'org.apache.http.legacy'
     defaultConfig {
         applicationId "com.ti.app.mydoctor"
-        minSdkVersion 14
+        minSdkVersion 16
         targetSdkVersion 26
         versionCode 400
         versionName "4.0.0.a"

@@ -8,6 +8,7 @@ import android.util.Log;
 import com.ti.app.mydoctor.R;
 import com.ti.app.mydoctor.MyDoctorApp;
 import com.ti.app.telemed.core.common.Device;
+import com.ti.app.telemed.core.common.Measure;
 import com.ti.app.telemed.core.util.GWConst;
 
 
@@ -74,49 +75,63 @@ public class AppUtil {
 	}
 
 	public static int getIconId(String measure) {
-		if(measure.equalsIgnoreCase(GWConst.KMsrEcg))
-			return R.drawable.ecg_icon;
-		else if(measure.equalsIgnoreCase(GWConst.KMsrPeso))
-			return R.drawable.peso_icon;
-		else if(measure.equalsIgnoreCase(GWConst.KMsrPres))
-			return R.drawable.pressione_icon;
-		else if(measure.equalsIgnoreCase(GWConst.KMsrOss))
-			return R.drawable.ossimetria_icon;
-		else if(measure.equalsIgnoreCase(GWConst.KMsrProtr))
-			return R.drawable.inr_icon;
-		else if(measure.equalsIgnoreCase(GWConst.KMsrGlic))
-			return R.drawable.glicemia_icon;
-		else if(measure.equalsIgnoreCase(GWConst.KMsrSpir))
-			return R.drawable.spirometria_icon;
-		else if(measure.equalsIgnoreCase(GWConst.KMsrTemp))
-			return R.drawable.temperatura_icon;
-		else if(measure.equalsIgnoreCase(GWConst.KMsrImg))
-			return R.drawable.immagini_icon;
-		else
-			return R.drawable.icon;
-	}	
+		switch (Measure.getFamily(measure)) {
+			case BIOMETRICA:
+				if (measure.equalsIgnoreCase(GWConst.KMsrEcg))
+					return R.drawable.ecg_icon;
+				else if (measure.equalsIgnoreCase(GWConst.KMsrPeso))
+					return R.drawable.peso_icon;
+				else if (measure.equalsIgnoreCase(GWConst.KMsrPres))
+					return R.drawable.pressione_icon;
+				else if (measure.equalsIgnoreCase(GWConst.KMsrOss))
+					return R.drawable.ossimetria_icon;
+				else if (measure.equalsIgnoreCase(GWConst.KMsrProtr))
+					return R.drawable.inr_icon;
+				else if (measure.equalsIgnoreCase(GWConst.KMsrGlic))
+					return R.drawable.glicemia_icon;
+				else if (measure.equalsIgnoreCase(GWConst.KMsrSpir))
+					return R.drawable.spirometria_icon;
+				else if (measure.equalsIgnoreCase(GWConst.KMsrTemp))
+					return R.drawable.temperatura_icon;
+				else if (measure.equalsIgnoreCase(GWConst.KMsrImg))
+					return R.drawable.immagini_icon;
+				else
+					return R.drawable.icon;
+			case DOCUMENTO:
+				return R.drawable.immagini_icon;
+			default:
+				return R.drawable.icon;
+		}
+	}
 	
 	public static int getSmallIconId(String measure) {
-		if(measure.equalsIgnoreCase(GWConst.KMsrEcg))
-			return R.drawable.small_ecg_icon;
-		else if(measure.equalsIgnoreCase(GWConst.KMsrPeso))
-			return R.drawable.small_peso_icon;
-		else if(measure.equalsIgnoreCase(GWConst.KMsrPres))
-			return R.drawable.small_pressione_icon;
-		else if(measure.equalsIgnoreCase(GWConst.KMsrOss))
-			return R.drawable.small_ossimetria_icon;
-		else if(measure.equalsIgnoreCase(GWConst.KMsrProtr))
-			return R.drawable.small_inr_icon;
-		else if(measure.equalsIgnoreCase(GWConst.KMsrGlic))
-			return R.drawable.small_glicemia_icon;
-		else if(measure.equalsIgnoreCase(GWConst.KMsrSpir))
-			return R.drawable.small_spirometria_icon;
-		else if(measure.equalsIgnoreCase(GWConst.KMsrTemp))
-			return R.drawable.small_temperatura_icon;
-		else if(measure.equalsIgnoreCase(GWConst.KMsrImg))
-			return R.drawable.small_immagini_icon;
-		else
-			return R.drawable.icon;
+		switch (Measure.getFamily(measure)) {
+			case BIOMETRICA:
+				if (measure.equalsIgnoreCase(GWConst.KMsrEcg))
+					return R.drawable.small_ecg_icon;
+				else if (measure.equalsIgnoreCase(GWConst.KMsrPeso))
+					return R.drawable.small_peso_icon;
+				else if (measure.equalsIgnoreCase(GWConst.KMsrPres))
+					return R.drawable.small_pressione_icon;
+				else if (measure.equalsIgnoreCase(GWConst.KMsrOss))
+					return R.drawable.small_ossimetria_icon;
+				else if (measure.equalsIgnoreCase(GWConst.KMsrProtr))
+					return R.drawable.small_inr_icon;
+				else if (measure.equalsIgnoreCase(GWConst.KMsrGlic))
+					return R.drawable.small_glicemia_icon;
+				else if (measure.equalsIgnoreCase(GWConst.KMsrSpir))
+					return R.drawable.small_spirometria_icon;
+				else if (measure.equalsIgnoreCase(GWConst.KMsrTemp))
+					return R.drawable.small_temperatura_icon;
+				else if (measure.equalsIgnoreCase(GWConst.KMsrImg))
+					return R.drawable.small_immagini_icon;
+				else
+					return R.drawable.icon;
+			case DOCUMENTO:
+				return R.drawable.small_immagini_icon;
+			default:
+				return R.drawable.icon;
+		}
 	}	
 	
 	public static int getIconRunningId(String measure) {

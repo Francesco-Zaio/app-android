@@ -1,16 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- <GridView 
-		xmlns:android="http://schemas.android.com/apk/res/android"
-	    android:id="@+id/gridView1"
-	    android:numColumns="3"
-	    android:gravity="center"
-	    android:columnWidth="150dp"
-	    android:stretchMode="columnWidth"
-	    android:layout_width="fill_parent"
-	    android:layout_height="fill_parent"
-	    android:background="#ffffff" >
-	 
-	</GridView> -->
 
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
 	xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -27,7 +15,6 @@
 	    	android:id="@+id/grid_view"
 	    	android:numColumns="3"
 		    android:gravity="center"
-		    android:columnWidth="150dp"
 		    android:stretchMode="columnWidth"
 	        android:layout_width="fill_parent"
 	        android:layout_height="fill_parent"

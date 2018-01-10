@@ -76,7 +76,6 @@
 	<string name="retry_send_all_measure">Transfer measurements</string>
 	<string name="retry_send_all_documents">Send documents</string>
 	<string name="delete_measure">Delete measurement</string>
-	<string name="retry_send_measure">Send measurement</string>
 
 	<string name="user_title">User</string>
 	<string name="delete">Delete</string>
@@ -87,8 +86,6 @@
 	<string name="manageDocuments">View documents</string>
 
 	<string name="auto_login">Automatic login</string>
-	<string name="auto_send">Automatic measure transfer</string>
-	<string name="arTimeout">AR Timeout [5-90]</string>
 	
 	<string name="connectionSettings">Connection settings</string>
 	<string name="userSettings">User settings</string>

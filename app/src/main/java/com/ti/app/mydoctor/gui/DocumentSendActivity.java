@@ -43,11 +43,15 @@ import com.ti.app.telemed.core.usermodule.UserManager;
 import com.ti.app.telemed.core.util.Util;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.ref.WeakReference;
+import java.nio.channels.FileChannel;
+import java.nio.file.CopyOption;
+import java.nio.file.Files;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -71,7 +75,7 @@ public class DocumentSendActivity extends AppCompatActivity implements View.OnCl
 
     private ArrayList<File> fileList = new ArrayList<>();
     private File currentFile;
-    File docBaseDir;
+    File docBaseDir, sendDir;
     private int columnWidth;
     ProgressDialog progressDialog = null;
 
@@ -118,15 +122,12 @@ public class DocumentSendActivity extends AppCompatActivity implements View.OnCl
         gridAdapter = new GridViewAdapter(this, R.layout.document_grid_item, imageItems);
         gridView.setAdapter(gridAdapter);
         gridView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE_MODAL);
-        columnWidth = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, DP_COLUMN_WIDTH, getResources().getDisplayMetrics());
-        gridView.setColumnWidth(columnWidth);
 
+        //columnWidth = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, DP_COLUMN_WIDTH, getResources().getDisplayMetrics());
+        //gridView.setColumnWidth(columnWidth);
 
         gridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             public void onItemClick(AdapterView<?> parent, View v, int position, long id) {
-                GridViewAdapter.ImageItem item = (GridViewAdapter.ImageItem) parent.getItemAtPosition(position);
-
-                // TODO visualizzazione/acquisizione documenti
                 Intent intent = new Intent(Intent.ACTION_VIEW);
                 Uri photoURI = FileProvider.getUriForFile(DocumentSendActivity.this, getApplicationContext().getPackageName() + ".provider", fileList.get(position));
                 intent.setDataAndType(photoURI, "image/*");
@@ -136,13 +137,28 @@ public class DocumentSendActivity extends AppCompatActivity implements View.OnCl
         });
 
         gridView.setMultiChoiceModeListener(new MultiChoiceModeListener());
+
         cameraButton = findViewById(R.id.camera);
+        cameraButton.setOnClickListener(this);
         galleryButton = findViewById(R.id.gallery);
+        galleryButton.setOnClickListener(this);
         okButton = findViewById(R.id.confirm_button);
+        okButton.setOnClickListener(this);
+        findViewById(R.id.cancel_button).setOnClickListener(this);
 
         String id = UserManager.getUserManager().getCurrentPatient().getId();
         docBaseDir = Util.getDocumentDir(docType, id);
-        initImages();
+
+        // legge la larghezza di una colonna dopo che è stato effettuato il draw del layout
+        // poi crea con la dimensione opportuna e visualizza le bitmap delle immagini
+        gridView.post(new Runnable() {
+            @Override
+            public void run() {
+                columnWidth = gridView.getColumnWidth();
+                Log.d(TAG,"ColumnWidth="+columnWidth+" - numCol="+gridView.getNumColumns());
+                initImages();
+            }
+        });
     }
 
     @Override
@@ -259,21 +275,26 @@ public class DocumentSendActivity extends AppCompatActivity implements View.OnCl
 
     private void sendDocuments() {
         String dirPath = Util.getTimestamp(null);
-        File newDir =  new File(docBaseDir, dirPath);
+        sendDir =  new File(docBaseDir, dirPath);
+        boolean success = false;
         try {
-            if (newDir.mkdir()) {
+            if (sendDir.mkdir()) {
                 for (File f:fileList)
-                    f.renameTo(new File(newDir, f.getName()));
-                MeasureManager.getMeasureManager().saveDocument(newDir.getAbsolutePath(),docType);
-                progressDialog = new ProgressDialog(this);
-                progressDialog.setIndeterminate(true);
-                progressDialog.setCancelable(false);
-                progressDialog.setMessage(AppResourceManager.getResource().getString("KMsgZipDocumentStart"));
-                progressDialog.show();
+                    copyFile(f,sendDir);
+                if(MeasureManager.getMeasureManager().saveDocument(sendDir.getAbsolutePath(),docType)) {
+                    progressDialog = new ProgressDialog(this);
+                    progressDialog.setIndeterminate(true);
+                    progressDialog.setCancelable(false);
+                    progressDialog.setMessage(AppResourceManager.getResource().getString("KMsgZipDocumentStart"));
+                    progressDialog.show();
+                    success = true;
+                }
             }
         } catch (Exception e) {
             Log.e(TAG,"Errore creazione directory");
         }
+        if (!success)
+            showSimpleDialog(AppResourceManager.getResource().getString("warningTitle"), AppResourceManager.getResource().getString("ErrZipDocument"));
     }
 
     private void showSimpleDialog(String title, String message) {
@@ -361,12 +382,15 @@ public class DocumentSendActivity extends AppCompatActivity implements View.OnCl
             super.handleMessage(msg);
             switch (msg.what) {
                 case MeasureManager.OPERATION_COMPLETED:
+                    for (File f:outer.fileList)
+                        f.delete();
                     if (outer.progressDialog!=null)
                         outer.progressDialog.dismiss();
                     outer.setResult(RESULT_OK);
                     outer.finish();
                     break;
                 case MeasureManager.ERROR_OCCURED:
+                    Util.deleteTree(outer.sendDir);
                     if (outer.progressDialog!=null)
                         outer.progressDialog.dismiss();
                     outer.initImages();
@@ -384,7 +408,7 @@ public class DocumentSendActivity extends AppCompatActivity implements View.OnCl
         try {
             inputStream = getContentResolver().openInputStream(sourceuri);
             fileOutputStream = new FileOutputStream(outputFile);
-            byte[] buffer = new byte[1024];
+            byte[] buffer = new byte[4096];
             int bytesRead;
             while ((bytesRead = inputStream.read(buffer)) != -1) {
                 fileOutputStream.write(buffer, 0, bytesRead);
@@ -455,6 +479,29 @@ public class DocumentSendActivity extends AppCompatActivity implements View.OnCl
         @Override
         public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
             return false;
+        }
+    }
+
+    public static void copyFile(File sourceFile, File destDir) throws IOException {
+        if (!destDir.exists())
+            destDir.mkdirs();
+        File destFile = new File(destDir, sourceFile.getName());
+        if (!destFile.exists()) {
+            destFile.createNewFile();
+        }
+        FileChannel source = null;
+        FileChannel destination = null;
+        try {
+            source = new FileInputStream(sourceFile).getChannel();
+            destination = new FileOutputStream(destFile).getChannel();
+            destination.transferFrom(source, 0, source.size());
+        } finally {
+            if (source != null) {
+                source.close();
+            }
+            if (destination != null) {
+                destination.close();
+            }
         }
     }
 }

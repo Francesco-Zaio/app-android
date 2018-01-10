@@ -3,10 +3,6 @@
     <item android:id="@+id/delete_all_measure"
     	  android:title="@string/delete_all_measure"
     	  android:icon="@drawable/ic_menu_measure_cancel_light" />
-		    
-    <item android:id="@+id/retry_send_all_measure"
-    	  android:title="@string/retry_send_all_measure"
-    	  android:icon="@drawable/ic_menu_measure_send_light" />
 
 	<item android:id="@+id/delete_all_documents"
 		android:title="@string/delete_all_documents"

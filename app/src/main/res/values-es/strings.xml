@@ -76,7 +76,6 @@
 	<string name="retry_send_all_measure">Enviar las medidas</string>
 	<string name="retry_send_all_documents">Enviar los documentos</string>
 	<string name="delete_measure">Borrar medida</string>
-	<string name="retry_send_measure">Enviar medida</string>
 
 	<string name="user_title">Usuario</string>
 	<string name="delete">Borrar</string>
@@ -87,8 +86,6 @@
 	<string name="manageDocuments">Mostrar documentos</string>
 
 	<string name="auto_login">Login automático</string>
-	<string name="auto_send">Envio automático medidas</string>
-	<string name="arTimeout">Timeout (Ida-Vuelta) [5-90]</string>
 	
 	<string name="connectionSettings">Configuración de conexión</string>
 	<string name="userSettings">Configuración de usuario</string>

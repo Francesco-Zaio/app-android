@@ -40,8 +40,8 @@ public class Util {
     private static final String TIMESTAMPFORMAT = "yyyyMMddHHmmss";
 
 	/**
-	 * Genera un timestamp testuale nel formato richiesto dalla piattaforma (ad esempio timestamp misure).
-	 * @param calendar
+	 * Genera un timestamp testuale nel formato richiesto dalla piattaforma.
+	 * @param calendar data da convertire
 	 * @return Stringa contenente il timestamp.
 	 */
     public static String getTimestamp(Calendar calendar) {
@@ -65,9 +65,15 @@ public class Util {
         return null;
     }
 
-    @SuppressLint("NewApi")
-	public static File getDir() {
+    /**
+     * Restituisce la directory di base dove sono memorizzati i files dell'applicazione
+     * @return  directory
+     */
+	private static File getDir() {
 		File result = MyApp.getContext().getExternalFilesDir(null);
+		// verifica se non esiste uno storage esterno ed in tal caso utilizza quello interno
+		if (result == null)
+		    result = MyApp.getContext().getFilesDir();
 		//File sdDir = Environment.getExternalStorageDirectory();
 		// File result = new File(sdDir, "nithd");
         if(!result.exists())
@@ -76,7 +82,14 @@ public class Util {
 		return result;
 	}
 
+	/**
+	 * Restitusce la directory dove memorizzare i files delle misure del paziente
+	 * @param patientId	Identificativo del paziente
+	 * @return	Directory delle misure del paziente (null in caso di errore)
+	 */
 	public static File getMeasuresDir(String patientId) {
+        if (patientId == null || patientId.isEmpty())
+            return null;
 		File sdDir = getDir();
         File result = new File(sdDir, patientId);
         if(!result.exists())
@@ -93,7 +106,15 @@ public class Util {
 		return result;
 	}
 
-    public static File getDocumentDir(MeasureManager.DocumentType docType, String patientId) {
+	/**
+	 * Restitusce la directory dove memorizzare il tipo di documento del paziente
+	 * @param docType	Tipo di documento
+	 * @param patientId	Identificativo del paziente
+	 * @return	Directory (null in caso di errore)
+	 */
+	public static File getDocumentDir(MeasureManager.DocumentType docType, String patientId) {
+		if (patientId == null || patientId.isEmpty())
+			return null;
         File sdDir = getDir();
         File result = new File(sdDir, patientId);
         if(!result.exists())
@@ -101,37 +122,7 @@ public class Util {
                 Log.e(TAG, "ERROR: unable to create Directory " + result);
                 return null;
             }
-        switch (docType) {
-            case DischargeDocument:
-                result = new File(result, "DischargeDocument");
-                break;
-            case AcceptanceDocument:
-                result = new File(result, "AcceptanceDocument");
-                break;
-            case LaboratoryReport:
-                result = new File(result, "LaboratoryReport");
-                break;
-            case MedicalReport:
-                result = new File(result, "MedicalReport");
-                break;
-            case WoundImage:
-                result = new File(result, "WoundImage");
-                break;
-            case Diagnosis:
-                result = new File(result, "Diagnosis");
-                break;
-            case Letter:
-                result = new File(result, "Letter");
-                break;
-            case RadiologicalImage:
-                result = new File(result, "RadiologicalImage");
-                break;
-            case TherapyPrescription:
-                result = new File(result, "TherapyPrescription");
-                break;
-            default:
-                return null;
-        }
+		result = new File(result, docType.toString());
         if(!result.exists())
             if (!result.mkdirs()) {
                 Log.e(TAG, "ERROR: unable to create Directory " + result);
@@ -141,8 +132,8 @@ public class Util {
     }
 
 	/**
-	 * Esegue il parsing di una Stringa in formato JSON in una HashMap di Stringhe.
-	 * @param jsonString
+	 * Esegue il parsing di una Stringa in formato JSON (key:value) in una HashMap di Stringhe.
+	 * @param jsonString	Stringa in formato Json da convertire
 	 * @return HashMap<String,String> (vuota in caso di errore).
 	 */
 	public static Map<String,String> jsonToStringMap(String jsonString) {
@@ -165,68 +156,69 @@ public class Util {
 
 	/**
 	 * Scrive un booleano dal registry.
-	 * @param keyValue
-	 * @param stringValue
+	 * @param key	chiave
+	 * @param value	valore
 	 */
-	public static void setRegistryValue(String keyValue, boolean stringValue) {
+	public static void setRegistryValue(String key, boolean value) {
 		SharedPreferences sp = MyApp.getContext().getSharedPreferences(KEY_SHARED_PREFS, 0);
 		SharedPreferences.Editor editor = sp.edit();
-		editor.putBoolean(keyValue, stringValue);
+		editor.putBoolean(key, value);
 		editor.apply();
 	}
 
 	/**
 	 * Scrive un intero dal registry.
-	 * @param keyValue
-	 * @param value
+	 * @param key	chiave
+	 * @param value	valore
 	 */
-	public static void setRegistryValue(String keyValue, int value) {
+	public static void setRegistryValue(String key, int value) {
 		SharedPreferences sp = MyApp.getContext().getSharedPreferences(KEY_SHARED_PREFS, 0);
 		SharedPreferences.Editor editor = sp.edit();
-		editor.putInt(keyValue, value);
+		editor.putInt(key, value);
 		editor.apply();
 	}
 
 	/**
 	 * Scrive una Stringa dal registry.
-	 * @param keyValue
-	 * @param stringValue
+	 * @param key	chiave
+	 * @param value	valore
 	 */
-	public static void setRegistryValue(String keyValue, String stringValue) {
+	public static void setRegistryValue(String key, String value) {
 		SharedPreferences sp = MyApp.getContext().getSharedPreferences(KEY_SHARED_PREFS, 0);
 		SharedPreferences.Editor editor = sp.edit();
-	    editor.putString(keyValue, stringValue);
+	    editor.putString(key, value);
 	    editor.apply();
 	}
+
 	/**
 	 * Legge un intero dal registry.
-	 * @param keyValue
-	 * @return
+	 * @param key	chiave
+	 * @return	valore letto (-1 se non trovato)
 	 */
-	public static int getRegistryIntValue(String keyValue) {
+	public static int getRegistryIntValue(String key) {
 		SharedPreferences sp = MyApp.getContext().getSharedPreferences(KEY_SHARED_PREFS, 0);
-		return sp.getInt(keyValue,0);
+		return sp.getInt(key,-1);
 	}
 
 	/**
 	 * Legge una Stringa dal registry.
-	 * @param keyValue
-	 * @return
+	 * @param key	chiave
+	 * @return valore letto (stringa vuota se non trovata)
 	 */
-	public static String getRegistryValue(String keyValue) {
+	public static String getRegistryValue(String key) {
 		SharedPreferences sp = MyApp.getContext().getSharedPreferences(KEY_SHARED_PREFS, 0);
-		return sp.getString(keyValue, "");
+		return sp.getString(key, "");
 	}
 
 	/**
 	 * Legge un boolean dal Registry.
-	 * @param keyValue
-	 * @param defaultValue
-	 * @return
+	 * @param key	chiave
+	 * @param defaultValue valore di default
+	 * @return valore letto (defaultValue se non trovato)
 	 */
-	public static boolean getRegistryValue(String keyValue, boolean defaultValue) {
+	public static boolean getRegistryValue(String key, boolean defaultValue) {
 		SharedPreferences sp = MyApp.getContext().getSharedPreferences(KEY_SHARED_PREFS, 0);
-		return sp.getBoolean(keyValue, defaultValue);
+		return sp.getBoolean(key, defaultValue);
 	}
 
 	/**
@@ -259,34 +251,78 @@ public class Util {
 	 * @return	true in caso di successo o false in caso di errore.
 	 */
 	public static boolean zipFile(String inputFile, String outputFile) {
-		final int BUFFER = 2048;
-
-		try {
-			BufferedInputStream origin;
-			FileOutputStream dest = new FileOutputStream(outputFile);
-			ZipOutputStream out = new ZipOutputStream(new BufferedOutputStream(dest));
-
-			byte data[] = new byte[BUFFER];
-			String[] l = inputFile.split(File.separator);
-			String relativePath = l[l.length-1];
-			FileInputStream fi = new FileInputStream(inputFile);
-			origin = new BufferedInputStream(fi, BUFFER);
-			ZipEntry entry = new ZipEntry(relativePath);
-			out.putNextEntry(entry);
-			int count;
-			while ((count = origin.read(data, 0, BUFFER)) != -1) {
-				out.write(data, 0, count);
-			}
-			origin.close();
-			out.close();
-		} catch (Exception e) {
-			e.printStackTrace();
-			return false;
-		}
-		return true;
+        return zipFile(new File(inputFile), new File(outputFile));
 	}
 
-	/**
+    /**
+     * Comprime inputFile e lo memorizza in outputFile. Se inputFile e' una directory
+     * tutti i files della directory vengono compressi e memorizzati in outputFile.
+     * @param inputFile		file o directory da comprimere.
+     * @param outputFile	file di destinazione.
+     * @return	true in caso di successo o false in caso di errore.
+     */
+    public static boolean zipFile(File inputFile, File outputFile) {
+        final int BUFFER = 4096;
+        ZipOutputStream out = null;
+        BufferedInputStream origin = null;
+        try {
+            File[] files;
+            if (inputFile.isDirectory())
+                files = inputFile.listFiles();
+            else
+                files = new File[]{inputFile};
+            FileOutputStream dest = new FileOutputStream(outputFile);
+            out = new ZipOutputStream(new BufferedOutputStream(dest));
+            for (File file : files) {
+                byte data[] = new byte[BUFFER];
+                String unmodifiedFilePath = file.getPath();
+                int start = file.getParent().length();
+                if (start > 0)
+                    start += 1;
+                String relativePath = unmodifiedFilePath.substring(start);
+                FileInputStream fi = new FileInputStream(unmodifiedFilePath);
+                origin = new BufferedInputStream(fi, BUFFER);
+                ZipEntry entry = new ZipEntry(relativePath);
+                out.putNextEntry(entry);
+                int count;
+                while ((count = origin.read(data, 0, BUFFER)) != -1) {
+                    out.write(data, 0, count);
+                }
+                origin.close();
+                origin = null;
+            }
+            out.close();
+            return true;
+        } catch (Exception e) {
+            try {
+                if (out!=null)
+                    out.close();
+                if (origin!=null)
+                    origin.close();
+            } catch (Exception e2){
+            }
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * Rimuove il files passato, se e' una directory rimuove anche le eventuali sottodirectory
+     * (equivale al comando Unix 'rm -rf')
+     * @param file  file da rimuovere (se è una directory rimmuove tutto l'albero sottostante)
+     */
+    public static void deleteTree(File file) {
+        if (file.exists())
+            if (file.isDirectory()) {
+                for (File f2 : file.listFiles())
+                    deleteTree(f2);
+                file.delete();
+            }
+            else
+                file.delete();
+    }
+
+    /**
 	 * restutuisce la differenza in ore fra due timestamp in formato Time Unix (millisecondi).
 	 * @param t1	primo timestamp.
 	 * @param t2	secondo timestamp.
@@ -303,12 +339,20 @@ public class Util {
         return result;
     }
 
-	// Modalità demo che permettono di leggere le misure dal device Coaguchek XS - Roche
-    // anche se la misura è già stata scaricata dal device
+	/**
+	 * Indica se è abilitata la modalita' demo per il device Coaguchek XS - Roche
+	 * per leggere la misura anche se è già stata scaricata dal device.
+	 * @return	true se abilitata, false altrimenti
+	 */
 	public static boolean isDemoRocheMode() {
         return getRegistryValue(Util.KEY_ROCHE_DEMO_MODE, false);
 	}
 
+	/**
+	 * Imposta la modalita demo per il device Coaguchek XS - Roche che permette
+	 * di leggere la misura dal device anche se è già stata scaricata.
+	 * @param demoMode true per impostare la modalita' demo, false altrimenti
+	 */
 	public static void setDemoRocheMode(boolean demoMode) {
 		setRegistryValue(Util.KEY_ROCHE_DEMO_MODE, demoMode);
 	}

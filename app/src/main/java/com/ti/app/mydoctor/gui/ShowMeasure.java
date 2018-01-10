@@ -54,6 +54,7 @@ import com.ti.app.mydoctor.gui.customview.GWTextView;
 import com.ti.app.mydoctor.gui.adapter.MeasureListAdapter;
 
 
+
 import static com.ti.app.mydoctor.gui.DocumentSendActivity.DOCUMENT_KEY;
 
 public class ShowMeasure extends ActionBarListActivity{
@@ -81,7 +82,6 @@ public class ShowMeasure extends ActionBarListActivity{
 	private static final int ALERT_DIALOG = 0;
 	private static final int DELETE_CONFIRM_DIALOG = 1;
 	private static final int SIMPLE_DIALOG = 7;
-	private static final int SEND_MEASURES_DIALOG = 8;
 	private static final int  NEW_DOCUMENT_DIALOG = 9;
 	private static final int SWIPE_DELETE_CONFIRM_DIALOG = 10;
 
@@ -228,25 +228,14 @@ public class ShowMeasure extends ActionBarListActivity{
 		mListView.setDivider(null); //rimuove la linea di bordo
 		mListView.setCacheColorHint(Color.TRANSPARENT); //il background della lista non cambia colore durante lo scroll
 		registerForContextMenu(mListView);
+		if (measures.isEmpty())
+            showDialog(NEW_DOCUMENT_DIALOG);
 	}
 
 	@Override
 	protected void onDestroy() {
 		super.onDestroy();
 		MeasureManager.getMeasureManager().setHandler(null);
-	}
-
-	private void retrySendAllMeasure() {
-     	String idUser = UserManager.getUserManager().getCurrentUser().getId();
-        int numMeasures = MeasureManager.getMeasureManager().getNumNotSentMeasures(idUser);
-    	if(numMeasures == 0) {
-            showDialog(SIMPLE_DIALOG);
-    	} else {
-            measuresResultBundle = new Bundle();
-            measuresResultBundle.putString(AppConst.TITLE, AppResourceManager.getResource().getString("warningTitle"));
-            measuresResultBundle.putInt(MEASURE_NUMBER, numMeasures);
-            showDialog(SEND_MEASURES_DIALOG);
-    	}
 	}
 
 	private void setTitle(String title) {
@@ -266,48 +255,49 @@ public class ShowMeasure extends ActionBarListActivity{
         ctx.setTheme(R.style.Theme_MyDoctorAtHome_Light);
         AlertDialog.Builder builder = new AlertDialog.Builder(ctx);
 		switch(id) {
-		case SEND_MEASURES_DIALOG:
-			builder.setTitle(measuresResultBundle.getString(AppConst.TITLE));
-			builder.setTitle(getString(R.string.send) + " " + measuresResultBundle.getInt(MEASURE_NUMBER) + " " + getString(R.string.sendToPlatform) + "?");
-			builder.setPositiveButton(AppResourceManager.getResource().getString("yes"), send_measures_dialog_click_listener);
-			builder.setNegativeButton(AppResourceManager.getResource().getString("no"), send_measures_dialog_click_listener);
-			break;
-		case SIMPLE_DIALOG:
-			builder.setTitle(AppResourceManager.getResource().getString("warningTitle"));
-			builder.setMessage(AppResourceManager.getResource().getString("KMsgNoMeasureToSend"));
-			builder.setNeutralButton(AppResourceManager.getResource().getString("okButton"), simple_dialog_click_listener);
-			break;
-		case ALERT_DIALOG:
-			builder.setTitle(dataBundle.getString(AppConst.TITLE));
-			builder.setMessage(dataBundle.getString(AppConst.MESSAGE));
-			builder.setNeutralButton(AppResourceManager.getResource().getString("okButton"), alert_dialog_click_listener);
-			break;
-		case DELETE_CONFIRM_DIALOG:
-			builder.setTitle(dataBundle.getString(AppConst.TITLE));
-			builder.setMessage(dataBundle.getString(AppConst.MESSAGE));
-			builder.setPositiveButton(AppResourceManager.getResource().getString("confirmButton"), delete_confirm_dialog_click_listener);
-			builder.setNegativeButton(AppResourceManager.getResource().getString("cancelButton"), delete_confirm_dialog_click_listener);
-			break;		
-		case SWIPE_DELETE_CONFIRM_DIALOG:
-			builder.setTitle(dataBundle.getString(AppConst.TITLE));
-			builder.setMessage(dataBundle.getString(AppConst.MESSAGE));
-			builder.setPositiveButton(AppResourceManager.getResource().getString("confirmButton"), swipe_delete_confirm_dialog_click_listener);
-			builder.setNegativeButton(AppResourceManager.getResource().getString("cancelButton"), swipe_delete_confirm_dialog_click_listener);
-			builder.setOnKeyListener( new Dialog.OnKeyListener() {
-				
-				@Override
-				public boolean onKey(DialogInterface dialog, int keyCode, KeyEvent event) {
-					if (keyCode == KeyEvent.KEYCODE_BACK) {
-	                    mListView.cancelDrag();
-	                    dialog.dismiss();
-	                }
-	                return true;				
-				}
-			});
-			break;
+            case SIMPLE_DIALOG:
+                builder.setTitle(AppResourceManager.getResource().getString("warningTitle"));
+                builder.setMessage(AppResourceManager.getResource().getString("KMsgNoMeasureToSend"));
+                builder.setNeutralButton(AppResourceManager.getResource().getString("okButton"), simple_dialog_click_listener);
+                break;
+            case ALERT_DIALOG:
+                builder.setTitle(dataBundle.getString(AppConst.TITLE));
+                builder.setMessage(dataBundle.getString(AppConst.MESSAGE));
+                builder.setNeutralButton(AppResourceManager.getResource().getString("okButton"), alert_dialog_click_listener);
+                break;
+            case DELETE_CONFIRM_DIALOG:
+                builder.setTitle(dataBundle.getString(AppConst.TITLE));
+                builder.setMessage(dataBundle.getString(AppConst.MESSAGE));
+                builder.setPositiveButton(AppResourceManager.getResource().getString("confirmButton"), delete_confirm_dialog_click_listener);
+                builder.setNegativeButton(AppResourceManager.getResource().getString("cancelButton"), delete_confirm_dialog_click_listener);
+                break;
+            case SWIPE_DELETE_CONFIRM_DIALOG:
+                builder.setTitle(dataBundle.getString(AppConst.TITLE));
+                builder.setMessage(dataBundle.getString(AppConst.MESSAGE));
+                builder.setPositiveButton(AppResourceManager.getResource().getString("confirmButton"), swipe_delete_confirm_dialog_click_listener);
+                builder.setNegativeButton(AppResourceManager.getResource().getString("cancelButton"), swipe_delete_confirm_dialog_click_listener);
+                builder.setOnKeyListener( new Dialog.OnKeyListener() {
+
+                    @Override
+                    public boolean onKey(DialogInterface dialog, int keyCode, KeyEvent event) {
+                        if (keyCode == KeyEvent.KEYCODE_BACK) {
+                            mListView.cancelDrag();
+                            dialog.dismiss();
+                        }
+                        return true;
+                    }
+                });
+                break;
 			case NEW_DOCUMENT_DIALOG:
-				builder.setTitle(R.string.show_documents);
+				builder.setTitle(R.string.new_document);
 				builder.setItems(docNames, new_document_click_listener);
+                builder.setOnCancelListener(new DialogInterface.OnCancelListener() {
+                    @Override
+                    public void onCancel(DialogInterface dialog) {
+                        if (measures.isEmpty())
+                            finish();
+                    }
+                });
 		}
 		
 		return builder.create();
@@ -338,13 +328,6 @@ public class ShowMeasure extends ActionBarListActivity{
 			menu.findItem(R.id.delete_all_documents).setVisible(false);
 		}
 
-		numMeasureToSend = MeasureManager.getMeasureManager().getNumNotSentMeasures(UserManager.getUserManager().getCurrentUser().getId());
-		//Controllo se nella lista ci sono misure da inviare
-		if(numMeasureToSend == 0) {
-			menu.findItem(R.id.retry_send_all_measure).setVisible(false);
-		} else {
-			menu.findItem(R.id.retry_send_all_measure).setVisible(true);
-		}
 		return true;
 	}
 
@@ -379,9 +362,6 @@ public class ShowMeasure extends ActionBarListActivity{
 				else
 					dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("deleteAllDocumentsConfirm") + "?");
 				showDialog(DELETE_CONFIRM_DIALOG);
-				return true;
-			case R.id.retry_send_all_measure:
-				retrySendAllMeasure();
 				return true;
 			case R.id.new_document:
 				showDialog(NEW_DOCUMENT_DIALOG);
@@ -482,13 +462,16 @@ public class ShowMeasure extends ActionBarListActivity{
 					//Vengono eliminate tutte le misure di un certo tipo
 					String idUser = UserManager.getUserManager().getCurrentUser().getId();
 					String idPatient = UserManager.getUserManager().getCurrentPatient().getId();
-					measureManager.deleteMeasures(idUser, idPatient, currentMeasureFamily);
-					progressDialog = new ProgressDialog(ShowMeasure.this);
-					progressDialog.setIndeterminate(true);
-					progressDialog.setCancelable(false);
-					progressDialog.setMessage(AppResourceManager.getResource().getString("KMsgZipDocumentStart"));
-					progressDialog.show();
-
+					if (measureManager.deleteMeasures(idUser, idPatient, currentMeasureFamily)) {
+                        progressDialog = new ProgressDialog(ShowMeasure.this);
+                        progressDialog.setIndeterminate(true);
+                        progressDialog.setCancelable(true);
+                        progressDialog.setMessage(AppResourceManager.getResource().getString("KMsgDeleting"));
+                        progressDialog.show();
+                    } else {
+                        dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("ErrDeleting"));
+                        showDialog(ALERT_DIALOG);
+                    }
 					break;
 				}
 
@@ -515,7 +498,6 @@ public class ShowMeasure extends ActionBarListActivity{
 				populateActivity();
 				if(!measures.isEmpty())
 					Toast.makeText(context, AppResourceManager.getResource().getString("KMsgDeleteMeasureConfirm"), Toast.LENGTH_SHORT).show();
-				
 				listAdapter.notifyDataSetChanged();
 				break;
 			case DialogInterface.BUTTON_NEGATIVE:
@@ -525,24 +507,6 @@ public class ShowMeasure extends ActionBarListActivity{
 			removeDialog(DELETE_CONFIRM_DIALOG);
 		}		
 		
-	};
-	
-	/**
-	 * Listener per i click sulla dialog SEND_MEASURES_DIALOG
-	 */
-	private DialogInterface.OnClickListener send_measures_dialog_click_listener = new DialogInterface.OnClickListener() {
-		
-		@Override
-		public void onClick(DialogInterface dialog, int which) {
-			removeDialog(SEND_MEASURES_DIALOG);
-			switch(which) {
-			case DialogInterface.BUTTON_POSITIVE:
-				startSendingAllMeasures();
-				break;
-			case DialogInterface.BUTTON_NEGATIVE:
-				break;
-			}
-		}
 	};
 
 	/**
@@ -562,12 +526,11 @@ public class ShowMeasure extends ActionBarListActivity{
 	 */
 	private DialogInterface.OnClickListener new_document_click_listener = new DialogInterface.OnClickListener() {
 		public void onClick(DialogInterface dialog, int which) {
-			Intent intent = new Intent(ShowMeasure.this, DocumentSendActivity.class);
+		    Intent intent = new Intent(ShowMeasure.this, DocumentSendActivity.class);
 			intent.putExtra(DOCUMENT_KEY, MeasureManager.DocumentType.values()[which].toString());
 			startActivityForResult(intent, NEW_DOCUMENT);
 		}
 	};
-
 
 	/**
 	 * Listener per i click sulla listView
@@ -577,18 +540,10 @@ public class ShowMeasure extends ActionBarListActivity{
 				int position, long id) {
 			selected_measure = listaMisure.get(position);
 			if (!selected_measure.getMeasureType().equals(GWConst.KMsrEcg)) {
-				if (selected_measure.getFile() != null && selected_measure.getMeasureType().equalsIgnoreCase(GWConst.KMsrImg)) {
-					try {
-						File posterFile = new File(new String(selected_measure.getFile()));
-						Intent intent = new Intent();
-						intent.setAction(android.content.Intent.ACTION_VIEW);
-						intent.setDataAndType(Uri.fromFile(posterFile), "image/*");
-						startActivity(intent);
-					}
-					catch (Exception e) {
-						e.printStackTrace();
-						Log.e(TAG, "openFile", e);
-					}
+				if (Measure.MeasureFamily.DOCUMENTO.equals(selected_measure.getFamily())) {
+                    Intent intent = new Intent(ShowMeasure.this, DocumentDetails.class);
+                    intent.putExtra(MEASURE_KEY, selected_measure);
+                    startActivityForResult(intent, MEASURE_DETAILS);
 				}
 				else {
 					Intent intent = new Intent(ShowMeasure.this, MeasureDetails.class);
@@ -598,11 +553,6 @@ public class ShowMeasure extends ActionBarListActivity{
 			}
 		}
 	};
-	
-	protected void startSendingAllMeasures() {
-        startService(new Intent(this, SendMeasuresService.class));
-        Toast.makeText(this, AppResourceManager.getResource().getString("KMsgSendMeasureStart"), Toast.LENGTH_SHORT).show();
-	}
 
 	/**
 	 * Metodo che permette di riempire il contenuto dell'activity con gli opportuni valori
@@ -715,6 +665,7 @@ public class ShowMeasure extends ActionBarListActivity{
 					if (outer.progressDialog!=null)
 						outer.progressDialog.dismiss();
 					outer.populateActivity();
+                    outer.invalidateOptionsMenu();
 					break;
 				case MeasureManager.ERROR_OCCURED:
 					if (outer.progressDialog!=null)

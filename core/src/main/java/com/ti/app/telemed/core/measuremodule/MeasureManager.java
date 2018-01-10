@@ -310,7 +310,7 @@ public class MeasureManager {
         try {
             if (XmlManager.DOCUMENT_FILE_TYPE.equals(measure.getFileType()))
                 if (measure.getFile() != null)
-                    deleteTree(new File(new String(measure.getFile(), "UTF-8")));
+                    Util.deleteTree(new File(new String(measure.getFile(), "UTF-8")));
             DbManager.getDbManager().deleteMeasure(measure.getIdUser(), measure.getTimestamp(), measure.getMeasureType());
             return true;
         } catch (Exception e) {
@@ -456,13 +456,14 @@ public class MeasureManager {
     private void saveDocument() {
         try {
             String path = docFile.getAbsolutePath();
-            if (docFile.isDirectory())
-                if (!zipFiles(docFile)) {
+            if (docFile.isDirectory()) {
+                if (!Util.zipFile(docFile,new File(docFile, DOCUMENT_SEND_TMPFILE))) {
                     Log.e(TAG, "Errore nella creazione del file zip");
-                    if (handler!=null)
+                    if (handler != null)
                         handler.sendEmptyMessage(ERROR_OCCURED);
                     return;
                 }
+            }
 
             Measure m = new Measure();
             HashMap<String, String> map = new HashMap<>();
@@ -494,7 +495,7 @@ public class MeasureManager {
             for (Measure m:measures) {
                 if (XmlManager.DOCUMENT_FILE_TYPE.equals(m.getFileType()))
                     if (m.getFile() != null)
-                        deleteTree(new File(new String(m.getFile(), "UTF-8")));
+                        Util.deleteTree(new File(new String(m.getFile(), "UTF-8")));
                 DbManager.getDbManager().deleteMeasure(m.getIdUser(),m.getTimestamp(),m.getMeasureType());
             }
             if (handler!=null)
@@ -504,58 +505,5 @@ public class MeasureManager {
             if (handler!=null)
                 handler.sendEmptyMessage(ERROR_OCCURED);
         }
-    }
-
-    private boolean zipFiles(File dir) {
-        final int BUFFER = 4096;
-        ZipOutputStream out = null;
-        BufferedInputStream origin = null;
-        try {
-            File[] files = dir.listFiles();
-            File outputFile = new File(dir, DOCUMENT_SEND_TMPFILE);
-            FileOutputStream dest = new FileOutputStream(outputFile);
-            out = new ZipOutputStream(new BufferedOutputStream(dest));
-            for (File file : files) {
-                byte data[] = new byte[BUFFER];
-                String unmodifiedFilePath = file.getPath();
-                int start = file.getParent().length();
-                if (start > 0)
-                    start += 1;
-                String relativePath = unmodifiedFilePath.substring(start);
-                FileInputStream fi = new FileInputStream(unmodifiedFilePath);
-                origin = new BufferedInputStream(fi, BUFFER);
-                ZipEntry entry = new ZipEntry(relativePath);
-                out.putNextEntry(entry);
-                int count;
-                while ((count = origin.read(data, 0, BUFFER)) != -1) {
-                    out.write(data, 0, count);
-                }
-                origin.close();
-                origin = null;
-            }
-            out.close();
-            return true;
-        } catch (Exception e) {
-            try {
-                if (out!=null)
-                    out.close();
-                if (origin!=null)
-                    origin.close();
-            } catch (Exception e2){
-            }
-            e.printStackTrace();
-            return false;
-        }
-    }
-
-    private void deleteTree(File f) {
-        if (f.exists())
-            if (f.isDirectory()) {
-                for (File f2 : f.listFiles())
-                    deleteTree(f2);
-                f.delete();
-            }
-            else
-                f.delete();
     }
 }

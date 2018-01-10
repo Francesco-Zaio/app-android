@@ -77,6 +77,7 @@ import com.ti.app.telemed.core.common.UserDevice;
 import com.ti.app.telemed.core.common.UserMeasure;
 import com.ti.app.telemed.core.devicemodule.DeviceManager;
 import com.ti.app.telemed.core.measuremodule.MeasureManager;
+import com.ti.app.telemed.core.syncmodule.SendMeasuresService;
 import com.ti.app.telemed.core.usermodule.UserManager;
 import com.ti.app.telemed.core.util.GWConst;
 import com.ti.app.mydoctor.MyDoctorApp;
@@ -126,7 +127,8 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	private static final int ITEM_ABOUT = 9;
 	private static final int ITEM_LOGOUT = 10;
 	private static final int ITEM_EXIT = 11;
-	
+    private static final int ITEM_SEND_MEASURES = 12;
+
 	// Intent request codes
     private static final int USER_LIST = 1;
     private static final int USER_SELECTION = 2;
@@ -526,60 +528,56 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                 labelUserOptionsArray.add(getResources().getString(R.string.list_users));
             labelUserOptionsArray.add(getResources().getString(R.string.new_user));
 		} else {
-			iconGroupArray.add(""+R.drawable.ic_menu_documents);
-			labelGroupArray.add(getResources().getString(R.string.mi_documenti));
-			labelChildArray.add(new ArrayList<String>());
-
-            iconGroupArray.add(""+R.drawable.ic_menu_archive_dark);
-            labelGroupArray.add(getResources().getString(R.string.mi_measure));
-            labelChildArray.add(new ArrayList<String>());
-
-            iconGroupArray.add(""+R.drawable.ic_menu_user_list);
-            labelGroupArray.add(getResources().getString(R.string.mi_user));
-            labelChildArray.add(labelUserOptionsArray);
-
-            iconGroupArray.add(""+R.drawable.ic_menu_about_dark);
-            labelGroupArray.add(getResources().getString(R.string.info));
-            labelChildArray.add(new ArrayList<String>());
-
-            iconGroupArray.add(""+R.drawable.ic_menu_logout_dark);
-            labelGroupArray.add(getResources().getString(R.string.mi_logout));
-            labelChildArray.add(new ArrayList<String>());
-
-            iconGroupArray.add(""+R.drawable.ic_menu_power_off_dark);
-            labelGroupArray.add(getResources().getString(R.string.mi_exit));
-            labelChildArray.add(new ArrayList<String>());
-
-            labelUserOptionsArray.add(getResources().getString(R.string.update_user));
-            labelUserOptionsArray.add(getResources().getString(R.string.settings));
-			labelUserOptionsArray.add(getResources().getString(R.string.change_password));
-
 			//La voce "Misure" viene abilitata solo se ci sono misure caricate nel DB
 			String idUser = loggedUser.getId();
 
-			//Contollo se la lista paziente è stata attivata
-			if( patientList != null ){
-				//Controllo se il paziente è stato scelto
-				if ( userManager.getCurrentPatient() != null ) {
-					String idPatient = userManager.getCurrentPatient().getId();
-					ArrayList<Measure> ml = measureManager.getMeasureData(idUser, null, null, null, idPatient, false, Measure.MeasureFamily.BIOMETRICA);
-					if(ml == null || ml.isEmpty()) {
-						//Non ci sono misure
-                        iconGroupArray.remove(1); //remove icona Misure
-                        labelGroupArray.remove(1); //remove etichetta Misure
-                        labelChildArray.remove(1);
-					}
-				} else {
-                    //Non ci sono pazienti attivi, quindi non si possono visualizzare misure
-                    iconGroupArray.remove(0); //remove icona Documenti
-                    labelGroupArray.remove(0); //remove etichetta Documenti
-                    labelChildArray.remove(0);
-                    iconGroupArray.remove(0); //remove icona Misure
-                    labelGroupArray.remove(0); //remove etichetta Misure
-                    labelChildArray.remove(0);
+			//Contollo se la lista paziente è stata attivata e se il paziente è stato scelto
+			if (patientList != null && userManager.getCurrentPatient() != null) {
+				// Aggiungo l'opzione Documenti
+				iconGroupArray.add(""+R.drawable.ic_menu_documents);
+				labelGroupArray.add(getResources().getString(R.string.mi_documenti));
+				labelChildArray.add(new ArrayList<String>());
+
+				String idPatient = userManager.getCurrentPatient().getId();
+				ArrayList<Measure> ml = measureManager.getMeasureData(idUser, null, null, null, idPatient, false, Measure.MeasureFamily.BIOMETRICA);
+				if(ml != null && !ml.isEmpty()) {
+					// Aggiungo l'opzione Misure
+					iconGroupArray.add(""+R.drawable.ic_menu_archive_dark);
+					labelGroupArray.add(getResources().getString(R.string.mi_measure));
+					labelChildArray.add(new ArrayList<String>());
 				}
 			}
+
+			iconGroupArray.add(""+R.drawable.ic_menu_user_list);
+            labelGroupArray.add(getResources().getString(R.string.mi_user));
+            labelChildArray.add(labelUserOptionsArray);
+
+            // Controllo se ci sono misure da inviare
+            if(measureManager.getNumNotSentMeasures(loggedUser.getId()) > 0) {
+                iconGroupArray.add(""+R.drawable.ic_menu_measure_send_light);
+                labelGroupArray.add(getResources().getString(R.string.retry_send_all_measure));
+                labelChildArray.add(new ArrayList<String>());
+            }
+
+			iconGroupArray.add(""+R.drawable.ic_menu_about_dark);
+			labelGroupArray.add(getResources().getString(R.string.info));
+			labelChildArray.add(new ArrayList<String>());
+
+			iconGroupArray.add(""+R.drawable.ic_menu_logout_dark);
+			labelGroupArray.add(getResources().getString(R.string.mi_logout));
+			labelChildArray.add(new ArrayList<String>());
+
+			iconGroupArray.add(""+R.drawable.ic_menu_power_off_dark);
+			labelGroupArray.add(getResources().getString(R.string.mi_exit));
+			labelChildArray.add(new ArrayList<String>());
+
+			labelUserOptionsArray.add(getResources().getString(R.string.update_user));
+			labelUserOptionsArray.add(getResources().getString(R.string.settings));
+			labelUserOptionsArray.add(getResources().getString(R.string.change_password));
 		}
+
+
+
 		//Settare le liste iniziali
 		List<? extends Map<String, ?>> fillMapsGroupItem = createGroupList(iconGroupArray, labelGroupArray);
 		ArrayList< List<? extends Map<String, ?>> > fillMapsChildItem = createChildList(labelChildArray);
@@ -685,7 +683,9 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
     		selectedItemBundle.putInt(SELECTED_MENU_ITEM, ITEM_MEASURE);
     	} else if( tv.getText().toString().equalsIgnoreCase(getResources().getString(R.string.mi_documenti)) ) {
             selectedItemBundle.putInt(SELECTED_MENU_ITEM, ITEM_DOCUMENTS);
-        } else if( tv.getText().toString().equalsIgnoreCase(getResources().getString(R.string.mi_logout)) ) {
+        } else if( tv.getText().toString().equalsIgnoreCase(getResources().getString(R.string.retry_send_all_measure)) ) {
+            selectedItemBundle.putInt(SELECTED_MENU_ITEM, ITEM_SEND_MEASURES);
+        }else if( tv.getText().toString().equalsIgnoreCase(getResources().getString(R.string.mi_logout)) ) {
     		selectedItemBundle.putInt(SELECTED_MENU_ITEM, ITEM_LOGOUT);
     	} else if( tv.getText().toString().equalsIgnoreCase(getResources().getString(R.string.mi_exit)) ) {
     		selectedItemBundle.putInt(SELECTED_MENU_ITEM, ITEM_EXIT);
@@ -753,6 +753,10 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                     Log.i(TAG, "Acquisire i documenti di " + patientNameTV.getText().toString());
                     showMeasures(null, Measure.MeasureFamily.DOCUMENTO);
                 }
+                break;
+            case ITEM_SEND_MEASURES:
+                startService(new Intent(this, SendMeasuresService.class));
+                Toast.makeText(this, AppResourceManager.getResource().getString("KMsgSendMeasureStart"), Toast.LENGTH_SHORT).show();
                 break;
             case ITEM_USER_UPDATES:
                 runningConfig = true;

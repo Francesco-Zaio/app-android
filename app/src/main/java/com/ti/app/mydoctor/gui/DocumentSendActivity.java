@@ -18,6 +18,7 @@ import android.support.v4.content.FileProvider;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.SparseBooleanArray;
 import android.util.TypedValue;
@@ -77,6 +78,7 @@ public class DocumentSendActivity extends AppCompatActivity implements View.OnCl
     private File currentFile;
     File docBaseDir, sendDir;
     private int columnWidth;
+    private int rowHeigth;
     ProgressDialog progressDialog = null;
 
     @Override
@@ -151,10 +153,13 @@ public class DocumentSendActivity extends AppCompatActivity implements View.OnCl
 
         // legge la larghezza di una colonna dopo che è stato effettuato il draw del layout
         // poi crea con la dimensione opportuna e visualizza le bitmap delle immagini
+        DisplayMetrics displayMetrics = getResources().getDisplayMetrics();
+        final int margine = Math.round(15 * (displayMetrics.xdpi / DisplayMetrics.DENSITY_DEFAULT));
         gridView.post(new Runnable() {
             @Override
             public void run() {
-                columnWidth = gridView.getColumnWidth();
+                columnWidth = gridView.getColumnWidth() - margine;
+                rowHeigth = columnWidth * 3 / 4;
                 Log.d(TAG,"ColumnWidth="+columnWidth+" - numCol="+gridView.getNumColumns());
                 initImages();
             }
@@ -209,11 +214,13 @@ public class DocumentSendActivity extends AppCompatActivity implements View.OnCl
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inJustDecodeBounds = true;
         BitmapFactory.decodeFile(path, options);
-        int width = options.outWidth;
-        int scale = width/columnWidth;
-        BitmapFactory.Options bmOptions = new BitmapFactory.Options();
-        bmOptions.inSampleSize=scale;
-        return BitmapFactory.decodeFile(path, bmOptions);
+        options.inJustDecodeBounds = false;
+        int scaleW = options.outWidth/columnWidth;
+        int scaleH = options.outHeight/rowHeigth;
+        options.inSampleSize=scaleW>scaleH?scaleW:scaleH;
+        Bitmap b = BitmapFactory.decodeFile(path, options);
+        Log.d(TAG, "outWidth="+options.outWidth + " - outHeight="+options.outHeight);
+        return b;
     }
 
     private void updateButtons(boolean forceDisable) {
@@ -233,7 +240,6 @@ public class DocumentSendActivity extends AppCompatActivity implements View.OnCl
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        Log.d(TAG, "onOptionsItemSelected id:"+item.getItemId());
         switch (item.getItemId()) {
             case android.R.id.home: //Ritorna alla Home quando si clicca sull'icona della App
                 finish();

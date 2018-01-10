@@ -83,6 +83,5 @@
         android:gravity="center"
         android:numColumns="3"
         android:stretchMode="columnWidth"
-        android:verticalSpacing="5dp" />
-
+        android:verticalSpacing="10dp"/>
 </RelativeLayout>

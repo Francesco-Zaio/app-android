@@ -192,7 +192,6 @@ public class ShowMeasure extends ActionBarListActivity{
 			to = new int[] { R.id.icon_sent, R.id.label, R.id.timestamp };
 			listAdapter = new MeasureListAdapter(this, measures, R.layout.all_measure_item_layout, from, to);
 			setListAdapter(listAdapter);
-			populateActivity();
 			if (currentMeasureFamily == Measure.MeasureFamily.BIOMETRICA)
 				setTitle(getString(R.string.manageMeasure));
 			else
@@ -201,10 +200,8 @@ public class ShowMeasure extends ActionBarListActivity{
 		else {
 			from = new String[] { KEY_ICON_SENT, KEY_DATE, KEY_HOUR };
 			to = new int[] { R.id.icon_sent, R.id.date_timestamp, R.id.hour_timestamp };
-			//listAdapter = new DeviceListAdapter(this, measures, R.layout.measure_item_layout, from, to);
 			listAdapter = new MeasureListAdapter(this, measures, R.layout.measure_list_item, from, to);
 			setListAdapter(listAdapter);
-			populateActivity();
 			String s = "";
 			if (currentMeasureFamily == Measure.MeasureFamily.BIOMETRICA) {
 				s = getString(R.string.measure_title) + " ";
@@ -221,15 +218,14 @@ public class ShowMeasure extends ActionBarListActivity{
 			}
 		}
 
+        populateActivity();
+
 		mListView = (DragSortListView) getListView();
 		mListView.setRemoveListener(onRemove);
 		mListView.setOnItemClickListener(listViewItemClickListener);
-
 		mListView.setDivider(null); //rimuove la linea di bordo
 		mListView.setCacheColorHint(Color.TRANSPARENT); //il background della lista non cambia colore durante lo scroll
 		registerForContextMenu(mListView);
-		if (measures.isEmpty())
-            showDialog(NEW_DOCUMENT_DIALOG);
 	}
 
 	@Override
@@ -576,7 +572,9 @@ public class ShowMeasure extends ActionBarListActivity{
 				measures.add(map);
 		}
 		listAdapter.notifyDataSetChanged();
-	}
+        if (Measure.MeasureFamily.DOCUMENTO.equals(currentMeasureFamily) && measures.isEmpty())
+            showDialog(NEW_DOCUMENT_DIALOG);
+    }
 	
 	private boolean containsFilterIds(String timestamp) {
 		if (filterIds != null) {

@@ -99,7 +99,7 @@
     <string name="passwordError">Utente non eliminato. Credenziali non corrette</string>
     <string name="selectDevice">Scegliere dispositivo</string>
     <string name="changePatientQuestion">Cambia paziente</string>
-    <string name="send">Inviare</string>
+    <string name="send">Invia</string>
     <string name="sendToPlatform">misure alla piattaforma</string>
     <string name="versionName">3.1.2</string>
 

@@ -13,6 +13,7 @@ import com.creative.base.OutputStreamSender;
 import com.creative.SpotCheck.SpotSendCMDThread;
 import com.ti.app.telemed.core.MyApp;
 import com.ti.app.telemed.core.ResourceManager;
+import com.ti.app.telemed.core.btmodule.BTSearcher;
 import com.ti.app.telemed.core.btmodule.DeviceHandler;
 import com.ti.app.telemed.core.btmodule.DeviceListener;
 import com.ti.app.telemed.core.btmodule.BTSearcherEventListener;
@@ -43,7 +44,9 @@ import com.ti.app.telemed.core.xmlmodule.XmlManager;
 
 public class GIMAPC300SpotCheck
         extends DeviceHandler
-        implements IBluetoothCallBack, ISpotCheckCallBack {
+        implements BTSearcherEventListener,
+        IBluetoothCallBack,
+        ISpotCheckCallBack {
 
 	private static final String TAG = "GIMAPC300SpotCheck";
 
@@ -64,6 +67,7 @@ public class GIMAPC300SpotCheck
 
     private static final int[] battValues = {10,40,70,100};
 
+    private BTSearcher iServiceSearcher;
     private BluetoothDevice selectedDevice;
     private BluetoothOpertion  bluetoothOper = null;
     private BluetoothSocket devSocket = null;
@@ -79,18 +83,26 @@ public class GIMAPC300SpotCheck
 
     public GIMAPC300SpotCheck(DeviceListener listener, UserDevice ud) {
         super(listener, ud);
+
         deviceList = new Vector<>();
+        iServiceSearcher = new BTSearcher();
     }
 
     @Override
     public boolean startOperation(OperationType ot, BTSearcherEventListener btSearchListener) {
         if (!startInit(ot, btSearchListener))
             return false;
+        Log.d(TAG,"startOperation: iBtDevAddr="+iBtDevAddr + " iCmdCode="+iCmdCode.toString());
+        iServiceSearcher.clearBTSearcherEventListener();
+        iServiceSearcher.addBTSearcherEventListener(this);
+        iServiceSearcher.startSearchDevices();
+
 
         Log.d(TAG,"startOperation: iBtDevAddr="+iBtDevAddr + " iCmdCode="+iCmdCode.toString());
         if (bluetoothOper == null)
             bluetoothOper = new BluetoothOpertion(MyApp.getContext(),this);
-        bluetoothOper.discovery();
+
+        //bluetoothOper.discovery();
         return true;
     }
 
@@ -103,11 +115,34 @@ public class GIMAPC300SpotCheck
     @Override
     public void selectDevice(BluetoothDevice bd){
         Log.d(TAG, "selectDevice: addr=" + bd.getAddress());
+        iServiceSearcher.stopSearchDevices();
         selectedDevice = bd;
         iBtDevAddr = selectedDevice.getAddress();
         devOpHandler.sendEmptyMessage(MSG_DEVICE_SELECTED);
     }
 
+
+    // methods of BTSearcherEventListener interface
+
+    @Override
+    public void deviceDiscovered(Vector<BluetoothDevice> devList) {
+        Log.d(TAG,"deviceDiscovered: size="+devList.size());
+        deviceList = devList;
+        if (iCmdCode == TCmd.ECmdConnByAddr) {
+            for (int i=0; i<deviceList.size(); i++)
+                if (iBtDevAddr.equalsIgnoreCase(deviceList.get(i).getAddress())) {
+                    selectDevice(deviceList.get(i));
+                }
+        } else if (iBTSearchListener != null) {
+            iBTSearchListener.deviceDiscovered(deviceList);
+        }
+    }
+
+    @Override
+    public void deviceSearchCompleted() {
+        if (iCmdCode == TCmd.ECmdConnByUser && iBTSearchListener != null)
+            iBTSearchListener.deviceSearchCompleted();
+    }
 
     // IBluetoothCallBack methods
 
@@ -140,9 +175,10 @@ public class GIMAPC300SpotCheck
 
     @Override
     public void onConnected(BluetoothSocket socket) {
-        Log.d(TAG, "onConnected");
-        devSocket = socket;
-        devOpHandler.sendEmptyMessage(MSG_DEVICE_CONNECTED);
+            Log.d(TAG, "onConnected");
+            Message msg = devOpHandler.obtainMessage(MSG_DEVICE_CONNECTED);
+            msg.obj = socket;
+            devOpHandler.sendMessage(msg);
     }
 
     @Override
@@ -380,15 +416,23 @@ public class GIMAPC300SpotCheck
 
     public void stop() {
         Log.d(TAG, "stop");
+
+        if (iState == TState.EGettingDevice) {
+            iServiceSearcher.stopSearchDevices();
+        }
+        iServiceSearcher.stopSearchDevices();
+        iServiceSearcher.clearBTSearcherEventListener();
+        iServiceSearcher.close();
+
         iState = TState.EDisconnecting;
         if (spotCheck != null)
             spotCheck.Stop();
 
-        if (bluetoothOper!=null)
-            bluetoothOper.stopDiscovery();
+        //if (bluetoothOper!=null)
+        //    bluetoothOper.stopDiscovery();
 
-        if (devSocket!=null && devSocket.isConnected())
-                bluetoothOper.disConnect(devSocket);
+        if (devSocket!=null)
+            bluetoothOper.disConnect(devSocket);
 
         reset();
     }
@@ -454,6 +498,8 @@ public class GIMAPC300SpotCheck
                     }
                     break;
                 case MSG_DEVICE_ERROR:
+                    if (outer.iState==TState.EWaitingToGetDevice)
+                        break;
                     outer.deviceListener.notifyError(DeviceListener.CONNECTION_ERROR, ResourceManager.getResource().getString("EBtDeviceConnError"));
                     outer.stop();
                     break;
@@ -478,6 +524,19 @@ public class GIMAPC300SpotCheck
                     }
                     break;
                 case MSG_DEVICE_CONNECTED:
+                    if (outer.iState != TState.EGettingConnection) {
+                        // chiamato il metodo stop() durante la richiesta di connessione
+                        // occorre chiudere il socket.
+                        BluetoothSocket socket = (BluetoothSocket)msg.obj;
+                        if(socket != null)
+                            try {
+                                socket.close();
+                            } catch (Exception e) {
+                                // ignora eventuali eccezioni
+                            }
+                        break;
+                    }
+                    outer.devSocket = (BluetoothSocket)msg.obj;
                     outer.deviceListener.setBtMAC(outer.iBtDevAddr);
                     if (outer.operationType == OperationType.Pair) {
                         outer.deviceListener.configReady(ResourceManager.getResource().getString("KPairingMsgDone"));
@@ -505,6 +564,9 @@ public class GIMAPC300SpotCheck
     }
 
     private void startDevice() {
+        Log.d(TAG,"startDevice");
+        if (devSocket == null)
+            return;
         iState = TState.EConnected;
         try {
             Ireader reader = new InputStreamReader(devSocket.getInputStream());

@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -219,15 +220,12 @@ public class SelectPatient extends ActionBarListActivity implements SearchView.O
 
 	@Override
 	public boolean onQueryTextChange(String newText) {
-		newText = (newText.length()==0) ? "" : newText;
-		
-		//Ciclare nella lista pazienti per trovare newText e aggiornare la lista fillMaps
+	    if (newText==null || newText.isEmpty())
+	        newText="";
+
 		fillMaps.clear();
-		
 		for (Patient p : patientList) {
-			
-			if( p.getSurname().regionMatches(true, 0, newText, 0, newText.length()) ) {
-				//Controlla cognome
+			if (p.getSurname().toLowerCase(Locale.ROOT).contains(newText.toLowerCase(Locale.ROOT))) {
 				HashMap<String, String> map = new HashMap<>();
 				
 				String cfValue = p.getCf();
@@ -240,8 +238,7 @@ public class SelectPatient extends ActionBarListActivity implements SearchView.O
 				map.put(KEY_PATIENT_SURNAME, p.getSurname());
 				map.put(KEY_PATIENT_NAME, p.getName());
 				fillMaps.add(map);
-			} else if( p.getName().regionMatches(true, 0, newText, 0, newText.length()) ) {
-				//Controlla nome
+			} else if (p.getName().toLowerCase(Locale.ROOT).contains(newText.toLowerCase(Locale.ROOT))) {
 				HashMap<String, String> map = new HashMap<>();
 				
 				String cfValue = p.getCf();
@@ -255,7 +252,6 @@ public class SelectPatient extends ActionBarListActivity implements SearchView.O
 				map.put(KEY_PATIENT_NAME, p.getName());
 				fillMaps.add(map);
 			} else if( p.getCf().regionMatches(true, 0, newText, 0, newText.length()) ) {
-				//Controlla CF
 				HashMap<String, String> map = new HashMap<>();
 				
 				String cfValue = p.getCf();

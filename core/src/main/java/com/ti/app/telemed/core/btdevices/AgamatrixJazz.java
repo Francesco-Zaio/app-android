@@ -74,7 +74,7 @@ public class AgamatrixJazz extends DeviceHandler implements
 
 
     public AgamatrixJazz(DeviceListener listener, UserDevice ud) {
-            super(listener, ud);
+        super(listener, ud);
 
         iServiceSearcher = new BTSearcher();
         deviceList = new Vector<>();

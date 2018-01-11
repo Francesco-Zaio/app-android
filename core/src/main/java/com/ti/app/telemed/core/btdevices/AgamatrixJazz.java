@@ -154,6 +154,7 @@ public class AgamatrixJazz extends DeviceHandler implements
     // Device Library SDK callbacks
     @Override
     public void onAgaMatrixTimeUpdated(){
+        Log.d(TAG,"onAgaMatrixTimeUpdated");
         mClient.getBatteryStatus(this);
     }
 
@@ -302,7 +303,7 @@ public class AgamatrixJazz extends DeviceHandler implements
                     if (outer.lastSequenceNr > 0 && msg.arg1 > 1) {
                         outer.mClient.getGlucoseMeasurementsStartingAt(outer.lastSequenceNr, outer);
                         Log.d(TAG,"getGlucoseMeasurementsStartingAt " + outer.lastSequenceNr);
-                    } else if (outer.lastSequenceNr == 0 && msg.arg1 > 0) {
+                    } else if (outer.lastSequenceNr <= 0 && msg.arg1 > 0) {
                         outer.mClient.getAllGlucoseMeasurements(outer);
                         Log.d(TAG, "getAllGlucoseMeasurements " + outer.lastSequenceNr);
                     } else {

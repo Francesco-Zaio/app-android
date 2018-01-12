@@ -5,8 +5,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Color;
-import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
@@ -58,6 +56,8 @@ import java.util.Locale;
 public class DocumentSendActivity extends AppCompatActivity implements View.OnClickListener {
     private static final String TAG = "DocumentSendActivity";
 
+    private static final String STATE_FILE = "STATE_FILE";
+
     private static final int MAX_IMAGES = 5;
     private static final int DP_COLUMN_WIDTH = 100;
     private GridViewAdapter gridAdapter;
@@ -79,7 +79,13 @@ public class DocumentSendActivity extends AppCompatActivity implements View.OnCl
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        Log.d(TAG,"onCreate");
         super.onCreate(savedInstanceState);
+
+        if (savedInstanceState != null) {
+            // Restore value of members from saved state
+            currentFile = (File)savedInstanceState.getSerializable(STATE_FILE);
+        }
 
         MeasureManager.getMeasureManager().setHandler(handler);
         Intent i = getIntent();
@@ -160,8 +166,17 @@ public class DocumentSendActivity extends AppCompatActivity implements View.OnCl
 
     @Override
     protected void onDestroy() {
+        Log.d(TAG,"onDestroy");
         super.onDestroy();
         MeasureManager.getMeasureManager().setHandler(null);
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle savedInstanceState) {
+        // Save the user's current game state
+        savedInstanceState.putSerializable(STATE_FILE, currentFile);
+        // Always call the superclass so it can save the view hierarchy state
+        super.onSaveInstanceState(savedInstanceState);
     }
 
     @Override
@@ -357,26 +372,29 @@ public class DocumentSendActivity extends AppCompatActivity implements View.OnCl
             return;
         }
         if (requestCode == GALLERY_REQUEST) {
+            // nel caso in cui sia cambiato l'orientamento dello schermo l'activity è
+            // stata ricreata e devo attendere che il valore di columnWidth sia stato calcolato
+            // altrimenti la createBitmap non conosce la dimensione delle bitmap da creare
             if (data != null) {
                 Uri contentURI = data.getData();
-                File f = saveImage(contentURI);
-                fileList.add(f);
-                Bitmap bitmap = createBitmap(f.getAbsolutePath());
-                imageItems.add(gridAdapter.new ImageItem(bitmap, "Image#"));
-                gridAdapter.notifyDataSetChanged();
-                updateButtons(false);
+                saveImage(contentURI);
+                gridView.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        initImages();
+                    }
+                });
             }
         } else if (requestCode == CAMERA_REQUEST) {
-            if (currentFile == null) {
-                initImages();
-                return;
-            } else {
-                fileList.add(currentFile);
-                Bitmap bitmap = createBitmap(currentFile.getAbsolutePath());
-                imageItems.add(gridAdapter.new ImageItem(bitmap, "Image#"));
-                gridAdapter.notifyDataSetChanged();
-                updateButtons(false);
-            }
+            // nel caso in cui sia cmbiato l'orientamento dello schermo l'activity è
+            // stata ricreata e devo attendere che il valore di columnWidth sia stato calcolato
+            // altrimenti la createBitmap non conosce la dimensione delle bitmap da creare
+            gridView.post(new Runnable() {
+                @Override
+                public void run() {
+                    initImages();
+                }
+            });
         }
     }
 

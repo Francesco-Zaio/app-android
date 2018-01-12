@@ -128,7 +128,7 @@ public class ShowMeasure extends ActionBarListActivity{
                     if (currentMeasureFamily == Measure.MeasureFamily.BIOMETRICA)
                         dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("deleteMeasureConfirm") + "?");
                     else
-                        dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("deleteDocumentsConfirm") + "?");
+                        dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("deleteDocumentConfirm") + "?");
                     showDialog(SWIPE_DELETE_CONFIRM_DIALOG);
 				}
 
@@ -315,41 +315,20 @@ public class ShowMeasure extends ActionBarListActivity{
 	public boolean onPrepareOptionsMenu(Menu menu) {
 		if (Measure.MeasureFamily.BIOMETRICA.equals(currentMeasureFamily)) {
 			menu.findItem(R.id.new_document).setVisible(false);
-			menu.findItem(R.id.delete_all_documents).setVisible(false);
-		} else {
-			menu.findItem(R.id.delete_all_measure).setVisible(false);
 		}
 		if(listaMisure == null || listaMisure.isEmpty()) {
-			menu.findItem(R.id.delete_all_measure).setVisible(false);
-			menu.findItem(R.id.delete_all_documents).setVisible(false);
+			menu.findItem(R.id.delete_all).setVisible(false);
 		}
-
 		return true;
 	}
 
-	@Override
-	public boolean onKeyUp(int keyCode, KeyEvent event) {
-		// Opening submenu in action bar on Hardware menu button click
-		/*if(event.getAction() == KeyEvent.ACTION_UP){
-		    switch(keyCode) {
-		    case KeyEvent.KEYCODE_MENU:
-
-		    	mActionBarMenu.performIdentifierAction(R.id.mi_action_bar_menu_overflow, 0);
-
-		        return true;  
-		    }
-		}*/
-		return super.onKeyUp(keyCode, event);
-	}
-	
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 	    switch (item.getItemId()) {
 			case android.R.id.home:
 				finish();
 				return true;
-			case R.id.delete_all_measure:
-			case R.id.delete_all_documents:
+			case R.id.delete_all:
 				dataBundle = new Bundle();
 				dataBundle.putInt(DELETE_TYPE, 2);
 				dataBundle.putString(AppConst.TITLE, AppResourceManager.getResource().getString("warningTitle"));
@@ -420,6 +399,7 @@ public class ShowMeasure extends ActionBarListActivity{
 				if (resultCode == RESULT_OK)
 					Toast.makeText(context, AppResourceManager.getResource().getString("KMsgSendDocumentStart"), Toast.LENGTH_LONG).show();
 				populateActivity();
+				invalidateOptionsMenu();
 				break;
 		}
 	}
@@ -453,6 +433,7 @@ public class ShowMeasure extends ActionBarListActivity{
 					if (measureManager.deleteMeasure(selected_measure))
 						Toast.makeText(context, AppResourceManager.getResource().getString("KMsgDeleteMeasureConfirm"), Toast.LENGTH_SHORT).show();
 					populateActivity();
+					invalidateOptionsMenu();
 					break;
 				case 2:
 					//Vengono eliminate tutte le misure di un certo tipo

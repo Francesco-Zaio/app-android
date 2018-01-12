@@ -232,12 +232,12 @@ public class MeasureManager {
      * @param standardProtocol  Indica se la misura e' stata acquisita con il "Protocollo standard".
      * @return                  {@code true} in caso di successo o altrimenti {@code false}.
      */
-    public boolean saveManualTemperature(double temperature, boolean standardProtocol) {
+    public Measure getManualTemperature(double temperature, boolean standardProtocol) {
         User currentUser = UserManager.getUserManager().getCurrentUser();
         Patient currentPatient = UserManager.getUserManager().getCurrentPatient();
         if (currentUser == null || (currentPatient == null && !currentUser.getIsPatient())) {
             Log.e(TAG, "saveManualTemperature - currentUser or Patient is Null");
-            return false;
+            return null;
         }
 
         Measure m = new Measure();
@@ -256,10 +256,10 @@ public class MeasureManager {
             else
                 m.setIdPatient(currentUser.getId());
             m.setFailed(false);
-            return saveMeasureData(m);
+            return m;
         } catch (Exception e) {
             Log.e(TAG,e.getMessage());
-            return false;
+            return null;
         }
     }
 

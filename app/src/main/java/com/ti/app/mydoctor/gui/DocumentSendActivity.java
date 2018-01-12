@@ -21,17 +21,16 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.SparseBooleanArray;
-import android.util.TypedValue;
 import android.view.ActionMode;
 import android.view.LayoutInflater;
 import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.GridView;
-import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.Toast;
 
@@ -51,8 +50,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.ref.WeakReference;
 import java.nio.channels.FileChannel;
-import java.nio.file.CopyOption;
-import java.nio.file.Files;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -67,7 +64,6 @@ public class DocumentSendActivity extends AppCompatActivity implements View.OnCl
     private GridView gridView;
     private ArrayList<GridViewAdapter.ImageItem> imageItems = null;
     private MeasureManager.DocumentType docType;
-    private ImageButton cameraButton,galleryButton;
     private Button okButton;
 
     public static final String DOCUMENT_KEY = "DOCUMENT_KEY";
@@ -140,10 +136,6 @@ public class DocumentSendActivity extends AppCompatActivity implements View.OnCl
 
         gridView.setMultiChoiceModeListener(new MultiChoiceModeListener());
 
-        cameraButton = findViewById(R.id.camera);
-        cameraButton.setOnClickListener(this);
-        galleryButton = findViewById(R.id.gallery);
-        galleryButton.setOnClickListener(this);
         okButton = findViewById(R.id.confirm_button);
         okButton.setOnClickListener(this);
         findViewById(R.id.cancel_button).setOnClickListener(this);
@@ -178,6 +170,51 @@ public class DocumentSendActivity extends AppCompatActivity implements View.OnCl
         finish();
     }
 
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.add_images_menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        if ((imageItems.size() < MAX_IMAGES) && (docBaseDir!=null)) {
+            menu.findItem(R.id.camera).setVisible(true);
+            menu.findItem(R.id.gallery).setVisible(true);
+        } else {
+            menu.findItem(R.id.camera).setVisible(false);
+            menu.findItem(R.id.gallery).setVisible(false);
+        }
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.camera:
+                if (imageItems.size() >= MAX_IMAGES) {
+                    Toast.makeText(DocumentSendActivity.this, "Massimo " + MAX_IMAGES + " immagini", Toast.LENGTH_SHORT).show();
+                    return true;
+                }
+                startCamera();
+                break;
+            case R.id.gallery:
+                if (imageItems.size() >= MAX_IMAGES) {
+                    Toast.makeText(DocumentSendActivity.this, "Massimo " + MAX_IMAGES + " immagini", Toast.LENGTH_SHORT).show();
+                    return true;
+                }
+                startGallery();
+                break;
+            case android.R.id.home: //Ritorna alla Home quando si clicca sull'icona della App
+                finish();
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+        return true;
+    }
+
     private void initImages() {
         if (docBaseDir != null) {
             File[] files = docBaseDir.listFiles(new FilenameFilter() {
@@ -201,15 +238,6 @@ public class DocumentSendActivity extends AppCompatActivity implements View.OnCl
         updateButtons(false);
     }
 
-    private Drawable convertDrawableToGrayScale(Drawable drawable) {
-        if (drawable == null)
-            return null;
-
-        Drawable res = drawable.mutate();
-        res.setColorFilter(Color.GRAY, PorterDuff.Mode.SRC_IN);
-        return res;
-    }
-
     private Bitmap createBitmap(String path) {
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inJustDecodeBounds = true;
@@ -224,29 +252,8 @@ public class DocumentSendActivity extends AppCompatActivity implements View.OnCl
     }
 
     private void updateButtons(boolean forceDisable) {
-        Drawable originalIcon;
-
-        boolean addImageEnabled = (imageItems.size() < MAX_IMAGES) && !forceDisable && (docBaseDir!=null);
-        if (addImageEnabled != cameraButton.isEnabled()) {
-            cameraButton.setEnabled(addImageEnabled);
-            galleryButton.setEnabled(addImageEnabled);
-            originalIcon = getResources().getDrawable(R.drawable.camera);
-            cameraButton.setImageDrawable(addImageEnabled?originalIcon:convertDrawableToGrayScale(originalIcon));
-            originalIcon = getResources().getDrawable(R.drawable.gallery);
-            galleryButton.setImageDrawable(addImageEnabled?originalIcon:convertDrawableToGrayScale(originalIcon));
-        }
+        invalidateOptionsMenu();
         okButton.setEnabled((imageItems.size() > 0) && !forceDisable);
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case android.R.id.home: //Ritorna alla Home quando si clicca sull'icona della App
-                finish();
-                return true;
-            default:
-                return super.onOptionsItemSelected(item);
-        }
     }
 
     @Override

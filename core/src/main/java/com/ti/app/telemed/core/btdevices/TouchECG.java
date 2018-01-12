@@ -101,6 +101,7 @@ public class TouchECG extends DeviceHandler {
             deviceListener.notifyError(DeviceListener.PACKAGE_NOT_FOUND_ERROR,ResourceManager.getResource().getString("ENoTouchECG"));
             return false;
         }
+        deviceListener.notifyToUi(ResourceManager.getResource().getString("KWaitingECG"));
 
         Bundle b = new Bundle();
         b.putString(KEY_ID, truncate(patient.getCf(),24));

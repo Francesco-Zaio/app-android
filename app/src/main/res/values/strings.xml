@@ -123,5 +123,7 @@
     <string name="totalDuration">Durata totale</string>
     <string name="readLoop">Campionamento continuo</string>
     <string name="title_activity_document_send">Invio documento</string>
+    <string name="camera">Fotocamera</string>
+    <string name="gallery">Galleria</string>
 
 </resources>

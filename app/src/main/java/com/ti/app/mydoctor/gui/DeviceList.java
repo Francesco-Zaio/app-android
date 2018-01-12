@@ -17,7 +17,6 @@ import android.graphics.Point;
 import android.graphics.drawable.Drawable;
 import android.media.AudioManager;
 import android.media.ToneGenerator;
-import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -542,7 +541,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 				ArrayList<Measure> ml = measureManager.getMeasureData(idUser, null, null, null, idPatient, false, Measure.MeasureFamily.BIOMETRICA);
 				if(ml != null && !ml.isEmpty()) {
 					// Aggiungo l'opzione Misure
-					iconGroupArray.add(""+R.drawable.ic_menu_archive_dark);
+					iconGroupArray.add(""+R.drawable.ic_menu_measures);
 					labelGroupArray.add(getResources().getString(R.string.mi_measure));
 					labelChildArray.add(new ArrayList<String>());
 				}
@@ -1099,7 +1098,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 
         inflater.inflate(R.menu.context_menu_device_list, menu);
         menu.setHeaderTitle(AppResourceManager.getResource().getString("measureType." + selectedMeasureType));
-        menu.setHeaderIcon(AppUtil.getSmallIconId(selectedMeasureType));
 
         //Visibiltà voce "Mostra misure"
         if (userManager.getCurrentPatient() != null) {
@@ -1510,7 +1508,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                             Log.e(TAG, "Il paziente selezionato è NULL");
                             return;
                         }
-                        fitTextInPatientNameLabel(p.getName());
+                        fitTextInPatientNameLabel(p.getSurname() + " " + p.getName());
                         Log.i(TAG, "Selezionato il paziente " + p.getName() + " " + p.getSurname());
                         userManager.setCurrentPatient(p);
                         if(viewMeasureBundle != null && viewMeasureBundle.getBoolean(VIEW_MEASURE, false)) {
@@ -1526,7 +1524,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 						else if (startMeasureBundle != null && startMeasureBundle.getBoolean(VIEW_DOCUMENT, false)) {
 							showMeasures(null, Measure.MeasureFamily.DOCUMENTO);
 						}
-
 					}
                 }
                 break;
@@ -1551,9 +1548,11 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                 refreshList();
                 break;
             case MANUAL_TEMPERATURE_ENTRY:
-                if(resultCode == RESULT_OK){
-                    double temp = data.getExtras().getDouble( ManualTemperatureActivity.TEMPERATURE_VALUE );
-                    MeasureManager.getMeasureManager().saveManualTemperature(temp, true);
+				Bundle b = data.getExtras();
+                if(resultCode == RESULT_OK && b != null){
+                	Measure m = (Measure)b.get(ManualTemperatureActivity.TEMPERATURE_MEASURE);
+                    deviceOperations.showMeasurementResults(m);
+                    break;
                  }
                  if (resultCode == RESULT_CANCELED) {
                      deviceOperations.setCurrentDevice(null);
@@ -2464,7 +2463,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 						myRemoveDialog(PROGRESS_DIALOG);
 					}
 		});
-		builder.setCancelable(true);
+		builder.setCancelable(false);
 		builder.show();		
 	}
 

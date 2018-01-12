@@ -123,4 +123,6 @@
 	<string name="totalDuration">Duración total</string>
 	<string name="readLoop">Muestreo continuo</string>
 	<string name="title_activity_document_send">Enviar documento</string>
+	<string name="camera">Camera</string>
+	<string name="gallery">Gallery</string>
 </resources>

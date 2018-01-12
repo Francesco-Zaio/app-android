@@ -20,10 +20,12 @@ import com.ti.app.mydoctor.AppResourceManager;
 import com.ti.app.mydoctor.gui.customview.CustomKeyboardListener;
 import com.ti.app.mydoctor.gui.customview.GWTextView;
 import com.ti.app.mydoctor.gui.customview.CustomKeyboard;
+import com.ti.app.telemed.core.common.Measure;
+import com.ti.app.telemed.core.measuremodule.MeasureManager;
 
 public class ManualTemperatureActivity extends AppCompatActivity implements CustomKeyboardListener {
 
-	static final String TEMPERATURE_VALUE = "TEMPERATURE_VALUE";
+	static final String TEMPERATURE_MEASURE = "TEMPERATURE_MEASURE";
 
 	//Elementi che compongono la GUI
 	private EditText etTemperature;
@@ -107,12 +109,12 @@ public class ManualTemperatureActivity extends AppCompatActivity implements Cust
 
 	public void send() {
 		String value = etTemperature.getText().toString();
-
 		if(isValidValue(value)){
 			value = value.replace(",",".");
 			Double temp = Double.parseDouble(value);
+			Measure m = MeasureManager.getMeasureManager().getManualTemperature(temp,true);
 			Intent intent = new Intent();
-			intent.putExtra(TEMPERATURE_VALUE, temp);
+			intent.putExtra(TEMPERATURE_MEASURE, m);
 			setResult(RESULT_OK, intent);
 			finish();
 		} else {

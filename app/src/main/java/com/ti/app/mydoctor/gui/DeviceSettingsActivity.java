@@ -159,7 +159,6 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
 		MenuInflater inflater = getMenuInflater();
 		inflater.inflate(R.menu.context_menu_device_settings_advanced, menu);
 		menu.setHeaderTitle(AppResourceManager.getResource().getString("measureType." + selectedMeasureType));
-		menu.setHeaderIcon(AppUtil.getSmallIconId(selectedMeasureType));
 		switch (pd.getDevice().getDevType()) {
             case NONE:
             case APP:

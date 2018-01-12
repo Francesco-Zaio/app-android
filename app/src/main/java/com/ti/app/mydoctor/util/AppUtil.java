@@ -98,7 +98,7 @@ public class AppUtil {
 				else
 					return R.drawable.icon;
 			case DOCUMENTO:
-				return R.drawable.immagini_icon;
+				return R.drawable.documento_icon;
 			default:
 				return R.drawable.icon;
 		}

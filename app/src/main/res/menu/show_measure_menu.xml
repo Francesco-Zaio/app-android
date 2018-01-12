@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<menu xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:id="@+id/delete_all_measure"
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:compat="http://schemas.android.com/apk/res-auto">
+
+    <item android:id="@+id/new_document"
+        android:title="@string/new_document"
+        compat:showAsAction="always"
+        android:icon="@drawable/ic_action_add_circle_outline" />
+
+    <item android:id="@+id/delete_all"
+        compat:showAsAction="always"
     	  android:title="@string/delete_all_measure"
-    	  android:icon="@drawable/ic_menu_measure_cancel_light" />
-
-	<item android:id="@+id/delete_all_documents"
-		android:title="@string/delete_all_documents"
-		android:icon="@drawable/ic_menu_measure_cancel_light" />
-
-	<item android:id="@+id/new_document"
-		android:title="@string/new_document"
-		android:icon="@drawable/ic_menu_measure_send_light" />
+    	  android:icon="@drawable/ic_action_delete_forever" />
 </menu>

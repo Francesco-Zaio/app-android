@@ -208,6 +208,14 @@ class IHealthBP550BT extends Handler implements IHealtDevice{
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.ENGLISH);
                 try {
                     cal.setTime(sdf.parse(date));
+                    if (Util.getDiffHours(Calendar.getInstance().getTime().getTime(), cal.getTime().getTime()) > 24*365) {
+                        // se la data è molto vecchia vuol dire che sono state sostituite le batterie all'apparato
+                        // e la misura è stata effettuata prima di collegare l'apparato almeno una volta a GW per
+                        // sincorinizzre la data/ora
+                        iHealth.notifyError(DeviceListener.TIMESTAMP_ERROR,
+                                ResourceManager.getResource().getString("EMeasureDateError"));
+                        return;
+                    }
                     timestamp = Util.getTimestamp(cal);
                 } catch (ParseException e) {
                     Log.e(TAG, "notifyResultData(): ", e);
@@ -215,7 +223,6 @@ class IHealthBP550BT extends Handler implements IHealtDevice{
                             ResourceManager.getResource().getString("EDataReadError"));
                     return;
                 }
-
             } else {
                 iHealth.notifyError(DeviceListener.NO_MEASURES_FOUND, ResourceManager.getResource().getString("ENoMeasuresFound"));
                 return;

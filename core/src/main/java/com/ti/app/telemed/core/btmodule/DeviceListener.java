@@ -19,7 +19,7 @@ public interface DeviceListener {
     String DEVICE_CFG_ERROR = "E08";
     String DEVICE_MEMORY_EXHAUSTED = "E09";
     String USER_CFG_ERROR = "E10";
-    String INTERNAL_ERROR = "E11";
+    String TIMESTAMP_ERROR = "E11";
     String PACKAGE_NOT_FOUND_ERROR = "E12";
 
     /**

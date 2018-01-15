@@ -288,30 +288,32 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 
             @Override
             public void onDrawerClosed(View view) {
+                isClosed = true;
             	selectedMenuItemAction();
             }
 
             @Override
             public void onDrawerOpened(View drawerView) {
+                isClosed = false;
             	supportInvalidateOptionsMenu(); // creates call to onPrepareOptionsMenu()
             }
 
+
             @Override
             public void onDrawerStateChanged (int newState) {
+            	Log.d(TAG,"onDrawerStateChanged - newState="+newState+" isClosed="+(isClosed?"true":"false"));
             	switch (newState) {
-            	case DrawerLayout.STATE_IDLE:
-					isClosed = !isClosed;
-            		break;
-            	case DrawerLayout.STATE_DRAGGING:
-            		break;
-            	case DrawerLayout.STATE_SETTLING:
-            		if(isClosed)
-            			prepareMenuListView();
-            		break;
-            		default:
+					case DrawerLayout.STATE_SETTLING:
+						if(isClosed)
+							prepareMenuListView();
+						break;
+                    case DrawerLayout.STATE_IDLE:
+                    case DrawerLayout.STATE_DRAGGING:
+                    default:
             			break;
             	}
             }
+
         };
         mDrawerLayout.addDrawerListener(mActionBarDrawerToggle);
 
@@ -499,6 +501,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	}
 
 	private void prepareMenuListView() {
+	    Log.d(TAG,"prepareMenuListView");
 		User loggedUser = userManager.getCurrentUser();
 
 		ArrayList<String> iconGroupArray = new ArrayList<>();
@@ -574,8 +577,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 			labelUserOptionsArray.add(getResources().getString(R.string.settings));
 			labelUserOptionsArray.add(getResources().getString(R.string.change_password));
 		}
-
-
 
 		//Settare le liste iniziali
 		List<? extends Map<String, ?>> fillMapsGroupItem = createGroupList(iconGroupArray, labelGroupArray);
@@ -1058,7 +1059,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 
 		if( activeUser == null || activeUser.isDefaultUser() ){
             mActionBarMenu.findItem(R.id.action_bar_menu).setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER);
-//			MenuItemCompat.setShowAsAction(mActionBarMenu.findItem(R.id.action_bar_menu), MenuItemCompat.SHOW_AS_ACTION_NEVER);
 			mActionBarMenu.findItem(R.id.action_bar_menu).setVisible(false);
 		} else {
 			mActionBarMenu.findItem(R.id.action_bar_menu).setVisible(true);
@@ -1341,14 +1341,12 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 			//Nasconde l'icona dell'Action Bar Menu
 			mActionBarMenu.findItem(R.id.action_bar_menu).setVisible(false);
             mActionBarMenu.findItem(R.id.action_bar_menu).setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER);
-            //MenuItemCompat.setShowAsAction(mActionBarMenu.findItem(R.id.action_bar_menu), MenuItemCompat.SHOW_AS_ACTION_NEVER);
 			//Cambia titolo nella Action Bar
 			titleTV.setText(R.string.app_name);
 		}
 		catch (Exception e) {
 			Log.e(TAG, "doLogout()", e);
 		}
-
 		//Rimuove paziente e utenti
 		userManager.reset();
 	}

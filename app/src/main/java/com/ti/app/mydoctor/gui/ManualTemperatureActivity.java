@@ -112,7 +112,7 @@ public class ManualTemperatureActivity extends AppCompatActivity implements Cust
 		if(isValidValue(value)){
 			value = value.replace(",",".");
 			Double temp = Double.parseDouble(value);
-			Measure m = MeasureManager.getMeasureManager().getManualTemperature(temp,true);
+			Measure m = MeasureManager.getMeasureManager().getManualTemperature(temp,false);
 			Intent intent = new Intent();
 			intent.putExtra(TEMPERATURE_MEASURE, m);
 			setResult(RESULT_OK, intent);

@@ -691,7 +691,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
     		selectedItemBundle.putInt(SELECTED_MENU_ITEM, ITEM_EXIT);
     	} else if( tv.getText().toString().equalsIgnoreCase(getResources().getString(R.string.mi_devices_man)) ) {
     		selectedItemBundle.putInt(SELECTED_MENU_ITEM, ITEM_DEVICES_MANAGEMENT);
-    		linlaHeaderProgress.setVisibility(View.VISIBLE);
+    		//linlaHeaderProgress.setVisibility(View.VISIBLE);
     	} else if( tv.getText().toString().equalsIgnoreCase(getResources().getString(R.string.info)) ) {
     		selectedItemBundle.putInt(SELECTED_MENU_ITEM, ITEM_ABOUT);
     	} else if( tv.getText().toString().equalsIgnoreCase(getResources().getString(R.string.update_user)) ){

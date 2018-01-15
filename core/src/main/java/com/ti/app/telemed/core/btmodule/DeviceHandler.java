@@ -268,6 +268,7 @@ public abstract class DeviceHandler {
         m.setFailed(false);
         m.setIdUser(user.getId());
         m.setIdPatient(patient.getId());
+        m.setStandardProtocol(false);
         return m;
     }
 

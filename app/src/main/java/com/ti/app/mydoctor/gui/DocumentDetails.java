@@ -2,40 +2,32 @@ package com.ti.app.mydoctor.gui;
 
 import android.app.AlertDialog;
 import android.app.Dialog;
-import android.app.ListActivity;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.content.FileProvider;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
-import android.util.TypedValue;
 import android.view.View;
 import android.view.Window;
 import android.widget.AdapterView;
-import android.widget.Button;
 import android.widget.GridView;
 import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.ti.app.mydoctor.AppResourceManager;
 import com.ti.app.mydoctor.R;
 import com.ti.app.mydoctor.gui.adapter.GridViewAdapter;
-import com.ti.app.mydoctor.gui.adapter.MeasureDetailsListAdapter;
 import com.ti.app.mydoctor.util.AppConst;
 import com.ti.app.mydoctor.util.AppUtil;
 import com.ti.app.telemed.core.common.Measure;
-import com.ti.app.telemed.core.common.MeasureDetail;
 import com.ti.app.telemed.core.common.Patient;
-import com.ti.app.telemed.core.measuremodule.MeasureManager;
 import com.ti.app.telemed.core.usermodule.UserManager;
 import com.ti.app.telemed.core.util.Util;
 
@@ -45,7 +37,6 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Locale;
-import java.util.Vector;
 
 public class DocumentDetails extends AppCompatActivity {
     private static final String TAG = "DocumentDetails";
@@ -53,20 +44,18 @@ public class DocumentDetails extends AppCompatActivity {
 	private static final int ERROR_DIALOG = 0;
 	private static final int DELETE_CONFIRM_DIALOG = 1;
 
-    private static final int DP_COLUMN_WIDTH = 150;
+    private static final int BITMAP_MAX_SIZE = 512;
 
 	private File docBaseDir;
     private GridViewAdapter gridAdapter;
     private ArrayList<GridViewAdapter.ImageItem> imageItems = null;
     private ArrayList<File> fileList = new ArrayList<>();
-    private int columnWidth;
 
     private Bundle deleteBundle = null;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		Log.d(TAG,"onCreate");
 		requestWindowFeature(Window.FEATURE_NO_TITLE);
 		setContentView(R.layout.document_details_grid);
 
@@ -91,27 +80,27 @@ public class DocumentDetails extends AppCompatActivity {
 			String patientName = p.getSurname() + " " + p.getName();
 			
 			//Setta l'icona
-			ImageView measureIcon = (ImageView)findViewById(R.id.measureIcon);
+			ImageView measureIcon = findViewById(R.id.measureIcon);
 			measureIcon.setImageResource(AppUtil.getIconId(currentMeasure.getMeasureType()));
 						
 			//Setta la stringa tipo misura
 			final String title = AppResourceManager.getResource().getString("measureType." + currentMeasure.getMeasureType());
-			TextView measureType = (TextView)findViewById(R.id.measureLabel);
+			TextView measureType = findViewById(R.id.measureLabel);
 			measureType.setText(title);
 						
 			//Setta il nome del paziente
-			TextView patientNameTV = (TextView)findViewById(R.id.patientNameLabel);
+			TextView patientNameTV = findViewById(R.id.patientNameLabel);
 			patientNameTV.setText(patientName);
 			
 			//Setta la data
 			Date d = Util.parseTimestamp(currentMeasure.getTimestamp());
 			String date = getDate(d);
 			String hour = getHour(d);
-			TextView dateText = (TextView)findViewById(R.id.dataValue);
+			TextView dateText = findViewById(R.id.dataValue);
 			dateText.setText(date + " " + hour);
 			
 			//Setta il listener per il buttone cancellazione misura
-			ImageButton buttonCancel = (ImageButton)findViewById(R.id.imageButtonCancel);
+			ImageButton buttonCancel = findViewById(R.id.imageButtonCancel);
 			buttonCancel.setOnClickListener(new View.OnClickListener() {
 				
 				@Override
@@ -129,17 +118,7 @@ public class DocumentDetails extends AppCompatActivity {
             gridAdapter = new GridViewAdapter(this, R.layout.document_grid_item, imageItems);
             gridView.setAdapter(gridAdapter);
 
-            gridView.post(new Runnable() {
-                @Override
-                public void run() {
-                    columnWidth = gridView.getColumnWidth();
-                    Log.d(TAG,"ColumnWidth="+columnWidth+" - numCol="+gridView.getNumColumns());
-                    initImages();
-                }
-            });
-
-            //columnWidth = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, DP_COLUMN_WIDTH, getResources().getDisplayMetrics());
-            //gridView.setColumnWidth(columnWidth);
+            initImages();
 
             gridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 public void onItemClick(AdapterView<?> parent, View v, int position, long id) {
@@ -175,11 +154,10 @@ public class DocumentDetails extends AppCompatActivity {
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inJustDecodeBounds = true;
         BitmapFactory.decodeFile(path, options);
-        int width = options.outWidth;
-        int scale = width/columnWidth;
-        BitmapFactory.Options bmOptions = new BitmapFactory.Options();
-        bmOptions.inSampleSize=scale;
-        return BitmapFactory.decodeFile(path, bmOptions);
+        int scale = Math.max(options.outWidth/BITMAP_MAX_SIZE,options.outHeight/BITMAP_MAX_SIZE)+1;
+        options.inJustDecodeBounds = false;
+        options.inSampleSize=scale;
+        return BitmapFactory.decodeFile(path, options);
     }
 
 	@Override

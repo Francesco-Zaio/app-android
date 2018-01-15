@@ -16,7 +16,6 @@ import android.support.v4.content.FileProvider;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
-import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.SparseBooleanArray;
 import android.view.ActionMode;
@@ -57,9 +56,9 @@ public class DocumentSendActivity extends AppCompatActivity implements View.OnCl
     private static final String TAG = "DocumentSendActivity";
 
     private static final String STATE_FILE = "STATE_FILE";
+    private static final int BITMAP_MAX_SIZE = 512;
 
     private static final int MAX_IMAGES = 5;
-    private static final int DP_COLUMN_WIDTH = 100;
     private GridViewAdapter gridAdapter;
     private GridView gridView;
     private ArrayList<GridViewAdapter.ImageItem> imageItems = null;
@@ -73,13 +72,10 @@ public class DocumentSendActivity extends AppCompatActivity implements View.OnCl
     private ArrayList<File> fileList = new ArrayList<>();
     private File currentFile;
     File docBaseDir, sendDir;
-    private int columnWidth;
-    private int rowHeigth;
     ProgressDialog progressDialog = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        Log.d(TAG,"onCreate");
         super.onCreate(savedInstanceState);
 
         if (savedInstanceState != null) {
@@ -149,19 +145,7 @@ public class DocumentSendActivity extends AppCompatActivity implements View.OnCl
         String id = UserManager.getUserManager().getCurrentPatient().getId();
         docBaseDir = Util.getDocumentDir(docType, id);
 
-        // legge la larghezza di una colonna dopo che è stato effettuato il draw del layout
-        // poi crea con la dimensione opportuna e visualizza le bitmap delle immagini
-        DisplayMetrics displayMetrics = getResources().getDisplayMetrics();
-        final int margine = Math.round(15 * (displayMetrics.xdpi / DisplayMetrics.DENSITY_DEFAULT));
-        gridView.post(new Runnable() {
-            @Override
-            public void run() {
-                columnWidth = gridView.getColumnWidth() - margine;
-                rowHeigth = columnWidth * 3 / 4;
-                Log.d(TAG,"ColumnWidth="+columnWidth+" - numCol="+gridView.getNumColumns());
-                initImages();
-            }
-        });
+        initImages();
     }
 
     @Override
@@ -257,13 +241,10 @@ public class DocumentSendActivity extends AppCompatActivity implements View.OnCl
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inJustDecodeBounds = true;
         BitmapFactory.decodeFile(path, options);
+        int scale = Math.max(options.outWidth/BITMAP_MAX_SIZE,options.outHeight/BITMAP_MAX_SIZE)+1;
         options.inJustDecodeBounds = false;
-        int scaleW = options.outWidth/columnWidth;
-        int scaleH = options.outHeight/rowHeigth;
-        options.inSampleSize=scaleW>scaleH?scaleW:scaleH;
-        Bitmap b = BitmapFactory.decodeFile(path, options);
-        Log.d(TAG, "outWidth="+options.outWidth + " - outHeight="+options.outHeight);
-        return b;
+        options.inSampleSize=scale;
+        return BitmapFactory.decodeFile(path, options);
     }
 
     private void updateButtons(boolean forceDisable) {
@@ -464,8 +445,6 @@ public class DocumentSendActivity extends AppCompatActivity implements View.OnCl
         @Override
         public void onItemCheckedStateChanged(ActionMode mode,
                                               int position, long id, boolean checked) {
-            final int checkedCount = gridView.getCheckedItemCount();
-            //mode.setTitle(checkedCount + " Selected");
             gridAdapter.toggleSelection(position);
         }
 

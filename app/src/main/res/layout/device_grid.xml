@@ -11,23 +11,24 @@
       	android:layout_alignParentTop="true"
       	android:orientation="vertical"
       	android:layout_above="@+id/current_patient_relative_layout">
-      	
-        <LinearLayout
-	        android:id="@+id/linlaHeaderProgress"
-	        android:layout_width="fill_parent"
-	        android:layout_height="fill_parent"
-	        android:gravity="center"
-	        android:orientation="vertical"
-	        android:visibility="gone"
-	        android:background="@drawable/gw_listview_background_color" >
-	
-	        <TextView android:id="@+id/pbHeaderProgress"
-	            android:text="@string/waiting_creation_activity"
-	            android:textSize="30sp"
-	            android:textStyle="italic"
-	            android:layout_width="wrap_content"
-	            android:layout_height="wrap_content" />
-        </LinearLayout>
+
+		<LinearLayout
+			android:id="@+id/linlaHeaderProgress"
+			android:layout_width="fill_parent"
+			android:layout_height="fill_parent"
+			android:background="@drawable/gw_listview_background_color"
+			android:gravity="center"
+			android:orientation="vertical"
+			android:visibility="gone">
+
+			<TextView
+				android:id="@+id/pbHeaderProgress"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:text="@string/waiting_creation_activity"
+				android:textSize="30sp"
+				android:textStyle="italic" />
+		</LinearLayout>
       	
         <GridView 
 	    	android:id="@+id/grid_view"

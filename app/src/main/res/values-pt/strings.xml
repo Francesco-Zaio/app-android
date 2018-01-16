@@ -76,6 +76,7 @@
 	<string name="retry_send_all_measure">Enviar medidas</string>
 	<string name="retry_send_all_documents">Enviar documentos</string>
 	<string name="delete_measure">Excluir medida</string>
+	<string name="delete_document">Excluir documento</string>
 
 	<string name="user_title">Utilizador</string>
 	<string name="delete">Excluir</string>

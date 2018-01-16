@@ -350,7 +350,11 @@ public class ShowMeasure extends ActionBarListActivity{
 		
 		AdapterContextMenuInfo info = (AdapterContextMenuInfo) menuInfo;
 		android.view.MenuInflater inflater = getMenuInflater();
-		inflater.inflate(R.menu.show_measure_context_menu, menu);
+		if (currentMeasureFamily == Measure.MeasureFamily.BIOMETRICA)
+			inflater.inflate(R.menu.show_measure_context_menu, menu);
+		else
+			inflater.inflate(R.menu.show_document_context_menu, menu);
+
 		selected_measure = listaMisure.get(info.position);
 		
 		menu.setHeaderTitle(AppResourceManager.getResource().getString("measureType." + selected_measure.getMeasureType()));

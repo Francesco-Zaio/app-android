@@ -76,6 +76,7 @@
 	<string name="retry_send_all_measure">Transfer measurements</string>
 	<string name="retry_send_all_documents">Send documents</string>
 	<string name="delete_measure">Delete measurement</string>
+	<string name="delete_document">Delete document</string>
 
 	<string name="user_title">User</string>
 	<string name="delete">Delete</string>

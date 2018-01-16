@@ -765,6 +765,7 @@ public class DbManager {
             int count;
             ContentValues values = new ContentValues();
             values.put("ACTIVE", 0);
+            values.put("TIMESTAMP", 0);
             count = mDb.update("USER", values, "ID = ? ", new String[]{userId});
             logger.log(Level.INFO, count + "active user reset");
         }

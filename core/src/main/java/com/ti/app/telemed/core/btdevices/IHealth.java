@@ -62,31 +62,36 @@ public class IHealth extends DeviceHandler {
     public boolean startOperation(OperationType ot, BTSearcherEventListener btSearchListener) {
         if (!startInit(ot, btSearchListener))
             return false;
+        try {
+            deviceModel = iUserDevice.getDevice().getModel();
+            Log.d(TAG, "startOperation: deviceModel=" + deviceModel + " iBtDevAddr=" + iBtDevAddr + " iCmdCode=" + iCmdCode.toString());
+            // Register Callback for iHealt library operations
+            if (callbackId == -1) {
+                iHealthDevicesManager.getInstance().init(MyApp.getContext());
+                callbackId = iHealthDevicesManager.getInstance().registerClientCallback(mainCallbackInstance);
+            }
 
-        deviceModel = iUserDevice.getDevice().getModel();
-        Log.d(TAG,"startOperation: deviceModel="+deviceModel+" iBtDevAddr="+iBtDevAddr + " iCmdCode="+iCmdCode.toString());
-        // Register Callback for iHealt library operations
-        if (callbackId == -1) {
-            iHealthDevicesManager.getInstance().init(MyApp.getContext());
-            callbackId = iHealthDevicesManager.getInstance().registerClientCallback(mainCallbackInstance);
+            switch (deviceModel) {
+                case IHealtDevice.KBP550BTIHealth:
+                    iHealthDevicesManager.getInstance().startDiscovery(iHealthDevicesManager.DISCOVERY_BP550BT);
+                    break;
+                case IHealtDevice.KBP5IHealth:
+                    iHealthDevicesManager.getInstance().startDiscovery(iHealthDevicesManager.DISCOVERY_BP5);
+                    break;
+                case IHealtDevice.KPO3IHealth:
+                    iHealthDevicesManager.getInstance().startDiscovery(iHealthDevicesManager.DISCOVERY_PO3);
+                    break;
+                case IHealtDevice.KHS4SIHealth:
+                    iHealthDevicesManager.getInstance().startDiscovery(iHealthDevicesManager.DISCOVERY_HS4S);
+                    break;
+            }
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
         }
-
-        switch(deviceModel) {
-            case IHealtDevice.KBP550BTIHealth:
-                iHealthDevicesManager.getInstance().startDiscovery(iHealthDevicesManager.DISCOVERY_BP550BT);
-                break;
-            case IHealtDevice.KBP5IHealth:
-                iHealthDevicesManager.getInstance().startDiscovery(iHealthDevicesManager.DISCOVERY_BP5);
-                break;
-            case IHealtDevice.KPO3IHealth:
-                iHealthDevicesManager.getInstance().startDiscovery(iHealthDevicesManager.DISCOVERY_PO3);
-                break;
-            case IHealtDevice.KHS4SIHealth:
-                iHealthDevicesManager.getInstance().startDiscovery(iHealthDevicesManager.DISCOVERY_HS4S);
-                break;
-        }
-        return true;
     }
+
 
     @Override
     public void stopOperation() {

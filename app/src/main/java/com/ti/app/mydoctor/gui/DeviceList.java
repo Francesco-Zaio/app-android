@@ -2410,7 +2410,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 
 	private void checkUser(User user) {
         if (user == null ){
-//            mUIHandler.sendEmptyMessage(LOGIN_DIALOG);
             myShowDialog(LIST_OR_NEW_USER_DIALOG);
         } else if ( !user.getHasAutoLogin() || user.isBlocked()) {
             //L'utente non ha l'autologin quindi appare dialog di login con solo lo userid precompilato

@@ -59,6 +59,13 @@ public class DeviceOperations implements DeviceListener {
 	    return DeviceHandler.needConfig(ud);
     }
 
+    public boolean pairingEnabled(UserDevice ud) {
+        return DeviceHandler.pairingEnabled(ud);
+    }
+
+    public boolean isServer(UserDevice ud) {
+        return DeviceHandler.isServer(ud);
+    }
 
 	public void setHandler(Handler handler){
 		this.handler = handler;
@@ -138,7 +145,7 @@ public class DeviceOperations implements DeviceListener {
             result = currentDeviceHandler.startOperation(op, btSearcherListener);
         } else {
             op = DeviceHandler.OperationType.Measure;
-            if (btAddr != null && !btAddr.isEmpty())
+            if ((btAddr != null && !btAddr.isEmpty()) || DeviceHandler.isServer(currentDevice))
                 result = currentDeviceHandler.startOperation(op, null);
             else
                 result = currentDeviceHandler.startOperation(op, btSearcherListener);

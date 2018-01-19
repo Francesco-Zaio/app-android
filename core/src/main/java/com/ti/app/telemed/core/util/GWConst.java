@@ -41,6 +41,8 @@ public interface GWConst {
 	String KPC300SpotCheck = "PC300";
 	String KAgamtrixJazz = "AGAMATRIXJAZZ";
 	String KTouchECG = "TOUCHECG";
+	String KIEMECG = "IEMECG";
+
 
 	/**
 	 * Misura di Ossimetria.
@@ -164,6 +166,10 @@ public interface GWConst {
      * Identificativo del file ECG di tipo scp
      */
 	String EGwCode_0G = "0G";
+	/**
+	 * Identificativo del file ECG del IEM BEAM ECG
+	 */
+	String EGwCode_0I = "0I";
     /**
      * Concentrazione glicemica pre-prandiale
      */
@@ -312,6 +318,19 @@ public interface GWConst {
      * Livello della batteria (%)
      */
 	String EGwCode_BATTERY = "A0";
+
+	/**
+	 * riservato IEM BEAM ECG
+	 */
+	String EGwCode_2A = "2A";
+	/**
+	 * riservato IEM BEAM ECG
+	 */
+	String EGwCode_2B = "2B";
+	/**
+	 * riservato IEM BEAM ECG
+	 */
+	String EGwCode_2C = "2C";
     /*
 	String EGwCode_0Q = "0Q";
 	String EGwCode_0S = "0S";

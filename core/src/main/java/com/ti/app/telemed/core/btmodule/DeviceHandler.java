@@ -7,6 +7,7 @@ import com.ti.app.telemed.core.btdevices.AgamatrixJazz;
 import com.ti.app.telemed.core.btdevices.EcgProtocol;
 import com.ti.app.telemed.core.btdevices.ForaThermometerClient;
 import com.ti.app.telemed.core.btdevices.GIMAPC300SpotCheck;
+import com.ti.app.telemed.core.btdevices.IEMECG;
 import com.ti.app.telemed.core.btdevices.IHealth;
 import com.ti.app.telemed.core.btdevices.MIRSpirodoc;
 import com.ti.app.telemed.core.btdevices.NoninOximeter;
@@ -164,6 +165,8 @@ public abstract class DeviceHandler {
                 return new AgamatrixJazz(listener, ud);
             case GWConst.KTouchECG:
                 return new TouchECG(listener, ud);
+            case GWConst.KIEMECG:
+                return new IEMECG(listener, ud);
             default:
                 return null;
         }
@@ -189,6 +192,29 @@ public abstract class DeviceHandler {
         switch(ud.getDevice().getModel()) {
             case GWConst.KSpirodoc:
             case GWConst.KPC300SpotCheck:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    /**
+     * Indica se va abilitata la voce pairing per questo device
+     * @param  ud {@see com.ti.app.telemed.core.common.UserDevice} a cui si riferisce la richiesta.
+     * @return    <code>true</code> nel caso il pairing sia abilitato <code>false</code> in caso contrario.
+     */
+    public static boolean pairingEnabled(UserDevice ud){
+        switch(ud.getDevice().getModel()) {
+            case GWConst.KIEMECG:
+                return false;
+            default:
+                return true;
+        }
+    }
+
+    public static boolean isServer(UserDevice ud){
+        switch(ud.getDevice().getModel()) {
+            case GWConst.KIEMECG:
                 return true;
             default:
                 return false;
@@ -304,7 +330,7 @@ public abstract class DeviceHandler {
                 iCmdCode = TCmd.ECmdConnByUser;
             } else if (iBtDevAddr != null && !iBtDevAddr.isEmpty()) {
                 iCmdCode = TCmd.ECmdConnByAddr;
-            } else {
+            } else if (!isServer(iUserDevice)){
                 Log.e(TAG, "startOperation: BTSearcherEventListener is null!");
                 return false;
             }

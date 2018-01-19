@@ -88,6 +88,9 @@ public class GIMAPC300SpotCheck
         iServiceSearcher = new BTSearcher();
     }
 
+
+    // DeviceHandler Methods
+
     @Override
     public boolean startOperation(OperationType ot, BTSearcherEventListener btSearchListener) {
         if (!startInit(ot, btSearchListener))
@@ -119,6 +122,18 @@ public class GIMAPC300SpotCheck
         selectedDevice = bd;
         iBtDevAddr = selectedDevice.getAddress();
         devOpHandler.sendEmptyMessage(MSG_DEVICE_SELECTED);
+    }
+
+    @Override
+    public void confirmDialog() {
+        prePrandial = false;
+        makeGLUResultData();
+    }
+
+    @Override
+    public void cancelDialog(){
+        prePrandial = true;
+        makeGLUResultData();
     }
 
 
@@ -214,7 +229,7 @@ public class GIMAPC300SpotCheck
 
     @Override
     public void OnGetDeviceVer(int nHWMajor, int nHWMinor, int nSWMajor, int nSWMinor, int nPower, int nBattery) {
-//        Log.d(TAG, "OnGetDeviceVer: nHWMajor="+nHWMajor+" nHWMinor="+nHWMinor+" nSWMajor="+nSWMajor+" nSWMinor="+nSWMinor+" nPower="+nPower+" nBattery="+nBattery);
+        //Log.d(TAG, "OnGetDeviceVer: nHWMajor="+nHWMajor+" nHWMinor="+nHWMinor+" nSWMajor="+nSWMajor+" nSWMinor="+nSWMinor+" nPower="+nPower+" nBattery="+nBattery);
         devOpHandler.obtainMessage(MSG_BATTERY, nPower, nBattery).sendToTarget();
     }
 
@@ -376,7 +391,7 @@ public class GIMAPC300SpotCheck
 
     @Override
     public void OnGetGLUAction(int status) {
-        Log.d(TAG, "OnGetNIBPAction: status="+status);
+        Log.d(TAG, "OnGetGLUAction: status="+status);
         if (status == 1)
             devOpHandler.sendEmptyMessage(MSG_MEASURING);
         else if (status == 2)
@@ -386,21 +401,6 @@ public class GIMAPC300SpotCheck
     @Override
     public void OnGetTMPAction(int status) {
         Log.d(TAG, "OnGetTMPAction");
-    }
-
-
-    // DeviceHandler Methods
-
-    @Override
-    public void confirmDialog() {
-        prePrandial = false;
-        makeGLUResultData();
-    }
-
-    @Override
-    public void cancelDialog(){
-        prePrandial = true;
-        makeGLUResultData();
     }
 
 

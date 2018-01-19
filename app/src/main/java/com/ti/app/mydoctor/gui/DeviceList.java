@@ -363,56 +363,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
         }
     }
 
-    /*
-	private static class UIHandler extends Handler {
-        private final WeakReference<DeviceList> mActivity;
-
-        UIHandler(DeviceList activity) {
-            mActivity = new WeakReference<>(activity);
-        }
-
-		@Override
-		public void handleMessage(Message msg) {
-            DeviceList activity = mActivity.get();
-            if (activity != null) {
-                switch(msg.what) {
-                    case LOGIN_DIALOG:
-                        activity.myShowDialog(LIST_OR_NEW_USER_DIALOG);
-                        break;
-                    case PRECOMPILED_LOGIN_DIALOG:
-                        activity.myShowDialog(PRECOMPILED_LOGIN_DIALOG);
-                        break;
-                }
-            }
-		}
-	}
-	*/
-
-	/*
-    private class InitTask extends AsyncTask<Void, Void, Void> {
-        private boolean errorFound;
-        @Override
-        protected Void doInBackground(Void... unused) {
-            try {
-                errorFound = false;
-                checkUser(userManager.getActiveUser());
-            } catch (Exception e) {
-                e.printStackTrace();
-                Log.e(TAG, "ERROR on doInBackground: " + e.getMessage());
-                dataBundle = new Bundle();
-                dataBundle.putString(AppConst.MESSAGE, e.getMessage());
-                errorFound = true;
-            }
-            return null;
-        }
-
-        @Override
-        protected void onPostExecute(Void unused) {
-            if(errorFound)
-                myShowDialog(ERROR_EXIT_APP_DIALOG);
-        }
-    }
-    */
 
     @Override
 	protected void onStop() {
@@ -1137,12 +1087,15 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 
 				//Visibiltà voci Associa, Associa e Misura, Nuova Associazione"
 				String btAddr = pd.getBtAddress();
-				if (btAddr!=null && !btAddr.isEmpty()) {
-					mi = menu.findItem(R.id.new_pairing);
-					mi.setVisible(true);
-				} else {
-					mi = menu.findItem(R.id.pair);
-					mi.setVisible(true);
+				boolean pairingEnabled = deviceOperations.pairingEnabled(pd);
+				if (pairingEnabled) {
+					if (btAddr!=null && !btAddr.isEmpty()) {
+						mi = menu.findItem(R.id.new_pairing);
+						mi.setVisible(true);
+					} else {
+						mi = menu.findItem(R.id.pair);
+						mi.setVisible(true);
+					}
 				}
 				break;
 		}
@@ -1424,7 +1377,9 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 
     private boolean measureEnabled(UserDevice device) {
         return device != null && ((device.getBtAddress()!= null && device.getBtAddress().length() > 0)
-                || AppUtil.isManualMeasure(device.getDevice())|| device.getDevice().getDevType()== Device.DevType.APP);
+                || AppUtil.isManualMeasure(device.getDevice())
+                || device.getDevice().getDevType()== Device.DevType.APP
+                || deviceOperations.isServer(device));
     }
 
 	private void showMeasures(String measureType, Measure.MeasureFamily family) {

@@ -363,4 +363,27 @@ public class Util {
 	public static void resetBTAddresses() {
 		DbManager.getDbManager().resetAllBtAddressDevice();
 	}
+
+	/**
+	 * Converte l'array di bytes passato in una stringa esadecimale
+	 * @param array	array di bytes da convertire
+	 * @return	stringa in formato esadecimale
+	 */
+	public static String toHexString(byte[] array){
+		String tmp = "";
+		for (int i = 0; i < array.length; i++) {
+			tmp += " " + Integer.toHexString(array[i] & 0x000000ff);
+		}
+		return tmp;
+	}
+
+	public static String toHexString(byte[] array, int max){
+		String tmp = "";
+		for (int i = 0; i < array.length; i++) {
+			tmp += " " + Integer.toHexString(array[i] & 0x000000ff);
+			if (i == max)
+				return tmp;
+		}
+		return tmp;
+	}
 }

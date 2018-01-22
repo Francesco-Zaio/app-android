@@ -150,7 +150,7 @@ public class ConfigurationParser {
                                 	} else if (key.equalsIgnoreCase(DEVICE_SCHEDULE_KEY)) {
 										if  (userMeasure != null) userMeasure.setSchedule(value);
 									} else if (key.toUpperCase().startsWith(DEVICE_THRESHOLD_KEY.toUpperCase())) {
-										thresholds.put(key.substring(DEVICE_THRESHOLD_KEY.length()),value);
+										thresholds.put(key.toUpperCase().substring(DEVICE_THRESHOLD_KEY.length()),value);
 									} else if (currentSection.equalsIgnoreCase(USER_DATA_SECTION) && key.equalsIgnoreCase(USER_DATA_NAME_KEY)) {
                                 		user.setName(value);
                                 	} else if (currentSection.equalsIgnoreCase(USER_DATA_SECTION) && key.equalsIgnoreCase(USER_DATA_SURNAME_KEY)) {

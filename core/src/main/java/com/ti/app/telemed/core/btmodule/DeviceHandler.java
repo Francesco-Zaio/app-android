@@ -4,6 +4,7 @@ import android.bluetooth.BluetoothDevice;
 import android.util.Log;
 
 import com.ti.app.telemed.core.btdevices.AgamatrixJazz;
+import com.ti.app.telemed.core.btdevices.CardGuardEasy2CheckClient;
 import com.ti.app.telemed.core.btdevices.EcgProtocol;
 import com.ti.app.telemed.core.btdevices.ForaThermometerClient;
 import com.ti.app.telemed.core.btdevices.GIMAPC300SpotCheck;
@@ -167,6 +168,8 @@ public abstract class DeviceHandler {
                 return new TouchECG(listener, ud);
             case GWConst.KIEMECG:
                 return new IEMECG(listener, ud);
+            case GWConst.KTDCC:
+                return new CardGuardEasy2CheckClient(listener, ud);
             default:
                 return null;
         }
@@ -192,6 +195,7 @@ public abstract class DeviceHandler {
         switch(ud.getDevice().getModel()) {
             case GWConst.KSpirodoc:
             case GWConst.KPC300SpotCheck:
+            case GWConst.KTDCC:
                 return true;
             default:
                 return false;
@@ -212,6 +216,13 @@ public abstract class DeviceHandler {
         }
     }
 
+    /**
+     * Indica se il device si comporta come un client e quindi e' il device che si connette al Gateway.
+     * In tal caso non si deve effettuare il discovery ma il GW si mette in attesa di ricevere
+     * una connessione dal device.
+     * @param  ud {@see com.ti.app.telemed.core.common.UserDevice} a cui si riferisce la richiesta.
+     * @return    <code>true</code> nel caso il device si comporta come un lient <code>false</code> in caso contrario.
+     */
     public static boolean isServer(UserDevice ud){
         switch(ud.getDevice().getModel()) {
             case GWConst.KIEMECG:
@@ -223,7 +234,6 @@ public abstract class DeviceHandler {
 
     /**
      * Indica se, prima di eseguire una misura, e' necessario eseguire la configurazione del dispositivo.
-     *
      * @param  ud {@see com.ti.app.telemed.core.common.UserDevice} a cui si riferisce la richiesta.
      * @return    <code>true</code> nel caso la configurazione sia necessaria <code>false</code> in caso contrario.
      */
@@ -245,7 +255,6 @@ public abstract class DeviceHandler {
      * e all'istanza btSearchListener verrano notificati tutti i dispositivi bluetooth trovati.
      * In questo caso dovra' poi essere invocato il metodo {@link #selectDevice(BluetoothDevice bd) selectDevice}
      * per indicare il dispositivo selezionato per eseguire l'operazione.
-     *
      * @param  ot               {@link OperationType} tipo di operazione che deve essere eseguita.
      * @param  btSearchListener {@link BTSearcherEventListener} listener che viene notificato durante il discovery.
      * @return                  <code>true</code> se l'operazione viene avviata o <code>false</code> in caso di errore.

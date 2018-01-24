@@ -42,6 +42,7 @@ public interface GWConst {
 	String KAgamtrixJazz = "AGAMATRIXJAZZ";
 	String KTouchECG = "TOUCHECG";
 	String KIEMECG = "IEMECG";
+	String KTDCC = "CLEVERCHEK";
 
 
 	/**

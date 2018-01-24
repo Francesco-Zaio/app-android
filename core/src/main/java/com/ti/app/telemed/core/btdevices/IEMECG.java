@@ -285,9 +285,11 @@ public class IEMECG extends DeviceHandler {
                     makeResultData();
                 } catch (Exception e) {
                     Log.e(TAG, "ECG-Server: listenUsingRfcommWithServiceRecord: " + e);
-                    if (connected)
-                        deviceListener.notifyError(CONNECTION_ERROR,ResourceManager.getResource().getString(
-                                "ECommunicationError"));
+					if (connected) {
+						deviceListener.notifyError(CONNECTION_ERROR, ResourceManager.getResource().getString(
+								"ECommunicationError"));
+						closeConnection();
+					}
                 }
             }
 

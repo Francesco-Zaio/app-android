@@ -91,6 +91,30 @@ public class RocheProthrombineTimeClient extends DeviceHandler implements
 		}
 	}
 
+	enum CommunicationState {
+		Idle,
+		ESendingHS, // HandShaking
+		ESendPowerUpSeq, // Power Up Sequence (sending)
+		ENumbMeasReq, // Richiesta numero misure in memoria
+		ELastMeasReq, // Richiesta ultima misura
+		EConfDeviceReq, // Richiesta ID device
+		ESendingClosure, // FASE di chiusura
+		ESendingRecovery, // Stato di recupero della Power Up Sequence
+		ELastSending,
+		ESendReadClear, // Read and Clear after error (sending)
+		EWaitingAckHS, // HS: HandShaking
+		EWaitPowerUpSeq, // Power Up Sequence (waiting)
+		ENumbMeasRes, // Risposta numero misure in memoria
+		ELastMeasRes, // Risposta ultima misura
+		EConfDeviceRes, // Risposta ID device
+		EWaitingClosure, // FASE di chiusura
+		EWaitReadClear, // Read and Clear after error (waiting)
+		EDisconnectingOK,
+		Error
+	}
+	private CommunicationState commState = CommunicationState.Idle;
+
+
 	/**
 	 * TState The state of the active object, determines behavior within the
 	 * RunL method.
@@ -161,9 +185,6 @@ public class RocheProthrombineTimeClient extends DeviceHandler implements
 	private String iSec;
 	private String iQ;
 
-    private boolean operationDeleted;
-    private boolean serverOpenFailed;
-
     private boolean isTimerExpired;
     private TimerExpired timerExpired;
 	private Timer timer;
@@ -201,11 +222,7 @@ public class RocheProthrombineTimeClient extends DeviceHandler implements
 		iCRC = 0;
 
 		isTimerExpired = false;
-
-		operationDeleted = false;
-		serverOpenFailed = false;
 		iServiceSearcher = new BTSearcher();
-
 		iPTRSocket = BTSocket.getBTSocket();
 	}
 
@@ -216,7 +233,7 @@ public class RocheProthrombineTimeClient extends DeviceHandler implements
     public void confirmDialog() {
         makeSendData(TTypeControl.getVal(TTypeControl.kT_CAN));
         iCountHS = 0;
-        iState = TState.ESendingHS;
+        commState = CommunicationState.ESendingHS;
         sendCmd();
     }
 
@@ -280,10 +297,11 @@ public class RocheProthrombineTimeClient extends DeviceHandler implements
         iServiceSearcher.stopSearchDevices();
         iServiceSearcher.clearBTSearcherEventListener();
         iServiceSearcher.close();
-        iPTRSocket.close();
         iPTRSocket.removeBTSocketEventListener(this);
+        if (iState == TState.EConnected)
+            iPTRSocket.close();
 
-        if (iState == TState.EDisconnectingOK) {
+        if (commState == CommunicationState.EDisconnectingOK) {
             if (iCmdCode.equals(TCmd.ECmdConnByUser)) {
                 deviceListener.setBtMAC(iBtDevAddr);
             }
@@ -295,8 +313,6 @@ public class RocheProthrombineTimeClient extends DeviceHandler implements
             else {
                 makeResultData();
             }
-        } else if (iState == TState.EDisconnectingPairing) {
-            runBTSocket();
         }
         reset();
     }
@@ -305,6 +321,8 @@ public class RocheProthrombineTimeClient extends DeviceHandler implements
         if (timer != null) {
             timer.cancel();
         }
+        currentPos = 0;
+		commState = CommunicationState.Idle;
         // we free all buffer, descriptor and array
         deviceSearchCompleted = false;
 		/* Buffer utilizzati per la trasmissione e ricezione dati. */
@@ -331,10 +349,6 @@ public class RocheProthrombineTimeClient extends DeviceHandler implements
         iCRC = 0;
 
         isTimerExpired = false;
-
-        operationDeleted = false;
-        serverOpenFailed = false;
-
         // this class object must return to the initial state
         iState = TState.EWaitingToGetDevice;
     }
@@ -344,45 +358,17 @@ public class RocheProthrombineTimeClient extends DeviceHandler implements
 
 	@Override
 	public void errorThrown(int type, String description) {
-        String msg;
+        Log.e(TAG, description);
 		switch (type) {
-		case 0: // thread interrupted
-			reset();
-			Log.e(TAG, description);
-            msg = ResourceManager.getResource().getString("ECommunicationError");
-            deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR, msg);
-			break;
-		case 1: // bluetooth open error
-			Log.e(TAG, description);
-			if (iState == TState.EConnected) {
-				// if we don't receive any message from the blood pressure at
-				// this state
-				// means that we have to do the pairing
-				iState = TState.EDisconnecting;
-				operationDeleted = true;
-				serverOpenFailed = true;
-				runBTSocket();
-			}
-			reset();
-            msg = ResourceManager.getResource().getString("EBtDeviceConnError");
-            deviceListener.notifyError(DeviceListener.CONNECTION_ERROR, msg);
-			break;
-		case 2: // bluetooth read error
-        case 3: // bluetooth write error
-			Log.e(TAG, description);
-			iState = TState.EDisconnecting;
-			operationDeleted = true;
-			runBTSocket();
-			reset();
-            msg = ResourceManager.getResource().getString("ECommunicationError");
-            deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR, msg);
-			break;
-		case 4: // bluetooth close error
-			Log.e(TAG, description);
-			reset();
-            msg = ResourceManager.getResource().getString("ECommunicationError");
-            deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR, msg);
-			break;
+            case 0: // thread interrupted
+            case 1: // bluetooth open error
+            case 2: // bluetooth read error
+            case 3: // bluetooth write error
+            case 4: // bluetooth close error
+                Log.e(TAG, description);
+                commState = CommunicationState.Error;
+                runBTSocket();
+                break;
 		}
 	}
 
@@ -587,18 +573,12 @@ public class RocheProthrombineTimeClient extends DeviceHandler implements
 	 * Segnala errore di allineamento e resetta connessione
 	 */
 	private void disconnectProtocolError() {
-		
 		Log.d(TAG, "disconnectProtocolError()");
-		
 		// Invia messaggio di errore allo scheduler
         deviceListener.notifyToUi(ResourceManager.getResource().getString("KErrAlignDevices"));
-
-		//isRecoveryStatus = true;
-		recoveryFromError();
-		
+        recoveryFromError();
 		makeSendData(TTypeControl.getVal(TTypeControl.kT_CAN));
-
-		iState = TState.ESendingHS;
+		commState = CommunicationState.ESendingHS;
 		sendCmd();
 	}
 
@@ -698,14 +678,16 @@ public class RocheProthrombineTimeClient extends DeviceHandler implements
 */
 	private void runBTSocket() {
 		String tmpString;
-		switch (iState) {
-		case EConnected:
+		switch (commState) {
+        case Idle:
 			Log.i(TAG, "EConnected");
-			
 			if(operationType == OperationType.Pair){
-    			iState = TState.EDisconnectingPairing;
+                Log.i(TAG, "DisconnectingPairing");
+                //Pairing eseguito con successo. Salva il BT MAC
+                deviceListener.setBtMAC(iBtDevAddr);
+                deviceListener.configReady(ResourceManager.getResource().getString("KPairingMsgDone"));
                 stop();
-    		}  else {
+    		} else {
     			if (iCmdCode.equals(TCmd.ECmdConnByUser)) {
     				Log.i(TAG, "iBTAddress: " + iBtDevAddr);
         			deviceListener.setBtMAC(iBtDevAddr);
@@ -713,7 +695,6 @@ public class RocheProthrombineTimeClient extends DeviceHandler implements
     			// Strumento trovato si procede all'allineamento dei dispositivi
     			deviceListener.notifyToUi(ResourceManager.getResource().getString(
                         "KAlignDevices"));
-    						
     			deviceListener.askSomething(
     					ResourceManager.getResource().getString("KAlignDevicesSend"),
     	    			ResourceManager.getResource().getString("confirmButton"), 
@@ -723,7 +704,7 @@ public class RocheProthrombineTimeClient extends DeviceHandler implements
 
 		case ESendingHS:
 			Log.i(TAG, "ESendingHS");
-			iState = TState.EWaitingAckHS;
+            commState = CommunicationState.EWaitingAckHS;
 			if (!isTimerExpired) {
 				Log.i(TAG, "Timer not expired");
 				makeAwaitedData(TTypeControl.getVal(TTypeControl.kT_NAK));
@@ -741,14 +722,12 @@ public class RocheProthrombineTimeClient extends DeviceHandler implements
 
 		case ESendPowerUpSeq:
 			Log.i(TAG, "PTR: ESendPowerUpSeq" + iCountPowerUpSeq);
-			if (iCountPowerUpSeq == 0 || iCountPowerUpSeq == 2
-					|| iCountPowerUpSeq == 4 || iCountPowerUpSeq == 6) {
+			if (iCountPowerUpSeq == 0 || iCountPowerUpSeq == 2 || iCountPowerUpSeq == 4 || iCountPowerUpSeq == 6) {
 				makeAwaitedData(TTypeControl.getVal(TTypeControl.kT_ACK));
 			} else if (iCountPowerUpSeq == 3) {
-				makeAwaitedData(TTypeUserCommand
-						.getVal(TTypeUserCommand.kT_STA));
+				makeAwaitedData(TTypeUserCommand.getVal(TTypeUserCommand.kT_STA));
 			}
-			iState = TState.EWaitPowerUpSeq;
+            commState = CommunicationState.EWaitPowerUpSeq;
 			readAck();
 			break;
 
@@ -759,7 +738,7 @@ public class RocheProthrombineTimeClient extends DeviceHandler implements
 			} else {
 				makeAwaitedData(TTypeControl.getVal(TTypeControl.kT_ACK));
 			}
-			iState = TState.ENumbMeasRes;
+            commState = CommunicationState.ENumbMeasRes;
 			readAck();
 			break;
 
@@ -770,7 +749,7 @@ public class RocheProthrombineTimeClient extends DeviceHandler implements
 			} else {
 				makeAwaitedData(iSendDataCmd[0]);
 			}
-			iState = TState.ELastMeasRes;
+            commState = CommunicationState.ELastMeasRes;
 			readAck();
 			break;
 
@@ -781,7 +760,7 @@ public class RocheProthrombineTimeClient extends DeviceHandler implements
 			} else {
 				makeAwaitedData(iSendDataCmd[0]);
 			}
-			iState = TState.EConfDeviceRes;
+            commState = CommunicationState.EConfDeviceRes;
 			readAck();
 			break;
 
@@ -792,34 +771,29 @@ public class RocheProthrombineTimeClient extends DeviceHandler implements
 			} else if (iCountClosure == 1) {
 				makeAwaitedData(TTypeControl.getVal(TTypeControl.kT_ACK));
 			}
-			iState = TState.EWaitingClosure;
+            commState = CommunicationState.EWaitingClosure;
 			readAck();
 			break;
 
 		case ELastSending:
 			Log.i(TAG, "PTR: ELastSending");
-			iState = TState.EDisconnectingOK;
+			commState = CommunicationState.EDisconnectingOK;
             stop();
 			break;
 
 		case ESendReadClear:
 			Log.i(TAG, "PTR: ESendReadClear");
-			iState = TState.EWaitReadClear;
-			//isRecoveryStatus = true;
+            commState = CommunicationState.EWaitReadClear;
 			if (!isTimerExpired) {
 				if (iCountReadClear == 0) {
 					makeAwaitedData(TTypeControl.getVal(TTypeControl.kT_NAK));
 				} else if (iCountReadClear == 1) {
-					makeAwaitedData(TTypeUserCommand
-							.getVal(TTypeUserCommand.kT_STA));
-				} else if (iCountReadClear == 2 || iCountReadClear == 4
-						|| iCountReadClear == 6) {
+					makeAwaitedData(TTypeUserCommand.getVal(TTypeUserCommand.kT_STA));
+				} else if (iCountReadClear == 2 || iCountReadClear == 4 || iCountReadClear == 6) {
 					makeAwaitedData(TTypeControl.getVal(TTypeControl.kT_ACK));
 				} else if (iCountReadClear == 5) {
-					makeAwaitedData(TTypeUserCommand
-							.getVal(TTypeUserCommand.kT_PD));
+					makeAwaitedData(TTypeUserCommand.getVal(TTypeUserCommand.kT_PD));
 				}
-
 				readAck();
 			} else {
 				isTimerExpired = false;
@@ -832,43 +806,35 @@ public class RocheProthrombineTimeClient extends DeviceHandler implements
 		case ESendingRecovery:
 			Log.i(TAG, "ROCHE ESendingRecovery ");
 			makeAwaitedData(TTypeControl.getVal(TTypeControl.kT_ACK));
-			iState = TState.EWaitPowerUpSeq;
+            commState = CommunicationState.EWaitPowerUpSeq;
 			readAck();
 			break;
 
 		case EWaitingAckHS:
-			Log.i(TAG, "ROCHE EWaitingAckHS " + iCountHS + " - "
-					+ iAckReceived[0]);
+			Log.i(TAG, "ROCHE EWaitingAckHS " + iCountHS + " - " + iAckReceived[0]);
 			timer.cancel();
-
 			if (iCountHS == 0) {
 				if (iAckAwaited[0] == iAckReceived[0]) {
-					makeSendData(TTypeUserCommand
-							.getVal(TTypeUserCommand.kT_STA));
+					makeSendData(TTypeUserCommand.getVal(TTypeUserCommand.kT_STA));
 					iCountHS = 1;
 				}
-				iState = TState.ESendingHS;
+                commState = CommunicationState.ESendingHS;
 				sendCmd();
 			} else if (iCountHS == 1) {
 				if (iAckAwaited[0] == iAckReceived[0]) {
-					makeAwaitedData(TTypeUserCommand
-							.getVal(TTypeUserCommand.kT_STA));
+					makeAwaitedData(TTypeUserCommand.getVal(TTypeUserCommand.kT_STA));
 					iCountHS = 2;
-					iState = TState.EWaitingAckHS;
+                    commState = CommunicationState.EWaitingAckHS;
 					readAck();
-				} else if (iAckReceived[0] == TTypeUserCommand
-						.getVal(TTypeUserCommand.kT_STA)) {
+				} else if (iAckReceived[0] == TTypeUserCommand.getVal(TTypeUserCommand.kT_STA)) {
 					makeSendData(TTypeControl.getVal(TTypeControl.kT_CR));
-					deviceListener.notifyWaitToUi(ResourceManager.getResource()
-							.getString("KMeasuring"));
-					iState = TState.ESendPowerUpSeq;
+					deviceListener.notifyWaitToUi(ResourceManager.getResource().getString("KMeasuring"));
+                    commState = CommunicationState.ESendPowerUpSeq;
 					sendCmd();
-				} else if (iAckReceived[0] == TTypeControl
-						.getVal(TTypeControl.kT_NAK)) {
+				} else if (iAckReceived[0] == TTypeControl.getVal(TTypeControl.kT_NAK)) {
 					makeSendData(TTypeControl.getVal(TTypeControl.kT_CAN));
 					iCountHS = 0;
-
-					iState = TState.ESendingHS;
+                    commState = CommunicationState.ESendingHS;
 					sendCmd();
 				} else {
 					disconnectProtocolError();
@@ -876,14 +842,13 @@ public class RocheProthrombineTimeClient extends DeviceHandler implements
 			} else if (iCountHS == 2) {
 				if (iAckAwaited[0] == iAckReceived[0]) {
 					makeSendData(TTypeControl.getVal(TTypeControl.kT_CR));
-					iState = TState.ESendPowerUpSeq;
+                    commState = CommunicationState.ESendPowerUpSeq;
 					sendCmd();
 				} else if (iAckReceived[0] == TTypeControl
 						.getVal(TTypeControl.kT_NAK)) {
 					makeSendData(TTypeControl.getVal(TTypeControl.kT_CAN));
 					iCountHS = 0;
-
-					iState = TState.ESendingHS;
+                    commState = CommunicationState.ESendingHS;
 					sendCmd();
 				} else {
 					disconnectProtocolError();
@@ -894,28 +859,23 @@ public class RocheProthrombineTimeClient extends DeviceHandler implements
 		case EWaitPowerUpSeq:
 			Log.i(TAG, "ROCHE EWaitPowerUpSeq" + iCountPowerUpSeq);
 			timer.cancel();
-
 			if (iCountPowerUpSeq == 0) {
 				Log.i(TAG, "EWaitPowerUpSeq 0 " + iAckReceived[0]);
 				if (iAckAwaited[0] == iAckReceived[0]) {
 					Log.i(TAG, "EWaitPowerUpSeq 0.1 ");
 					iCountPowerUpSeq = 1;
 					readData();
-				} else if (iAckReceived[0] == TTypeUserCommand
-						.getVal(TTypeUserCommand.kT_STA)) {
+				} else if (iAckReceived[0] == TTypeUserCommand.getVal(TTypeUserCommand.kT_STA)) {
 					Log.i(TAG, "EWaitPowerUpSeq 0.2 ");
 					isTimerExpired = false;
 					timerExpired = new TimerExpired();
 					timer = new Timer();
 					timer.schedule(timerExpired, 1000);
-
-					makeSendData(TTypeUserCommand
-							.getVal(TTypeUserCommand.kT_STA));
+					makeSendData(TTypeUserCommand.getVal(TTypeUserCommand.kT_STA));
 					iCountHS = 0;
 					iCountClosure = 0;
-					iState = TState.ESendingRecovery;
+                    commState = CommunicationState.ESendingRecovery;
 					sendCmd();
-
 					// readData();
 				} else {
 					Log.i(TAG, "EWaitPowerUpSeq 0.3 ");
@@ -923,21 +883,16 @@ public class RocheProthrombineTimeClient extends DeviceHandler implements
 				}
 			} else if (iCountPowerUpSeq == 1) {
 				Log.i(TAG, "EWaitPowerUpSeq 1 " + iByteReceived[0]);
-				if (iByteReceived[0] == TTypeControl
-						.getVal(TTypeControl.kT_EOT)) {
+				if (iByteReceived[0] == TTypeControl.getVal(TTypeControl.kT_EOT)) {
 					tmpString = new String(iByteReceived);
 					iDataReceived = iDataReceived.concat(tmpString);
-
 					// Dal primo pacchetto dati ricevuto
 					// preleva due byte per il calcolo delle
 					// della CheckSum dei pacchetti futuri
 					//getCRC();
-
 					makeSendData(TTypeControl.getVal(TTypeControl.kT_ACK));
-
 					iCountPowerUpSeq = 2;
-
-					iState = TState.ESendPowerUpSeq;
+                    commState = CommunicationState.ESendPowerUpSeq;
 					sendCmd();
 				} else {
 					if (iDataReceived == null) {
@@ -953,12 +908,9 @@ public class RocheProthrombineTimeClient extends DeviceHandler implements
 			} else if (iCountPowerUpSeq == 2) {
 				Log.i(TAG, "EWaitPowerUpSeq 2 " + iAckReceived[0]);
 				if (iAckAwaited[0] == iAckReceived[0]) {
-					makeSendData(TTypeUserCommand
-							.getVal(TTypeUserCommand.kT_STA));
-
+					makeSendData(TTypeUserCommand.getVal(TTypeUserCommand.kT_STA));
 					iCountPowerUpSeq = 3;
-
-					iState = TState.ESendPowerUpSeq;
+                    commState = CommunicationState.ESendPowerUpSeq;
 					sendCmd();
 				} else {
 					disconnectProtocolError();
@@ -967,10 +919,8 @@ public class RocheProthrombineTimeClient extends DeviceHandler implements
 				Log.i(TAG, "EWaitPowerUpSeq 2 " + iAckReceived[0]);
 				if (iAckAwaited[0] == iAckReceived[0]) {
 					makeSendData(TTypeControl.getVal(TTypeControl.kT_CR));
-
 					iCountPowerUpSeq = 4;
-
-					iState = TState.ESendPowerUpSeq;
+                    commState = CommunicationState.ESendPowerUpSeq;
 					sendCmd();
 				} else {
 					disconnectProtocolError();
@@ -986,31 +936,24 @@ public class RocheProthrombineTimeClient extends DeviceHandler implements
 				}
 			} else if (iCountPowerUpSeq == 5) {
 				Log.i(TAG, "EWaitPowerUpSeq 2 " + iByteReceived[0]);
-				if (iByteReceived[0] == TTypeControl
-						.getVal(TTypeControl.kT_EOT)) {
+				if (iByteReceived[0] == TTypeControl.getVal(TTypeControl.kT_EOT)) {
 					tmpString = new String(iByteReceived);
 					iDataReceived = iDataReceived.concat(tmpString);
-
 					if (checkStatusRegister()) {
 						getCRC();
-						
 						if (calculateCheckSum()) {
 							makeSendData(TTypeControl.getVal(TTypeControl.kT_ACK));
-
 							iCountPowerUpSeq = 6;
-
-							iState = TState.ESendPowerUpSeq;
+                            commState = CommunicationState.ESendPowerUpSeq;
 							sendCmd();
 						} else {
 							disconnectProtocolError();
 						}
 					}
 					else {
-						iPTRSocket.close();
-						iPTRSocket.removeBTSocketEventListener(this);
-						iState = TState.EWaitingToGetDevice;
                         String msg = ResourceManager.getResource().getString("ECommunicationError");
                         deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR, msg);
+                        stop();
 					}
 				} else {
 					if (iDataReceived == null) {
@@ -1028,13 +971,8 @@ public class RocheProthrombineTimeClient extends DeviceHandler implements
 				if (iAckAwaited[0] == iAckReceived[0]) {
 					// Richiede ultima misura
 					iCountNMR = 0;
-					
-					//isRecoveryStatus = false;
-
-					makeSendData(TTypeUserCommand
-							.getVal(TTypeUserCommand.kT_RES));
-
-					iState = TState.ENumbMeasReq;
+					makeSendData(TTypeUserCommand.getVal(TTypeUserCommand.kT_RES));
+                    commState = CommunicationState.ENumbMeasReq;
 					sendCmd();
 				} else {
 					disconnectProtocolError();
@@ -1044,13 +982,11 @@ public class RocheProthrombineTimeClient extends DeviceHandler implements
 
 		case ENumbMeasRes:
 			timer.cancel();
-
 			if (iCountNMR == 0) {
 				if (iAckAwaited[0] == iAckReceived[0]) {
 					iCountNMR++;
 					makeSendData(TTypeControl.getVal(TTypeControl.kT_CR));
-
-					iState = TState.ENumbMeasReq;
+                    commState = CommunicationState.ENumbMeasReq;
 					sendCmd();
 				} else {
 					disconnectProtocolError();
@@ -1058,24 +994,19 @@ public class RocheProthrombineTimeClient extends DeviceHandler implements
 			} else if (iCountNMR == 1) {
 				if (iAckAwaited[0] == iAckReceived[0]) {
 					iCountNMR++;
-
-					iState = TState.ENumbMeasRes;
+					commState = CommunicationState.ENumbMeasRes;
 					readData();
 				} else {
 					disconnectProtocolError();
 				}
 			} else if (iCountNMR == 2) {
-				if (iByteReceived[0] == TTypeControl
-						.getVal(TTypeControl.kT_EOT)) {
+				if (iByteReceived[0] == TTypeControl.getVal(TTypeControl.kT_EOT)) {
 					iCountNMR++;
-
 					tmpString = new String(iByteReceived);
 					iDataReceived = iDataReceived.concat(tmpString);
-
 					if (calculateCheckSum()) {
 						makeSendData(TTypeControl.getVal(TTypeControl.kT_ACK));
-
-						iState = TState.ENumbMeasReq;
+                        commState = CommunicationState.ENumbMeasReq;
 						sendCmd();
 					} else {
 						disconnectProtocolError();
@@ -1094,28 +1025,19 @@ public class RocheProthrombineTimeClient extends DeviceHandler implements
 			} else if (iCountNMR == 3) {
 				if (iAckAwaited[0] == iAckReceived[0]) {
 					iDataReceived = "";
-
 					iPosCmd = 0;
-
 					iCmdSequence = new byte[9];
-					iCmdSequence[0] = TTypeUserCommand
-							.getVal(TTypeUserCommand.kT_SEN);
+					iCmdSequence[0] = TTypeUserCommand.getVal(TTypeUserCommand.kT_SEN);
 					iCmdSequence[1] = TTypeControl.getVal(TTypeControl.kT_TAB);
-					iCmdSequence[2] = TTypeParameter
-							.getVal(TTypeParameter.kT_31);
+					iCmdSequence[2] = TTypeParameter.getVal(TTypeParameter.kT_31);
 					iCmdSequence[3] = TTypeControl.getVal(TTypeControl.kT_TAB);
-					iCmdSequence[4] = TTypeParameter
-							.getVal(TTypeParameter.kT_30);
-					iCmdSequence[5] = TTypeParameter
-							.getVal(TTypeParameter.kT_30);
-					iCmdSequence[6] = TTypeParameter
-							.getVal(TTypeParameter.kT_31);
+					iCmdSequence[4] = TTypeParameter.getVal(TTypeParameter.kT_30);
+					iCmdSequence[5] = TTypeParameter.getVal(TTypeParameter.kT_30);
+					iCmdSequence[6] = TTypeParameter.getVal(TTypeParameter.kT_31);
 					iCmdSequence[7] = TTypeControl.getVal(TTypeControl.kT_CR);
 					iCmdSequence[8] = TTypeControl.getVal(TTypeControl.kT_ACK);
-
 					makeSendData(iCmdSequence[iPosCmd]);
-
-					iState = TState.ELastMeasReq;
+                    commState = CommunicationState.ELastMeasReq;
 					sendCmd();
 				} else {
 					disconnectProtocolError();
@@ -1125,28 +1047,22 @@ public class RocheProthrombineTimeClient extends DeviceHandler implements
 
 		case ELastMeasRes:
 			timer.cancel();
-
 			if (iPosCmd == 7) {
 				if (iAckAwaited[0] == iAckReceived[0]) {
 					iPosCmd++;
-
-					iState = TState.ELastMeasRes;
+                    commState = CommunicationState.ELastMeasRes;
 					readData();
 				} else {
 					disconnectProtocolError();
 				}
 			} else if (iPosCmd == 8) {
-				if (iByteReceived[0] == TTypeControl
-						.getVal(TTypeControl.kT_EOT)) {
+				if (iByteReceived[0] == TTypeControl.getVal(TTypeControl.kT_EOT)) {
 					tmpString = new String(iByteReceived);
 					iDataReceived = iDataReceived.concat(tmpString);
-
 					if (calculateCheckSum()) {
 						makeSendData(iCmdSequence[iPosCmd]);
-
 						iPosCmd++;
-
-						iState = TState.ELastMeasReq;
+                        commState = CommunicationState.ELastMeasReq;
 						sendCmd();
 					} else {
 						disconnectProtocolError();
@@ -1165,22 +1081,16 @@ public class RocheProthrombineTimeClient extends DeviceHandler implements
 			} else if (iPosCmd == 9) {
 				if (iAckAwaited[0] == iAckReceived[0]) {
 					iPosCmd = 0;
-
 					iLastMeasure = iDataReceived;
 					iDataReceived = "";
-
 					iCmdSequence = new byte[5];
-					iCmdSequence[0] = TTypeUserCommand
-							.getVal(TTypeUserCommand.kT_CON);
+					iCmdSequence[0] = TTypeUserCommand.getVal(TTypeUserCommand.kT_CON);
 					iCmdSequence[1] = TTypeControl.getVal(TTypeControl.kT_TAB);
-					iCmdSequence[2] = TTypeParameter
-							.getVal(TTypeParameter.kT_33);
+					iCmdSequence[2] = TTypeParameter.getVal(TTypeParameter.kT_33);
 					iCmdSequence[3] = TTypeControl.getVal(TTypeControl.kT_CR);
 					iCmdSequence[4] = TTypeControl.getVal(TTypeControl.kT_ACK);
-
 					makeSendData(iCmdSequence[iPosCmd]);
-
-					iState = TState.EConfDeviceReq;
+                    commState = CommunicationState.EConfDeviceReq;
 					sendCmd();
 				} else {
 					disconnectProtocolError();
@@ -1189,8 +1099,7 @@ public class RocheProthrombineTimeClient extends DeviceHandler implements
 				if (iAckAwaited[0] == iAckReceived[0]) {
 					iPosCmd++;
 					makeSendData(iCmdSequence[iPosCmd]);
-
-					iState = TState.ELastMeasReq;
+                    commState = CommunicationState.ELastMeasReq;
 					sendCmd();
 				} else {
 					disconnectProtocolError();
@@ -1200,30 +1109,23 @@ public class RocheProthrombineTimeClient extends DeviceHandler implements
 
 		case EConfDeviceRes:
 			timer.cancel();
-
 			if (iPosCmd == 3) {
 				if (iAckAwaited[0] == iAckReceived[0]) {
 					iPosCmd++;
-
-					iState = TState.EConfDeviceRes;
+                    commState = CommunicationState.EConfDeviceRes;
 					readData();
 				} else {
 					disconnectProtocolError();
 				}
 			} else if (iPosCmd == 4) {
-				if (iByteReceived[0] == TTypeControl
-						.getVal(TTypeControl.kT_EOT)) {
+				if (iByteReceived[0] == TTypeControl.getVal(TTypeControl.kT_EOT)) {
 					tmpString = new String(iByteReceived);
 					iDataReceived = iDataReceived.concat(tmpString);
-
 					if (calculateCheckSum()) {
 						iDataReceived = "";
-
-						makeSendData(iCmdSequence[iPosCmd]);
-
-						iPosCmd++;
-
-						iState = TState.EConfDeviceReq;
+                        makeSendData(iCmdSequence[iPosCmd]);
+                        iPosCmd++;
+                        commState = CommunicationState.EConfDeviceReq;
 						sendCmd();
 					} else {
 						disconnectProtocolError();
@@ -1242,11 +1144,8 @@ public class RocheProthrombineTimeClient extends DeviceHandler implements
 			} else if (iPosCmd == 5) {
 				if (iAckAwaited[0] == iAckReceived[0]) {
 					iCountClosure = 0;
-
-					makeSendData(TTypeUserCommand
-							.getVal(TTypeUserCommand.kT_PD));
-
-					iState = TState.ESendingClosure;
+					makeSendData(TTypeUserCommand.getVal(TTypeUserCommand.kT_PD));
+                    commState = CommunicationState.ESendingClosure;
 					sendCmd();
 				} else {
 					disconnectProtocolError();
@@ -1255,8 +1154,7 @@ public class RocheProthrombineTimeClient extends DeviceHandler implements
 				if (iAckAwaited[0] == iAckReceived[0]) {
 					iPosCmd++;
 					makeSendData(iCmdSequence[iPosCmd]);
-
-					iState = TState.EConfDeviceReq;
+                    commState = CommunicationState.EConfDeviceReq;
 					sendCmd();
 				} else {
 					disconnectProtocolError();
@@ -1267,81 +1165,54 @@ public class RocheProthrombineTimeClient extends DeviceHandler implements
 		case EWaitingClosure:
 			Log.i(TAG, "PTR: EWaitingClosure");
 			Log.i(TAG, "PTR: " + iAckReceived[0]);
-
 			timer.cancel();
-
 			if (iAckAwaited[0] == iAckReceived[0]) {
 				if (iCountClosure == 0) {
 					makeSendData(TTypeControl.getVal(TTypeControl.kT_CR));
-					iState = TState.ESendingClosure;
+                    commState = CommunicationState.ESendingClosure;
 				} else if (iCountClosure == 1) {
 					makeSendData(TTypeControl.getVal(TTypeControl.kT_ACK));
-					iState = TState.ELastSending;
-				}
-
+                    commState = CommunicationState.ELastSending;
+                }
 				iCountClosure++;
-
 				sendCmd();
 			} else {
 				disconnectProtocolError();
 			}
 			break;
 
-		case EDisconnectingOK:
-			Log.i(TAG, "PTR: EDisconnectingOK");
-			// EditXMLMessage();
-			break;
-			
-		case EDisconnectingPairing:
-			Log.i(TAG, "PTR: EDisconnectingPairing");
-			//Pairing eseguito con successo. Salva il BT MAC
-    		iPTRSocket.removeBTSocketEventListener(this);
-    		deviceListener.configReady(ResourceManager.getResource().getString("KPairingMsgDone"));
-			deviceListener.setBtMAC(iBtDevAddr);
-			currentPos = 0;
-			break;
-
 		case EWaitReadClear:
 			Log.i(TAG, "PTR: EWaitReadClear");
-
 			timer.cancel();
-
 			if (iAckAwaited[0] == iAckReceived[0]) {
 				Log.i(TAG, "iCountReadClear " + iCountReadClear);
 				Log.i(TAG, "EWaitReadClear " + iAckReceived[0]);
 				if (iCountReadClear == 0) {
-					makeSendData(TTypeUserCommand
-							.getVal(TTypeUserCommand.kT_STA));
-					iState = TState.ESendReadClear;
+					makeSendData(TTypeUserCommand.getVal(TTypeUserCommand.kT_STA));
+                    commState = CommunicationState.ESendReadClear;
 					iCountReadClear++;
 					sendCmd();
 				} else if (iCountReadClear == 1) {
 					makeSendData(TTypeControl.getVal(TTypeControl.kT_CR));
-					iState = TState.ESendReadClear;
-					iCountReadClear++;
+                    commState = CommunicationState.ESendReadClear;
+                    iCountReadClear++;
 					iDataReceived = "";
 					sendCmd();
 				} else if (iCountReadClear == 2) {
 					iCountReadClear++;
 					readData();
 				} else if (iCountReadClear == 3) {
-					if (iByteReceived[0] == TTypeControl
-							.getVal(TTypeControl.kT_EOT)) {
+					if (iByteReceived[0] == TTypeControl.getVal(TTypeControl.kT_EOT)) {
 						tmpString = new String(iByteReceived);
 						iDataReceived = iDataReceived.concat(tmpString);
-
 						for (int i = 0; i < iDataReceived.length(); i++)
 							Log.i(TAG, "-------rec " + iDataReceived.charAt(i));
-
 						boolean checkResult = calculateCheckSum();
 						Log.d(TAG, "checkResult=" + checkResult);
 						if (checkResult) {
-							makeSendData(TTypeControl
-									.getVal(TTypeControl.kT_ACK));
-
+							makeSendData(TTypeControl.getVal(TTypeControl.kT_ACK));
 							iCountReadClear++;
-
-							iState = TState.ESendReadClear;
+                            commState = CommunicationState.ESendReadClear;
 							sendCmd();
 						}
 						else {							
@@ -1361,33 +1232,21 @@ public class RocheProthrombineTimeClient extends DeviceHandler implements
 				} else if (iCountReadClear == 4) {
 					// Richiede ultima misura
 					iCountNMR = 0;
-					//isRecoveryStatus = false;
-					deviceListener.notifyWaitToUi(ResourceManager.getResource()
-							.getString("KConnMsgMsgRochePTR"));
-
-					makeSendData(TTypeUserCommand
-							.getVal(TTypeUserCommand.kT_RES));
-
-					iState = TState.ENumbMeasReq;
+					deviceListener.notifyWaitToUi(ResourceManager.getResource().getString("KConnMsgMsgRochePTR"));
+					makeSendData(TTypeUserCommand.getVal(TTypeUserCommand.kT_RES));
+                    commState = CommunicationState.ENumbMeasReq;
 					sendCmd();
 				} else if (iCountReadClear == 5) {
 					makeSendData(TTypeControl.getVal(TTypeControl.kT_CR));
-
 					iCountReadClear++;
-
-					iState = TState.ESendReadClear;
+					commState = CommunicationState.ESendReadClear;
 					sendCmd();
 				} else if (iCountReadClear == 6) {
 					// reset();
 					recoveryFromError();
-
-					// deviceListener.Connected(KAlignMsgPTR,deviceListener.iUserData->iAudio);
-
 					makeSendData(TTypeControl.getVal(TTypeControl.kT_CAN));
-
 					iCountHS = 0;
-
-					iState = TState.ESendingHS;
+                    commState = CommunicationState.ESendingHS;
 					sendCmd();
 				}
 			} else {
@@ -1397,19 +1256,15 @@ public class RocheProthrombineTimeClient extends DeviceHandler implements
 			}
 			break;
 
-		case EDisconnecting:
-			if (operationDeleted) {
-				// Chiusura su procedura di errore
-				iPTRSocket.removeBTSocketEventListener(this);
-				iPTRSocket.close();
-				iState = TState.EWaitingToGetDevice;
-			}
-			break;
+		case Error:
+		    Log.d(TAG, "runBTSocket: Error");
+            deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR,ResourceManager.getResource().getString("ECommunicationError"));
+            stop();
+            break;
 		}
 	}
 
 	private void recoveryFromError() {
-
 		// Buffer
 		iSendDataCmd = new byte[1];
 		iAckAwaited = new byte[1];
@@ -1417,17 +1272,14 @@ public class RocheProthrombineTimeClient extends DeviceHandler implements
 		iByteReceived = new byte[1];
 		iDataReceived = null;
 		iLastMeasure = null;
-
 		// Contatori
 		iCountHS = 0;
 		iCountPowerUpSeq = 0;
 		iCountNMR = 0;
 		iCountClosure = 0;
-
 		// Sequenzializzatore comandi
 		iCmdSequence = null;
 		iPosCmd = 0;
-
 		// Dati relativi alle misure
 		iINR = null;
 		iSec = null;
@@ -1448,10 +1300,9 @@ public class RocheProthrombineTimeClient extends DeviceHandler implements
 		@Override
 		public void run() {
 			isTimerExpired = true;
-			if (iState == TState.EWaitingAckHS) {
+			if (commState == CommunicationState.EWaitingAckHS) {
 				Log.i(TAG, "TIMER SCADUTO");
-				iState = TState.ESendingHS;
-
+				commState = CommunicationState.ESendingHS;
 				makeSendData(TTypeControl.getVal(TTypeControl.kT_CAN));
 				sendCmd();
 			} else {

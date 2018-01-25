@@ -23,5 +23,6 @@ PR, PC300, PC-300 - GIMA, 1
 // EC, ECGTest, ECGTest, 1
 GL, AGAMATRIXJAZZ, Jazz 2 - AgaMatrix, 1
 GL, CLEVERCHEK, Glucometro - Fora, 1
+PR, CLEVERCHEK, D40b - Fora, 1
 EC, TOUCHECG, TouchECG - Cardioline, 1
-// EC, IEMECG, Beam - IEM, 1
+EC, IEMECG, Beam - IEM, 1

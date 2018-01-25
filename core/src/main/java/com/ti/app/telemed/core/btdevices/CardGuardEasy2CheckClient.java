@@ -100,7 +100,6 @@ public class CardGuardEasy2CheckClient extends DeviceHandler
     private Timer timer;
 	private boolean retryOnceToReconnect = true;
     private final static int kTimeOut = 2000;
-	private static final byte MEASURE_POSITION_NUMBER = 0x00;
 
 	/*
 	public static final String FORA_DEVICE_D40b = "D40b - Fora";

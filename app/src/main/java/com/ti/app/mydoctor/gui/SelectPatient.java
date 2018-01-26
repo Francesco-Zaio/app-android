@@ -16,6 +16,7 @@ import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v7.app.ActionBar;
+import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.SearchView;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -23,6 +24,7 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.Window;
 import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
@@ -36,7 +38,7 @@ import com.ti.app.mydoctor.gui.customview.ActionBarListActivity;
 import com.ti.app.mydoctor.gui.customview.GWTextView;
 import com.ti.app.mydoctor.gui.adapter.PatientListAdapter;
 
-public class SelectPatient extends ActionBarListActivity implements SearchView.OnQueryTextListener {
+public class SelectPatient extends AppCompatActivity implements SearchView.OnQueryTextListener {
 
 	public static final String PATIENT = "PATIENT";
 	
@@ -65,38 +67,40 @@ public class SelectPatient extends ActionBarListActivity implements SearchView.O
 		//Flag per mantenere attivo lo schermo finchè l'activity è in primo piano
 		getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-		//Inizializza l'ActionBAr
-		ActionBar actionBar = this.getSupportActionBar();
-		//Setta il gradiente di sfondo della action bar
-		Drawable cd = this.getResources().getDrawable(R.drawable.action_bar_background_color);
-		actionBar.setBackgroundDrawable(cd);
-				
-		actionBar.setDisplayShowCustomEnabled(true);
-		actionBar.setDisplayShowTitleEnabled(false);
-		
-		//Setta l'icon
-		actionBar.setIcon(R.drawable.icon_action_bar);
+        // create the grid item mapping
+        String[] from = new String[]{KEY_CF, KEY_PATIENT_SURNAME, KEY_PATIENT_NAME};
+        int[] to = new int[]{R.id.cf, R.id.patient_surname, R.id.patient_name};
 
-		//Settare il font e il titolo della Activity
-		LayoutInflater inflator = (LayoutInflater)this.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-		View titleView = inflator.inflate(R.layout.actionbar_title, null);
-		GWTextView titleTV = (GWTextView)titleView.findViewById(R.id.actionbar_title_label);
-		actionBar.setCustomView(titleView);
-		
-		//L'icona dell'App diventa tasto per tornare nella Home
-		actionBar.setHomeButtonEnabled(true);
-		actionBar.setDisplayHomeAsUpEnabled(true);
+        fillMaps = new ArrayList<>();
+        patientList = UserManager.getUserManager().getCurrentUser().getPatients();
 
-		// create the grid item mapping
-		String[] from = new String[] { KEY_CF, KEY_PATIENT_SURNAME, KEY_PATIENT_NAME };
-		int[] to = new int[] { R.id.cf, R.id.patient_surname, R.id.patient_name };
+        //Inizializza l'ActionBAr
+		ActionBar actionBar = getSupportActionBar();
+		if (actionBar != null) {
+            //Setta il gradiente di sfondo della action bar
+            Drawable cd = this.getResources().getDrawable(R.drawable.action_bar_background_color);
+            actionBar.setBackgroundDrawable(cd);
 
-		fillMaps = new ArrayList<>();
-		patientList = UserManager.getUserManager().getCurrentUser().getPatients();
-		
-        //Nome dell'utente da usare come title dell'activity
-        CharSequence mCurrentUserName = UserManager.getUserManager().getCurrentUser().getName() + "\n" + UserManager.getUserManager().getCurrentUser().getSurname();
-		titleTV.setText(mCurrentUserName);
+            actionBar.setDisplayShowCustomEnabled(true);
+            actionBar.setDisplayShowTitleEnabled(false);
+
+            //Setta l'icon
+            actionBar.setIcon(R.drawable.icon_action_bar);
+
+            //Settare il font e il titolo della Activity
+            LayoutInflater inflator = (LayoutInflater) this.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+            View titleView = inflator.inflate(R.layout.actionbar_title, null);
+            GWTextView titleTV = (GWTextView) titleView.findViewById(R.id.actionbar_title_label);
+            actionBar.setCustomView(titleView);
+
+            //L'icona dell'App diventa tasto per tornare nella Home
+            actionBar.setHomeButtonEnabled(true);
+            actionBar.setDisplayHomeAsUpEnabled(true);
+
+            //Nome dell'utente da usare come title dell'activity
+            CharSequence mCurrentUserName = UserManager.getUserManager().getCurrentUser().getName() + "\n" + UserManager.getUserManager().getCurrentUser().getSurname();
+            titleTV.setText(mCurrentUserName);
+        }
 
 		Collections.sort(patientList, new Comparator<Patient>() {
 			@Override
@@ -131,7 +135,7 @@ public class SelectPatient extends ActionBarListActivity implements SearchView.O
 		if (hasCurrentPatient)
 		    patientList.remove(currentPatient);
 
-		IndexableListView lv = (IndexableListView)getListView();
+        IndexableListView lv = findViewById(R.id.patient_list);
 		lv.setFastScrollEnabled(true);
 		lv.setOnItemClickListener(new OnItemClickListener() {
 			public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
@@ -144,7 +148,7 @@ public class SelectPatient extends ActionBarListActivity implements SearchView.O
 			}
 		});
 		patientListAdapter = new PatientListAdapter(this, fillMaps, R.layout.patient_item, from, to);
-		setListAdapter(patientListAdapter);
+		lv.setAdapter(patientListAdapter);
 	}	
 	
 	@Override

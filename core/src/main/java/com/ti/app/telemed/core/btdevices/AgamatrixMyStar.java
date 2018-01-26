@@ -40,7 +40,7 @@ import java.util.Locale;
 import java.util.Vector;
 
 
-public class AgamatrixJazz extends DeviceHandler implements
+public class AgamatrixMyStar extends DeviceHandler implements
         BTSearcherEventListener,
         AgaMatrixTimeListener,
         ConnectionStateListener,
@@ -49,8 +49,11 @@ public class AgamatrixJazz extends DeviceHandler implements
         DeviceInformationListener,
         GlucoseMeasurementsListener {
 
+/* API Key utilizzata per i devices Agamatrix Jazz 2 Wireless di test
     private static final String AUTHORIZATION_KEY = "0300000080ff006d5819113d12ac54cc8485c64f";
-    private static final String REGKEY = "AgamatrixJazz";
+*/
+    private static final String AUTHORIZATION_KEY = "03020000800c0077402627a700c6ddcef099e2a0";
+    private static final String REGKEY = "AgamatrixMyStar";
 
 
     private static final int HANDLER_DEVICE_CONNECTED = 100;
@@ -70,10 +73,10 @@ public class AgamatrixJazz extends DeviceHandler implements
     private ArrayList<?> measurements;
     private int lastSequenceNr = 0;
 
-    private static final String TAG = "AgamatrixJazz";
+    private static final String TAG = "AgamatrixMyStar";
 
 
-    public AgamatrixJazz(DeviceListener listener, UserDevice ud) {
+    public AgamatrixMyStar(DeviceListener listener, UserDevice ud) {
         super(listener, ud);
 
         iServiceSearcher = new BTSearcher();
@@ -251,15 +254,15 @@ public class AgamatrixJazz extends DeviceHandler implements
     private final MyHandler devOpHandler = new MyHandler(this);
 
     private static class MyHandler extends Handler {
-        private final WeakReference<AgamatrixJazz> mOuter;
+        private final WeakReference<AgamatrixMyStar> mOuter;
 
-        private MyHandler(AgamatrixJazz outer) {
+        private MyHandler(AgamatrixMyStar outer) {
             mOuter = new WeakReference<>(outer);
         }
 
         @Override
         public void handleMessage(Message msg) {
-            AgamatrixJazz outer = mOuter.get();
+            AgamatrixMyStar outer = mOuter.get();
             switch (msg.what) {
                 case HANDLER_DEVICE_CONNECTED:
                     break;

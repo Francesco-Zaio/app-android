@@ -50,14 +50,6 @@
         </activity>
 
         <activity
-            android:name=".gui.ShowUserSettings"
-            android:label="@string/show_settings">
-            <intent-filter>
-                <action android:name=".DeviceList" />
-            </intent-filter>
-        </activity>
-
-        <activity
             android:name=".gui.ShowUtilitySettings"
             android:label="@string/show_settings"
             android:windowSoftInputMode="stateHidden">

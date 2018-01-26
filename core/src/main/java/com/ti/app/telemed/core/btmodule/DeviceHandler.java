@@ -3,7 +3,7 @@ package com.ti.app.telemed.core.btmodule;
 import android.bluetooth.BluetoothDevice;
 import android.util.Log;
 
-import com.ti.app.telemed.core.btdevices.AgamatrixJazz;
+import com.ti.app.telemed.core.btdevices.AgamatrixMyStar;
 import com.ti.app.telemed.core.btdevices.CardGuardEasy2CheckClient;
 import com.ti.app.telemed.core.btdevices.EcgProtocol;
 import com.ti.app.telemed.core.btdevices.ForaThermometerClient;
@@ -23,8 +23,6 @@ import com.ti.app.telemed.core.dbmodule.DbManager;
 import com.ti.app.telemed.core.usermodule.UserManager;
 import com.ti.app.telemed.core.util.GWConst;
 import com.ti.app.telemed.core.util.Util;
-
-import java.lang.reflect.Method;
 
 /**
  * <h1>Acquisire una misura da un dispsitivo</h1>
@@ -147,7 +145,7 @@ public abstract class DeviceHandler {
             case GWConst.KPC300SpotCheck:
                 return new GIMAPC300SpotCheck(listener, ud);
             case GWConst.KAgamtrixJazz:
-                return new AgamatrixJazz(listener, ud);
+                return new AgamatrixMyStar(listener, ud);
             case GWConst.KTouchECG:
                 return new TouchECG(listener, ud);
             case GWConst.KIEMECG:

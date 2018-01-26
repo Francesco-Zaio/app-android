@@ -143,12 +143,12 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
     private static final int ALERT_DIALOG = 3;
 	private static final int LOGIN_DIALOG = 8;
 	private static final int CHANGE_PASSWORD_DIALOG = 9;
-	private static final int ERROR_EXIT_APP_DIALOG = 10;
 	private static final int CONFIRM_PATIENT_DIALOG = 11;
 	private static final int LIST_OR_NEW_USER_DIALOG = 13;
 	private static final int SIMPLE_DIALOG = 14;
 	private static final int PRECOMPILED_LOGIN_DIALOG = 16;
 	private static final int CONFIRM_CLOSE_DIALOG = 18;
+    private static final int USER_OPTIONS_DIALOG = 19;
 
     
     private GWTextView titleTV;
@@ -184,8 +184,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	private List<UserMeasure> measureList; // list of enabled measures types of the current User
 	private HashMap<String, List<UserDevice>> userDevicesMap; // list of UserDevices for every measure type of the current User
 
-    // TODO verificarese effettivamente serve
-	private boolean runningConfig;
     // indica se l'operazione in corso è una richiesta di cambi password
     private boolean changePassword = false;
 
@@ -232,7 +230,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 
 		//La tastiera viene aperta solo quando viene selezionata una edittext
 		getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
-		//Flag per mantenere attivo lo schermo finch� l'activity � in primo piano
+		//Flag per mantenere attivo lo schermo finche' l'activity e' in primo piano
 		getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         //Inizializza l'ActionBAr
@@ -709,7 +707,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                 Toast.makeText(this, AppResourceManager.getResource().getString("KMsgSendMeasureStart"), Toast.LENGTH_SHORT).show();
                 break;
             case ITEM_USER_UPDATES:
-                runningConfig = true;
                 //l'update della configurazione equivale a rifare il login (senza per� chiedere user e pwd)
                 dataBundle = new Bundle();
                 dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("KMsgConf"));
@@ -728,9 +725,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 				myShowDialog(CHANGE_PASSWORD_DIALOG);
 				break;
             case ITEM_USER_OPTIONS:
-                Intent intentSettingsUser = new Intent(DeviceList.this, ShowUserSettings.class);
-                intentSettingsUser.putExtra("TYPE_SETTINGS", "USER");
-                startActivity(intentSettingsUser);
+                myShowDialog(USER_OPTIONS_DIALOG);
                 break;
             case ITEM_DEVICES_MANAGEMENT:
                 //Verifica che l'utente attivo sia quello di default
@@ -1742,7 +1737,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
             DeviceList activity = DeviceList.this;
 			switch (msg.what) {
 			case UserManager.USER_CHANGED:
-				Log.d(TAG, " UserManager.USER_CHANGED: runningConfig=" + runningConfig);
                 resetView();
                 userManager.setCurrentPatient(null);
 				Log.i(TAG, "userManangerHandler: user changed");
@@ -1760,8 +1754,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 				} else {
                     currentPatientLL.setVisibility(View.VISIBLE);
 				}
-
-                runningConfig = false;
 				break;
 			case UserManager.ERROR_OCCURED:
             case UserManager.BAD_PASSWORD:
@@ -1772,7 +1764,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                 if (!changePassword)
                     dataBundle.putBoolean(AppConst.LOGIN_ERROR, false);
                 myShowDialog(ALERT_DIALOG);
-                runningConfig = false;
 				break;
 			case UserManager.LOGIN_FAILED:
                 Log.e(TAG, "userManagerHandler: login failed");
@@ -1782,7 +1773,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                 if (!changePassword)
                     dataBundle.putBoolean(AppConst.LOGIN_ERROR, true);
                 myShowDialog(ALERT_DIALOG);
-                runningConfig = false;
                 break;
 			case UserManager.USER_BLOCKED:
                 Log.e(TAG, "userManagerHandler: User Blocked");
@@ -1802,7 +1792,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                 dataBundle = new Bundle();
                 dataBundle.putString(AppConst.MESSAGE, (String)msg.obj);
                 myShowDialog(ALERT_DIALOG);
-                runningConfig = false;
 				break;
 			}
 		}
@@ -1958,6 +1947,20 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                     }
                 });
                 return d;
+            case USER_OPTIONS_DIALOG:
+                builder.setTitle(R.string.userSettings);
+                View userSettingsDialog = inflater.inflate(R.layout.user_settings, null);
+                final CheckBox autoLoginCB = userSettingsDialog.findViewById(R.id.autoLoginCB);
+                User currentUser = userManager.getCurrentUser();
+                autoLoginCB.setChecked(currentUser.getHasAutoLogin());
+                builder.setView(userSettingsDialog);
+                builder.setPositiveButton(R.string.okButton, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        userManager.saveAutoLoginStatus(userManager.getCurrentUser().getId(), autoLoginCB.isChecked());
+                    }
+                });
+                builder.setNegativeButton(R.string.cancelButton, null);
+                return builder.create();
             case LOGIN_DIALOG:
             case PRECOMPILED_LOGIN_DIALOG:
                 builder.setTitle(R.string.authentication);
@@ -1999,11 +2002,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                 return builder.create();
             case CONFIRM_PATIENT_DIALOG:
                 return createConfirmPatientDialog();
-            case ERROR_EXIT_APP_DIALOG:
-                builder.setMessage(dataBundle.getString(AppConst.MESSAGE));
-                builder.setNeutralButton("Ok", error_exit_app_dialog_click_listener);
-                beep();
-                return builder.create();
             case SIMPLE_DIALOG:
                 builder.setMessage(dataBundle.getString(AppConst.MESSAGE));
                 builder.setNeutralButton("Ok", simple_dialog_click_listener);
@@ -2056,7 +2054,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
             dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("KMsgConf"));
             dataBundle.putBoolean(AppConst.MESSAGE_CANCELLABLE, true);
             dataBundle.putBoolean(AppConst.IS_CONFIGURATION, true);
-            runningConfig = true;
             changePassword = true;
             userManager.changePassword(pwdET.getText().toString(),  newPwdET.getText().toString());
             myRemoveDialog(CHANGE_PASSWORD_DIALOG);
@@ -2077,7 +2074,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 				dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("KMsgConf"));
 				dataBundle.putBoolean(AppConst.MESSAGE_CANCELLABLE, true);
 				dataBundle.putBoolean(AppConst.IS_CONFIGURATION, true);
-				runningConfig = true;
                 changePassword = false;
                 userManager.logInUser(loginET.getText().toString(),  pwdET.getText().toString());
                 break;
@@ -2104,22 +2100,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 				break;
 			}
 
-		}
-	};
-
-	/**
-	 * Listener per i click sulla dialog ERROR_EXIT_APP_DIALOG
-	 */
-	private DialogInterface.OnClickListener error_exit_app_dialog_click_listener = new DialogInterface.OnClickListener() {
-
-		@Override
-		public void onClick(DialogInterface dialog, int which) {
-			switch(which) {
-			case DialogInterface.BUTTON_NEUTRAL:
-				myRemoveDialog(ERROR_EXIT_APP_DIALOG);
-				finish();
-				break;
-			}
 		}
 	};
 
@@ -2220,6 +2200,18 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
         beep();
         builder.setCancelable(false);
         return builder.create();
+        /*
+        AlertDialog d = builder.create();
+        d.show();
+        if ((getResources().getConfiguration().screenLayout &
+                Configuration.SCREENLAYOUT_SIZE_MASK) ==
+                Configuration.SCREENLAYOUT_SIZE_XLARGE) {
+            TextView textView = d.findViewById(android.R.id.message);
+            //textView.setTextSize(40);
+            textView.setTextAppearance(this, android.R.style.TextAppearance_Medium);
+        }
+        return d;
+        */
     }
 
 	private void showAboutDialog() {
@@ -2378,7 +2370,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
             int diffHours = AppUtil.getDiffHours(new Date().getTime(), lastUpdateTime);
 			// Se l'ultimo è stato effettuato da più di un ora forza la login da piattaforma
             if (diffHours > 1) {
-                runningConfig = true;
                 //l'update della configurazione equivale a rifare il login (senza pero' chiedere user e pwd)
                 dataBundle = new Bundle();
                 dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("KMsgConf"));

@@ -39,7 +39,7 @@ public interface GWConst {
     String KSpirodoc = "SPIRODOC";
 	String KOximeterNon = "NONIN4100";
 	String KPC300SpotCheck = "PC300";
-	String KAgamtrixJazz = "AGAMATRIXJAZZ";
+	String KAgamtrixJazz = "AGAMATRIXMYSTAR";
 	String KTouchECG = "TOUCHECG";
 	String KIEMECG = "IEMECG";
 	String KTDCC = "CLEVERCHEK";

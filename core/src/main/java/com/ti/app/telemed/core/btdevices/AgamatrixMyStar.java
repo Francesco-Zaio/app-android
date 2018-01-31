@@ -121,12 +121,12 @@ public class AgamatrixMyStar extends DeviceHandler implements
     public void selectDevice(BluetoothDevice bd){
         Log.d(TAG, "selectDevice: iBtDevAddr="+bd.getAddress());
         iServiceSearcher.stopSearchDevices();
-        iState = TState.EGettingConnection;
         iBtDevAddr =  bd.getAddress();
         mClient = AgaMatrixClient.getInstance(MyApp.getContext(), bd);
         mClient.setAPIKey(AUTHORIZATION_KEY);
         mClient.registerConnectionStateListener(this);
         mClient.getDeviceInformation(this);
+        iState = TState.EConnected;
         deviceListener.notifyToUi(ResourceManager.getResource().getString("KConnectingDev"));
     }
 
@@ -267,10 +267,23 @@ public class AgamatrixMyStar extends DeviceHandler implements
                 case HANDLER_DEVICE_CONNECTED:
                     break;
                 case HANDLER_DEVICE_DISCONNECTED:
-                    if (outer.iState == TState.EConnected || outer.iState == TState.EGettingMeasures) {
+                    if (outer.iState == TState.EConnected) {
                         String message = ResourceManager.getResource().getString("ECommunicationError");
                         outer.deviceListener.notifyError(DeviceListener.CONNECTION_ERROR, message);
                         outer.stop();
+                    }
+                    break;
+                case HANDLER_BATTERY:
+                    outer.deviceListener.setBtMAC(outer.iBtDevAddr);
+                    if (outer.operationType == OperationType.Pair) {
+                        outer.deviceListener.configReady(ResourceManager.getResource().getString("KPairingMsgDone"));
+                        outer.stop();
+                    } else {
+                        outer.batteryLevel = msg.arg1;
+                        outer.lastSequenceNr = Util.getRegistryIntValue(REGKEY + outer.iBtDevAddr);
+                        Log.d(TAG,"read lastSequenceNr="+outer.lastSequenceNr);
+                        outer.mClient.getMeterSettings(outer);
+                        outer.deviceListener.notifyWaitToUi(ResourceManager.getResource().getString("KMeasuring"));
                     }
                     break;
                 case HANDLER_SETTINGS:
@@ -285,21 +298,6 @@ public class AgamatrixMyStar extends DeviceHandler implements
                     } else {
                         outer.mClient.getGlucoseMeasurementCount(outer);
                         Log.d(TAG,"getGlucoseMeasurementCount");
-                    }
-                    outer.iState = TState.EGettingMeasures;
-                    break;
-                case HANDLER_BATTERY:
-                    outer.deviceListener.setBtMAC(outer.iBtDevAddr);
-                    if (outer.operationType == OperationType.Pair) {
-                        outer.deviceListener.configReady(ResourceManager.getResource().getString("KPairingMsgDone"));
-                        outer.stop();
-                    } else {
-                        outer.batteryLevel = msg.arg1;
-                        outer.iState = TState.EConnected;
-                        outer.lastSequenceNr = Util.getRegistryIntValue(REGKEY + outer.iBtDevAddr);
-                        Log.d(TAG,"read lastSequenceNr="+outer.lastSequenceNr);
-                        outer.mClient.getMeterSettings(outer);
-                        outer.deviceListener.notifyWaitToUi(ResourceManager.getResource().getString("KMeasuring"));
                     }
                     break;
                 case HANDLER_MEASURES_COUNT:
@@ -404,14 +402,11 @@ public class AgamatrixMyStar extends DeviceHandler implements
 
     private void stop() {
         Log.d(TAG, "stop");
-        if (iState == TState.EGettingDevice) {
-            iServiceSearcher.stopSearchDevices();
-        }
         iServiceSearcher.stopSearchDevices();
         iServiceSearcher.clearBTSearcherEventListener();
         iServiceSearcher.close();
         if (mClient != null) {
-            iState = TState.EDisconnecting;
+            iState = TState.EWaitingToGetDevice;
             mClient.shutdown();
         }
         reset();

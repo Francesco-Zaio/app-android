@@ -138,7 +138,6 @@ public class IHealth extends DeviceHandler {
     }
 
     void notifyIncomingMeasures(String message) {
-        iState = TState.EGettingMeasures;
         deviceListener.notifyToUi(message);
     }
 

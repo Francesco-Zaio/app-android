@@ -43,6 +43,7 @@ public abstract class DeviceHandler {
 		EWaitingToGetDevice,    // default e notifica disconnessione
 		EGettingDevice,         // chiamata di startOperation(...)
 		EGettingConnection,     // chiamata a connectDevice()
+        EConnected,             // callabck connessione avvenuta OK o fine Misura
         EWaitingStartMessage,
         EWaitingHeader,
         EWaitingBody,
@@ -63,7 +64,6 @@ public abstract class DeviceHandler {
         EDisconnectingOK,
         EDisconnectingPairing,
         EDisconnectingFromUser,
-		EConnected,             // callabck connessione avvenuta OK o fine Misura
 		EGettingMeasures,       // chiamata startMeasures
         EGettingService
 	}

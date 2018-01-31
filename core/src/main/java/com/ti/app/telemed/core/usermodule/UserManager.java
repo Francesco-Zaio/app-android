@@ -280,16 +280,12 @@ public class UserManager {
      * @param login      username
      * @param password   password
      */
-    public void logInUserFromDb(String login, String password) throws Exception {
+    public void logInUserFromDb(String login, String password) {
 		synchronized (currT) {
 			if (currentOpOn == Op.IDLE) {
-				if ((login != null) && (password != null)) {
-					this.login = login;
-					this.password = password;
-					currentOpOn = Op.TALK_TO_DB;
-				} else {
-					throw new Exception();
-				}
+                this.login = login;
+                this.password = password;
+                currentOpOn = Op.TALK_TO_DB;
 	        }
 	        currT.notifyAll();
 		}

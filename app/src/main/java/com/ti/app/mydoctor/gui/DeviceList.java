@@ -88,7 +88,6 @@ import com.ti.app.mydoctor.util.DialogManager;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -184,8 +183,13 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	private List<UserMeasure> measureList; // list of enabled measures types of the current User
 	private HashMap<String, List<UserDevice>> userDevicesMap; // list of UserDevices for every measure type of the current User
 
-    // indica se l'operazione in corso è una richiesta di cambi password
-    private boolean changePassword = false;
+    // indica se l'operazione in corso è una richiesta di cambio password
+    private boolean runningChangePassword = false;
+    // indica se, in caso di fallimento login web debba essere effettuato il retry in locale
+    private boolean retryLocalLogin = true;
+    // variabili dove vengono memorizzate le credenziali dell'utente durante l'operazone di login
+    // per poter fare il retry in locale nel caso la piattaforma non risponda
+    private String userid,password;
 
 	private GWTextView patientNameTV;
 	
@@ -710,9 +714,11 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                 //l'update della configurazione equivale a rifare il login (senza per� chiedere user e pwd)
                 dataBundle = new Bundle();
                 dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("KMsgConf"));
-                dataBundle.putBoolean(AppConst.MESSAGE_CANCELLABLE, true);
+                dataBundle.putBoolean(AppConst.MESSAGE_CANCELLABLE, false);
                 dataBundle.putBoolean(AppConst.IS_CONFIGURATION, true);
-                changePassword = false;
+                myShowDialog(PROGRESS_DIALOG);
+                runningChangePassword = false;
+                retryLocalLogin = false;
                 userManager.logInUser();
                 break;
             case ITEM_USER_LIST:
@@ -1756,21 +1762,26 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 				}
 				break;
 			case UserManager.ERROR_OCCURED:
+				if (retryLocalLogin) {
+                    retryLocalLogin = false;
+                    userManager.logInUserFromDb(userid,password);
+                    break;
+                }
             case UserManager.BAD_PASSWORD:
                 Log.d(TAG, "UserManager.ERROR_OCCURED:");
                 myRemoveDialog(PROGRESS_DIALOG);
                 dataBundle = new Bundle();
                 dataBundle.putString(AppConst.MESSAGE, (String)msg.obj);
-                if (!changePassword)
+                if (!runningChangePassword)
                     dataBundle.putBoolean(AppConst.LOGIN_ERROR, false);
                 myShowDialog(ALERT_DIALOG);
 				break;
 			case UserManager.LOGIN_FAILED:
-                Log.e(TAG, "userManagerHandler: login failed");
+                Log.e(TAG, "userManagerHandler: LOGIN_FAILED");
                 myRemoveDialog(PROGRESS_DIALOG);
                 dataBundle = new Bundle();
                 dataBundle.putString(AppConst.MESSAGE, (String)msg.obj);
-                if (!changePassword)
+                if (!runningChangePassword)
                     dataBundle.putBoolean(AppConst.LOGIN_ERROR, true);
                 myShowDialog(ALERT_DIALOG);
                 break;
@@ -2052,9 +2063,11 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
             }
             dataBundle = new Bundle();
             dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("KMsgConf"));
-            dataBundle.putBoolean(AppConst.MESSAGE_CANCELLABLE, true);
+            dataBundle.putBoolean(AppConst.MESSAGE_CANCELLABLE, false);
             dataBundle.putBoolean(AppConst.IS_CONFIGURATION, true);
-            changePassword = true;
+            myShowDialog(PROGRESS_DIALOG);
+            runningChangePassword = true;
+            retryLocalLogin = false;
             userManager.changePassword(pwdET.getText().toString(),  newPwdET.getText().toString());
             myRemoveDialog(CHANGE_PASSWORD_DIALOG);
         }
@@ -2072,9 +2085,13 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 			case DialogInterface.BUTTON_POSITIVE:
 				dataBundle = new Bundle();
 				dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("KMsgConf"));
-				dataBundle.putBoolean(AppConst.MESSAGE_CANCELLABLE, true);
+				dataBundle.putBoolean(AppConst.MESSAGE_CANCELLABLE, false);
 				dataBundle.putBoolean(AppConst.IS_CONFIGURATION, true);
-                changePassword = false;
+				myShowDialog(PROGRESS_DIALOG);
+                runningChangePassword = false;
+                retryLocalLogin = true;
+                userid = loginET.getText().toString();
+                password = pwdET.getText().toString();
                 userManager.logInUser(loginET.getText().toString(),  pwdET.getText().toString());
                 break;
 			}
@@ -2363,29 +2380,18 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
             userDataBundle = new Bundle();
             userDataBundle.putBoolean("CHANGEABLE", false);
             userDataBundle.putString("LOGIN", user.getLogin());
-//            mUIHandler.sendEmptyMessage(PRECOMPILED_LOGIN_DIALOG);
             myShowDialog(PRECOMPILED_LOGIN_DIALOG);
         } else {
-            long lastUpdateTime = user.getTimestamp();
-            int diffHours = AppUtil.getDiffHours(new Date().getTime(), lastUpdateTime);
-			// Se l'ultimo è stato effettuato da più di un ora forza la login da piattaforma
-            if (diffHours > 1) {
-                //l'update della configurazione equivale a rifare il login (senza pero' chiedere user e pwd)
-                dataBundle = new Bundle();
-                dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("KMsgConf"));
-                dataBundle.putBoolean(AppConst.MESSAGE_CANCELLABLE, false);
-                dataBundle.putBoolean(AppConst.IS_CONFIGURATION, true);
-                changePassword = false;
-                userManager.logInUser(user.getLogin(), user.getPassword());
-            }
-            else {
-                try {
-                    changePassword = false;
-                    userManager.logInUserFromDb(user.getLogin(), user.getPassword());
-                } catch (Exception e) {
-                    Log.e(TAG, "logInUserFromDb: " + e);
-                }
-            }
+			dataBundle = new Bundle();
+			dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("KMsgConf"));
+			dataBundle.putBoolean(AppConst.MESSAGE_CANCELLABLE, false);
+			dataBundle.putBoolean(AppConst.IS_CONFIGURATION, true);
+			myShowDialog(PROGRESS_DIALOG);
+			runningChangePassword = false;
+			retryLocalLogin = true;
+			userid = user.getLogin();
+			password = user.getPassword();
+			userManager.logInUser(user.getLogin(), user.getPassword());
         }
 	}
 

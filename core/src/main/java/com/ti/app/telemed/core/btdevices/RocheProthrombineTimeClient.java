@@ -114,38 +114,6 @@ public class RocheProthrombineTimeClient extends DeviceHandler implements
 	}
 	private CommunicationState commState = CommunicationState.Idle;
 
-
-	/**
-	 * TState The state of the active object, determines behavior within the
-	 * RunL method.
-
-	private enum TState {
-		EWaitingToGetDevice,
-		EGettingDevice,
-		EGettingService,
-		EConnected,
-		ESendingHS, // HandShaking
-		ESendPowerUpSeq, // Power Up Sequence (sending)
-		ENumbMeasReq, // Richiesta numero misure in memoria
-		ELastMeasReq, // Richiesta ultima misura
-		EConfDeviceReq, // Richiesta ID device
-		ESendingClosure, // FASE di chiusura
-		ESendingRecovery, // Stato di recupero della Power Up Sequence
-		ELastSending,
-        ESendReadClear, // Read and Clear after error (sending)
-		EWaitingAckHS, // HS: HandShaking
-		EWaitPowerUpSeq, // Power Up Sequence (waiting)
-		ENumbMeasRes, // Risposta numero misure in memoria
-		ELastMeasRes, // Risposta ultima misura
-		EConfDeviceRes, // Risposta ID device
-		EWaitingClosure, // FASE di chiusura
-		EWaitReadClear, // Read and Clear after error (waiting)
-		EDisconnectingOK, 
-		EDisconnectingPairing,
-		EDisconnecting
-	}
-     */
-
 	// iServiceSearcher searches for service this client can
 	// connect to (in symbian version the type was CBTUtil) and
 	// substitutes RSocketServ and RSocket of symbian version too

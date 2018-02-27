@@ -383,6 +383,7 @@ public class MeasureManager {
      * @param measureType   Tipo di misura (se e' null il filtro non viene considerato).
      * @param idPatient     Identifivo del paziente (se e' null il filtro non viene considerato).
      * @param failed        Indica se devono essere selezionate anche le misure fallite (se e' null il filtro non viene considerato).
+     * @param family        Indica la famiglia di misura (vedi {@link com.ti.app.telemed.core.common.Measure.MeasureFamily}) (se e' null il filtro non viene considerato).
      * @return              La lista di misure selezionate o {@code null} in caso di errore.
      */
 	public ArrayList<Measure> getMeasureData(String idUser,

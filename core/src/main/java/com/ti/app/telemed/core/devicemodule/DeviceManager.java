@@ -73,13 +73,19 @@ public class DeviceManager {
     }
 
     /**
-     * Aggiorna sul DB il campo relativo all'indirizzo Bluetooth dello UserDevice passato.
+     * Aggiorna sul DB l'indirizzo Bluetooth dello UserDevice specificato.
      * @param userDevice    {@link UserDevice}.
      */
     public void updateBtAddressDevice(UserDevice userDevice) {
         DbManager.getDbManager().updateBtAddressDevice(userDevice);
     }
 
+    /**
+     * Aggiorna sul DB gli UserDevice impostando il device di default (Active = true) da utilizzare per il tipo di misura e l'utente specificati
+     * @param userId id utente
+     * @param measure tipo di misura
+     * @param idDevice id ({@link com.ti.app.telemed.core.common.Device#getId()}) del Device di default da utilizzare
+     */
     public void updateUserDeviceModel(String userId, String measure, Integer idDevice) {
         DbManager.getDbManager().updateUserDeviceModel(userId,measure,idDevice);
     }

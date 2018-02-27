@@ -7,12 +7,12 @@ android {
     defaultConfig {
         minSdkVersion 16
         targetSdkVersion 26
-        versionCode 202
-        versionName "2.0.2"
+        versionCode 203
+        versionName "2.0.3"
     }
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
         debug {
@@ -25,12 +25,6 @@ android {
 
 dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
-    compile files('libs/d2xx.jar')
-    compile files('libs/pl2303driver.jar')
-    compile files('libs/iHealthLibrary_2.3.3.jar')
-    compile files('libs/newGather.jar')
     compile 'com.android.support:appcompat-v7:26.1.0'
     compile 'com.android.support:support-v4:26.1.0'
-    compile files('libs/CreativeHealth_PC300-PC80B.jar')
-    compile files('libs/ambtsdk.jar')
 }

@@ -145,6 +145,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	private static final int CONFIRM_PATIENT_DIALOG = 11;
 	private static final int LIST_OR_NEW_USER_DIALOG = 13;
 	private static final int SIMPLE_DIALOG = 14;
+	private static final int PERMISSION_FAILURE_DIALOG = 15;
 	private static final int PRECOMPILED_LOGIN_DIALOG = 16;
 	private static final int CONFIRM_CLOSE_DIALOG = 18;
     private static final int USER_OPTIONS_DIALOG = 19;
@@ -358,8 +359,10 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
         switch (requestCode) {
             case PERMISSIONS_REQUEST:
                 for (int result: grantResults)
-                    if (result != PackageManager.PERMISSION_GRANTED)
-                        finish();
+                    if (result != PackageManager.PERMISSION_GRANTED) {
+                        myShowDialog(PERMISSION_FAILURE_DIALOG);
+                        return;
+                    }
 				checkUser(userManager.getActiveUser());
                 //new InitTask().execute();
         }
@@ -2010,6 +2013,19 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                 builder.setMessage(AppResourceManager.getResource().getString("MainGUI.menu.fileMenu.exitMsg"));
                 builder.setPositiveButton(AppResourceManager.getResource().getString("okButton"), confirm_close_dialog_click_listener);
                 builder.setNegativeButton(AppResourceManager.getResource().getString("cancelButton"), confirm_close_dialog_click_listener);
+                return builder.create();
+            case PERMISSION_FAILURE_DIALOG:
+                builder.setTitle(R.string.app_name);
+                builder.setMessage(AppResourceManager.getResource().getString("MainGUI.NoPermExit"));
+                builder.setNeutralButton(AppResourceManager.getResource().getString("okButton"),
+                        new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                finish();
+                            }
+                        }
+                );
+                builder.setCancelable(false);
                 return builder.create();
             case CONFIRM_PATIENT_DIALOG:
                 return createConfirmPatientDialog();

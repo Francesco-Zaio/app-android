@@ -131,6 +131,7 @@ public abstract class DeviceHandler {
             case GWConst.KBP5IHealth:
             case GWConst.KHS4SIHealth:
             case GWConst.KBP550BTIHealth:
+            case GWConst.KBG5SIHealth:
                 return new IHealth(listener, ud);
             case GWConst.KEcgMicro:
                 return new EcgProtocol(listener, ud);

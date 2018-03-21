@@ -5,46 +5,47 @@ import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
 
-import com.ihealth.communication.control.Hs4sControl;
-import com.ihealth.communication.control.HsProfile;
+import com.ihealth.communication.control.Bg5lControl;
+import com.ihealth.communication.control.Bg5Profile;
 import com.ihealth.communication.manager.iHealthDevicesCallback;
 import com.ihealth.communication.manager.iHealthDevicesManager;
 import com.ti.app.telemed.core.ResourceManager;
 import com.ti.app.telemed.core.btmodule.DeviceListener;
 import com.ti.app.telemed.core.common.Measure;
-import com.ti.app.telemed.core.common.Patient;
 import com.ti.app.telemed.core.util.GWConst;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 
-import java.math.RoundingMode;
-import java.text.DecimalFormat;
 import java.util.HashMap;
 
 
-class IHealthHS4S extends Handler implements IHealtDevice{
+class IHealthBG5S extends Handler implements IHealtDevice{
 
-    private static final String TAG = "IHealthHS4S";
+    private static final String TAG = "IHealthBG5S";
 
     private IHealth iHealth = null;
 
-    private static final int HANDLER_LIVE_MEASUREMENT = 100;
-    private static final int HANDLER_END_MEASUREMENT = 101;
-    private static final int HANDLER_CONNECTED = 102;
-    private static final int HANDLER_DISCONNECTED = 103;
-    private static final int HANDLER_ERROR = 104;
+    private static final int HANDLER_BATTERY = 100;
+    private static final int HANDLER_SET_UNIT = 101;
+    private static final int HANDLER_END_MEASUREMENT = 102;
+    private static final int HANDLER_CONNECTED = 103;
+    private static final int HANDLER_DISCONNECTED = 104;
+    private static final int HANDLER_ERROR = 105;
 
-    private boolean firstRead = true;
     private boolean endOperation = true;
     private int callbackId = -1;
-    private Hs4sControl mHs4sControl = null;
+    private Bg5lControl mBg5lControl = null;
     private Measure measure;
+    private String batteryLevel="";
+    private boolean prePrandial;
 
-    IHealthHS4S(IHealth iHealth, Measure m) {
+
+    IHealthBG5S(IHealth iHealth, Measure m, boolean prePrandial) {
         this.iHealth = iHealth;
         this.measure = m;
+        this.prePrandial = prePrandial;
     }
 
     private iHealthDevicesCallback mIHealthDevicesCallback = new iHealthDevicesCallback() {
@@ -56,18 +57,19 @@ class IHealthHS4S extends Handler implements IHealtDevice{
             bundle.putString("message", message);
             msg.setData(bundle);
             switch (action) {
-                case HsProfile.ACTION_LIVEDATA_HS:
-                    // message:{"value":24.1}
-                    msg.what = HANDLER_LIVE_MEASUREMENT;
+                case Bg5Profile.ACTION_BATTERY_BG:
+                    msg.what = HANDLER_BATTERY;
                     sendMessage(msg);
                     break;
-                case HsProfile.ACTION_ONLINE_RESULT_HS:
-                    // message:{"value":23.200000762939453,"dataID":"F6FB1B71C7F086CF2C2E7ABCDA63083F"}
+                case Bg5Profile.ACTION_SET_UNIT:
+                    msg.what = HANDLER_SET_UNIT;
+                    sendMessage(msg);
+                    break;
+                case Bg5Profile.ACTION_ONLINE_RESULT_BG:
                     msg.what = HANDLER_END_MEASUREMENT;
                     sendMessage(msg);
                     break;
-                case HsProfile.ACTION_ERROR_HS:
-                    // message={???}
+                case Bg5Profile.ACTION_ERROR_BG:
                     msg.what = HANDLER_ERROR;
                     sendMessage(msg);
                     break;
@@ -97,49 +99,58 @@ class IHealthHS4S extends Handler implements IHealtDevice{
 
     @Override
     public void startMeasure(String mac){
-        Log.d(TAG, "startMeasure: deviceMac=" + mac + " - mHs4sControl=" + mHs4sControl);
+        Log.d(TAG, "startMeasure: deviceMac=" + mac + " - mBg5lControl=" + mBg5lControl);
         if (iHealth == null) {
             Log.e(TAG, "startMeasure: iHealth is NULL!");
             return;
         }
 
         measure.setBtAddress(mac);
-
-        firstRead = true;
         endOperation = false;
 
         callbackId = iHealthDevicesManager.getInstance().registerClientCallback(mIHealthDevicesCallback);
      /* Limited wants to receive notification specified device */
-        iHealthDevicesManager.getInstance().addCallbackFilterForDeviceType(callbackId, iHealthDevicesManager.TYPE_HS4S);
+        iHealthDevicesManager.getInstance().addCallbackFilterForDeviceType(callbackId, iHealthDevicesManager.TYPE_BG5l);
 
-        /* Get BP5 controller */
-        mHs4sControl = iHealthDevicesManager.getInstance().getHs4sControl(mac.replace(":", ""));
-        mHs4sControl.measureOnline(1, 123);
+        /* Get controller */
+        mBg5lControl = iHealthDevicesManager.getInstance().getBG5lControl(mac.replace(":", ""));
+        mBg5lControl.getBattery();
     }
 
     @Override
     public synchronized void stop() {
-        if (mHs4sControl != null)
-            mHs4sControl.disconnect();
-        mHs4sControl = null;
+        if (mBg5lControl != null)
+            mBg5lControl.disconnect();
+        mBg5lControl = null;
     }
 
     @Override
     public String getStartMeasureMessage() {
-        return ResourceManager.getResource().getString("KStartMeasWeight");
+        return ResourceManager.getResource().getString("KMsgConfiguring");
     }
 
     @Override
     public void handleMessage(Message msg) {
         super.handleMessage(msg);
         switch (msg.what) {
-            case HANDLER_LIVE_MEASUREMENT:
-                if (mHs4sControl != null) // check if disconnect was called but not yet done
-                    iHealth.scheduleTimer();
-                if (firstRead) {
-                    iHealth.notifyToUi(ResourceManager.getResource().getString("KMeasuring"));
-                    firstRead = false;
+            case HANDLER_BATTERY:
+                String messageBattery = msg.getData().getString("message");
+                try {
+                    JSONObject reader = new JSONObject(messageBattery);
+                    batteryLevel = reader.getString(Bg5Profile.BATTERY_BG);
+                } catch (JSONException e) {
+                    iHealth.notifyError(DeviceListener.DEVICE_DATA_ERROR,
+                            ResourceManager.getResource().getString("EDataReadError"));
+                    Log.e(TAG, "HANDLER_BATTERY", e);
+                    break;
                 }
+                iHealth.scheduleTimer();
+                mBg5lControl.setUnit(2);
+                break;
+            case HANDLER_SET_UNIT:
+                iHealth.resetTimer();
+                iHealth.notifyToUi(ResourceManager.getResource().getString("DoMeasureGL"));
+                mBg5lControl.startMeasure(1);
                 break;
             case HANDLER_END_MEASUREMENT:
                 Log.d(TAG, "HANDLER_END_MEASUREMENT: - endOperation="+endOperation);
@@ -169,18 +180,12 @@ class IHealthHS4S extends Handler implements IHealtDevice{
     }
 
     private void notifyResultData(String message) {
-        String strWeight;
-        double weight;
-        double bmi = 0.;
+        int value;
 
-        DecimalFormat df = new DecimalFormat("#.#");
-        df.setRoundingMode(RoundingMode.HALF_EVEN);
         try {
             JSONTokener jsonTokener = new JSONTokener(message);
             JSONObject jsonObject = (JSONObject) jsonTokener.nextValue();
-            weight = jsonObject.getDouble(HsProfile.WEIGHT_HS);
-            strWeight = df.format(weight);
-            strWeight = strWeight.replace ('.', ',');
+            value = jsonObject.getInt(Bg5Profile.ONLINE_RESULT_BG);
         } catch (JSONException e) {
             Log.e(TAG, "notifyResultData(): ", e);
             iHealth.notifyError(DeviceListener.DEVICE_DATA_ERROR,
@@ -188,18 +193,13 @@ class IHealthHS4S extends Handler implements IHealtDevice{
             return;
         }
 
-        Patient p = iHealth.getPatient();
-        if (p != null) {
-            double height = Double.parseDouble(p.getHeight())/100;
-            if (height > 0) {
-                bmi = weight / Math.pow(height,2);
-            }
-        }
-
         HashMap<String,String> tmpVal = new HashMap<>();
-        tmpVal.put(GWConst.EGwCode_01, strWeight);  // peso
-        if (bmi > 0)
-            tmpVal.put(GWConst.EGwCode_S0, df.format(bmi).replace ('.',','));  // bmi
+        if (prePrandial) {
+            tmpVal.put(GWConst.EGwCode_0E, Integer.toString(value));  // glicemia Pre-prandiale
+        } else {
+            tmpVal.put(GWConst.EGwCode_0T, Integer.toString(value));  // glicemia Post-prandiale
+        }
+        tmpVal.put(GWConst.EGwCode_BATTERY, batteryLevel); // livello batteria
         measure.setMeasures(tmpVal);
         iHealth.notifyEndMeasurement(measure);
     }

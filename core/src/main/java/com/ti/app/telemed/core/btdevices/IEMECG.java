@@ -138,6 +138,7 @@ public class IEMECG extends DeviceHandler {
 
         Log.d(TAG, "start() iState=" + iState);
         iState = TState.EGettingDevice;
+		deviceListener.notifyToUi(ResourceManager.getResource().getString("KSearchingDev"));
 
         new Thread(new Runnable() {
 
@@ -148,7 +149,7 @@ public class IEMECG extends DeviceHandler {
                     btAdapter = BluetoothAdapter.getDefaultAdapter();
                 try {
 
-                    Log.d(TAG, "Connecting as Server....");
+					Log.d(TAG, "Connecting as Server....");
                     mmServerSocket = btAdapter.listenUsingRfcommWithServiceRecord(NAME, SERIAL_PORT_UUID);
                     Log.d(TAG, "ECG-Server: Waiting for incoming connections...");
                     mmSocket = mmServerSocket.accept();

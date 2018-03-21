@@ -39,6 +39,7 @@ public class IHealth extends DeviceHandler {
     private String deviceType = "";
     private IHealtDevice deviceController = null;
     private Timer timer;
+    private boolean prePrandial;
 
     public IHealth(DeviceListener listener, UserDevice ud) {
         super(listener, ud);
@@ -50,12 +51,16 @@ public class IHealth extends DeviceHandler {
 
     @Override
     public void confirmDialog() {
-        // Not used for this device
+        prePrandial = false;
+        iHealthDevicesManager.getInstance().startDiscovery(iHealthDevicesManager.DISCOVERY_BG5l);
+        deviceListener.notifyToUi(ResourceManager.getResource().getString("KSearchingDev"));
     }
 
     @Override
-    public void cancelDialog(){
-        // Not used for this device
+    public void cancelDialog() {
+        prePrandial = true;
+        iHealthDevicesManager.getInstance().startDiscovery(iHealthDevicesManager.DISCOVERY_BG5l);
+        deviceListener.notifyToUi(ResourceManager.getResource().getString("KSearchingDev"));
     }
 
     @Override
@@ -74,15 +79,25 @@ public class IHealth extends DeviceHandler {
             switch (deviceModel) {
                 case IHealtDevice.KBP550BTIHealth:
                     iHealthDevicesManager.getInstance().startDiscovery(iHealthDevicesManager.DISCOVERY_BP550BT);
+                    deviceListener.notifyToUi(ResourceManager.getResource().getString("KSearchingDev"));
                     break;
                 case IHealtDevice.KBP5IHealth:
                     iHealthDevicesManager.getInstance().startDiscovery(iHealthDevicesManager.DISCOVERY_BP5);
+                    deviceListener.notifyToUi(ResourceManager.getResource().getString("KSearchingDev"));
                     break;
                 case IHealtDevice.KPO3IHealth:
                     iHealthDevicesManager.getInstance().startDiscovery(iHealthDevicesManager.DISCOVERY_PO3);
+                    deviceListener.notifyToUi(ResourceManager.getResource().getString("KSearchingDev"));
                     break;
                 case IHealtDevice.KHS4SIHealth:
                     iHealthDevicesManager.getInstance().startDiscovery(iHealthDevicesManager.DISCOVERY_HS4S);
+                    deviceListener.notifyToUi(ResourceManager.getResource().getString("KSearchingDev"));
+                    break;
+                case IHealtDevice.KBG5SIHealth:
+                    String message = ResourceManager.getResource().getString("KPrePostMsg").concat("\n\n");
+                    deviceListener.askSomething(message,
+                            ResourceManager.getResource().getString("MeasureGlyPOSTBtn"),
+                            ResourceManager.getResource().getString("MeasureGlyPREBtn"));
                     break;
             }
             return true;
@@ -137,7 +152,7 @@ public class IHealth extends DeviceHandler {
         return patient;
     }
 
-    void notifyIncomingMeasures(String message) {
+    void notifyToUi(String message) {
         deviceListener.notifyToUi(message);
     }
 
@@ -306,19 +321,21 @@ public class IHealth extends DeviceHandler {
     }
 
     private void startMeasure()  {
-        Measure m = getMeasure();
         switch (deviceModel) {
             case IHealtDevice.KPO3IHealth:
-                deviceController = new IHealthPO3(this, m);
+                deviceController = new IHealthPO3(this, getMeasure());
                 break;
             case IHealtDevice.KBP5IHealth:
-                deviceController = new IHealthBP5(this, m);
+                deviceController = new IHealthBP5(this, getMeasure());
                 break;
             case IHealtDevice.KHS4SIHealth:
-                deviceController = new IHealthHS4S(this, m);
+                deviceController = new IHealthHS4S(this, getMeasure());
                 break;
             case IHealtDevice.KBP550BTIHealth:
-                deviceController = new IHealthBP550BT(this, m);
+                deviceController = new IHealthBP550BT(this, getMeasure());
+                break;
+            case IHealtDevice.KBG5SIHealth:
+                deviceController = new IHealthBG5S(this, getMeasure(), prePrandial);
                 break;
         }
         deviceController.startMeasure(iBtDevAddr);

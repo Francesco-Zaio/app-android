@@ -192,6 +192,7 @@ public class EcgProtocol extends DeviceHandler implements
             iServiceSearcher.addBTSearcherEventListener(iBTSearchListener);
         iServiceSearcher.addBTSearcherEventListener(this);
         iServiceSearcher.startSearchDevices();
+        deviceListener.notifyToUi(ResourceManager.getResource().getString("KSearchingDev"));
         return true;
     }
 

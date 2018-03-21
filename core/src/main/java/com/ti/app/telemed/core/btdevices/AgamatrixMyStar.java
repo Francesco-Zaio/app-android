@@ -108,6 +108,7 @@ public class AgamatrixMyStar extends DeviceHandler implements
         iServiceSearcher.clearBTSearcherEventListener();
         iServiceSearcher.addBTSearcherEventListener(this);
         iServiceSearcher.startSearchDevices();
+        deviceListener.notifyToUi(ResourceManager.getResource().getString("KSearchingDev"));
         return true;
     }
 

@@ -100,12 +100,11 @@ public class GIMAPC300SpotCheck
         iServiceSearcher.addBTSearcherEventListener(this);
         iServiceSearcher.startSearchDevices();
 
-
         Log.d(TAG,"startOperation: iBtDevAddr="+iBtDevAddr + " iCmdCode="+iCmdCode.toString());
         if (bluetoothOper == null)
             bluetoothOper = new BluetoothOpertion(MyApp.getContext(),this);
 
-        //bluetoothOper.discovery();
+        deviceListener.notifyToUi(ResourceManager.getResource().getString("KSearchingDev"));
         return true;
     }
 

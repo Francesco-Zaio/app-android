@@ -33,6 +33,7 @@ public interface GWConst {
     String KBP5IHealth = "BP5";
     String KHS4SIHealth = "HS4S";
     String KBP550BTIHealth = "BP550BT";
+	String KBG5SIHealth = "BG5S";
 	String KEcgMicro = "MICROTELBT";
 	String KCcxsRoche = "CCXS";
 	String KFORATherm = "FORAIR21B";

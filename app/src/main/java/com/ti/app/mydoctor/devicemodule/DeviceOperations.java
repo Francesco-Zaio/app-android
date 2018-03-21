@@ -150,8 +150,6 @@ public class DeviceOperations implements DeviceListener {
             else
                 result = currentDeviceHandler.startOperation(op, btSearcherListener);
         }
-        if (result)
-            notifyToUi(AppResourceManager.getResource().getString("KSearchingDev"));
         return result;
 	}
 

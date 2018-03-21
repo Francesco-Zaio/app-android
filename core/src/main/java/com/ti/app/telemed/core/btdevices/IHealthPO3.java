@@ -182,7 +182,7 @@ class IHealthPO3 extends Handler implements IHealtDevice{
                 if (mPo3Control != null) {
                     iHealth.scheduleTimer();
                     if (firstRead) {
-                        iHealth.notifyIncomingMeasures(ResourceManager.getResource().getString("KMeasuring"));
+                        iHealth.notifyToUi(ResourceManager.getResource().getString("KMeasuring"));
                         firstRead = false;
                     }
                     Bundle bundle_live_data = msg.getData();

@@ -165,6 +165,7 @@ public class CardGuardEasy2CheckClient extends DeviceHandler
             iServiceSearcher.addBTSearcherEventListener(iBTSearchListener);
         iServiceSearcher.addBTSearcherEventListener(this);
         iServiceSearcher.startSearchDevices();
+        deviceListener.notifyToUi(ResourceManager.getResource().getString("KSearchingDev"));
         return true;
     }
 

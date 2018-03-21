@@ -173,7 +173,7 @@ class IHealthBP5 extends Handler implements IHealtDevice{
                 if (mBp5Control != null) // check if disconnect was called but not yet done
                     iHealth.scheduleTimer();
                 if (firstRead) {
-                    iHealth.notifyIncomingMeasures(ResourceManager.getResource().getString("KMeasuring"));
+                    iHealth.notifyToUi(ResourceManager.getResource().getString("KMeasuring"));
                     firstRead = false;
                 }
                 break;

@@ -116,6 +116,7 @@ public class ForaThermometerClient extends DeviceHandler implements
         if (iCmdCode == TCmd.ECmdConnByUser)
             iServiceSearcher.addBTSearcherEventListener(iBTSearchListener);
         iServiceSearcher.startSearchDevices();
+        deviceListener.notifyToUi(ResourceManager.getResource().getString("KSearchingDev"));
         return true;
     }
 

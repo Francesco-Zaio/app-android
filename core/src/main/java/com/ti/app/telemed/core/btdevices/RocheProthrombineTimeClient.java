@@ -222,6 +222,7 @@ public class RocheProthrombineTimeClient extends DeviceHandler implements
         if (iCmdCode == TCmd.ECmdConnByUser && iBTSearchListener != null)
             iServiceSearcher.addBTSearcherEventListener(iBTSearchListener);
         iServiceSearcher.startSearchDevices();
+		deviceListener.notifyToUi(ResourceManager.getResource().getString("KSearchingDev"));
         return true;
     }
 

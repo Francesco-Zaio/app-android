@@ -5,8 +5,8 @@ import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
 
-import com.ihealth.communication.control.Bg5lControl;
-import com.ihealth.communication.control.Bg5Profile;
+import com.ihealth.communication.control.Bg5sControl;
+import com.ihealth.communication.control.Bg5sProfile;
 import com.ihealth.communication.manager.iHealthDevicesCallback;
 import com.ihealth.communication.manager.iHealthDevicesManager;
 import com.ti.app.telemed.core.ResourceManager;
@@ -27,7 +27,7 @@ class IHealthBG5S extends Handler implements IHealtDevice{
 
     private IHealth iHealth = null;
 
-    private static final int HANDLER_BATTERY = 100;
+    private static final int HANDLER_STATUS_INFO = 100;
     private static final int HANDLER_SET_UNIT = 101;
     private static final int HANDLER_END_MEASUREMENT = 102;
     private static final int HANDLER_CONNECTED = 103;
@@ -36,9 +36,9 @@ class IHealthBG5S extends Handler implements IHealtDevice{
 
     private boolean endOperation = true;
     private int callbackId = -1;
-    private Bg5lControl mBg5lControl = null;
+    private Bg5sControl mBg5sControl = null;
     private Measure measure;
-    private String batteryLevel="";
+    private int batteryLevel;
     private boolean prePrandial;
 
 
@@ -57,19 +57,19 @@ class IHealthBG5S extends Handler implements IHealtDevice{
             bundle.putString("message", message);
             msg.setData(bundle);
             switch (action) {
-                case Bg5Profile.ACTION_BATTERY_BG:
-                    msg.what = HANDLER_BATTERY;
+                case Bg5sProfile.ACTION_GET_STATUS_INFO:
+                    msg.what = HANDLER_STATUS_INFO;
                     sendMessage(msg);
                     break;
-                case Bg5Profile.ACTION_SET_UNIT:
+                case Bg5sProfile.ACTION_SET_UNIT:
                     msg.what = HANDLER_SET_UNIT;
                     sendMessage(msg);
                     break;
-                case Bg5Profile.ACTION_ONLINE_RESULT_BG:
+                case Bg5sProfile.ACTION_RESULT:
                     msg.what = HANDLER_END_MEASUREMENT;
                     sendMessage(msg);
                     break;
-                case Bg5Profile.ACTION_ERROR_BG:
+                case Bg5sProfile.ACTION_ERROR:
                     msg.what = HANDLER_ERROR;
                     sendMessage(msg);
                     break;
@@ -99,7 +99,7 @@ class IHealthBG5S extends Handler implements IHealtDevice{
 
     @Override
     public void startMeasure(String mac){
-        Log.d(TAG, "startMeasure: deviceMac=" + mac + " - mBg5lControl=" + mBg5lControl);
+        Log.d(TAG, "startMeasure: deviceMac=" + mac + " - mBg5sControl=" + mBg5sControl);
         if (iHealth == null) {
             Log.e(TAG, "startMeasure: iHealth is NULL!");
             return;
@@ -110,18 +110,18 @@ class IHealthBG5S extends Handler implements IHealtDevice{
 
         callbackId = iHealthDevicesManager.getInstance().registerClientCallback(mIHealthDevicesCallback);
      /* Limited wants to receive notification specified device */
-        iHealthDevicesManager.getInstance().addCallbackFilterForDeviceType(callbackId, iHealthDevicesManager.TYPE_BG5l);
+        iHealthDevicesManager.getInstance().addCallbackFilterForDeviceType(callbackId, iHealthDevicesManager.TYPE_BG5S);
 
         /* Get controller */
-        mBg5lControl = iHealthDevicesManager.getInstance().getBG5lControl(mac.replace(":", ""));
-        mBg5lControl.getBattery();
+        mBg5sControl = iHealthDevicesManager.getInstance().getBg5sControl(mac.replace(":", ""));
+        mBg5sControl.getStatusInfo();
     }
 
     @Override
     public synchronized void stop() {
-        if (mBg5lControl != null)
-            mBg5lControl.disconnect();
-        mBg5lControl = null;
+        if (mBg5sControl != null)
+            mBg5sControl.disconnect();
+        mBg5sControl = null;
     }
 
     @Override
@@ -133,24 +133,32 @@ class IHealthBG5S extends Handler implements IHealtDevice{
     public void handleMessage(Message msg) {
         super.handleMessage(msg);
         switch (msg.what) {
-            case HANDLER_BATTERY:
-                String messageBattery = msg.getData().getString("message");
+            case HANDLER_STATUS_INFO:
+                String message = msg.getData().getString("message");
+                int unit;
                 try {
-                    JSONObject reader = new JSONObject(messageBattery);
-                    batteryLevel = reader.getString(Bg5Profile.BATTERY_BG);
+                    JSONObject reader = new JSONObject(message);
+                    batteryLevel = reader.getInt(Bg5sProfile.INFO_BATTERY_LEVEL);
+                    unit = reader.getInt(Bg5sProfile.INFO_UNIT);
                 } catch (JSONException e) {
                     iHealth.notifyError(DeviceListener.DEVICE_DATA_ERROR,
                             ResourceManager.getResource().getString("EDataReadError"));
-                    Log.e(TAG, "HANDLER_BATTERY", e);
+                    Log.e(TAG, "HANDLER_STATUS_INFO", e);
                     break;
                 }
-                iHealth.scheduleTimer();
-                mBg5lControl.setUnit(2);
+                if (unit != Bg5sProfile.UNIT_MG) {
+                    iHealth.scheduleTimer();
+                    mBg5sControl.setUnit(Bg5sProfile.UNIT_MG);
+                } else {
+                    iHealth.resetTimer();
+                    iHealth.notifyToUi(ResourceManager.getResource().getString("DoMeasureGL"));
+                    mBg5sControl.startMeasure(Bg5sProfile.MEASURE_BLOOD);
+                }
                 break;
             case HANDLER_SET_UNIT:
                 iHealth.resetTimer();
                 iHealth.notifyToUi(ResourceManager.getResource().getString("DoMeasureGL"));
-                mBg5lControl.startMeasure(1);
+                mBg5sControl.startMeasure(Bg5sProfile.MEASURE_BLOOD);
                 break;
             case HANDLER_END_MEASUREMENT:
                 Log.d(TAG, "HANDLER_END_MEASUREMENT: - endOperation="+endOperation);
@@ -185,7 +193,7 @@ class IHealthBG5S extends Handler implements IHealtDevice{
         try {
             JSONTokener jsonTokener = new JSONTokener(message);
             JSONObject jsonObject = (JSONObject) jsonTokener.nextValue();
-            value = jsonObject.getInt(Bg5Profile.ONLINE_RESULT_BG);
+            value = jsonObject.getInt(Bg5sProfile.RESULT_VALUE);
         } catch (JSONException e) {
             Log.e(TAG, "notifyResultData(): ", e);
             iHealth.notifyError(DeviceListener.DEVICE_DATA_ERROR,
@@ -199,7 +207,7 @@ class IHealthBG5S extends Handler implements IHealtDevice{
         } else {
             tmpVal.put(GWConst.EGwCode_0T, Integer.toString(value));  // glicemia Post-prandiale
         }
-        tmpVal.put(GWConst.EGwCode_BATTERY, batteryLevel); // livello batteria
+        tmpVal.put(GWConst.EGwCode_BATTERY, Integer.toString(batteryLevel)); // livello batteria
         measure.setMeasures(tmpVal);
         iHealth.notifyEndMeasurement(measure);
     }

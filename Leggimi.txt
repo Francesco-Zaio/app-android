@@ -1,0 +1,28 @@
+Requisiti per compilare il progetto Android:
+
+- Java 7
+- Android Studio (http://developer.android.com/tools/studio/index.html)
+- Android SDK (http://developer.android.com/sdk/installing/index.html)
+- SDK Tools (http://developer.android.com/tools/sdk/tools-notes.html)
+
+- Eseguire checkout del progetto 
+
+- Importare il progetto in Android Studio
+ 
+- Per generare l'apk firmato utilizzare il keystore "myDoctor.keystore" nella home del progetto
+Keystore password: mydoctor
+Keystore alias: mydoctorkeystore
+Key password: mydoctor
+
+
+- Per cambiare il numero di release del progetto bisogna modificare i seguenti parametri (es. versione 3.2.0):
+app/build.gradle
+	versionName "3.2.0"
+
+
+Creare la nuova immagine splash \app\src\main\res\drawable\splash.png
+  Aprire file il file del GW PC MyDoctor@Home\resource\Etichetta CE_v2_20160302.ppt
+  Ingrandire al 124%
+  Modificare nell'immagine il numero di release
+  Quindi eseguire un Print Screen e in un programma di grafica ritagliare l'immagine seguendo i bordi
+  salvare il file in formato png nel file splash.png nella cartella \app\src\main\res\drawable\

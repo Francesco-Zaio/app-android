@@ -91,7 +91,7 @@
 	<string name="connectionSettings">Connection settings</string>
 	<string name="userSettings">User settings</string>
 
-	<string name="noPatient">No patient assigned to nurse</string>
+	<string name="noPatient">No patient assigned</string>
 
 	<string name="searchPatients">Search patients</string>
 	

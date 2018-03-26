@@ -91,7 +91,7 @@
 	<string name="connectionSettings">Configurações de conexão</string>
 	<string name="userSettings">Configurações do Usuário</string>
 
-	<string name="noPatient">Nenhum dos pacientes associada com a enfermeira</string>
+	<string name="noPatient">Nenhum dos pacientes associada</string>
 
 	<string name="searchPatients">Pesquisa entre os pacientes</string>
 	

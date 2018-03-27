@@ -1768,10 +1768,17 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 				if (retryLocalLogin) {
                     retryLocalLogin = false;
                     userManager.logInUserFromDb(userid,password);
-                    break;
+                } else {
+                    myRemoveDialog(PROGRESS_DIALOG);
+                    dataBundle = new Bundle();
+                    dataBundle.putString(AppConst.MESSAGE, (String)msg.obj);
+                    if (!runningChangePassword)
+                        dataBundle.putBoolean(AppConst.LOGIN_ERROR, false);
+                    myShowDialog(ALERT_DIALOG);
                 }
+                break;
             case UserManager.BAD_PASSWORD:
-                Log.d(TAG, "UserManager.ERROR_OCCURED:");
+                Log.d(TAG, "UserManager.BAD_PASSWORD:");
                 myRemoveDialog(PROGRESS_DIALOG);
                 dataBundle = new Bundle();
                 dataBundle.putString(AppConst.MESSAGE, (String)msg.obj);
@@ -1779,7 +1786,16 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                     dataBundle.putBoolean(AppConst.LOGIN_ERROR, false);
                 myShowDialog(ALERT_DIALOG);
 				break;
-			case UserManager.LOGIN_FAILED:
+			case UserManager.LOCAL_LOGIN_FAILED:
+                Log.e(TAG, "userManagerHandler: LOCAL_LOGIN_FAILED");
+                myRemoveDialog(PROGRESS_DIALOG);
+                dataBundle = new Bundle();
+                dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("LOCAL_LOGIN_ERROR"));
+                if (!runningChangePassword)
+                    dataBundle.putBoolean(AppConst.LOGIN_ERROR, true);
+                myShowDialog(ALERT_DIALOG);
+                break;
+            case UserManager.LOGIN_FAILED:
                 Log.e(TAG, "userManagerHandler: LOGIN_FAILED");
                 myRemoveDialog(PROGRESS_DIALOG);
                 dataBundle = new Bundle();
@@ -1788,7 +1804,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                     dataBundle.putBoolean(AppConst.LOGIN_ERROR, true);
                 myShowDialog(ALERT_DIALOG);
                 break;
-			case UserManager.USER_BLOCKED:
+            case UserManager.USER_BLOCKED:
                 Log.e(TAG, "userManagerHandler: User Blocked");
                 myRemoveDialog(PROGRESS_DIALOG);
 			    DialogManager.showToastMessage(activity, AppResourceManager.getResource().getString("userBlocked"));

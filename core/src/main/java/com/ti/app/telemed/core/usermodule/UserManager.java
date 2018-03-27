@@ -66,9 +66,13 @@ public class UserManager {
      */
 	public static final int USER_CHANGED = 0;
     /**
-     * Messaggio inviato all'handler nel caso di credenziali di autenticazione errate.
+     * Messaggio inviato all'handler nel caso di autenticazione su piattaforma web fallita.
      */
-	public static final int LOGIN_FAILED = 2;
+    public static final int LOGIN_FAILED = 2;
+    /**
+     * Messaggio inviato all'handler nel caso di autenticazione su db locale fallita.
+     */
+    public static final int LOCAL_LOGIN_FAILED = 6;
     /**
      * Messaggio inviato all'handler nel caso di errore generico (es. piattaforma non raggiungibile).
      */
@@ -473,8 +477,8 @@ public class UserManager {
                                 // events of web manager and web socket
                                 User user = (DbManager.getDbManager()).getUser(login, password);
                                 if (user == null) {
-                                    logger.log(Level.SEVERE, "Local authentication failed: currentUser is null");
-                                    sendMessage(LOGIN_FAILED, ResourceManager.getResource().getString("LOCAL_LOGIN_ERROR"));
+                                    logger.log(Level.INFO, "Local authentication failed: currentUser is null");
+                                    sendMessage(LOCAL_LOGIN_FAILED, ResourceManager.getResource().getString("LOCAL_LOGIN_ERROR"));
                                 } else {
                                     selectUser(user, false);
                                 }

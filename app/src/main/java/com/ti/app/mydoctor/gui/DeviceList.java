@@ -1730,7 +1730,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                     activity.startActivity(ecgDrawIntent);
 					break;
 				case DeviceOperations.START_ACTIVITY:
-					activity.myRemoveDialog(PROGRESS_DIALOG);
 					Intent i = (Intent)msg.obj;
 					activity.startActivityForResult(i, EXTERNAL_APP);
 					break;

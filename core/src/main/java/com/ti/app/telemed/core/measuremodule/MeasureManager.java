@@ -188,7 +188,7 @@ public class MeasureManager {
 	}
 
     /**
-     * Salva ed invia alla piattaforma una documento.
+     * Salva ed invia alla piattaforma un documento.
      * L'operazione e' asincrona e l'esito viene notificato all'Handler passato
      * precedentemente con il metodo {@link #setHandler(Handler handler) setHandler}
      * @param outputFile    Path assoluto del file o directory contenente il documento o
@@ -227,10 +227,10 @@ public class MeasureManager {
 	}
 
     /**
-     * Salva ed invia alla piattaforma una misura di temperatura corporea.
+     * Restituisce un oggetto di tipo Measure che rappresenta il valore di temperatura passato.
      * @param temperature       Valore della temperatura corporea in gradi centigradi.
      * @param standardProtocol  Indica se la misura e' stata acquisita con il "Protocollo standard".
-     * @return                  {@code true} in caso di successo o altrimenti {@code false}.
+     * @return                  oggetto di tipo Measure.
      */
     public Measure getManualTemperature(double temperature, boolean standardProtocol) {
         User currentUser = UserManager.getUserManager().getCurrentUser();

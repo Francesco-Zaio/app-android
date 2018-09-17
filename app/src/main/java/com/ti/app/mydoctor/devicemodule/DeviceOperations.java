@@ -201,12 +201,12 @@ public class DeviceOperations implements DeviceListener {
     public void notifyError(String errorCode, String errorMessage) {
         Log.e(TAG, "notifyError: " + errorCode + " - " + errorMessage);
 		String msg = "";
-		if ((errorCode != null) && !errorCode.isEmpty())
-			msg = errorCode;
 		if ((errorMessage != null) && !errorMessage.isEmpty()) {
-            if (!msg.isEmpty())
-                msg = msg + " - ";
-            msg = msg + errorMessage;
+            msg = errorMessage;
+        }
+        if (msg.isEmpty()) {
+            if ((errorCode != null) && !errorCode.isEmpty())
+                msg = errorCode;
         }
         operationRunning = false;
         sendMessageToHandler(msg, ERROR_STATE, AppConst.MESSAGE);
@@ -241,6 +241,7 @@ public class DeviceOperations implements DeviceListener {
         Message message = handler.obtainMessage(START_ECG_DRAW);
         handler.sendMessage(message);
     }
+
     @Override
     public void startActivity(Intent intent){
         Message message = handler.obtainMessage(START_ACTIVITY);

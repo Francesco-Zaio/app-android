@@ -46,6 +46,9 @@ public interface DeviceListener {
 
     /**
      * Invia una richiesta all'utente che prevede dua opzioni possibili.
+     * <p>La scelta della prima opzione va notificata chiamando il metodo {@link DeviceHandler#confirmDialog()}</p>
+     * <p>La scelta della seconda opzione va notificata chiamando il metodo {@link DeviceHandler#cancelDialog()}  </p>
+     * <p>Ad esempio questo metodo viene chiamato durante una misura di glicemia per chiedere al paziente se si tratta di una misura PrePrandiale o PostPrandiale</p>
      *
      * @param messageText     Messaggio da visualizzare
      * @param positiveText    Testo del pulsante di scelta dell'opzione 1

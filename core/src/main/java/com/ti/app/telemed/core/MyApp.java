@@ -8,6 +8,14 @@ import android.os.AsyncTask;
 import com.ti.app.telemed.core.configuration.ConfigurationManager;
 import com.ti.app.telemed.core.syncmodule.BootReceiver;
 
+/**
+ * <h1>Inizializzazione Libreria</h1>
+ * <p>Questa classe estende la classe Android android.app.Application ed esegue tutte le inizializzzioni necessarie alla libreria.</p>
+ * @author  Massimo Martini
+ * @version 1.0
+ * @since   2017-11-09
+ */
+
 public class MyApp extends Application {
 
 	private static MyApp instance;

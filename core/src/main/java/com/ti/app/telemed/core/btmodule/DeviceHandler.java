@@ -26,9 +26,10 @@ import com.ti.app.telemed.core.util.Util;
 
 /**
  * <h1>Acquisire una misura da un dispsitivo</h1>
- * La classe DeviceHandler rappresenta un generico dispositivo Bluetooth.
- * <p>I metodi di questa classe permettono di eseguire tutte le operazioni necessarie per acquisire una misura dal dispositivo.
- *
+ * <p>La classe DeviceHandler rappresenta un generico dispositivo di misura.</p>
+ * <p>Questa classe invoca a sua volta i metodi dell'interfaccia {@link DeviceListener} che deve essere implementata dall'utilizzatore della libreria.</p>
+ * <p>I metodi di questa classe permettono di eseguire tutte le operazioni necessarie per acquisire una misura dal dispositivo.</p>
+ * <p>Tramite il metodo getInstance è possibile ottenere l'istanza della classe per un determintato dispositivo e tipo di misura.</p>
  * @author  Massimo Martini
  * @version 1.0
  * @since   2017-11-09

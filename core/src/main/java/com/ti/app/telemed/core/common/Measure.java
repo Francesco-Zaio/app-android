@@ -35,6 +35,8 @@ public class Measure implements Serializable{
     private String failureCode = "";
     private Integer sendFailCount = 0;
     private String sendFailReason = "";
+    private boolean urgent = false;
+
 
     // N.B.: L'ordine di dichiarazione dei valori è importante e viene
     // usato nella valutazione dei valre limite delle soglie
@@ -198,6 +200,14 @@ public class Measure implements Serializable{
 
     public void setSendFailCount(Integer sendFailCount) {
         this.sendFailCount = sendFailCount;
+    }
+
+    public boolean getUrgent() {
+        return urgent;
+    }
+
+    public void setUrgent(boolean urgent) {
+        this.urgent = urgent;
     }
 
     /**

@@ -38,7 +38,6 @@ public class TouchECG extends DeviceHandler {
     // Codifica esito restituito dalla app
     private static final String KEY_RESULT = "RESULT";
     private static final int RESULT_OK = -1;
-    private static final int RESULT_ABORT = 0;
     private static final String KEY_RETURN = "RETURN";
 
     // Codifica chiavi attributo passati alla app
@@ -58,8 +57,7 @@ public class TouchECG extends DeviceHandler {
     private static final String KEY_PATH_SCP  = "PATH_SCP"; // string, this permit to specify where the touchECG save the scp file when save
     private static final String KEY_APPLICATION = "APPLICATION"; // int , this will be set to 2= SEMI  see enum APPLICATION
 
-
-    private String filename;
+    private Measure m;
 
     public TouchECG(DeviceListener listener, UserDevice ud) {
         super(listener, ud);
@@ -69,9 +67,14 @@ public class TouchECG extends DeviceHandler {
 
     @Override
     public void confirmDialog() {
+        m.setUrgent(true);
+        deviceListener.showMeasurementResults(m);
     }
+
     @Override
-    public void cancelDialog(){
+    public void cancelDialog() {
+        m.setUrgent(false);
+        deviceListener.showMeasurementResults(m);
     }
 
     @Override
@@ -174,9 +177,9 @@ public class TouchECG extends DeviceHandler {
         public void onReceive(Context context, Intent data) {
             int resultCode = data.getExtras().getInt(KEY_RESULT);
             if (resultCode == RESULT_OK) {
-                filename = data.getStringExtra(KEY_RETURN);
+                String filename = data.getStringExtra(KEY_RETURN);
                 FileInputStream fis = null;
-                byte[] fileContent = null;
+                byte[] fileContent;
                 try {
                     File file = new File(filename);
                     fileContent = new byte[(int) file.length()];
@@ -197,7 +200,7 @@ public class TouchECG extends DeviceHandler {
                         e.printStackTrace();
                     }
                 }
-                Measure m = getMeasure();
+                m = getMeasure();
                 HashMap<String,String> tmpVal = new HashMap<>();
                 String [] tokens  = filename.split(File.separator);
                 tmpVal.put(GWConst.EGwCode_0G, tokens[tokens.length-1]);  //nome file
@@ -206,7 +209,10 @@ public class TouchECG extends DeviceHandler {
                 m.setFileType(XmlManager.ECG_FILE_TYPE);
                 m.setFailed(false);
                 m.setBtAddress("N.A.");
-                deviceListener.showMeasurementResults(m);
+                deviceListener.askSomething(ResourceManager.getResource().getString("KUrgentMsg"),
+                        ResourceManager.getResource().getString("KMsgYes"),
+                        ResourceManager.getResource().getString("KMsgNo"));
+                //deviceListener.showMeasurementResults(m);
             } else {
                 deviceListener.notifyError(DeviceListener.NO_MEASURES_FOUND, ResourceManager.getResource().getString("ENoMeasurementDone"));
             }

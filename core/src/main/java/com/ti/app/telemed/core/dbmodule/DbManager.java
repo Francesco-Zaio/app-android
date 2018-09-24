@@ -46,7 +46,7 @@ public class DbManager {
 
     // Versione del DB: incrementare il nr se vi sono modifiche allo schema ed inserire le modifice
     // nel metoto onUpgrade
-    private static final int DATABASE_VERSION = 17;
+    private static final int DATABASE_VERSION = 18;
     // versione DB minima richiesta per cui è possibile effettuare un upgrade del DB senza
     // dover droppare e ricreare tutte le tabelle (vedi metodo onUpgrade)
     private static final int MIN_OLD_VERSION = 10;
@@ -159,6 +159,7 @@ public class DbManager {
 		+ "SEND_FAIL_COUNT integer, "
 		+ "SEND_FAIL_REASON text, "
         + "SEND_FAIL_TIMESTAMP integer DEFAULT 0, "
+        + "URGENT integer, "
         + "PRIMARY KEY (TIMESTAMP, MEASURE_TYPE), "
 		+ "FOREIGN KEY (ID_PATIENT) REFERENCES PATIENT (ID) ON DELETE CASCADE, "
 		+ "FOREIGN KEY (ID_USER) REFERENCES USER (ID) ON DELETE CASCADE )";
@@ -222,6 +223,9 @@ public class DbManager {
                         db.execSQL("UPDATE MEASURE SET FAMILY=1");
                         db.execSQL("UPDATE MEASURE SET FAMILY=2 WHERE MEASURE_TYPE LIKE 'Q_'");
                         db.execSQL("UPDATE MEASURE SET FAMILY=3 WHERE MEASURE_TYPE LIKE 'D_'");
+                    case 17:
+                        db.execSQL("ALTER TABLE MEASURE ADD COLUMN URGENT integer");
+                        db.execSQL("UPDATE MEASURE SET URGENT=0");
                 }
             }
         }
@@ -1489,6 +1493,8 @@ public class DbManager {
             m.setFailureMessage(c.getString(c.getColumnIndex("FAILURE_MESSAGE")));
             m.setSendFailReason(c.getString(c.getColumnIndex("SEND_FAIL_REASON")));
             m.setSendFailCount(c.getInt(c.getColumnIndex("SEND_FAIL_COUNT")));
+            m.setUrgent(c.getInt(c.getColumnIndex("URGENT")) == 1);
+
             return m;
         }
     }
@@ -1580,6 +1586,7 @@ public class DbManager {
             values.put("FAILURE_MESSAGE", measure.getFailureMessage());
             values.put("SEND_FAIL_COUNT", measure.getSendFailCount());
             values.put("SEND_FAIL_REASON", measure.getSendFailReason());
+            values.put("URGENT", measure.getUrgent()? 1:0);
             // if there are measures, add also the corresponding actual thresholds
             HashMap<String,String> map = new HashMap<>();
             if (measure.getMeasures() != null) {

@@ -110,6 +110,7 @@ public class XmlManager extends DefaultHandler {
     final static private String ID_USER_PERCEPTTYPE = "ID_USER";
     final static private String MODEL_PERCEPTTYPE = "MODEL";
     final static private String STANDARD_PERCEPTTYPE = "STANDARD";
+    final static private String PRIORITY_PERCEPTTYPE = "PRIORITY";
     final static private String MEASURE_TYPE_PERCEPTTYPE = "MEASURE_TYPE";
 	final static private String NEW_PASSWORD_PROPERTY = "PWD";
 	final static private String SCHEDULE_PROPERTY = "SCHEDULE";
@@ -264,7 +265,9 @@ public class XmlManager extends DefaultHandler {
         //<Property name="STANDARD" value="true/false" />
         tmpCmd = tmpCmd + String.format(PROPERTY_XML_SEND_MEASURE, STANDARD_PERCEPTTYPE,
                 (m.getStandardProtocol()? "true":"false"));
-
+        //<Property name="PRIORITY" value="true/false" />
+        tmpCmd = tmpCmd + String.format(PROPERTY_XML_SEND_MEASURE, PRIORITY_PERCEPTTYPE,
+                (m.getUrgent()? "true":"false"));
     	//<PerceptBundle timestamp="(20080905174500)">
         tmpCmd = tmpCmd + String.format(PERCEPTBUNDLE_XML_SEND_MEASURE,  m.getTimestamp());
     	

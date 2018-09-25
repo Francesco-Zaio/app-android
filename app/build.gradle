@@ -38,6 +38,6 @@ android {
 dependencies {
     implementation 'com.android.support.constraint:constraint-layout:1.0.2'
     implementation 'com.android.support:design:26.1.0'
-    compile project(':core')
+    implementation project(':core')
     // debugCompile 'com.amitshekhar.android:debug-db:1.0.0'
 }

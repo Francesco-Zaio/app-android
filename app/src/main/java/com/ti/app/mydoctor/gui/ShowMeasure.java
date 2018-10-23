@@ -1,6 +1,5 @@
 package com.ti.app.mydoctor.gui;
 
-import java.io.File;
 import java.lang.ref.WeakReference;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -17,7 +16,6 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
-import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -44,7 +42,6 @@ import com.ti.app.mydoctor.AppResourceManager;
 import com.ti.app.mydoctor.util.AppUtil;
 import com.ti.app.telemed.core.common.Measure;
 import com.ti.app.telemed.core.measuremodule.MeasureManager;
-import com.ti.app.telemed.core.syncmodule.SendMeasuresService;
 import com.ti.app.telemed.core.usermodule.UserManager;
 import com.ti.app.telemed.core.util.GWConst;
 import com.ti.app.mydoctor.gui.customview.ActionBarListActivity;
@@ -52,7 +49,6 @@ import com.ti.app.mydoctor.gui.customview.DragSortController.Direction;
 import com.ti.app.mydoctor.gui.customview.DragSortListView;
 import com.ti.app.mydoctor.gui.customview.GWTextView;
 import com.ti.app.mydoctor.gui.adapter.MeasureListAdapter;
-
 
 
 import static com.ti.app.mydoctor.gui.DocumentSendActivity.DOCUMENT_KEY;
@@ -73,6 +69,8 @@ public class ShowMeasure extends ActionBarListActivity{
 	private static final String KEY_TIMESTAMP = "timestamp";
 	private static final String KEY_DATE = "date";
 	private static final String KEY_HOUR = "hour";
+	private static final String KEY_URGENT = "urgent";
+
 	
 	// Intent request codes
     private static final int MEASURE_DETAILS = 1;
@@ -87,17 +85,14 @@ public class ShowMeasure extends ActionBarListActivity{
 
 	//Bundle
 	private static final String DELETE_TYPE = "DELETE_TYPE";
-	private static final String MEASURE_NUMBER = "MEASURE_NUMBER";
 
 	private MeasureListAdapter listAdapter;
 	private Bundle dataBundle = null;
-	private Bundle measuresResultBundle = null;
 	private ArrayList<HashMap<String, String>> measures = null;
 	private ArrayList<Measure> listaMisure = null;
 
 	private CharSequence[] docNames = new CharSequence[MeasureManager.DocumentType.values().length];
 
-    int numMeasureToSend;
 	private DragSortListView mListView;
 	private String currentMeasureType = null;
     private Measure.MeasureFamily currentMeasureFamily = null;
@@ -188,7 +183,7 @@ public class ShowMeasure extends ActionBarListActivity{
         }
 
         if(currentMeasureType == null || currentMeasureType.isEmpty()) {
-			from = new String[] { KEY_ICON_SENT, KEY_LABEL, KEY_TIMESTAMP };
+			from = new String[] { KEY_ICON_SENT, KEY_LABEL, KEY_TIMESTAMP, KEY_URGENT };
 			to = new int[] { R.id.icon_sent, R.id.label, R.id.timestamp };
 			listAdapter = new MeasureListAdapter(this, measures, R.layout.all_measure_item_layout, from, to);
 			setListAdapter(listAdapter);
@@ -198,7 +193,7 @@ public class ShowMeasure extends ActionBarListActivity{
 				setTitle(getString(R.string.manageDocuments));
 		}
 		else {
-			from = new String[] { KEY_ICON_SENT, KEY_DATE, KEY_HOUR };
+			from = new String[] { KEY_ICON_SENT, KEY_DATE, KEY_HOUR, KEY_URGENT };
 			to = new int[] { R.id.icon_sent, R.id.date_timestamp, R.id.hour_timestamp };
 			listAdapter = new MeasureListAdapter(this, measures, R.layout.measure_list_item, from, to);
 			setListAdapter(listAdapter);
@@ -552,6 +547,7 @@ public class ShowMeasure extends ActionBarListActivity{
 			map.put(KEY_DATE, date);
 			map.put(KEY_HOUR, hour);
 			map.put(KEY_TIMESTAMP, date + " " + hour);
+			map.put(KEY_URGENT, misura.getUrgent()?"true":"false");
 
 			if (filterIds == null || containsFilterIds(misura.getTimestamp()))
 				measures.add(map);

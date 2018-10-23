@@ -8,7 +8,7 @@ GL, BG5S, BG5S - iHealth, 1
 Q0, Q0, Questionario 0, 0
 Q1, Q1, Questionario 1, 0
 Q2, Q2, Questionario 2, 0
-EC, MICROTELBT, ECG - Cardioline, 1
+EC, MICROTELBT, Microtel - Cardioline, 1
 PT, CCXS, Coaguchek XS - Roche, 1
 TC, FORAIR21B, IR 20b/21b - Fora, 1
 OS, SPIRODOC, Spirodoc - MIR, 1

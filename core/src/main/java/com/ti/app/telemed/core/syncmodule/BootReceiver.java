@@ -75,12 +75,14 @@ public class BootReceiver extends BroadcastReceiver implements  WebManagerResult
 
     public static void registerAlarm(Context context) {
         if (getAlarmIntent(context, PendingIntent.FLAG_NO_CREATE) == null) {
+            Log.d(TAG, "Setting alarm");
             AlarmManager manager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
             if (manager != null)
-                manager.setInexactRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis()+AlarmManager.INTERVAL_HALF_HOUR, AlarmManager.INTERVAL_HOUR, getAlarmIntent(context,0));
+                manager.setInexactRepeating(AlarmManager.ELAPSED_REALTIME_WAKEUP, AlarmManager.INTERVAL_HALF_HOUR, AlarmManager.INTERVAL_HOUR, getAlarmIntent(context,0));
             else
                 Log.e(TAG, "AlarmManager is NULL!!");
-        }
+        } else
+            Log.d(TAG, "Alarm already set");
     }
 
     @Override

@@ -13,10 +13,6 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <application>
-        <service
-            android:name=".syncmodule.SendMeasuresService"
-            android:enabled="true"
-            android:exported="false" />
 
         <receiver
             android:name=".syncmodule.BootReceiver"
@@ -26,6 +22,10 @@
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
+
+        <service
+            android:name=".syncmodule.SendMeasureService"
+            android:exported="false"></service>
     </application>
 
 </manifest>

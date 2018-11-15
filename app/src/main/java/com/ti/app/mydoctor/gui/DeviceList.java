@@ -76,7 +76,7 @@ import com.ti.app.telemed.core.common.UserDevice;
 import com.ti.app.telemed.core.common.UserMeasure;
 import com.ti.app.telemed.core.devicemodule.DeviceManager;
 import com.ti.app.telemed.core.measuremodule.MeasureManager;
-import com.ti.app.telemed.core.syncmodule.SendMeasuresService;
+import com.ti.app.telemed.core.syncmodule.SendMeasureService;
 import com.ti.app.telemed.core.usermodule.UserManager;
 import com.ti.app.telemed.core.util.GWConst;
 import com.ti.app.mydoctor.MyDoctorApp;
@@ -710,7 +710,9 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                 }
                 break;
             case ITEM_SEND_MEASURES:
-                startService(new Intent(this, SendMeasuresService.class));
+				intent = new Intent(this, SendMeasureService.class);
+				intent.putExtra(SendMeasureService.USER_TAG,userManager.getCurrentUser().getId());
+				startService(intent);
                 Toast.makeText(this, AppResourceManager.getResource().getString("KMsgSendMeasureStart"), Toast.LENGTH_SHORT).show();
                 break;
             case ITEM_USER_UPDATES:

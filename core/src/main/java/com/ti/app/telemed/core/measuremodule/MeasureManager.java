@@ -1,16 +1,10 @@
 package com.ti.app.telemed.core.measuremodule;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 
 import com.ti.app.telemed.core.MyApp;
 import com.ti.app.telemed.core.common.Measure;
@@ -19,7 +13,7 @@ import com.ti.app.telemed.core.common.Patient;
 import com.ti.app.telemed.core.common.User;
 import com.ti.app.telemed.core.common.UserMeasure;
 import com.ti.app.telemed.core.dbmodule.DbManager;
-import com.ti.app.telemed.core.syncmodule.SendMeasuresService;
+import com.ti.app.telemed.core.syncmodule.SendMeasureService;
 import com.ti.app.telemed.core.usermodule.UserManager;
 import com.ti.app.telemed.core.util.GWConst;
 import com.ti.app.telemed.core.util.Util;
@@ -179,7 +173,9 @@ public class MeasureManager {
         Log.i(TAG, "saveMeasureData: ");
         try {
             boolean result = DbManager.getDbManager().insertMeasure(m);
-            MyApp.getContext().startService(new Intent(MyApp.getContext(), SendMeasuresService.class));
+            Intent intent = new Intent(MyApp.getContext(), SendMeasureService.class);
+            intent.putExtra(SendMeasureService.USER_TAG,m.getIdUser());
+            MyApp.getContext().startService(intent);
             return result;
         } catch (Exception sqle) {
             Log.e(TAG, "ERROR SAVE MEASURE DB " + sqle);

@@ -5,8 +5,15 @@ import android.app.Application;
 import android.content.Context;
 import android.os.AsyncTask;
 
+import com.evernote.android.job.JobManager;
+import com.evernote.android.job.JobRequest;
 import com.ti.app.telemed.core.configuration.ConfigurationManager;
-import com.ti.app.telemed.core.syncmodule.BootReceiver;
+import com.ti.app.telemed.core.syncmodule.SyncJob;
+import com.ti.app.telemed.core.syncmodule.SynchJobCreator;
+
+import java.util.Iterator;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 /**
  * <h1>Inizializzazione Libreria</h1>
@@ -27,13 +34,14 @@ public class MyApp extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
+        instance = this;
+        JobManager.create(this).addJobCreator(new SynchJobCreator());
+        scheduleSyncJob();
 
         AsyncTask.execute(new Runnable() {
             @Override
             public void run() {
-                // check if the update cfg Alarm is already registered
                 try {
-                    BootReceiver.registerAlarm(MyApp.this);
                     configurationManager = new ConfigurationManager();
                     configurationManager.init();
                 } catch (Exception e) {
@@ -43,17 +51,12 @@ public class MyApp extends Application {
         });
     }
 
-    public MyApp() {
-        super();
-        instance = this;
-    }
-
     /**
      * Restituisce il Context dell'applicazione
      * @return      {@link Context}
      */
     public static Context getContext() {
-        return instance;
+        return instance.getApplicationContext();
     }
 
     /**
@@ -62,5 +65,21 @@ public class MyApp extends Application {
      */
     public static ConfigurationManager getConfigurationManager(){
         return configurationManager;
+    }
+
+    public static void scheduleSyncJob() {
+        /*
+        Set<JobRequest> jobRequests = JobManager.instance().getAllJobRequestsForTag(SyncJob.JOB_TAG);
+        if (!jobRequests.isEmpty()) {
+            return;
+        }
+        */
+        new JobRequest.Builder(SyncJob.JOB_TAG)
+                .setPeriodic(TimeUnit.HOURS.toMillis(1), TimeUnit.MINUTES.toMillis(30))
+                .setRequiredNetworkType(JobRequest.NetworkType.CONNECTED)
+                .setRequirementsEnforced(true)
+                .setUpdateCurrent(true)
+                .build()
+                .schedule();
     }
 }

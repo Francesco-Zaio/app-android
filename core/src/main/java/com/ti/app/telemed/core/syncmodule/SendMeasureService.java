@@ -23,7 +23,7 @@ import java.util.ArrayList;
 
 public class SendMeasureService extends IntentService implements WebManagerSendingResultEventListener {
     private static final String TAG = "SendMeasureService";
-    private static final String WLTAG = "com.ti.app.telemed.core.syncmodule.SendMeasuresService";
+    private static final String WLTAG = "com.ti.app.telemed.core.syncmodule:SendMeasuresService";
     public static final String USER_TAG = "USERTAG";
     private static final int SEND_TIMEOUT = -1;
     private static final int SEND_SUCCESS = 0;

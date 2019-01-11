@@ -11,8 +11,6 @@ import com.ti.app.telemed.core.configuration.ConfigurationManager;
 import com.ti.app.telemed.core.syncmodule.SyncJob;
 import com.ti.app.telemed.core.syncmodule.SynchJobCreator;
 
-import java.util.Iterator;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**

@@ -6,7 +6,8 @@
 	<string name="mi_measure">Measures</string>
     <string name="mi_user">User</string>
 	<string name="mi_devices_man">Device Management</string>
-    <string name="mi_logout">Logout</string>  
+	<string name="mi_agenda">Agenda</string>
+    <string name="mi_logout">Logout</string>
     <string name="mi_exit">Exit</string>    
     <string name="show_measure">View measurements</string>
     
@@ -126,4 +127,6 @@
 	<string name="title_activity_document_send">Send document</string>
 	<string name="camera">Camera</string>
 	<string name="gallery">Gallery</string>
+
+	<string name="today_agenda">Today\'s agenda</string>
 </resources>

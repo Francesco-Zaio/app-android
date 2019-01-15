@@ -42,6 +42,7 @@ import com.ti.app.mydoctor.AppResourceManager;
 import com.ti.app.mydoctor.util.AppUtil;
 import com.ti.app.telemed.core.common.Measure;
 import com.ti.app.telemed.core.measuremodule.MeasureManager;
+import com.ti.app.telemed.core.syncmodule.SendMeasureService;
 import com.ti.app.telemed.core.usermodule.UserManager;
 import com.ti.app.telemed.core.util.GWConst;
 import com.ti.app.mydoctor.gui.customview.ActionBarListActivity;
@@ -342,39 +343,47 @@ public class ShowMeasure extends ActionBarListActivity{
 
 	@Override
 	public void onCreateContextMenu(ContextMenu menu, View v, ContextMenuInfo menuInfo) {
-		
+
 		AdapterContextMenuInfo info = (AdapterContextMenuInfo) menuInfo;
+		selected_measure = listaMisure.get(info.position);
+
 		android.view.MenuInflater inflater = getMenuInflater();
 		if (currentMeasureFamily == Measure.MeasureFamily.BIOMETRICA)
 			inflater.inflate(R.menu.show_measure_context_menu, menu);
 		else
 			inflater.inflate(R.menu.show_document_context_menu, menu);
 
-		selected_measure = listaMisure.get(info.position);
+		if (selected_measure.getSent())
+			menu.findItem(R.id.send).setVisible(false);
 		
 		menu.setHeaderTitle(AppResourceManager.getResource().getString("measureType." + selected_measure.getMeasureType()));
 		menu.setHeaderIcon(AppUtil.getSmallIconId(selected_measure.getMeasureType()));
 	}
-
 	
 	@Override
 	public boolean onContextItemSelected(android.view.MenuItem item) {
 		//Handle item selection
 	    switch (item.getItemId()) {
-	    case R.id.delete_measure:
-	    	//L'utente ha selezionato la voce "Elimina misura"
-			Log.i(TAG, "Elimino misura: " + selected_measure.getMeasureType());
-            dataBundle = new Bundle();
-            dataBundle.putInt(DELETE_TYPE, 1);
-            dataBundle.putString(AppConst.TITLE, AppResourceManager.getResource().getString("warningTitle"));
-			if (currentMeasureFamily == Measure.MeasureFamily.BIOMETRICA)
-				dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("deleteMeasureConfirm") + "?");
-			else
-				dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("deleteDocumentConfirm") + "?");
-            showDialog(DELETE_CONFIRM_DIALOG);
-	    	return true;
-		default:
-		    return super.onOptionsItemSelected(item);
+			case R.id.delete_measure:
+				//L'utente ha selezionato la voce "Elimina misura"
+				Log.i(TAG, "Elimino misura: " + selected_measure.getMeasureType());
+				dataBundle = new Bundle();
+				dataBundle.putInt(DELETE_TYPE, 1);
+				dataBundle.putString(AppConst.TITLE, AppResourceManager.getResource().getString("warningTitle"));
+				if (currentMeasureFamily == Measure.MeasureFamily.BIOMETRICA)
+					dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("deleteMeasureConfirm") + "?");
+				else
+					dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("deleteDocumentConfirm") + "?");
+				showDialog(DELETE_CONFIRM_DIALOG);
+				return true;
+			case R.id.send:
+                Intent intent = new Intent(this, SendMeasureService.class);
+                intent.putExtra(SendMeasureService.MEASURE_TAG,selected_measure);
+                startService(intent);
+                Toast.makeText(this, AppResourceManager.getResource().getString("KMsgSendMeasureStart"), Toast.LENGTH_SHORT).show();
+                return true;
+			default:
+				return super.onOptionsItemSelected(item);
 	    }
 	}
 

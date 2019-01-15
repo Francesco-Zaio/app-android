@@ -23,8 +23,10 @@
         android:label="@string/app_name"
         android:theme="@style/Theme.MyDoctorAtHome.Light">
 
-        <!-- Provider per consentire di esportare le Uri dei files verso activity esterne.
-             es. Intent.ACTION_VIEW per visualizzare le foto dei documenti -->
+        <!--
+             Provider per consentire di esportare le Uri dei files verso activity esterne.
+             es. Intent.ACTION_VIEW per visualizzare le foto dei documenti
+        -->
         <provider
             android:name="android.support.v4.content.FileProvider"
             android:authorities="${applicationId}.provider"
@@ -32,36 +34,31 @@
             android:grantUriPermissions="true">
             <meta-data
                 android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/provider_paths"/>
+                android:resource="@xml/provider_paths" />
         </provider>
 
-        <activity android:name=".gui.AboutScreen"
-            android:configChanges="orientation|screenSize|keyboardHidden">
-        </activity>
-
+        <activity
+            android:name=".gui.AboutScreen"
+            android:configChanges="orientation|screenSize|keyboardHidden"></activity>
         <activity
             android:name=".gui.DeviceList"
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:theme="@style/Theme.AppCompat.Light">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
         <activity
             android:name=".gui.ShowUtilitySettings"
             android:label="@string/show_settings"
-            android:windowSoftInputMode="stateHidden">
-        </activity>
-
-        <activity
-            android:name=".gui.SelectPatient">
+            android:windowSoftInputMode="stateHidden"></activity>
+        <activity android:name=".gui.SelectPatient">
             <intent-filter>
                 <action android:name=".DeviceList" />
             </intent-filter>
         </activity>
-
         <activity
             android:name=".gui.ShowMeasure"
             android:configChanges="orientation|screenSize|keyboardHidden"
@@ -70,46 +67,29 @@
                 <action android:name=".DeviceList" />
             </intent-filter>
         </activity>
-
-        <activity
-            android:name=".gui.MeasureDetails">
-        </activity>
-
-        <activity
-            android:name=".gui.DocumentDetails">
-        </activity>
-
-        <activity
-            android:name=".gui.DeviceSettingsActivity">
-        </activity>
-
+        <activity android:name=".gui.MeasureDetails"></activity>
+        <activity android:name=".gui.DocumentDetails"></activity>
+        <activity android:name=".gui.DeviceSettingsActivity"></activity>
         <activity
             android:name=".gui.UsersList"
-            android:label="@string/users_title">
-        </activity>
-
+            android:label="@string/users_title"></activity>
         <activity
             android:name=".gui.DeviceScanActivity"
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:label="@string/select_device"
-            android:theme="@android:style/Theme.Dialog">
-        </activity>
-
+            android:theme="@android:style/Theme.Dialog"></activity>
         <activity
             android:name=".gui.ManualTemperatureActivity"
-            android:windowSoftInputMode="stateAlwaysVisible">
-        </activity>
-
+            android:windowSoftInputMode="stateAlwaysVisible"></activity>
         <activity
             android:name=".gui.ECGDrawActivity"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.AppCompat.Light"
-            android:windowSoftInputMode="stateAlwaysHidden">
-        </activity>
-
+            android:windowSoftInputMode="stateAlwaysHidden"></activity>
         <activity
             android:name=".gui.DocumentSendActivity"
-            android:label="@string/title_activity_document_send">
-        </activity>
+            android:label="@string/title_activity_document_send"></activity>
+        <activity android:name=".gui.AgendaActivity"></activity>
     </application>
+
 </manifest>

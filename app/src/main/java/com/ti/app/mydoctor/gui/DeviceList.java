@@ -126,6 +126,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	private static final int ITEM_LOGOUT = 10;
 	private static final int ITEM_EXIT = 11;
     private static final int ITEM_SEND_MEASURES = 12;
+    private static final int ITEM_AGENDA = 13;
 
 	// Intent request codes
     private static final int USER_LIST = 1;
@@ -509,6 +510,13 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
             labelGroupArray.add(getResources().getString(R.string.mi_user));
             labelChildArray.add(labelUserOptionsArray);
 
+            // Agenda
+            if (loggedUser.getIsPatient()) {
+                iconGroupArray.add("" + R.drawable.agenda);
+                labelGroupArray.add(getResources().getString(R.string.mi_agenda));
+                labelChildArray.add(new ArrayList<String>());
+            }
+
             // Controllo se ci sono misure da inviare
             if(measureManager.getNumNotSentMeasures(loggedUser.getId()) > 0) {
                 iconGroupArray.add(""+R.drawable.ic_menu_measure_send_light);
@@ -658,8 +666,10 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
     	} else if( tv.getText().toString().equalsIgnoreCase(getResources().getString(R.string.settings)) ){
 			selectedItemBundle.putInt(SELECTED_MENU_ITEM, ITEM_USER_OPTIONS);
 		} else if( tv.getText().toString().equalsIgnoreCase(getResources().getString(R.string.change_password)) ){
-			selectedItemBundle.putInt(SELECTED_MENU_ITEM, ITEM_CHANGE_PASSWORD);
-		}
+            selectedItemBundle.putInt(SELECTED_MENU_ITEM, ITEM_CHANGE_PASSWORD);
+        } else if( tv.getText().toString().equalsIgnoreCase(getResources().getString(R.string.mi_agenda)) ){
+            selectedItemBundle.putInt(SELECTED_MENU_ITEM, ITEM_AGENDA);
+        }
 	}
 
     private void selectedMenuItemAction() {
@@ -745,6 +755,10 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                     intent = new Intent(DeviceList.this, DeviceSettingsActivity.class);
                     startActivity(intent);
                 }
+                break;
+            case ITEM_AGENDA:
+                intent = new Intent(this, AgendaActivity.class);
+                startActivity(intent);
                 break;
             case ITEM_ABOUT:
                 showAboutDialog();

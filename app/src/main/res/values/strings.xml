@@ -6,6 +6,7 @@
     <string name="mi_documenti">Documenti</string>
     <string name="mi_user">Opzioni Utente</string>
     <string name="mi_devices_man">Gestione Dispositivi</string>
+    <string name="mi_agenda">Agenda</string>
     <string name="mi_logout">Logout</string>
     <string name="mi_exit">Esci</string>
     <string name="show_measure">Mostra misure</string>
@@ -127,4 +128,5 @@
     <string name="camera">Fotocamera</string>
     <string name="gallery">Galleria</string>
 
+    <string name="today_agenda">Agenda di oggi</string>
 </resources>

@@ -5,4 +5,9 @@
 		  android:title="@string/delete_measure"
 		  android:textSize="15dip">
 	</item>
+	<item android:id="@+id/send"
+		android:icon="@drawable/ic_menu_measure_cancel_light"
+		android:title="@string/send"
+		android:textSize="15dip">
+	</item>
 </menu>

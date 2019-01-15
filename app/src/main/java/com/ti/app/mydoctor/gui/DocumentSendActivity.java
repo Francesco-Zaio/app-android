@@ -12,6 +12,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.provider.MediaStore;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v4.content.FileProvider;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AlertDialog;
@@ -64,6 +65,7 @@ public class DocumentSendActivity extends AppCompatActivity implements View.OnCl
     private ArrayList<GridViewAdapter.ImageItem> imageItems = null;
     private MeasureManager.DocumentType docType;
     private Button okButton;
+    private FloatingActionButton cameraButton, galleryButton;
 
     public static final String DOCUMENT_KEY = "DOCUMENT_KEY";
     private static final int CAMERA_REQUEST=1;
@@ -140,6 +142,10 @@ public class DocumentSendActivity extends AppCompatActivity implements View.OnCl
 
         okButton = findViewById(R.id.confirm_button);
         okButton.setOnClickListener(this);
+        cameraButton = findViewById(R.id.camera);
+        cameraButton.setOnClickListener(this);
+        galleryButton = findViewById(R.id.gallery);
+        galleryButton.setOnClickListener(this);
         findViewById(R.id.cancel_button).setOnClickListener(this);
 
         String id = UserManager.getUserManager().getCurrentPatient().getId();
@@ -167,25 +173,6 @@ public class DocumentSendActivity extends AppCompatActivity implements View.OnCl
     public void onBackPressed() {
         setResult(RESULT_CANCELED);
         finish();
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        MenuInflater inflater = getMenuInflater();
-        inflater.inflate(R.menu.add_images_menu, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onPrepareOptionsMenu(Menu menu) {
-        if ((imageItems.size() < MAX_IMAGES) && (docBaseDir!=null)) {
-            menu.findItem(R.id.camera).setVisible(true);
-            menu.findItem(R.id.gallery).setVisible(true);
-        } else {
-            menu.findItem(R.id.camera).setVisible(false);
-            menu.findItem(R.id.gallery).setVisible(false);
-        }
-        return true;
     }
 
     @Override
@@ -248,7 +235,13 @@ public class DocumentSendActivity extends AppCompatActivity implements View.OnCl
     }
 
     private void updateButtons(boolean forceDisable) {
-        invalidateOptionsMenu();
+        if ((imageItems.size() < MAX_IMAGES) && (docBaseDir!=null)) {
+            cameraButton.setEnabled(true);
+            galleryButton.setEnabled(true);
+        } else {
+            cameraButton.setEnabled(false);
+            galleryButton.setEnabled(false);
+        }
         okButton.setEnabled((imageItems.size() > 0) && !forceDisable);
     }
 

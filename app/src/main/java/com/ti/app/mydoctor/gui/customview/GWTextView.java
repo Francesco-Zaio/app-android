@@ -5,11 +5,13 @@ import com.ti.app.mydoctor.R;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Typeface;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.AppCompatTextView;
 import android.util.AttributeSet;
 import android.util.SparseArray;
 import android.widget.TextView;
 
-public class GWTextView extends TextView {
+public class GWTextView extends AppCompatTextView {
 	
 	private final static int ROBOTO_CONDENSED = 0;
 	private final static int ROBOTO_LIGHT = 1;

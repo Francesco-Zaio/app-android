@@ -5,8 +5,9 @@ android {
         release {
             keyAlias 'mydoctorkeystore'
             keyPassword 'mydoctor'
-            storeFile file('C:/Users/SO000228/Desktop/TMED/Sviluppo/GWAndroid/AndroidCore/myDoctor.keystore')
+            storeFile file('myDoctor.keystore')
             storePassword 'mydoctor'
+            v2SigningEnabled false
         }
     }
     compileSdkVersion 26
@@ -15,8 +16,8 @@ android {
         applicationId "com.ti.app.mydoctor"
         minSdkVersion 16
         targetSdkVersion 26
-        versionCode 4110
-        versionName "4.1.1.a"
+        versionCode 4120
+        versionName "4.1.2.a"
         setProperty("archivesBaseName", "NuvolaItHomeDoctor-$versionName")
     }
     buildTypes {

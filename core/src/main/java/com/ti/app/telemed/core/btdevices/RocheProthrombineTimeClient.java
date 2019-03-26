@@ -391,9 +391,12 @@ public class RocheProthrombineTimeClient extends DeviceHandler implements
 		tempBuf = tempBuf.substring(pos + 1);
 		tempMeasure = tempBuf.substring(0, 4);
 		iINR = tempMeasure.substring(0, 3) + "," + tempMeasure.substring(3);
-		while (iINR.charAt(0) == 48) {
-			iINR = iINR.substring(1);
-		}
+		int i;
+		for (i=0; i<2; i++)
+			if (iINR.charAt(i) != 48)
+				break;
+		if (i > 0)
+			iINR = iINR.substring(i);
 		Log.i(TAG, "Data parser. INR = " + iINR);
 
 		pos = tempBuf.indexOf(TTypeControl.getVal(TTypeControl.kT_TAB));

@@ -17,7 +17,11 @@ Key password: mydoctor
 
 - Per cambiare il numero di release del progetto bisogna modificare i seguenti parametri (es. versione 3.2.0):
 app/build.gradle
-	versionName "3.2.0"
+	versionCode 4120
+        versionName "4.1.2.a"
+core/build.gradle
+	versionCode 215
+        versionName "2.1.5"
 
 
 Creare la nuova immagine splash \app\src\main\res\drawable\splash.png

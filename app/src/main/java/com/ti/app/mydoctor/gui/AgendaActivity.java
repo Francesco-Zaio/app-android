@@ -149,18 +149,7 @@ public class AgendaActivity extends AppCompatActivity {
                 tv3.setText(df.format(events.get(j)));
                 laySchedule.addView(tv3);
             }
-/*
-            final TextView tv3b = new TextView(this);
-            tv3b.setLayoutParams(new TableRow.LayoutParams(TableRow.LayoutParams.WRAP_CONTENT,
-                    TableRow.LayoutParams.WRAP_CONTENT));
-            tv3b.setGravity(Gravity.RIGHT);
-            tv3b.setTextSize(TypedValue.COMPLEX_UNIT_PX, smallTextSize);
-            tv3b.setPadding(5, 1, 0, 5);
-            tv3b.setTextColor(Color.parseColor("#aaaaaa"));
-            tv3b.setBackgroundColor(Color.parseColor("#f8f8f8"));
-            tv3b.setText(row.getSchedule());
-            laySchedule.addView(tv3b);
-*/
+
             // add table row
             final TableRow tr = new TableRow(this);
             tr.setId(i);

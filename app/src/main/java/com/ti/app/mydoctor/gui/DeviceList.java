@@ -152,7 +152,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	private static final int PRECOMPILED_LOGIN_DIALOG = 10;
 	private static final int CONFIRM_CLOSE_DIALOG = 11;
     private static final int USER_OPTIONS_DIALOG = 12;
-	private static final int CONNECTION_STATUS_DIALOG = 13;
 
     
     private GWTextView titleTV;
@@ -265,11 +264,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
             titleTV = titleView.findViewById(R.id.actionbar_title_label);
             titleTV.setText(R.string.app_name);
 			statusIcon = titleView.findViewById(R.id.statusIcon);
-            SyncStatusManager ssm = SyncStatusManager.getSyncStatusManager();
-            if (ssm.getLoginError() || ssm.getMeasureError())
-                statusIcon.setVisibility(View.VISIBLE);
-            else
-                statusIcon.setVisibility(View.GONE);
             statusIcon.setOnClickListener(new OnClickListener() {
                 public void onClick(View v) {
                     dataBundle = new Bundle();
@@ -280,7 +274,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                         msg += AppResourceManager.getResource().getString("measureError");
                     msg += AppResourceManager.getResource().getString("redoMessage");
                     dataBundle.putString(AppConst.MESSAGE, msg);
-                    myShowDialog(CONNECTION_STATUS_DIALOG);
+                    myShowDialog(ALERT_DIALOG);
                 }
             });
             customActionBar.setCustomView(titleView);
@@ -1349,6 +1343,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
             mActionBarMenu.findItem(R.id.action_bar_menu).setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER);
 			//Cambia titolo nella Action Bar
 			titleTV.setText(R.string.app_name);
+            statusIcon.setVisibility(View.GONE);
 		}
 		catch (Exception e) {
 			Log.e(TAG, "doLogout()", e);
@@ -1569,6 +1564,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 
 	private void resetView() {
 		titleTV.setText(R.string.app_name);
+        statusIcon.setVisibility(View.GONE);
 
 		if (fillMaps != null)
 			fillMaps.clear();
@@ -1805,6 +1801,12 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 
                 activity.titleTV.setText(activity.userManager.getCurrentUser().getName() + "\n" + activity.userManager.getCurrentUser().getSurname());
                 activity.fitTextInPatientNameLabel(activity.getString(R.string.selectPatient));
+                SyncStatusManager ssm = SyncStatusManager.getSyncStatusManager();
+                if (ssm.getLoginError() || ssm.getMeasureError())
+                    activity.statusIcon.setVisibility(View.VISIBLE);
+                else
+                    activity.statusIcon.setVisibility(View.GONE);
+
                 activity.myRemoveDialog(PROGRESS_DIALOG);
                 activity.setupDeviceList();
 
@@ -2122,12 +2124,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                 builder.setNeutralButton("Ok", simple_dialog_click_listener);
                 beep();
                 return builder.create();
-			case CONNECTION_STATUS_DIALOG:
-                builder.setPositiveButton("Ok", new AlertDialogClickListener());
-                builder.setMessage(dataBundle.getString(AppConst.MESSAGE));
-                builder.setTitle(null);
-                beep();
-                return builder.create();
             default:
                 return null;
 		}
@@ -2155,9 +2151,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                 }
                 break;
             case ALERT_DIALOG:
-                ((AlertDialog)dialog).setMessage(dataBundle.getString(AppConst.MESSAGE));
-                break;
-            case CONNECTION_STATUS_DIALOG:
                 ((AlertDialog)dialog).setMessage(dataBundle.getString(AppConst.MESSAGE));
                 break;
         }

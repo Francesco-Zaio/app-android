@@ -71,8 +71,10 @@ public class SendMeasureService extends IntentService implements WebManagerSendi
                         sendMeasure(user, measure);
                     else
                         sendMeasures(user);
-                } else
-                    Log.w(TAG,"Network is Not connected");
+                } else {
+                    Log.w(TAG, "Network is Not connected");
+                    SyncStatusManager.getSyncStatusManager().setMeasureError(true);
+                }
             } catch (Exception e) {
                 e.printStackTrace();
             } finally {
@@ -148,6 +150,8 @@ public class SendMeasureService extends IntentService implements WebManagerSendi
     private void sendMeasures(User user) {
         final ArrayList<Measure> measuresToSend = DbManager.getDbManager().getNotSentMeasures(user.getId());
         Log.d(TAG,"Nr measure to send = " + measuresToSend.size());
+        if (measuresToSend.isEmpty())
+            SyncStatusManager.getSyncStatusManager().setMeasureError(false);
         for (Measure m:measuresToSend) {
             sendMeasure(user, m);
         }
@@ -163,6 +167,7 @@ public class SendMeasureService extends IntentService implements WebManagerSendi
     public void sendingMeasureSucceeded(WebManagerSendingResultEvent evt) {
         synchronized (lock) {
             Log.i(TAG, "sendingMeasureSucceded: Invio misure avvenuto con successo");
+            SyncStatusManager.getSyncStatusManager().setMeasureError(false);
             sendResult = SEND_SUCCESS;
             lock.notifyAll();
         }
@@ -172,6 +177,7 @@ public class SendMeasureService extends IntentService implements WebManagerSendi
     public void webAuthenticationFailed(WebManagerSendingResultEvent evt) {
         synchronized (lock) {
             Log.i(TAG, "webAuthenticationFailed: Invio misura fallito");
+            SyncStatusManager.getSyncStatusManager().setMeasureError(true);
             sendResult = SEND_AUTH_ERROR;
             errorCode = 401;
             lock.notifyAll();
@@ -182,6 +188,7 @@ public class SendMeasureService extends IntentService implements WebManagerSendi
     public void webOperationFailed(WebManagerSendingResultEvent evt, XmlManager.XmlErrorCode code) {
         synchronized (lock) {
             Log.i(TAG, "webOperationFailed: Invio misura fallito");
+            SyncStatusManager.getSyncStatusManager().setMeasureError(true);
             sendResult = SEND_ERROR;
             errorCode = XmlManager.XmlErrorCode.convertFrom(code);
             lock.notifyAll();

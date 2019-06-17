@@ -62,6 +62,8 @@ public class SyncJob extends Job implements WebManagerResultEventListener {
 
     @Override
     public void webAuthenticationSucceeded(WebManagerResultEvent evt){
+        SyncStatusManager.getSyncStatusManager().setLoginError(false);
+
         User u = UserManager.getUserManager().getCurrentUser();
         // verifico se nel frattempo non è cambiato l'utente
         if (u != null && u.getId().equals(userId))
@@ -77,6 +79,7 @@ public class SyncJob extends Job implements WebManagerResultEventListener {
         // Occorre resettare l'utente corrente a null per obbligare a riautenticarsi e impostare
         // sul DB il flag ACTIVE a false altrimenti ogni ora verrà comunque ritentata
         // l'autenticazione
+        SyncStatusManager.getSyncStatusManager().setLoginError(true);
         DbManager.getDbManager().resetActiveUser(userId);
         User u = UserManager.getUserManager().getCurrentUser();
         if (u != null && u.getId().equals(userId)) {
@@ -88,12 +91,14 @@ public class SyncJob extends Job implements WebManagerResultEventListener {
 
     @Override
     public void webChangePasswordSucceded(WebManagerResultEvent evt) {
+        SyncStatusManager.getSyncStatusManager().setLoginError(false);
         success = false;
         countDownLatch.countDown();
     }
 
     @Override
     public void webOperationFailed(WebManagerResultEvent evt, XmlManager.XmlErrorCode code) {
+        SyncStatusManager.getSyncStatusManager().setLoginError(true);
         // l'utente corrente è stato disattivato
         if(code != null && code.equals(XmlManager.XmlErrorCode.USER_BLOCKED)) {
             UserManager.getUserManager().setUserBlocked(login);

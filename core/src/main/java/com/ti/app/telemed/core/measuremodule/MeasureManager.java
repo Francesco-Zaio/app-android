@@ -14,6 +14,7 @@ import com.ti.app.telemed.core.common.User;
 import com.ti.app.telemed.core.common.UserMeasure;
 import com.ti.app.telemed.core.dbmodule.DbManager;
 import com.ti.app.telemed.core.syncmodule.SendMeasureService;
+import com.ti.app.telemed.core.syncmodule.SyncStatusManager;
 import com.ti.app.telemed.core.usermodule.UserManager;
 import com.ti.app.telemed.core.util.GWConst;
 import com.ti.app.telemed.core.util.Util;
@@ -308,6 +309,8 @@ public class MeasureManager {
                 if (measure.getFile() != null)
                     Util.deleteTree(new File(new String(measure.getFile(), "UTF-8")));
             DbManager.getDbManager().deleteMeasure(measure.getIdUser(), measure.getTimestamp(), measure.getMeasureType());
+            if (!DbManager.getDbManager().notSentMeasures(measure.getIdUser()))
+                SyncStatusManager.getSyncStatusManager().setMeasureError(false);
             return true;
         } catch (Exception e) {
             e.printStackTrace();
@@ -419,8 +422,8 @@ public class MeasureManager {
      * @param userId        Identificativo dell'utente o null per qualsiasi utente.
      * @return              Numero di misure che non sono ancora state spedite.
      */
-    public int getNumNotSentMeasures(String userId) {
-        return DbManager.getDbManager().getNumNotSentMeasures(userId);
+    public int getNumMeasuresToSend(String userId) {
+        return DbManager.getDbManager().getNumMeasuresToSend(userId);
     }
 
     private class MyRunnable implements Runnable {
@@ -497,6 +500,9 @@ public class MeasureManager {
             }
             if (handler!=null)
                 handler.sendEmptyMessage(OPERATION_COMPLETED);
+
+            if (!DbManager.getDbManager().notSentMeasures(idUser))
+                SyncStatusManager.getSyncStatusManager().setMeasureError(false);
         } catch (Exception e) {
             e.printStackTrace();
             if (handler!=null)

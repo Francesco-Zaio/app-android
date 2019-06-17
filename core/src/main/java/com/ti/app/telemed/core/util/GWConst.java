@@ -15,7 +15,7 @@ public interface GWConst {
      */
 	int MEASURE_SEND_RETRY = 10;
     /**
-     * Timeout minimo fra tentativi successivi di invio misura
+     * Timeout minimo secondi fra tentativi successivi di invio misura
      */
 	int MEASURE_SEND_TIMEOUT = 300;
 

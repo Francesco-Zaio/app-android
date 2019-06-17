@@ -826,7 +826,7 @@ public class DbManager {
             // on delete cascade clause ensures all related rows are also removed.
             // Only Patient table should be checked due to the many to many relationship
             int rows = mDb.delete("USER", "ID = ?", new String[] {idUser});
-            rows += mDb.delete("PATIENT", "ID NOT IN (SELECT ID_PATIENT FROM USER_PATIENT)", null);
+            rows += mDb.delete("PATIENT", "ID NOT IN (SELECT ID_PATIENT FROM USER_PATIENT UNION SELECT DISTINCT ID_PATIENT FROM MEASURE)", null);
             Log.i(TAG, "Eliminate " + rows + " righe dell utente " + idUser + " dal db");
             return rows;
         }
@@ -1679,7 +1679,32 @@ public class DbManager {
      * @param idUser variabile di tipo {@code String} che contiene l'identificatore dell'utente che ha acquisito le misure
      * @return int
      */
-    public int getNumNotSentMeasures(String idUser) {
+    public boolean notSentMeasures(String idUser) {
+        final String SQL_STATEMENT = "SELECT COUNT(*) FROM MEASURE WHERE ID_USER = ? AND SENT = 0 AND SEND_FAIL_COUNT < ?";
+        if (idUser == null || idUser.isEmpty())
+            return false;
+
+        Cursor c = null;
+        boolean val;
+        try {
+            c = mDb.rawQuery(SQL_STATEMENT, new String[]{idUser,
+                    String.valueOf(GWConst.MEASURE_SEND_RETRY)
+            });
+            c.moveToFirst();
+            val = c.getInt(0) > 0;
+        } finally {
+            if (c != null)
+                c.close();
+        }
+        return val;
+    }
+
+    /**
+     * Metodo che permette di il numero di misure che non sono ancora state inviate alla piattaforma
+     * @param idUser variabile di tipo {@code String} che contiene l'identificatore dell'utente che ha acquisito le misure
+     * @return int
+     */
+    public int getNumMeasuresToSend(String idUser) {
         final String SQL_STATEMENT = "SELECT COUNT(*) FROM MEASURE WHERE ID_USER = ? AND SENT = 0 AND SEND_FAIL_COUNT < ? AND SEND_FAIL_TIMESTAMP < ?";
         final String SQL_STATEMENT2 = "SELECT COUNT(*) FROM MEASURE WHERE SENT = 0 AND SEND_FAIL_COUNT < ? AND SEND_FAIL_TIMESTAMP < ?";
         Cursor c = null;

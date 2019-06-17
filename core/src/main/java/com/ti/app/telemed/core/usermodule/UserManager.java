@@ -8,6 +8,7 @@ import com.ti.app.telemed.core.ResourceManager;
 import com.ti.app.telemed.core.common.Patient;
 import com.ti.app.telemed.core.common.User;
 import com.ti.app.telemed.core.dbmodule.DbManager;
+import com.ti.app.telemed.core.syncmodule.SyncStatusManager;
 import com.ti.app.telemed.core.webmodule.WebManager;
 import com.ti.app.telemed.core.webmodule.webmanagerevents.WebManagerResultEvent;
 import com.ti.app.telemed.core.webmodule.webmanagerevents.WebManagerResultEventListener;
@@ -384,6 +385,7 @@ public class UserManager {
         public void webAuthenticationSucceeded(WebManagerResultEvent evt) {
             // the web operations had success, so we must only extract the new operator
             // from database
+            SyncStatusManager.getSyncStatusManager().setLoginError(false);
             try {
                 logInUserFromDb();
             } catch (Exception e) {
@@ -395,22 +397,24 @@ public class UserManager {
         @Override
         public void webChangePasswordSucceded(WebManagerResultEvent evt) {
             // the change password had success, so we must update the current password
+            SyncStatusManager.getSyncStatusManager().setLoginError(false);
             synchronized (currT) {
                 password = newPassword;
                 logInUserFromDb();
             }
         }
 
-
         @Override
         public void webAuthenticationFailed(WebManagerResultEvent evt) {
             // log in failed, we must require to the user to repeat the log in operation
             Log.i(TAG, "webAuthenticationFailed()");
+            SyncStatusManager.getSyncStatusManager().setLoginError(true);
             sendMessage(LOGIN_FAILED, ResourceManager.getResource().getString("LoginDialog.badCredentials"));
         }
 
         @Override
         public void webOperationFailed(WebManagerResultEvent evt, XmlErrorCode code) {
+            SyncStatusManager.getSyncStatusManager().setLoginError(true);
             if (code != null) {
                 logger.log(Level.INFO, code.toString());
                 if (code.equals(XmlErrorCode.PLATFORM_ERROR))

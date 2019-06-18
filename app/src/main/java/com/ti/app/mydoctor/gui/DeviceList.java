@@ -420,7 +420,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	}
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String permissions[], @NonNull int[] grantResults) {
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         switch (requestCode) {
             case PERMISSIONS_REQUEST:
                 for (int result: grantResults)
@@ -1237,12 +1237,10 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 		}
 
 		switch(item.getItemId()) {
-
-		case R.id.action_bar_menu:
-			changeLayoutToFragmentListView();
-			return true;
-
-		default:
+			case R.id.action_bar_menu:
+				changeLayoutToFragmentListView();
+				return true;
+			default:
 				return super.onOptionsItemSelected(item);
 		}
 

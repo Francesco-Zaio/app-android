@@ -25,7 +25,7 @@ core/build.gradle
 
 
 Creare la nuova immagine splash \app\src\main\res\drawable\splash.png
-  Aprire file il file del GW PC MyDoctor@Home\resource\Etichetta CE_v2_20160302.ppt
+  Aprire nella home del progetto Android il file EtichettaCE.docx
   Ingrandire al 124%
   Modificare nell'immagine il numero di release
   Quindi eseguire un Print Screen e in un programma di grafica ritagliare l'immagine seguendo i bordi

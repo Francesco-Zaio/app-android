@@ -112,7 +112,8 @@ public class MeasureManager {
         Diagnosis("D5"),
         TherapyPrescription("D6"),
         Letter("D7"),
-        WoundImage("D8");
+        WoundImage("D8"),
+        HolterDiary("D9");;
 
         private final String id;
 
@@ -148,6 +149,8 @@ public class MeasureManager {
                     return Letter;
                 case "D8":
                     return WoundImage;
+                case "D9":
+                    return HolterDiary;
                 default:
                     return null;
             }

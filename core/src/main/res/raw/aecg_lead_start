@@ -1,0 +1,7 @@
+                    <component>
+                        <sequence>
+                            <code code="@LEAD" codeSystem="2.16.840.1.113883.6.24" codeSystemName="MDC"/>
+                            <value xsi:type="SLIST_PQ">
+                                <origin value="@ORIGIN" unit="uV"/>
+                                <scale value="@SCALE" unit="uV"/>
+                                <digits>

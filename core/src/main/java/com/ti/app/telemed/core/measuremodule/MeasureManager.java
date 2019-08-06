@@ -61,6 +61,8 @@ public class MeasureManager {
      */
     public static final int ERROR_OCCURED = 1;
 
+    public static final String MEASURE_DATE_FORMAT = "yyyyMMddHHmmss";
+
     /**
      * Restituisce l'istanza di MeasureManager.
      * @return      istanza di MeasureManager.

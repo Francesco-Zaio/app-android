@@ -5,6 +5,7 @@ import android.util.Log;
 
 import com.ti.app.telemed.core.btdevices.AgamatrixMyStar;
 import com.ti.app.telemed.core.btdevices.CardGuardEasy2CheckClient;
+import com.ti.app.telemed.core.btdevices.CheckmePro;
 import com.ti.app.telemed.core.btdevices.EcgProtocol;
 import com.ti.app.telemed.core.btdevices.ForaThermometerClient;
 import com.ti.app.telemed.core.btdevices.GIMAPC300SpotCheck;
@@ -154,6 +155,8 @@ public abstract class DeviceHandler {
                 return new IEMECG(listener, ud);
             case GWConst.KTDCC:
                 return new CardGuardEasy2CheckClient(listener, ud);
+            case GWConst.KCheckmePro:
+                return new CheckmePro(listener, ud);
             default:
                 return null;
         }
@@ -180,6 +183,7 @@ public abstract class DeviceHandler {
             case GWConst.KSpirodoc:
             case GWConst.KPC300SpotCheck:
             case GWConst.KTDCC:
+            case GWConst.KCheckmePro:
                 return true;
             default:
                 return false;

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<AnnotatedECG xmlns="urn:hl7-org:v3" xmlns:voc="urn:hl7-org:v3/voc" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:hl7-org:v3 ../schema/PORT_MT020001.xsd" type="Observation">
+    <id root="896dfd28-01d7-4be5-96d2-65b9e4856cec"/>
+    <code code="93000" codeSystem="2.16.840.1.113883.6.12" codeSystemName="CPT-4"/>
+    <effectiveTime>
+        <center value="@TIME"/>
+    </effectiveTime>
+    <componentOf>
+        <timepointEvent>
+            <componentOf>
+                <subjectAssignment>
+                    <subject>
+                        <trialSubject>
+                            <code code="ENROLLED" codeSystem="2.16.840.1.113883.5.111"/>
+                            <subjectDemographicPerson>
+                                <name></name>
+                                <administrativeGenderCode code="" codeSystem="2.16.840.1.113883.5.1"/>
+                                <raceCode code="2028-9" codeSystem="2.16.840.1.113883.5.104"/>
+                            </subjectDemographicPerson>
+                        </trialSubject>
+                    </subject>
+                    <subject>
+                        <trialSubject>
+                            <id extension="0"/>
+                        </trialSubject>
+                    </subject>
+                    <componentOf>
+                        <clinicalTrial/>
+                    </componentOf>
+                </subjectAssignment>
+            </componentOf>
+        </timepointEvent>
+    </componentOf>
+    <component>
+        <series>
+            <code code="RHYTHM" codeSystem="2.16.840.1.113883.5.4"/>
+            <effectiveTime>
+                <low value="@TIME"/>
+                <high value="@TIME"/>
+            </effectiveTime>
+            <component>
+                <sequenceSet>
+					<component>
+						<sequence>
+							<code code="TIME_RELATIVE" codeSystem="2.16.840.1.113883.5.4" codeSystemName="ActCode"/>
+							<value xsi:type="GLIST_PQ">
+								<head value="0" unit="s"/>
+								<increment value="@INCREMENT" unit="s"/>
+							</value>
+						</sequence>
+					</component>

@@ -44,6 +44,7 @@ public interface GWConst {
 	String KTouchECG = "TOUCHECG";
 	String KIEMECG = "IEMECG";
 	String KTDCC = "CLEVERCHEK";
+	String KCheckmePro = "CHECKMEPRO";
 
 
 	/**

@@ -26,3 +26,4 @@ GL, AGAMATRIXMYSTAR, MyStar - AgaMatrix, 1
 GL, CLEVERCHEK, Glucometro - Fora, 1
 PR, CLEVERCHEK, D40b - Fora, 1
 EC, TOUCHECG, TouchECG - Cardioline, 1
+EC, CHECKMEPRO, CheckmePro - Viatom, 1

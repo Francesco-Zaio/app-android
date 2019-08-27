@@ -1,6 +1,7 @@
 package com.ti.app.mydoctor.devicemodule;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -45,6 +46,7 @@ public class DeviceOperations implements DeviceListener {
 	public static final int ASK_SOMETHING = 7;
     public static final int START_ECG_DRAW = 8;
     public static final int START_ACTIVITY = 9;
+    public static final int MEASURE_LIST_RESULT = 10;
 
 	private boolean operationRunning;
 	
@@ -186,6 +188,15 @@ public class DeviceOperations implements DeviceListener {
         Message message = handler.obtainMessage(MEASURE_RESULT);
         Bundle bundle = new Bundle();
         message.obj = m;
+        message.setData(bundle);
+        handler.sendMessage(message);
+    }
+
+    @Override
+    public void showMeasurementResults(ArrayList<Measure> measureList) {
+        Message message = handler.obtainMessage(MEASURE_LIST_RESULT);
+        Bundle bundle = new Bundle();
+        message.obj = measureList;
         message.setData(bundle);
         handler.sendMessage(message);
     }

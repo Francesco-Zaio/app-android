@@ -310,12 +310,11 @@ public class MeasureManager {
             return false;
 
         try {
-            if (XmlManager.DOCUMENT_FILE_TYPE.equals(measure.getFileType()))
-                if (measure.getFile() != null)
-                    Util.deleteTree(new File(new String(measure.getFile(), "UTF-8")));
             DbManager.getDbManager().deleteMeasure(measure.getIdUser(), measure.getTimestamp(), measure.getMeasureType());
-            if (!DbManager.getDbManager().notSentMeasures(measure.getIdUser()))
-                SyncStatusManager.getSyncStatusManager().setMeasureError(false);
+            deleteMeasureFile(measure);
+            if (!measure.getSent())
+                if (!DbManager.getDbManager().notSentMeasures(measure.getIdUser()))
+                    SyncStatusManager.getSyncStatusManager().setMeasureError(false);
             return true;
         } catch (Exception e) {
             e.printStackTrace();
@@ -498,20 +497,30 @@ public class MeasureManager {
             ArrayList<Measure> measures =
                     DbManager.getDbManager().getMeasureData(idUser,null,null,measureType,idPatient,null,measureFamily);
             for (Measure m:measures) {
-                if (XmlManager.DOCUMENT_FILE_TYPE.equals(m.getFileType()))
-                    if (m.getFile() != null)
-                        Util.deleteTree(new File(new String(m.getFile(), "UTF-8")));
-                DbManager.getDbManager().deleteMeasure(m.getIdUser(),m.getTimestamp(),m.getMeasureType());
+                deleteMeasure(m);
             }
-            if (handler!=null)
+            if (handler != null)
                 handler.sendEmptyMessage(OPERATION_COMPLETED);
-
-            if (!DbManager.getDbManager().notSentMeasures(idUser))
-                SyncStatusManager.getSyncStatusManager().setMeasureError(false);
         } catch (Exception e) {
             e.printStackTrace();
-            if (handler!=null)
+            if (handler != null)
                 handler.sendEmptyMessage(ERROR_OCCURED);
         }
     }
+
+    private void deleteMeasureFile(Measure m) {
+        if ((m == null) || (m.getFileType() == null))
+            return;
+        switch (m.getFileType()) {
+            case XmlManager.DOCUMENT_FILE_TYPE:
+            case XmlManager.AECG_FILE_TYPE:
+                try {
+                    Util.deleteTree(new File(new String(m.getFile(), "UTF-8")));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                break;
+        }
+    }
+
 }

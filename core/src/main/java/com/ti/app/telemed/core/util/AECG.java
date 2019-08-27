@@ -11,15 +11,38 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Locale;
 
+
 public class AECG {
 
     private static final String TAG = "AECG";
+
+    public enum LeadType {
+        LEAD_I("MDC_ECG_LEAD_I"),
+        LEAD_II("MDC_ECG_LEAD_II"),
+        LEAD_III("MDC_ECG_LEAD_III"),
+        LEAD_AVR("MDC_ECG_LEAD_AVR"),
+        LEAD_AVL("MDC_ECG_LEAD_AVL"),
+        LEAD_AVF("MDC_ECG_LEAD_AVF"),
+        LEAD_V1("MDC_ECG_LEAD_V1"),
+        LEAD_V2("MDC_ECG_LEAD_V2"),
+        LEAD_V3("MDC_ECG_LEAD_V3"),
+        LEAD_V4("MDC_ECG_LEAD_V4"),
+        LEAD_V5("MDC_ECG_LEAD_V5"),
+        LEAD_V6("MDC_ECG_LEAD_V6");
+
+        private String l;
+        LeadType(String v) {
+            this.l = v;
+        }
+        public String getLead() {
+            return l;
+        }
+    }
 
     private Context ctx;
     private ArrayList<short[]> signalData = new ArrayList<>();
@@ -49,8 +72,8 @@ public class AECG {
 
     // values, origin, scale in uV
     // values and origin are signed
-    public void addLead(String leadId, short[] values, float origin, float scale) {
-        signalName.add(leadId);
+    public void addLead(LeadType leadId, short[] values, float origin, float scale) {
+        signalName.add(leadId.getLead());
         signalData.add(values);
         if(origin == (long)origin)
             signalOrigin.add(String.format(Locale.ENGLISH,"%d",(long)origin));
@@ -63,25 +86,33 @@ public class AECG {
     }
 
     // save the data to a file
-    public String saveFile(File f) {
+    public String saveFile(String name) {
+        File outFile;
         try {
-            PrintWriter out = new PrintWriter(f);
+            File tmpFile = new File(name+".xml");
+            PrintWriter out = new PrintWriter(tmpFile);
             out.print(aECGTemplateStart);
             for (int i=0; i<signalData.size(); i++) {
                 out.print(aECGLeadStart.replaceAll("@LEAD",signalName.get(i)).replaceAll("@ORIGIN", signalOrigin.get(i)).replaceAll("@SCALE", signalScale.get(i)));
                 short[] data = signalData.get(i);
-                for (int j=0; j<data.length;j++) {
-                    out.print(data[j] + " ");
+                for (short v:data) {
+                    out.print(v + " ");
                 }
                 out.print(aECGLeadEnd);
             }
             out.print(aECGTemplateEnd);
             out.close();
-        } catch (IOException e) {
+            outFile = new File(name+".zip");
+            if (!Util.zipFile(tmpFile, outFile)) {
+                Log.e(TAG, "Errore nella creazione del file zip");
+                return null;
+            }
+            tmpFile.delete();
+        } catch (Exception e) {
             Log.e(TAG, e.toString());
             return null;
         }
-        return f.getAbsolutePath();
+        return outFile.getName();
     }
 
     private String  loadTemplate(int id) {

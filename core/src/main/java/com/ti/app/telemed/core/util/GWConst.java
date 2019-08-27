@@ -42,7 +42,6 @@ public interface GWConst {
 	String KPC300SpotCheck = "PC300";
 	String KAgamtrixJazz = "AGAMATRIXMYSTAR";
 	String KTouchECG = "TOUCHECG";
-	String KIEMECG = "IEMECG";
 	String KTDCC = "CLEVERCHEK";
 	String KCheckmePro = "CHECKMEPRO";
 
@@ -170,10 +169,60 @@ public interface GWConst {
      */
 	String EGwCode_0G = "0G";
 	/**
-	 * Identificativo del file ECG del IEM BEAM ECG
+	 * Identificativo del file AECG
 	 */
 	String EGwCode_0I = "0I";
-    /**
+	/**
+	 * Checkme PRO: Tipo esame (1=Hand-Hand, 2=Hand-Chest, 3=1-Lead, 4=2-Lead)
+	 */
+	String EGwCode_2A = "2A";
+	/**
+	 * Checkme PRO: Smile face or crying face (0: smile face,1: crying face, other value: Do not display)
+	 */
+	String EGwCode_2B = "2B";
+	/**
+	 * Checkme PRO: Pulsazione cardiaca media (bpm)
+	 */
+	String EGwCode_2C = "2C";
+	/**
+	 * Checkme PRO: ST (mV)
+	 */
+	String EGwCode_2D = "2D";
+	/**
+	 * Checkme PRO: QRS (ms)
+	 */
+	String EGwCode_2E = "2E";
+	/**
+	 * Checkme PRO: PVCs (contatore)
+	 */
+	String EGwCode_2F = "2F";
+	/**
+	 * Checkme PRO: QTc  (ms)
+	 */
+	String EGwCode_30 = "30";
+	/**
+	 * Checkme PRO: QT(ms)
+	 */
+	String EGwCode_31 = "31";
+	/**
+	 * Checkme PRO: Tipo filtro (0: normal, 1: wide)
+	 */
+	String EGwCode_32 = "32";
+	/**
+	 * Checkme PRO: Analisi aritmia:
+	 * 1 = Ritmo cardiaco regolare
+	 * 2 = Battito alto (HR>100bpm)
+	 * 4 = Battito basso (HR<50bpm)
+	 * 8 = Valore QRS alto (QRS>120ms)
+	 * 16 = Valore ST alto (only for external ST>+0.2mV)
+	 * 32 = Valore ST basso (only for external ST<-0.2mV)
+	 * 64 = Ritmo cardiaco irregolare
+	 * 128 = Sospetti battiti prematuri
+	 * 255 = Analisi non effettuata (e.s. poor waveform quality)
+	 */
+	String EGwCode_33 = "33";
+
+	/**
      * Concentrazione glicemica pre-prandiale
      */
 	String EGwCode_0E = "0E";
@@ -322,19 +371,10 @@ public interface GWConst {
      */
 	String EGwCode_BATTERY = "A0";
 
-	/**
-	 * riservato IEM BEAM ECG
-	 */
-	String EGwCode_2A = "2A";
-	/**
-	 * riservato IEM BEAM ECG
-	 */
-	String EGwCode_2B = "2B";
-	/**
-	 * riservato IEM BEAM ECG
-	 */
-	String EGwCode_2C = "2C";
     /*
+	String EGwCode_2A = "2A";
+	String EGwCode_2B = "2B";
+	String EGwCode_2C = "2C";
 	String EGwCode_0Q = "0Q";
 	String EGwCode_0S = "0S";
 	String EGwCode_0B = "0B";
@@ -347,7 +387,6 @@ public interface GWConst {
 	String EGwCode_0I = "0I";
 	String EGwCode_2A = "2A";
 	String EGwCode_2B = "2B";
-	String EGwCode_2C = "2C";
 	String EGwCode_EA = "EA"; // Risultato analisi ECG
 	String EGwCode_1I = "1I";
 	String EGwCode_1M = "1M";

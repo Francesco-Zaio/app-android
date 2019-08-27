@@ -87,9 +87,12 @@ import com.ti.app.mydoctor.gui.customview.GWTextView;
 import com.ti.app.mydoctor.gui.adapter.DeviceListAdapter;
 import com.ti.app.mydoctor.gui.adapter.MainMenuListAdapter;
 import com.ti.app.mydoctor.util.DialogManager;
+import com.ti.app.telemed.core.util.Util;
 
 import java.lang.ref.WeakReference;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -182,7 +185,8 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
     private static Bundle dataBundle;
     //Bundle che contiene l'ultima misura effettuata dall'utente
     private Measure measureData;
-	
+	private List<Measure> measureListData;
+
 	private Bundle viewMeasureBundle;
 	private Bundle startMeasureBundle;
 	private Bundle userDataBundle;
@@ -1752,9 +1756,21 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                     activity.myRemoveDialog(PROGRESS_DIALOG);
                     if (ECGDrawActivity.getInstance() != null)
                         ECGDrawActivity.getInstance().finish();
+					activity.measureListData = null;
 					activity.measureData = (Measure) msg.obj;
                     activity.myShowDialog(MEASURE_RESULT_DIALOG);
                     break;
+				case DeviceOperations.MEASURE_LIST_RESULT:
+					activity.refreshList();
+					activity.myRemoveDialog(PROGRESS_DIALOG);
+					if (ECGDrawActivity.getInstance() != null)
+						ECGDrawActivity.getInstance().finish();
+					activity.measureListData = (List<Measure>) msg.obj;
+					if (!activity.measureListData.isEmpty()) {
+						activity.measureData = activity.measureListData.remove(0);
+						activity.myShowDialog(MEASURE_RESULT_DIALOG);
+					}
+					break;
                 case DeviceOperations.ERROR_STATE:
                     activity.myRemoveDialog(PROGRESS_DIALOG);
                     if (ECGDrawActivity.getInstance() != null)
@@ -2312,7 +2328,15 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
         String okBtnMsg = AppResourceManager.getResource().getString("yes");
         String action = MeasureDialogClickListener.SAVE_ACTION;
 
-        String measureStr = getMeasureMessage(measureData);
+        // se si tratta di una lista di misure, nel dettaglio di ogni misura aggiungo all'inizio il timestamp
+		String measureStr = "";
+        if (measureListData != null) {
+        	Date d = Util.parseTimestamp(measureData.getTimestamp());
+			SimpleDateFormat sdf = new SimpleDateFormat("dd MM yyyy - HH:mm:ss");
+			measureStr = sdf.format(d);
+			measureStr += "\n";
+		}
+        measureStr += getMeasureMessage(measureData);
         builder.setMessage(measureStr + "\n" + msg);
 
         MeasureDialogClickListener measureDialogListener = new MeasureDialogClickListener(action, measureData.getMeasureType());
@@ -2321,18 +2345,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
         beep();
         builder.setCancelable(false);
         return builder.create();
-        /*
-        AlertDialog d = builder.create();
-        d.show();
-        if ((getResources().getConfiguration().screenLayout &
-                Configuration.SCREENLAYOUT_SIZE_MASK) ==
-                Configuration.SCREENLAYOUT_SIZE_XLARGE) {
-            TextView textView = d.findViewById(android.R.id.message);
-            //textView.setTextSize(40);
-            textView.setTextAppearance(this, android.R.style.TextAppearance_Medium);
-        }
-        return d;
-        */
     }
 
 	private void showAboutDialog() {
@@ -2444,19 +2456,27 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                         Patient p = userManager.getCurrentPatient();
                         if (p != null)
                             measureData.setIdPatient(p.getId());
-                        setOperationCompleted();
                         if (!measureManager.saveMeasureData(measureData)) {
                             String msg = AppResourceManager.getResource().getString("KMsgSaveMeasureError");
                             dataBundle.putString(AppConst.MESSAGE, msg);
                             myShowDialog(ALERT_DIALOG);
                         }
-                    }
+                        if ((measureListData != null) && !measureListData.isEmpty()) {
+                        	measureData = measureListData.remove(0);
+                        	myShowDialog(MEASURE_RESULT_DIALOG);
+						} else
+							setOperationCompleted();
+					}
                     break;
                 case DialogInterface.BUTTON_NEGATIVE:
                     myRemoveDialog(MEASURE_RESULT_DIALOG);
                     if(action.equals(SAVE_ACTION)){
                         // TODO chiedere conferma dello scarto della misura
-                        setOperationCompleted();
+						if ((measureListData != null) && !measureListData.isEmpty()) {
+							measureData = measureListData.remove(0);
+							myShowDialog(MEASURE_RESULT_DIALOG);
+						} else
+							setOperationCompleted();
                     }
                     break;
             }

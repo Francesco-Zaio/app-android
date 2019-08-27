@@ -4,6 +4,8 @@ import android.content.Intent;
 
 import com.ti.app.telemed.core.common.Measure;
 
+import java.util.ArrayList;
+
 /**
  * Interfaccia che contiene la definizione di tutti la callback invocate dalla
  * classe {@link DeviceHandler} durante l'esecuzione di un operazione sul dispositivo Bluetooth
@@ -72,6 +74,13 @@ public interface DeviceListener {
      * @param m              Misura rilevata
      */
     void showMeasurementResults(Measure m);
+
+    /**
+     * Metodo invocato al termine di una misurazione eseguita con successo.
+     *
+     * @param m              Misura rilevata
+     */
+    void showMeasurementResults(ArrayList<Measure> measureList);
 
     /**
      * Metodo invocato al termine di un operazione di pairing o configurazione eseguita

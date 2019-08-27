@@ -113,16 +113,7 @@ public class SendMeasureService extends IntentService implements WebManagerSendi
                     case SEND_SUCCESS:
                         Log.d(TAG,"Measure send success");
                         m.setSent(true);
-                        if (XmlManager.DOCUMENT_FILE_TYPE.equals(m.getFileType())) {
-                            try {
-                                // rimuovo il file zip temporaneo utilizzato per l'invio di tutti i files nella directory
-                                File f = new File(new String(m.getFile(), "UTF-8"));
-                                if (f.exists() && f.isDirectory())
-                                    new File(f, MeasureManager.DOCUMENT_SEND_TMPFILE).delete();
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
-                        }
+                        deleteMeasureFile(m);
                         DbManager.getDbManager().updateSentMeasure(m);
                         break;
                     case SEND_ERROR:
@@ -192,6 +183,32 @@ public class SendMeasureService extends IntentService implements WebManagerSendi
             sendResult = SEND_ERROR;
             errorCode = XmlManager.XmlErrorCode.convertFrom(code);
             lock.notifyAll();
+        }
+    }
+
+    private void deleteMeasureFile(Measure m) {
+        if (m == null || m.getFileType() == null)
+            return;
+        switch (m.getFileType()) {
+            case XmlManager.DOCUMENT_FILE_TYPE:
+                try {
+                    // rimuovo il file zip temporaneo utilizzato per l'invio di tutti i files nella directory
+                    File f = new File(new String(m.getFile(), "UTF-8"));
+                    if (f.exists() && f.isDirectory())
+                        new File(f, MeasureManager.DOCUMENT_SEND_TMPFILE).delete();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                break;
+            case XmlManager.AECG_FILE_TYPE:
+                try {
+                    File f = new File(new String(m.getFile(), "UTF-8"));
+                    if (f.exists())
+                        f.delete();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                break;
         }
     }
 }

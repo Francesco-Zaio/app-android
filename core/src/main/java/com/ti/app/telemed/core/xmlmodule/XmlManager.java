@@ -144,6 +144,7 @@ public class XmlManager extends DefaultHandler {
     final static private String NAME_ATTRIBUTENAME = "name";
 
     // File Type
+    public static final String AECG_FILE_TYPE = "AECGFile";
     public static final String ECG_FILE_TYPE = "ECGFile";
     public static final String MIR_SPIRO_FILE_TYPE = "MirSPIROFile";
     public static final String MIR_OXY_FILE_TYPE = "MirOXYFile";

@@ -9,7 +9,6 @@ import com.ti.app.telemed.core.btdevices.CheckmePro;
 import com.ti.app.telemed.core.btdevices.EcgProtocol;
 import com.ti.app.telemed.core.btdevices.ForaThermometerClient;
 import com.ti.app.telemed.core.btdevices.GIMAPC300SpotCheck;
-import com.ti.app.telemed.core.btdevices.IEMECG;
 import com.ti.app.telemed.core.btdevices.IHealth;
 import com.ti.app.telemed.core.btdevices.MIRSpirodoc;
 import com.ti.app.telemed.core.btdevices.NoninOximeter;
@@ -151,8 +150,6 @@ public abstract class DeviceHandler {
                 return new AgamatrixMyStar(listener, ud);
             case GWConst.KTouchECG:
                 return new TouchECG(listener, ud);
-            case GWConst.KIEMECG:
-                return new IEMECG(listener, ud);
             case GWConst.KTDCC:
                 return new CardGuardEasy2CheckClient(listener, ud);
             case GWConst.KCheckmePro:
@@ -197,7 +194,7 @@ public abstract class DeviceHandler {
      */
     public static boolean pairingEnabled(UserDevice ud){
         switch(ud.getDevice().getModel()) {
-            case GWConst.KIEMECG:
+            case GWConst.KCheckmePro:
                 return false;
             default:
                 return true;
@@ -213,8 +210,6 @@ public abstract class DeviceHandler {
      */
     public static boolean isServer(UserDevice ud){
         switch(ud.getDevice().getModel()) {
-            case GWConst.KIEMECG:
-                return true;
             default:
                 return false;
         }

@@ -47,11 +47,11 @@ public class ECGInnerItem implements Serializable{
 		qrs = ((buf[10] & 0xFF) + ((buf[11] & 0xFF) << 8));
 		pvcs = ((buf[12] & 0xFF) + ((buf[13] & 0xFF) << 8));
 		qtc = ((buf[14] & 0xFF) + ((buf[15] & 0xFF) << 8));
-//		strResultIndex = ((buf[16] & 0xFF) + ((buf[17] & 0xFF) << 8));
 		strResultIndex = (buf[16] & 0xFF);
 		checkMode = buf[17];
 		filterMode = buf[18];
-		
+		qt = ((buf[19] & 0xFF) + ((buf[20] & 0xFF) << 8));
+
 		int dataLenght = (buf[2] & 0xFF) + ((buf[3] & 0xFF) << 8)
 				+ ((buf[4] & 0xFF)<<16) + ((buf[5] & 0xFF) << 24);
 		int dataPos = 19 + timeLength * 2;//19 is the head length; timeLength*2 is HR data length

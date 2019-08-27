@@ -216,12 +216,12 @@ public class CheckmePro extends DeviceHandler implements
     // Interface ReadFileListener
     @Override
     public void onReadPartFinished(String fileName, byte fileType, float percentage) {
-        Log.d(TAG, "onReadPartFinished: " + fileName + "part  " + percentage);
+        //Log.d(TAG, "onReadPartFinished: " + fileName + "part  " + percentage);
     }
 
     @Override
     public void onReadSuccess(String fileName, byte fileType, byte[] fileBuf) {
-        Log.d(TAG, "onReadSuccess: " + fileName + " == " + StringUtils.byte2hex(fileBuf));
+        Log.d(TAG, "onReadSuccess: " + fileName);
         switch (fileType) {
             case MeasurementConstant.CMD_TYPE_ECG_LIST:
                 deviceData = fileBuf;
@@ -326,6 +326,7 @@ public class CheckmePro extends DeviceHandler implements
     }
 
     private void processEcgItem() {
+        Log.d(TAG, "processEcgItem");
         ECGItem item = ecgItems.get(ecgItemPos);
         String egcFileName = new SimpleDateFormat("yyyyMMddHHmmss", Locale.getDefault()).format(item.getDate());
         btBinder.interfaceReadFile(egcFileName, CMD_TYPE_ECG_NUM, 5000, this);
@@ -345,22 +346,33 @@ public class CheckmePro extends DeviceHandler implements
 
     private String createAECG(CheckmeDevice device, ECGItem item, ECGInnerItem data, String timestamp) {
         AECG aecg = new AECG(MyApp.getContext(), item.getDate(), 500);
-        int signal[] = data.getECGData();
+        int[] signal = data.getECGData();
         short[] leadData = new short[signal.length];
         /*
         Descrizione "cino-inglese" del segnale....
         If one of the ECG data is n, and reduced to the actual voltage X(n)(mV) signal formula is
         X(n) = (n*4033)/(32767*12*8)
-         */
+        */
         for (int i=0;i<signal.length;i++) {
-            // uV
+            // leadData in uV
             leadData[i] = (short) (signal[i] * 1000 * 4033 / (32767*12*8));
         }
-        aecg.addLead("MDC_ECG_LEAD_I", leadData, 0, 1);
-        File f = new File(Util.getMeasuresDir(UserManager.getUserManager().getCurrentPatient().getId()),
-                timestamp+".aecg");
-        aecg.saveFile(f);
-        return f.getAbsolutePath();
+
+        AECG.LeadType leadId;
+        switch (item.getMeasuringMode()) {
+            case 2:
+            case 4:
+                leadId = AECG.LeadType.LEAD_II;
+                break;
+            case 1:
+            case 3:
+            default:
+                leadId = AECG.LeadType.LEAD_I;
+                break;
+        }
+        aecg.addLead(leadId, leadData, 0, 1);
+        return aecg.saveFile(Util.getMeasuresDir(UserManager.getUserManager().getCurrentPatient().getId())
+                + File.separator + timestamp);
     }
 
     /**
@@ -368,21 +380,36 @@ public class CheckmePro extends DeviceHandler implements
      */
     private void makeResultData()
     {
+        Log.d(TAG, "makeResultData");
+        ArrayList<Measure> measureList = new ArrayList<>();
         for (int i=0; i<ecgItems.size();i++) {
             ECGItem item = ecgItems.get(i);
             ECGInnerItem data = ecgData.get(i);
             if ((item == null) || (data == null)) {
                 // TODO
+                Log.d(TAG, "item od data is Null");
                 continue;
             }
             String timestamp = new SimpleDateFormat(MeasureManager.MEASURE_DATE_FORMAT, Locale.getDefault()).format(item.getDate());
             String ecgFileName = createAECG(device, item,data,timestamp);
             if (ecgFileName == null) {
                 // TODO
+                Log.d(TAG, "ecgFileName is Null");
                 continue;
             }
             HashMap<String,String> tmpVal = new HashMap<>();
-            tmpVal.put(GWConst.EGwCode_0G, ecgFileName);  // filename
+            tmpVal.put(GWConst.EGwCode_0I, ecgFileName);  // filename
+            tmpVal.put(GWConst.EGwCode_2A, Integer.toString(item.getMeasuringMode()));
+            tmpVal.put(GWConst.EGwCode_2B, Integer.toString(item.getImgResult()));
+            tmpVal.put(GWConst.EGwCode_2C, Integer.toString(data.getHR()));
+            tmpVal.put(GWConst.EGwCode_2D, Integer.toString(data.getST()));
+            tmpVal.put(GWConst.EGwCode_2E, Integer.toString(data.getQRS()));
+            tmpVal.put(GWConst.EGwCode_2F, Integer.toString(data.getPVCs()));
+            tmpVal.put(GWConst.EGwCode_30, Integer.toString(data.getQTc()));
+            tmpVal.put(GWConst.EGwCode_31, Integer.toString(data.getQT()));
+            tmpVal.put(GWConst.EGwCode_32, Integer.toString(data.getFilterMode()));
+            tmpVal.put(GWConst.EGwCode_33, Integer.toString(data.getStrResultIndex()));
+
             Measure m = getMeasure();
             m.setTimestamp(timestamp);
             try {
@@ -390,10 +417,11 @@ public class CheckmePro extends DeviceHandler implements
             } catch (Exception e) {
                 Log.e(TAG, e.toString());
             }
-            m.setFileType(XmlManager.ECG_FILE_TYPE);
+            m.setFileType(XmlManager.AECG_FILE_TYPE);
             m.setMeasures(tmpVal);
-            deviceListener.showMeasurementResults(m);
+            measureList.add(m);
         }
+        deviceListener.showMeasurementResults(measureList);
         stop();
     }
 }

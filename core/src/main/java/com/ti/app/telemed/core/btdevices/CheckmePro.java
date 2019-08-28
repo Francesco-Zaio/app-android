@@ -398,17 +398,17 @@ public class CheckmePro extends DeviceHandler implements
                 continue;
             }
             HashMap<String,String> tmpVal = new HashMap<>();
-            tmpVal.put(GWConst.EGwCode_0I, ecgFileName);  // filename
+            tmpVal.put(GWConst.EGwCode_0S, ecgFileName);  // filename
             tmpVal.put(GWConst.EGwCode_2A, Integer.toString(item.getMeasuringMode()));
-            tmpVal.put(GWConst.EGwCode_2B, Integer.toString(item.getImgResult()));
-            tmpVal.put(GWConst.EGwCode_2C, Integer.toString(data.getHR()));
-            tmpVal.put(GWConst.EGwCode_2D, Integer.toString(data.getST()));
-            tmpVal.put(GWConst.EGwCode_2E, Integer.toString(data.getQRS()));
-            tmpVal.put(GWConst.EGwCode_2F, Integer.toString(data.getPVCs()));
-            tmpVal.put(GWConst.EGwCode_30, Integer.toString(data.getQTc()));
-            tmpVal.put(GWConst.EGwCode_31, Integer.toString(data.getQT()));
-            tmpVal.put(GWConst.EGwCode_32, Integer.toString(data.getFilterMode()));
-            tmpVal.put(GWConst.EGwCode_33, Integer.toString(data.getStrResultIndex()));
+            tmpVal.put(GWConst.EGwCode_2D, Integer.toString(item.getImgResult()));
+            tmpVal.put(GWConst.EGwCode_2E, Integer.toString(data.getHR()));
+            tmpVal.put(GWConst.EGwCode_2F, Integer.toString(data.getST()));
+            tmpVal.put(GWConst.EGwCode_2G, Integer.toString(data.getQRS()));
+            tmpVal.put(GWConst.EGwCode_2H, Integer.toString(data.getPVCs()));
+            tmpVal.put(GWConst.EGwCode_2I, Integer.toString(data.getQTc()));
+            tmpVal.put(GWConst.EGwCode_2J, Integer.toString(data.getQT()));
+            tmpVal.put(GWConst.EGwCode_2K, Integer.toString(data.getFilterMode()));
+            tmpVal.put(GWConst.EGwCode_2L, Integer.toString(data.getStrResultIndex()));
 
             Measure m = getMeasure();
             m.setTimestamp(timestamp);

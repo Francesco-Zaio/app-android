@@ -171,7 +171,7 @@ public interface GWConst {
 	/**
 	 * Identificativo del file AECG
 	 */
-	String EGwCode_0I = "0I";
+	String EGwCode_0S = "0S";
 	/**
 	 * Checkme PRO: Tipo esame (1=Hand-Hand, 2=Hand-Chest, 3=1-Lead, 4=2-Lead)
 	 */
@@ -179,35 +179,35 @@ public interface GWConst {
 	/**
 	 * Checkme PRO: Smile face or crying face (0: smile face,1: crying face, other value: Do not display)
 	 */
-	String EGwCode_2B = "2B";
+	String EGwCode_2D = "2D";
 	/**
 	 * Checkme PRO: Pulsazione cardiaca media (bpm)
 	 */
-	String EGwCode_2C = "2C";
+	String EGwCode_2E = "2E";
 	/**
 	 * Checkme PRO: ST (mV)
 	 */
-	String EGwCode_2D = "2D";
+	String EGwCode_2F = "2F";
 	/**
 	 * Checkme PRO: QRS (ms)
 	 */
-	String EGwCode_2E = "2E";
+	String EGwCode_2G = "2G";
 	/**
 	 * Checkme PRO: PVCs (contatore)
 	 */
-	String EGwCode_2F = "2F";
+	String EGwCode_2H = "2H";
 	/**
 	 * Checkme PRO: QTc  (ms)
 	 */
-	String EGwCode_30 = "30";
+	String EGwCode_2I= "2I";
 	/**
 	 * Checkme PRO: QT(ms)
 	 */
-	String EGwCode_31 = "31";
+	String EGwCode_2J = "2J";
 	/**
 	 * Checkme PRO: Tipo filtro (0: normal, 1: wide)
 	 */
-	String EGwCode_32 = "32";
+	String EGwCode_2K = "2K";
 	/**
 	 * Checkme PRO: Analisi aritmia:
 	 * 1 = Ritmo cardiaco regolare
@@ -220,7 +220,7 @@ public interface GWConst {
 	 * 128 = Sospetti battiti prematuri
 	 * 255 = Analisi non effettuata (e.s. poor waveform quality)
 	 */
-	String EGwCode_33 = "33";
+	String EGwCode_2L = "2L";
 
 	/**
      * Concentrazione glicemica pre-prandiale
@@ -370,34 +370,4 @@ public interface GWConst {
      * Livello della batteria (%)
      */
 	String EGwCode_BATTERY = "A0";
-
-    /*
-	String EGwCode_2A = "2A";
-	String EGwCode_2B = "2B";
-	String EGwCode_2C = "2C";
-	String EGwCode_0Q = "0Q";
-	String EGwCode_0S = "0S";
-	String EGwCode_0B = "0B";
-	String EGwCode_11 = "11";
-	String EGwCode_12 = "12";
-	String EGwCode_13 = "13";
-	String EGwCode_14 = "14";
-	String EGwCode_15 = "15";
-	String EGwCode_M1 = "M1";
-	String EGwCode_0I = "0I";
-	String EGwCode_2A = "2A";
-	String EGwCode_2B = "2B";
-	String EGwCode_EA = "EA"; // Risultato analisi ECG
-	String EGwCode_1I = "1I";
-	String EGwCode_1M = "1M";
-	String EGwCode_XM = "XM";
-	String EGwCode_17 = "17";
-	String EGwCode_18 = "18";
-	String EGwCode_19 = "19";
-	String EGwCode_31 = "31";
-	String EGwCode_0N = "0N";
-	String EGwCode_0J = "0J";
-	String EGwCode_0O = "0O";
-	String EGwCode_0P = "0P";
-	*/
 }

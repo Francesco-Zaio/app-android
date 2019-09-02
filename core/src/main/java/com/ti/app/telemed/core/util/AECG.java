@@ -6,11 +6,13 @@ import android.util.Log;
 import com.ti.app.telemed.core.R;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -112,20 +114,21 @@ public class AECG {
             Log.e(TAG, e.toString());
             return null;
         }
-        return outFile.getName();
+        return outFile.getAbsolutePath();
     }
 
     private String  loadTemplate(int id) {
-        InputStream inputStream = ctx.getResources().openRawResource(id);
-        BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-        StringBuilder text = new StringBuilder();
-        String line;
+        InputStream is = ctx.getResources().openRawResource(id);
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
         try {
-            while (( line = reader.readLine()) != null) {
-                text.append(line);
-                text.append('\n');
+            int i = is.read();
+            while (-1 != i)
+            {
+                bos.write(i);
+                i = is.read();
             }
-            return text.toString();
+            is.close();
+            return bos.toString("UTF-8");
         } catch (IOException e) {
             Log.e(TAG, e.toString());
             return null;

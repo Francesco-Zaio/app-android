@@ -397,8 +397,10 @@ public class CheckmePro extends DeviceHandler implements
                 Log.d(TAG, "ecgFileName is Null");
                 continue;
             }
+            String [] tokens  = ecgFileName.split(File.separator);
+
             HashMap<String,String> tmpVal = new HashMap<>();
-            tmpVal.put(GWConst.EGwCode_0S, ecgFileName);  // filename
+            tmpVal.put(GWConst.EGwCode_0S, tokens[tokens.length-1]);  // filename
             tmpVal.put(GWConst.EGwCode_2A, Integer.toString(item.getMeasuringMode()));
             tmpVal.put(GWConst.EGwCode_2D, Integer.toString(item.getImgResult()));
             tmpVal.put(GWConst.EGwCode_2E, Integer.toString(data.getHR()));

@@ -3,21 +3,17 @@ package com.ti.app.telemed.core.webmodule;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.sql.SQLException;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.Vector;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import android.util.Log;
 
-import com.ti.app.telemed.core.dbmodule.DbManager;
 import com.ti.app.telemed.core.xmlmodule.XmlManager;
 import com.ti.app.telemed.core.xmlmodule.XmlManager.XmlErrorCode;
 import com.ti.app.telemed.core.exceptions.XmlException;
-import com.ti.app.telemed.core.util.Util;
 
+import static com.ti.app.telemed.core.xmlmodule.XmlManager.AECG_FILE_TYPE;
 import static com.ti.app.telemed.core.xmlmodule.XmlManager.DOCUMENT_FILE_TYPE;
 import static com.ti.app.telemed.core.xmlmodule.XmlManager.IMG_FILE_TYPE;
 
@@ -154,6 +150,7 @@ public class WebMessageManager {
 		switch (fileType) {
 			case IMG_FILE_TYPE:
 			case DOCUMENT_FILE_TYPE:
+			case AECG_FILE_TYPE:
                 isImageFile = new File(new String(xmlFileContent,"UTF-8")).exists();
                 filePath = new String(xmlFileContent,"UTF-8");
                 String [] tokens  = filePath.split(File.separator);

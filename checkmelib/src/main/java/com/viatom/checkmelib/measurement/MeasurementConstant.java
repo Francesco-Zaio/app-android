@@ -27,6 +27,7 @@ public class MeasurementConstant {
 	public final static byte CMD_TYPE_VOICE_CONVERTED = 20;
 	public final static byte CMD_TYPE_SPOT_USER_LIST = 21;
 	public final static byte CMD_TYPE_SPOT = 22;
+	public final static byte CMD_TYPE_BP = 13;
 
 	// File parsing
 	public final static int DAILYCHECK_ITEM_LENGTH = 17;
@@ -34,6 +35,7 @@ public class MeasurementConstant {
 	public final static int BPCAL_ITEM_LENGHT = 12;
 	public final static int SPO2_ITEM_LENGHT = 12;
 	public final static int TEMP_ITEM_LENGHT = 11;
+	public final static int BP_ITEM_LENGHT = 11;
 	public final static int USER_ITEM_LENGTH = 27;
 	public final static int SLM_LIST_ITEM_LENGTH = 18;
 	public final static int SLM_DETAIL_ITEM_LENGTH = 2;

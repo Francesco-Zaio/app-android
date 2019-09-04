@@ -27,3 +27,6 @@ GL, CLEVERCHEK, Glucometro - Fora, 1
 PR, CLEVERCHEK, D40b - Fora, 1
 EC, TOUCHECG, TouchECG - Cardioline, 2
 EC, CHECKMEPRO, Checkme Pro - Viatom, 1
+TC, CHECKMEPRO, Checkme Pro - Viatom, 1
+OS, CHECKMEPRO, Checkme Pro - Viatom, 1
+PR, CHECKMEPRO, Checkme Pro - Viatom, 1

@@ -2,6 +2,7 @@ package com.viatom.checkmelib.measurement;
 
 import com.viatom.checkmelib.utils.LogUtils;
 
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
@@ -46,8 +47,23 @@ public class SPO2Item implements CommonItem{
 		pi = (float) ((float) (buf[10] & 0xFF)) / 10;
 		imgResult = (buf[11]);
 	}
-	
-	
+
+	public static ArrayList<SPO2Item> getSPO2ItemList(byte[] buf) {
+		ArrayList<SPO2Item> spo2Items = new ArrayList<>();
+		if (buf == null || buf.length % MeasurementConstant.SPO2_ITEM_LENGHT != 0) {
+			LogUtils.d("SPO2 item buff length err!");
+			return spo2Items;
+		}
+
+		int itemNum = buf.length / MeasurementConstant.SPO2_ITEM_LENGHT;
+		for (int i = 0; i < itemNum; i++) {
+			byte[] tempBuf = new byte[MeasurementConstant.SPO2_ITEM_LENGHT];
+			System.arraycopy(buf, i * MeasurementConstant.SPO2_ITEM_LENGHT, tempBuf, 0, MeasurementConstant.SPO2_ITEM_LENGHT);
+			spo2Items.add(new SPO2Item(tempBuf));
+		}
+		return spo2Items;
+	}
+
 	public Date getDate() {
 		return date;
 	}

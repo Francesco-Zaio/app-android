@@ -28,11 +28,14 @@ import com.viatom.checkmelib.bluetooth.BTConnectListener;
 import com.viatom.checkmelib.bluetooth.BTUtils;
 import com.viatom.checkmelib.bluetooth.GetInfoThreadListener;
 import com.viatom.checkmelib.bluetooth.ReadFileListener;
+import com.viatom.checkmelib.measurement.BPItem;
 import com.viatom.checkmelib.measurement.CheckmeDevice;
 import com.viatom.checkmelib.measurement.ECGInnerItem;
 import com.viatom.checkmelib.measurement.ECGItem;
 import com.viatom.checkmelib.measurement.MeasurementConstant;
-import com.viatom.checkmelib.utils.StringUtils;
+import com.viatom.checkmelib.measurement.SPO2Item;
+import com.viatom.checkmelib.measurement.TempItem;
+import com.viatom.checkmelib.measurement.User;
 
 import java.io.File;
 import java.lang.ref.WeakReference;
@@ -43,7 +46,7 @@ import java.util.Iterator;
 import java.util.Locale;
 import java.util.Vector;
 
-import static com.viatom.checkmelib.measurement.MeasurementConstant.CMD_TYPE_ECG_NUM;
+
 
 public class CheckmePro extends DeviceHandler implements
         BTSearcherEventListener,
@@ -61,6 +64,8 @@ public class CheckmePro extends DeviceHandler implements
     private byte[] deviceData = null;
     private ArrayList<ECGItem> ecgItems = new ArrayList<>();
     private ArrayList<ECGInnerItem> ecgData = new ArrayList<>();
+    private ArrayList<BPItem> bpItems = new ArrayList<>();
+    private ArrayList<com.viatom.checkmelib.measurement.User> userList = new ArrayList<>();
     private int ecgItemPos = 0;
 
 
@@ -192,7 +197,6 @@ public class CheckmePro extends DeviceHandler implements
     @Override
     public void onConnectFailed(byte errorCode) {
         Log.d(TAG, "onConnectFailed:" + errorCode);
-        MyApp.getContext().unbindService(connection);
         devOpHandler.sendEmptyMessage(HANDLER_ERROR);
     }
 
@@ -227,9 +231,24 @@ public class CheckmePro extends DeviceHandler implements
                 deviceData = fileBuf;
                 devOpHandler.sendEmptyMessage(HANDLER_ECG_LIST_RECEIVED);
                 break;
-            case CMD_TYPE_ECG_NUM:
+            case MeasurementConstant.CMD_TYPE_ECG_NUM:
                 deviceData = fileBuf;
                 devOpHandler.sendEmptyMessage(HANDLER_ECG_DATA_RECEIVED);
+                break;
+            case MeasurementConstant.CMD_TYPE_TEMP:
+                deviceData = fileBuf;
+                devOpHandler.sendEmptyMessage(HANDLER_TEMP_DATA_RECEIVED);
+                break;
+            case MeasurementConstant.CMD_TYPE_BP:
+                deviceData = fileBuf;
+                devOpHandler.sendEmptyMessage(HANDLER_BP_DATA_RECEIVED);
+                break;
+            case MeasurementConstant.CMD_TYPE_SPO2:
+                deviceData = fileBuf;
+                devOpHandler.sendEmptyMessage(HANDLER_OXY_LIST_RECEIVED);
+            case MeasurementConstant.CMD_TYPE_USER_LIST:
+                deviceData = fileBuf;
+                devOpHandler.sendEmptyMessage(HANDLER_USER_LIST_RECEIVED);
                 break;
             default:
                 break;
@@ -244,10 +263,15 @@ public class CheckmePro extends DeviceHandler implements
 
 
     private static final int HANDLER_CONNECTED = 101;
+    private static final int HANDLER_USER_LIST_RECEIVED = 102;
     private static final int HANDLER_INFO_RECEIVED = 103;
     private static final int HANDLER_ECG_LIST_RECEIVED = 104;
     private static final int HANDLER_ECG_DATA_RECEIVED = 105;
-    private static final int HANDLER_ERROR = 109;
+    private static final int HANDLER_TEMP_DATA_RECEIVED = 106;
+    private static final int HANDLER_BP_DATA_RECEIVED = 107;
+    private static final int HANDLER_OXY_LIST_RECEIVED = 108;
+    private static final int HANDLER_OXY_DATA_RECEIVED = 109;
+    private static final int HANDLER_ERROR = 110;
 
     private final MyHandler devOpHandler = new MyHandler(this);
 
@@ -273,7 +297,24 @@ public class CheckmePro extends DeviceHandler implements
                         outer.stop();
                         break;
                     }
-                    outer.btBinder.interfaceReadFile(MeasurementConstant.FILE_NAME_ECG_LIST, MeasurementConstant.CMD_TYPE_ECG_LIST, 5000, outer);
+                    switch (outer.iUserDevice.getMeasure()) {
+                        case GWConst.KMsrEcg:
+                            outer.btBinder.interfaceReadFile(MeasurementConstant.FILE_NAME_ECG_LIST, MeasurementConstant.CMD_TYPE_ECG_LIST, 5000, outer);
+                            break;
+                        case GWConst.KMsrTemp:
+                            outer.btBinder.interfaceReadFile(MeasurementConstant.FILE_NAME_TEMP_LIST, MeasurementConstant.CMD_TYPE_TEMP, 5000, outer);
+                            break;
+                        case GWConst.KMsrPres:
+                            outer.btBinder.interfaceReadFile(MeasurementConstant.FILE_NAME_USER_LIST, MeasurementConstant.CMD_TYPE_USER_LIST, 5000, outer);
+                            break;
+                        case GWConst.KMsrOss:
+                            outer.btBinder.interfaceReadFile(MeasurementConstant.FILE_NAME_SPO2_LIST, MeasurementConstant.CMD_TYPE_SPO2, 5000, outer);
+                            break;
+                    }
+                    break;
+                case HANDLER_USER_LIST_RECEIVED:
+                    outer.userList = User.getUserList(outer.deviceData);
+                    outer.processUserList();
                     break;
                 case HANDLER_ECG_LIST_RECEIVED:
                     if (outer.checkEcgList())
@@ -281,6 +322,15 @@ public class CheckmePro extends DeviceHandler implements
                     break;
                 case HANDLER_ECG_DATA_RECEIVED:
                     outer.processEcgData();
+                    break;
+                case HANDLER_TEMP_DATA_RECEIVED:
+                    outer.makeTemperatureResultData();
+                    break;
+                case HANDLER_BP_DATA_RECEIVED:
+                    outer.processBPData();
+                    break;
+                case HANDLER_OXY_LIST_RECEIVED:
+                    outer.makeOxyResultData();
                     break;
                 case HANDLER_ERROR:
                     String message = ResourceManager.getResource().getString("ECommunicationError");
@@ -329,7 +379,7 @@ public class CheckmePro extends DeviceHandler implements
         Log.d(TAG, "processEcgItem");
         ECGItem item = ecgItems.get(ecgItemPos);
         String egcFileName = new SimpleDateFormat("yyyyMMddHHmmss", Locale.getDefault()).format(item.getDate());
-        btBinder.interfaceReadFile(egcFileName, CMD_TYPE_ECG_NUM, 5000, this);
+        btBinder.interfaceReadFile(egcFileName, MeasurementConstant.CMD_TYPE_ECG_NUM, 5000, this);
     }
 
     private void processEcgData() {
@@ -340,11 +390,27 @@ public class CheckmePro extends DeviceHandler implements
         if (ecgItemPos < ecgItems.size()) {
             processEcgItem();
         } else {
-            makeResultData();
+            makeECGResultData();
         }
     }
 
-    private String createAECG(CheckmeDevice device, ECGItem item, ECGInnerItem data, String timestamp) {
+    private void processUserList() {
+        if (!userList.isEmpty()) {
+            User u = userList.remove(0);
+            btBinder.interfaceReadFile(u.getUserInfo().getID()+"nibp.dat", MeasurementConstant.CMD_TYPE_BP, 5000, this);
+        } else {
+            makeBPResultData();
+        }
+    }
+
+    private void processBPData(){
+        ArrayList<BPItem> tmpList = BPItem.getBpItemList(deviceData);
+        if (tmpList != null)
+            bpItems.addAll(tmpList);
+        processUserList();
+    }
+
+    private String createAECG(ECGItem item, ECGInnerItem data, String timestamp) {
         AECG aecg = new AECG(MyApp.getContext(), item.getDate(), 500);
         int[] signal = data.getECGData();
         short[] leadData = new short[signal.length];
@@ -378,20 +444,20 @@ public class CheckmePro extends DeviceHandler implements
     /**
      * Aggiorna il risultato della misura e lo notifica alla GUI
      */
-    private void makeResultData()
+    private void makeECGResultData()
     {
-        Log.d(TAG, "makeResultData");
+        Log.d(TAG, "makeECGResultData");
         ArrayList<Measure> measureList = new ArrayList<>();
         for (int i=0; i<ecgItems.size();i++) {
             ECGItem item = ecgItems.get(i);
             ECGInnerItem data = ecgData.get(i);
             if ((item == null) || (data == null)) {
                 // TODO
-                Log.d(TAG, "item od data is Null");
+                Log.d(TAG, "item or data is Null");
                 continue;
             }
             String timestamp = new SimpleDateFormat(MeasureManager.MEASURE_DATE_FORMAT, Locale.getDefault()).format(item.getDate());
-            String ecgFileName = createAECG(device, item,data,timestamp);
+            String ecgFileName = createAECG(item,data,timestamp);
             if (ecgFileName == null) {
                 // TODO
                 Log.d(TAG, "ecgFileName is Null");
@@ -424,6 +490,107 @@ public class CheckmePro extends DeviceHandler implements
             measureList.add(m);
         }
         deviceListener.showMeasurementResults(measureList);
+        stop();
+    }
+
+    private void makeTemperatureResultData() {
+        if (!GWConst.KMsrTemp.equals(iUserDevice.getMeasure())) {
+            deviceListener.notifyError(DeviceListener.MEASURE_PROCEDURE_ERROR,ResourceManager.getResource().getString("KWrongMeasure"));
+        } else {
+            Log.d(TAG, "makeTemperatureResultData");
+            ArrayList<Measure> measureList = new ArrayList<>();
+            ArrayList<TempItem> tempItems = TempItem.getTempItemList(deviceData);
+            SimpleDateFormat df = new SimpleDateFormat(MeasureManager.MEASURE_DATE_FORMAT, Locale.getDefault());
+            for (TempItem item:tempItems) {
+                ArrayList<Measure> mList = MeasureManager.getMeasureManager().getMeasureData(
+                        UserManager.getUserManager().getCurrentUser().getId(),
+                        df.format(item.getDate()),
+                        df.format(item.getDate()),
+                        GWConst.KMsrTemp,
+                        null,null,null);
+                if (mList == null || mList.isEmpty()) {
+                    HashMap<String, String> tmpVal = new HashMap<>();
+                    tmpVal.put(GWConst.EGwCode_0R, String.format(Locale.ITALY, "%.2f", item.getResult()));
+                    String timestamp = new SimpleDateFormat(MeasureManager.MEASURE_DATE_FORMAT, Locale.getDefault()).format(item.getDate());
+                    Measure m = getMeasure();
+                    m.setTimestamp(timestamp);
+                    m.setMeasures(tmpVal);
+                    measureList.add(m);
+                }
+            }
+            if (measureList.isEmpty())
+                deviceListener.notifyError("", ResourceManager.getResource().getString("KNoNewMeasure"));
+            else
+                deviceListener.showMeasurementResults(measureList);
+        }
+        stop();
+    }
+
+    private void makeBPResultData() {
+        Log.d(TAG, "makeBPResultData");
+        if (!GWConst.KMsrPres.equals(iUserDevice.getMeasure())) {
+            deviceListener.notifyError(DeviceListener.MEASURE_PROCEDURE_ERROR,ResourceManager.getResource().getString("KWrongMeasure"));
+        } else {
+            ArrayList<Measure> measureList = new ArrayList<>();
+            SimpleDateFormat df = new SimpleDateFormat(MeasureManager.MEASURE_DATE_FORMAT, Locale.getDefault());
+            for (BPItem item:bpItems) {
+                ArrayList<Measure> mList = MeasureManager.getMeasureManager().getMeasureData(
+                        UserManager.getUserManager().getCurrentUser().getId(),
+                        df.format(item.getDate()),
+                        df.format(item.getDate()),
+                        GWConst.KMsrPres,
+                        null,null,null);
+                if (mList == null || mList.isEmpty()) {
+                    HashMap<String, String> tmpVal = new HashMap<>();
+                    tmpVal.put(GWConst.EGwCode_03, Integer.toString(item.getDiastolic())); // pressione minima
+                    tmpVal.put(GWConst.EGwCode_04, Integer.toString(item.getSystolic())); // pressione massima
+                    tmpVal.put(GWConst.EGwCode_06, Integer.toString(item.getPulseRate())); // freq cardiaca
+                    String timestamp = new SimpleDateFormat(MeasureManager.MEASURE_DATE_FORMAT, Locale.getDefault()).format(item.getDate());
+                    Measure m = getMeasure();
+                    m.setTimestamp(timestamp);
+                    m.setMeasures(tmpVal);
+                    measureList.add(m);
+                }
+            }
+            if (measureList.isEmpty())
+                deviceListener.notifyError("", ResourceManager.getResource().getString("KNoNewMeasure"));
+            else
+                deviceListener.showMeasurementResults(measureList);
+        }
+        stop();
+    }
+
+    private void makeOxyResultData() {
+        Log.d(TAG, "makeOxyResultData");
+        if (!GWConst.KMsrOss.equals(iUserDevice.getMeasure())) {
+            deviceListener.notifyError(DeviceListener.MEASURE_PROCEDURE_ERROR,ResourceManager.getResource().getString("KWrongMeasure"));
+        } else {
+            ArrayList<Measure> measureList = new ArrayList<>();
+            ArrayList<SPO2Item> spo2Items = SPO2Item.getSPO2ItemList(deviceData);
+            SimpleDateFormat df = new SimpleDateFormat(MeasureManager.MEASURE_DATE_FORMAT, Locale.getDefault());
+            for (SPO2Item item:spo2Items) {
+                ArrayList<Measure> mList = MeasureManager.getMeasureManager().getMeasureData(
+                        UserManager.getUserManager().getCurrentUser().getId(),
+                        df.format(item.getDate()),
+                        df.format(item.getDate()),
+                        GWConst.KMsrOss,
+                        null,null,null);
+                if (mList == null || mList.isEmpty()) {
+                    HashMap<String, String> tmpVal = new HashMap<>();
+                    tmpVal.put(GWConst.EGwCode_07, String.valueOf(item.getOxygen())); // O2 Med
+                    tmpVal.put(GWConst.EGwCode_0F, String.valueOf(item.getPr()));  // HR Med
+                    String timestamp = new SimpleDateFormat(MeasureManager.MEASURE_DATE_FORMAT, Locale.getDefault()).format(item.getDate());
+                    Measure m = getMeasure();
+                    m.setTimestamp(timestamp);
+                    m.setMeasures(tmpVal);
+                    measureList.add(m);
+                }
+            }
+            if (measureList.isEmpty())
+                deviceListener.notifyError("", ResourceManager.getResource().getString("KNoNewMeasure"));
+            else
+                deviceListener.showMeasurementResults(measureList);
+        }
         stop();
     }
 }

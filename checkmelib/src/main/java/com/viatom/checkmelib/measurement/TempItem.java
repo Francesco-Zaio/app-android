@@ -2,6 +2,7 @@ package com.viatom.checkmelib.measurement;
 
 import com.viatom.checkmelib.utils.LogUtils;
 
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
@@ -39,7 +40,23 @@ public class TempItem implements CommonItem{
 		result = (float) ((float) ((buf[8] & 0xFF) + ((buf[9] & 0xFF) << 8))) / 10;
 		imgResult = buf[10];
 	}
-	
+
+	public static ArrayList<TempItem> getTempItemList(byte[] buf) {
+		ArrayList<TempItem> tempItems = new ArrayList<>();
+		if (buf == null || buf.length % MeasurementConstant.TEMP_ITEM_LENGHT != 0) {
+			LogUtils.d("temp item buff length err!");
+			return tempItems;
+		}
+
+		int itemNum = buf.length / MeasurementConstant.TEMP_ITEM_LENGHT;
+		for (int i = 0; i < itemNum; i++) {
+			byte[] tempBuf = new byte[MeasurementConstant.TEMP_ITEM_LENGHT];
+			System.arraycopy(buf, i * MeasurementConstant.TEMP_ITEM_LENGHT, tempBuf, 0, MeasurementConstant.TEMP_ITEM_LENGHT);
+			tempItems.add(new TempItem(tempBuf));
+		}
+		return tempItems;
+	}
+
 	public Date getDate() {
 		return date;
 	}

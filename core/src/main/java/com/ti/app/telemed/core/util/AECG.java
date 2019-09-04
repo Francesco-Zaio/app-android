@@ -5,14 +5,11 @@ import android.util.Log;
 
 import com.ti.app.telemed.core.R;
 
-import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -104,7 +101,7 @@ public class AECG {
             }
             out.print(aECGTemplateEnd);
             out.close();
-            outFile = new File(name+".zip");
+            outFile = new File(name+".zecg");
             if (!Util.zipFile(tmpFile, outFile)) {
                 Log.e(TAG, "Errore nella creazione del file zip");
                 return null;

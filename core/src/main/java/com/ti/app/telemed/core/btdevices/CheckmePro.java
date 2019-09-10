@@ -246,6 +246,7 @@ public class CheckmePro extends DeviceHandler implements
             case MeasurementConstant.CMD_TYPE_SPO2:
                 deviceData = fileBuf;
                 devOpHandler.sendEmptyMessage(HANDLER_OXY_LIST_RECEIVED);
+                break;
             case MeasurementConstant.CMD_TYPE_USER_LIST:
                 deviceData = fileBuf;
                 devOpHandler.sendEmptyMessage(HANDLER_USER_LIST_RECEIVED);
@@ -395,6 +396,11 @@ public class CheckmePro extends DeviceHandler implements
     }
 
     private void processUserList() {
+        if (userList == null) {
+            deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
+            stop();
+            return;
+        }
         if (!userList.isEmpty()) {
             User u = userList.remove(0);
             btBinder.interfaceReadFile(u.getUserInfo().getID()+"nibp.dat", MeasurementConstant.CMD_TYPE_BP, 5000, this);

@@ -108,8 +108,8 @@ public class CheckmePro extends DeviceHandler implements
 
         Log.d(TAG,"startOperation: iBtDevAddr="+iBtDevAddr + " iCmdCode="+iCmdCode.toString());
         iServiceSearcher.clearBTSearcherEventListener();
-        if (iCmdCode == TCmd.ECmdConnByUser && iBTSearchListener != null)
-            iServiceSearcher.addBTSearcherEventListener(iBTSearchListener);
+        //if (iCmdCode == TCmd.ECmdConnByUser && iBTSearchListener != null)
+        //    iServiceSearcher.addBTSearcherEventListener(iBTSearchListener);
         iServiceSearcher.addBTSearcherEventListener(this);
         iServiceSearcher.startSearchDevices();
         deviceListener.notifyToUi(ResourceManager.getResource().getString("KSearchingDev"));
@@ -171,8 +171,10 @@ public class CheckmePro extends DeviceHandler implements
     public void deviceDiscovered(Vector<BluetoothDevice> devList) {
         switch (iCmdCode) {
             case ECmdConnByAddr:
-                if (iBtDevAddr.equalsIgnoreCase(devList.get(devList.size()-1).getAddress()))
-                    selectDevice(devList.get(devList.size()-1));
+                for (int i=0; i<devList.size(); i++)
+                    if (iBtDevAddr.equalsIgnoreCase(devList.get(i).getAddress())) {
+                        selectDevice(devList.get(i));
+                    }
                 break;
             case ECmdConnByUser:
                 if (iBTSearchListener != null)

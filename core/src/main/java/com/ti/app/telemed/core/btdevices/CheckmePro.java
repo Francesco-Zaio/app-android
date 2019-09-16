@@ -421,7 +421,7 @@ public class CheckmePro extends DeviceHandler implements
     private String createAECG(ECGItem item, ECGInnerItem data, String timestamp) {
         AECG aecg = new AECG(MyApp.getContext(), item.getDate(), 500);
         int[] signal = data.getECGData();
-        short[] leadData = new short[signal.length];
+        int[] leadData = new int[signal.length];
         /*
         Descrizione "cino-inglese" del segnale....
         If one of the ECG data is n, and reduced to the actual voltage X(n)(mV) signal formula is
@@ -429,7 +429,8 @@ public class CheckmePro extends DeviceHandler implements
         */
         for (int i=0;i<signal.length;i++) {
             // leadData in uV
-            leadData[i] = (short) (signal[i] * 1000 * 4033 / (32767*12*8));
+            // signal[i] * 1000 * 4033 / (32767*12*8)
+            leadData[i] = (int) ((double)signal[i] * 1000f * 4033f / 3145728f);
         }
 
         AECG.LeadType leadId;

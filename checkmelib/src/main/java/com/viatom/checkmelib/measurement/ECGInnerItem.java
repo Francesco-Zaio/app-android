@@ -67,6 +67,7 @@ public class ECGInnerItem implements Serializable{
 		ecgDat=new byte[dataLenght];
 		System.arraycopy(buf,  dataPos, ecgDat, 0, dataLenght);
 	}
+
 	public ECGInnerItem(byte[] buf,Context context) {
 		timeLength = (buf[0] + buf[1]&0xFF) / 2;
 		hr = ((buf[6] & 0xFF) + ((buf[7] & 0xFF) << 8));

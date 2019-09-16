@@ -44,7 +44,7 @@ public class AECG {
     }
 
     private Context ctx;
-    private ArrayList<short[]> signalData = new ArrayList<>();
+    private ArrayList<int[]> signalData = new ArrayList<>();
     private ArrayList<String> signalName = new ArrayList<>();
     private ArrayList<String> signalOrigin = new ArrayList<>();
     private ArrayList<String> signalScale = new ArrayList<>();
@@ -71,7 +71,7 @@ public class AECG {
 
     // values, origin, scale in uV
     // values and origin are signed
-    public void addLead(LeadType leadId, short[] values, float origin, float scale) {
+    public void addLead(LeadType leadId, int[] values, float origin, float scale) {
         signalName.add(leadId.getLead());
         signalData.add(values);
         if(origin == (long)origin)
@@ -93,8 +93,8 @@ public class AECG {
             out.print(aECGTemplateStart);
             for (int i=0; i<signalData.size(); i++) {
                 out.print(aECGLeadStart.replaceAll("@LEAD",signalName.get(i)).replaceAll("@ORIGIN", signalOrigin.get(i)).replaceAll("@SCALE", signalScale.get(i)));
-                short[] data = signalData.get(i);
-                for (short v:data) {
+                int[] data = signalData.get(i);
+                for (int v:data) {
                     out.print(v + " ");
                 }
                 out.print(aECGLeadEnd);

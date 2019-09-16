@@ -1,6 +1,5 @@
 package com.ti.app.mydoctor.devicemodule;
 
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 
 import android.bluetooth.BluetoothAdapter;
@@ -22,7 +21,6 @@ import com.ti.app.telemed.core.common.UserDevice;
 import com.ti.app.mydoctor.gui.DeviceScanActivity;
 import com.ti.app.mydoctor.util.AppConst;
 import com.ti.app.telemed.core.devicemodule.DeviceManager;
-import com.ti.app.telemed.core.measuremodule.MeasureManager;
 import com.ti.app.telemed.core.usermodule.UserManager;
 
 
@@ -48,7 +46,7 @@ public class DeviceOperations implements DeviceListener {
     public static final int START_ACTIVITY = 9;
     public static final int MEASURE_LIST_RESULT = 10;
 
-	private boolean operationRunning;
+    private boolean operationRunning;
 	
 	public DeviceOperations() {
 	}
@@ -196,6 +194,16 @@ public class DeviceOperations implements DeviceListener {
     public void showMeasurementResults(ArrayList<Measure> measureList) {
         Message message = handler.obtainMessage(MEASURE_LIST_RESULT);
         Bundle bundle = new Bundle();
+        message.obj = measureList;
+        message.setData(bundle);
+        handler.sendMessage(message);
+    }
+
+    @Override
+    public void showMeasurementResultsUrgent(ArrayList<Measure> measureList) {
+        Message message = handler.obtainMessage(MEASURE_LIST_RESULT);
+        Bundle bundle = new Bundle();
+        bundle.putBoolean(URGENT_EXTRA, true);
         message.obj = measureList;
         message.setData(bundle);
         handler.sendMessage(message);

@@ -24,6 +24,8 @@ public interface DeviceListener {
     String TIMESTAMP_ERROR = "E11";
     String PACKAGE_NOT_FOUND_ERROR = "E12";
 
+    String URGENT_EXTRA = "URGENT";
+
     /**
      * Invocato in caso di errore
      * <p>
@@ -81,6 +83,13 @@ public interface DeviceListener {
      * @param m              Misura rilevata
      */
     void showMeasurementResults(ArrayList<Measure> measureList);
+
+    /**
+     * Metodo invocato al termine di una misurazione eseguita con successo.
+     *
+     * @param m              Misura rilevata
+     */
+    void showMeasurementResultsUrgent(ArrayList<Measure> measureList);
 
     /**
      * Metodo invocato al termine di un operazione di pairing o configurazione eseguita

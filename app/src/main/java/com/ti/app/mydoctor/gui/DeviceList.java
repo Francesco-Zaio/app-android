@@ -68,6 +68,8 @@ import com.ti.app.mydoctor.R;
 import com.ti.app.mydoctor.AppResourceManager;
 import com.ti.app.mydoctor.devicemodule.DeviceOperations;
 import com.ti.app.mydoctor.util.AppUtil;
+import com.ti.app.telemed.core.ResourceManager;
+import com.ti.app.telemed.core.btmodule.DeviceListener;
 import com.ti.app.telemed.core.common.Device;
 import com.ti.app.telemed.core.common.Measure;
 import com.ti.app.telemed.core.common.MeasureDetail;
@@ -186,6 +188,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
     //Bundle che contiene l'ultima misura effettuata dall'utente
     private Measure measureData;
 	private List<Measure> measureListData;
+	private boolean measureListUrgent= false;
 
 	private Bundle viewMeasureBundle;
 	private Bundle startMeasureBundle;
@@ -1757,6 +1760,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                     if (ECGDrawActivity.getInstance() != null)
                         ECGDrawActivity.getInstance().finish();
 					activity.measureListData = null;
+					activity.measureListUrgent = false;
 					activity.measureData = (Measure) msg.obj;
                     activity.myShowDialog(MEASURE_RESULT_DIALOG);
                     break;
@@ -1766,6 +1770,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 					if (ECGDrawActivity.getInstance() != null)
 						ECGDrawActivity.getInstance().finish();
 					activity.measureListData = (List<Measure>) msg.obj;
+					activity.measureListUrgent = dataBundle.getBoolean(DeviceListener.URGENT_EXTRA);
 					if (!activity.measureListData.isEmpty()) {
 						activity.measureData = activity.measureListData.remove(0);
 						activity.myShowDialog(MEASURE_RESULT_DIALOG);
@@ -2338,6 +2343,22 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 		}
         measureStr += getMeasureMessage(measureData);
         builder.setMessage(measureStr + "\n" + msg);
+
+        if (measureListUrgent) {
+			View checkBoxView = View.inflate(this, R.layout.urgent_checkbox, null);
+			CheckBox checkBox = checkBoxView.findViewById(R.id.checkbox);
+			checkBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+				@Override
+				public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+					if (isChecked)
+						measureData.setUrgent(true);
+					else
+						measureData.setUrgent(false);
+				}
+			});
+			checkBox.setText(ResourceManager.getResource().getString("KUrgentMsg"));
+			builder.setView(checkBoxView);
+		}
 
         MeasureDialogClickListener measureDialogListener = new MeasureDialogClickListener(action, measureData.getMeasureType());
         builder.setPositiveButton(okBtnMsg, measureDialogListener);

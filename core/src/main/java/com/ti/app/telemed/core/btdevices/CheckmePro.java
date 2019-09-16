@@ -473,6 +473,10 @@ public class CheckmePro extends DeviceHandler implements
             }
             String [] tokens  = ecgFileName.split(File.separator);
 
+            Log.d(TAG, "getST = " + data.getST());
+            Log.d(TAG, "getFilterMode = " + data.getFilterMode());
+            Log.d(TAG, "getStrResultIndex = " + data.getStrResultIndex());
+
             HashMap<String,String> tmpVal = new HashMap<>();
             tmpVal.put(GWConst.EGwCode_0S, tokens[tokens.length-1]);  // filename
             tmpVal.put(GWConst.EGwCode_2A, Integer.toString(item.getMeasuringMode()));
@@ -497,7 +501,7 @@ public class CheckmePro extends DeviceHandler implements
             m.setMeasures(tmpVal);
             measureList.add(m);
         }
-        deviceListener.showMeasurementResults(measureList);
+        deviceListener.showMeasurementResultsUrgent(measureList);
         stop();
     }
 

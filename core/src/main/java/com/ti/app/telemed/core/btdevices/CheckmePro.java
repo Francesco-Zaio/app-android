@@ -474,16 +474,13 @@ public class CheckmePro extends DeviceHandler implements
             }
             String [] tokens  = ecgFileName.split(File.separator);
 
-            Log.d(TAG, "getST = " + data.getST());
-            Log.d(TAG, "getFilterMode = " + data.getFilterMode());
-            Log.d(TAG, "getStrResultIndex = " + data.getStrResultIndex());
-
             HashMap<String,String> tmpVal = new HashMap<>();
             tmpVal.put(GWConst.EGwCode_0S, tokens[tokens.length-1]);  // filename
             tmpVal.put(GWConst.EGwCode_2A, Integer.toString(item.getMeasuringMode()));
             tmpVal.put(GWConst.EGwCode_2D, Integer.toString(item.getImgResult()));
             tmpVal.put(GWConst.EGwCode_2E, Integer.toString(data.getHR()));
-            tmpVal.put(GWConst.EGwCode_2F, Integer.toString(data.getST()));
+            if ((item.getMeasuringMode() == 3) || (item.getMeasuringMode() == 4))
+                tmpVal.put(GWConst.EGwCode_2F, Integer.toString(data.getST()));
             tmpVal.put(GWConst.EGwCode_2G, Integer.toString(data.getQRS()));
             tmpVal.put(GWConst.EGwCode_2H, Integer.toString(data.getPVCs()));
             tmpVal.put(GWConst.EGwCode_2I, Integer.toString(data.getQTc()));

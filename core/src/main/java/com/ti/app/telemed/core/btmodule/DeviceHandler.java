@@ -194,8 +194,6 @@ public abstract class DeviceHandler {
      */
     public static boolean pairingEnabled(UserDevice ud){
         switch(ud.getDevice().getModel()) {
-            case GWConst.KCheckmePro:
-                return false;
             default:
                 return true;
         }

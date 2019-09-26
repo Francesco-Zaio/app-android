@@ -1,6 +1,9 @@
 package com.viatom.checkmelib.measurement;
 
+import com.viatom.checkmelib.utils.LogUtils;
+
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
@@ -57,7 +60,22 @@ public class SLMItem implements Serializable,CommonItem{
 		imgResult=buf[17];
 		
 	}
-	
+	public static ArrayList<SLMItem> getSlmItemList(byte[] buf) {
+		if (buf == null || buf.length % MeasurementConstant.SLM_LIST_ITEM_LENGTH != 0) {
+			LogUtils.d("ecg item buff length err!");
+			return null;
+		}
+
+		int itemNum = buf.length / MeasurementConstant.SLM_LIST_ITEM_LENGTH;
+		ArrayList<SLMItem> slmItems = new ArrayList<>();
+		for (int i = 0; i < itemNum; i++) {
+			byte[] tempBuf = new byte[MeasurementConstant.SLM_LIST_ITEM_LENGTH];
+			System.arraycopy(buf, i * MeasurementConstant.SLM_LIST_ITEM_LENGTH, tempBuf, 0, MeasurementConstant.SLM_LIST_ITEM_LENGTH);
+			slmItems.add(new SLMItem(tempBuf));
+		}
+		return slmItems;
+	}
+
 	public Date getStartTime() {
 		return startTime;
 	}

@@ -45,8 +45,6 @@ import java.nio.ByteBuffer;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Locale;
@@ -78,7 +76,7 @@ public class CheckmePro extends DeviceHandler implements
     private ArrayList<SLMInnerItem> slmData = new ArrayList<>();
     private int slmItemPos = 0;
     private int ecgItemPos = 0;
-    ArrayList<Measure> measureList = new ArrayList<>();
+    private ArrayList<Measure> measureList = new ArrayList<>();
 
 
     public CheckmePro(DeviceListener listener, UserDevice ud) {
@@ -230,7 +228,6 @@ public class CheckmePro extends DeviceHandler implements
         Log.d(TAG, "onGetInfoFailed: " + " " + errCode);
         devOpHandler.sendEmptyMessage(HANDLER_ERROR);
     }
-
 
     // Interface ReadFileListener
     @Override
@@ -712,7 +709,7 @@ public class CheckmePro extends DeviceHandler implements
         private int mm;
         private int ss;
 
-        public Time(int hh, int mm, int ss) {
+        Time(int hh, int mm, int ss) {
             this.hh = hh;
             this.mm = mm;
             this.ss = ss;

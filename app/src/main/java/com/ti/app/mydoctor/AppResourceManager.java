@@ -18,6 +18,9 @@ public class AppResourceManager {
 
 	private static final String PROPS_it_IT = "appresource_it_IT.properties";
 	private static final String PROPS_en_GB = "appresource_en_GB.properties";
+	private static final String PROPS_es_ES = "appresource_es_ES.properties";
+	private static final String PROPS_pt_BR = "appresource_pt_BR.properties";
+	private static final String PROPS_fr_FR = "appresource_fr_FR.properties";
 
 	private static final String TAG = "AppResourceManager";
 
@@ -32,7 +35,7 @@ public class AppResourceManager {
 		    properties.load(inputStream);
 		    Log.i(TAG, "The properties are now loaded");
 		} catch (IOException e) {
-			Log.e(TAG,"Failed to open microlog property file");
+			Log.e(TAG,"Failed to open property file");
 		    e.printStackTrace();
 		}
 	}
@@ -43,6 +46,12 @@ public class AppResourceManager {
 			filename = PROPS_it_IT;
 		} else if("en".equals(language)){
 			filename = PROPS_en_GB;
+		} else if("es".equals(language)){
+			filename = PROPS_es_ES;
+		} else if("pt".equals(language)){
+			filename = PROPS_pt_BR;
+		} else if("fr".equals(language)){
+			filename = PROPS_fr_FR;
 		}
 		return filename;
 	}

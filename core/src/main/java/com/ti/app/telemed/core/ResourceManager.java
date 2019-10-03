@@ -16,7 +16,10 @@ public class ResourceManager {
 
 	private static final String PROPS_it_IT = "resource_it_IT.properties";
 	private static final String PROPS_en_GB = "resource_en_GB.properties";
-	
+	private static final String PROPS_es_ES = "resource_es_ES.properties";
+	private static final String PROPS_pt_BR = "resource_pt_BR.properties";
+	private static final String PROPS_fr_FR = "resource_fr_FR.properties";
+
 	private static final String TAG = "ResourceManager";
 	
 	private ResourceManager(String language) {
@@ -30,7 +33,7 @@ public class ResourceManager {
 		    properties.load(inputStream);
 		    Log.i(TAG, "The properties are now loaded");
 		} catch (IOException e) {
-			Log.e(TAG,"Failed to open microlog property file");
+			Log.e(TAG,"Failed to open property file");
 		    e.printStackTrace();
 		}
 	}
@@ -41,6 +44,12 @@ public class ResourceManager {
 			filename = PROPS_it_IT;
 		} else if("en".equals(language)){
 			filename = PROPS_en_GB;
+		} else if("es".equals(language)){
+			filename = PROPS_es_ES;
+		} else if("pt".equals(language)){
+			filename = PROPS_pt_BR;
+		} else if("fr".equals(language)){
+			filename = PROPS_fr_FR;
 		}
 		return filename;
 	}

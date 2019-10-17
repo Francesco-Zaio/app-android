@@ -2,6 +2,8 @@ package com.ti.app.telemed.core.xmlmodule;
 
 import android.util.Log;
 
+import com.ti.app.telemed.core.BuildConfig;
+import com.ti.app.telemed.core.MyApp;
 import com.ti.app.telemed.core.common.Measure;
 import com.ti.app.telemed.core.exceptions.XmlException;
 
@@ -254,7 +256,8 @@ public class XmlManager extends DefaultHandler {
     	
     	/*<M2MXML ver="1.1" td="(000B0D30BEC7)">
     	 <Command name="sendingPercept" seq ="(12345)"> */
-        tmpCmd = String.format(ROOT_XML_SEND_MEASURE, m.getBtAddress().replace(":", ""))
+    	String tmp = m.getBtAddress().replace(":", "") + " (by GW android v" + MyApp.getAppVersion() + ")";
+        tmpCmd = String.format(ROOT_XML_SEND_MEASURE, tmp)
         		+String.format(COMMAND_XML_SEND_MEASURE, sequenceNumber);
     	
         //<Property name="ID_USER" value="id_user" />

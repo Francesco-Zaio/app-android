@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 public class MyApp extends Application {
 
 	private static MyApp instance;
+    private static String appVerson;
     private static ConfigurationManager configurationManager;
 
     /**
@@ -79,5 +80,13 @@ public class MyApp extends Application {
                 .setUpdateCurrent(true)
                 .build()
                 .schedule();
+    }
+
+    public static void setAppVersion(String version) {
+       appVerson = version;
+    }
+
+    public static String getAppVersion() {
+        return appVerson;
     }
 }

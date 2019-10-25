@@ -30,7 +30,7 @@ public class IHealth extends DeviceHandler {
 
     private static final String TAG = "IHealth";
     // Timeout for device operations
-    private static final int KTimeOut = 20 * 1000; // milliseconds (20 sec)
+    private static final int KTimeOut = 25 * 1000; // milliseconds (20 sec)
 
     private String deviceModel;
     private Vector<BluetoothDevice> deviceList;

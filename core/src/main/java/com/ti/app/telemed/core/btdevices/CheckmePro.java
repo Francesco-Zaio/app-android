@@ -279,7 +279,26 @@ public class CheckmePro extends DeviceHandler implements
     @Override
     public void onReadFailed(String fileName, byte fileType, byte errCode) {
         Log.d(TAG, "onReadFailed: " + fileName + " " + errCode);
-        devOpHandler.sendEmptyMessage(HANDLER_ERROR);
+        switch (fileType) {
+            case MeasurementConstant.CMD_TYPE_TEMP:
+                makeTemperatureResultData();
+                break;
+            case MeasurementConstant.CMD_TYPE_SPO2:
+                makeOxyResultData();
+                break;
+            case MeasurementConstant.CMD_TYPE_SLM_LIST:
+                makeSlmResultData();
+                break;
+            case MeasurementConstant.CMD_TYPE_BP:
+                processUserList();
+                break;
+            case MeasurementConstant.CMD_TYPE_ECG_LIST:
+                makeECGResultData();
+                break;
+            default:
+                devOpHandler.sendEmptyMessage(HANDLER_ERROR);
+                break;
+        }
     }
 
 
@@ -465,7 +484,7 @@ public class CheckmePro extends DeviceHandler implements
     }
 
     private void processSlmItem() {
-        Log.d(TAG, "processEcgItem");
+        Log.d(TAG, "processSlmItem");
         SLMItem item = slmItems.get(slmItemPos);
         String slmFileName = new SimpleDateFormat("yyyyMMddHHmmss", Locale.getDefault()).format(item.getDate());
         btBinder.interfaceReadFile(slmFileName, MeasurementConstant.CMD_TYPE_SLM_NUM, 5000, this);
@@ -584,7 +603,10 @@ public class CheckmePro extends DeviceHandler implements
             m.setMeasures(tmpVal);
             measureList.add(m);
         }
-        deviceListener.showMeasurementResultsUrgent(measureList);
+        if (measureList.isEmpty())
+            deviceListener.notifyError("", ResourceManager.getResource().getString("KNoNewMeasure"));
+        else
+            deviceListener.showMeasurementResultsUrgent(measureList);
         stop();
     }
 

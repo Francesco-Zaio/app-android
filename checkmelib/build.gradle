@@ -4,7 +4,7 @@ android {
     compileSdkVersion 28
 
     defaultConfig {
-        minSdkVersion 16
+        minSdkVersion 18
         targetSdkVersion 26
         versionCode 216
         versionName "2.1.6"

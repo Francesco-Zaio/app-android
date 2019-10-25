@@ -50,6 +50,7 @@ import java.util.Iterator;
 import java.util.Locale;
 import java.util.Vector;
 
+import static android.bluetooth.BluetoothDevice.DEVICE_TYPE_LE;
 
 
 public class CheckmePro extends DeviceHandler implements
@@ -77,6 +78,8 @@ public class CheckmePro extends DeviceHandler implements
     private int slmItemPos = 0;
     private int ecgItemPos = 0;
     private ArrayList<Measure> measureList = new ArrayList<>();
+
+    private Vector<BluetoothDevice> mdevList = new Vector<>();
 
 
     public CheckmePro(DeviceListener listener, UserDevice ud) {
@@ -121,6 +124,7 @@ public class CheckmePro extends DeviceHandler implements
         iServiceSearcher.clearBTSearcherEventListener();
         //if (iCmdCode == TCmd.ECmdConnByUser && iBTSearchListener != null)
         //    iServiceSearcher.addBTSearcherEventListener(iBTSearchListener);
+        mdevList.clear();
         iServiceSearcher.addBTSearcherEventListener(this);
         iServiceSearcher.startSearchDevices();
         deviceListener.notifyToUi(ResourceManager.getResource().getString("KSearchingDev"));
@@ -188,8 +192,18 @@ public class CheckmePro extends DeviceHandler implements
                     }
                 break;
             case ECmdConnByUser:
-                if (iBTSearchListener != null)
-                    iBTSearchListener.deviceDiscovered(devList);
+                BluetoothDevice d = devList.get(devList.size()-1);
+                if (d.getType() != DEVICE_TYPE_LE) {
+                    int i;
+                    for (i = 0; i < mdevList.size(); i++)
+                        if (mdevList.elementAt(i).getAddress().equals(d.getAddress()))
+                            break;
+                    if (i >= mdevList.size()) {
+                        mdevList.addElement(d);
+                        if (iBTSearchListener != null)
+                            iBTSearchListener.deviceDiscovered(mdevList);
+                    }
+                }
                 break;
         }
     }

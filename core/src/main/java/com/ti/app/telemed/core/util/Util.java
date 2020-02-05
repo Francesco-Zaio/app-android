@@ -386,4 +386,13 @@ public class Util {
 		}
 		return tmp;
 	}
+
+	public static boolean isEqual(byte[] a1, byte[] a2, int size) {
+		if (size > a1.length || size > a2.length)
+			return false;
+		for(int i=0;i<size;i++)
+			if (a1[i] != a2[i])
+				return false;
+		return true;
+	}
 }

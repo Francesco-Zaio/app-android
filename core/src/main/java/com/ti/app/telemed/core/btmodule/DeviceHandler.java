@@ -1,17 +1,20 @@
 package com.ti.app.telemed.core.btmodule;
 
 import android.bluetooth.BluetoothDevice;
+import android.content.Intent;
 import android.util.Log;
 
 import com.ti.app.telemed.core.btdevices.AgamatrixMyStar;
 import com.ti.app.telemed.core.btdevices.CardGuardEasy2CheckClient;
 import com.ti.app.telemed.core.btdevices.CheckmePro;
+import com.ti.app.telemed.core.btdevices.DHearth;
 import com.ti.app.telemed.core.btdevices.EcgProtocol;
 import com.ti.app.telemed.core.btdevices.ForaThermometerClient;
 import com.ti.app.telemed.core.btdevices.GIMAPC300SpotCheck;
 import com.ti.app.telemed.core.btdevices.IHealth;
 import com.ti.app.telemed.core.btdevices.MIRSpirodoc;
 import com.ti.app.telemed.core.btdevices.NoninOximeter;
+import com.ti.app.telemed.core.btdevices.OnCallSureSync;
 import com.ti.app.telemed.core.btdevices.RocheProthrombineTimeClient;
 import com.ti.app.telemed.core.btdevices.TouchECG;
 import com.ti.app.telemed.core.common.Device;
@@ -23,6 +26,8 @@ import com.ti.app.telemed.core.dbmodule.DbManager;
 import com.ti.app.telemed.core.usermodule.UserManager;
 import com.ti.app.telemed.core.util.GWConst;
 import com.ti.app.telemed.core.util.Util;
+
+import static com.ti.app.telemed.core.util.GWConst.KDHearth;
 
 /**
  * <h1>Acquisire una misura da un dispsitivo</h1>
@@ -154,6 +159,10 @@ public abstract class DeviceHandler {
                 return new CardGuardEasy2CheckClient(listener, ud);
             case GWConst.KCheckmePro:
                 return new CheckmePro(listener, ud);
+            case GWConst.KOnCall:
+                return new OnCallSureSync(listener, ud);
+            case KDHearth:
+                return new DHearth(listener, ud);
             default:
                 return null;
         }
@@ -181,6 +190,7 @@ public abstract class DeviceHandler {
             case GWConst.KPC300SpotCheck:
             case GWConst.KTDCC:
             case GWConst.KCheckmePro:
+            case GWConst.KOnCall:
                 return true;
             default:
                 return false;
@@ -270,6 +280,10 @@ public abstract class DeviceHandler {
      */
     public boolean operationRunning() {
         return iState!=TState.EWaitingToGetDevice;
+    }
+
+    public void activityResult(int requestCode, int resultCode, Intent data) {
+
     }
 
 

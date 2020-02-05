@@ -57,7 +57,6 @@ public class BTSearcher {
     }
 
     private Runnable startSearchRunnable = new Runnable() {
-
         @Override
         public void run() {
             reset();
@@ -90,8 +89,8 @@ public class BTSearcher {
      * Advise that the device search is completed
      */
     public void deviceSearchCompleted() {
-        fireDeviceSearchCompleted();
         unregisterReceiver();
+        fireDeviceSearchCompleted();
     }
 
     public void close() {

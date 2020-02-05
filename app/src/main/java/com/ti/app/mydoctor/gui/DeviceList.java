@@ -1564,6 +1564,9 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                      deviceOperations.setCurrentDevice(null);
                  }
                  break;
+			case EXTERNAL_APP:
+				deviceOperations.activityResult(requestCode, resultCode, data);
+				break;
     	}
 	}
 

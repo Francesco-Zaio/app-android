@@ -303,4 +303,9 @@ public class DeviceOperations implements DeviceListener {
 	public boolean isOperationRunning() {
 		return operationRunning;
 	}
+
+	public void activityResult(int requestCode, int resultCode, Intent data) {
+	    if (currentDeviceHandler != null)
+	        currentDeviceHandler.activityResult(requestCode,resultCode,data);
+    }
 }

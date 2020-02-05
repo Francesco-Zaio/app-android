@@ -121,10 +121,8 @@ public class CheckmePro extends DeviceHandler implements
             return false;
 
         Log.d(TAG, "startOperation: iBtDevAddr=" + iBtDevAddr + " iCmdCode=" + iCmdCode.toString());
-        iServiceSearcher.clearBTSearcherEventListener();
-        //if (iCmdCode == TCmd.ECmdConnByUser && iBTSearchListener != null)
-        //    iServiceSearcher.addBTSearcherEventListener(iBTSearchListener);
         mdevList.clear();
+        iServiceSearcher.clearBTSearcherEventListener();
         iServiceSearcher.addBTSearcherEventListener(this);
         iServiceSearcher.startSearchDevices();
         deviceListener.notifyToUi(ResourceManager.getResource().getString("KSearchingDev"));

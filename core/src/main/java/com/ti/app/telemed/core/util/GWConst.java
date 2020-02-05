@@ -44,6 +44,8 @@ public interface GWConst {
 	String KTouchECG = "TOUCHECG";
 	String KTDCC = "CLEVERCHEK";
 	String KCheckmePro = "CHECKMEPRO";
+	String KOnCall = "ONCALL";
+	String KDHearth = "DHEARTH";
 
 
 	/**
@@ -168,6 +170,10 @@ public interface GWConst {
      * Identificativo del file ECG di tipo scp
      */
 	String EGwCode_0G = "0G";
+	/**
+	 * Identificativo del ECG DHearth in formato PDF
+	 */
+	String EGwCode_0W = "0W";
 	/**
 	 * Identificativo del file AECG
 	 */

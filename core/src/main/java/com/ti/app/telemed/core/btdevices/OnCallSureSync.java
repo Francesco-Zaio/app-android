@@ -9,7 +9,10 @@ import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.util.Log;
 
 import com.ti.app.telemed.core.MyApp;
@@ -23,15 +26,21 @@ import com.ti.app.telemed.core.common.UserDevice;
 import com.ti.app.telemed.core.util.GWConst;
 import com.ti.app.telemed.core.util.Util;
 
+import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
+import java.text.DateFormat;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 import java.util.Vector;
 
+import static android.bluetooth.BluetoothDevice.BOND_BONDED;
 import static android.bluetooth.BluetoothDevice.DEVICE_TYPE_LE;
 
 
@@ -79,18 +88,22 @@ public class OnCallSureSync extends DeviceHandler implements BTSearcherEventList
 
     private int batteryLevel = -1;
 
-    private Calendar measureDate = null;
-    private int measureVal = -1;
-    private Boolean prePrandial = null;
-
-
-    private static final String MSG_HEADER = "&DZ ";
+    private static final String MEASURE_HEADER = "&DZ ";
     private static final char REC_SEP = 0x1e;
-    private static final char FIELD_SEP = 0x20;
     private static final char EOM = 0x0d;
     private static final char CRC_DEL = 0x06;
 
+    private static final String SET_DATE_HEADER = "&FC "; // Questo comando non funzione (return code = 133)
+    private static final String METER_ID_HEADER = "&DB ";
+    private static final String UPLOAD_LOG_HEADER  = "&DZ 2 ";
+    private static final String AUTOSEND_STOP  = "&D1 1 ";
+
     private byte[] message;
+
+    private ArrayList<GlucoseMeasure> measures = new ArrayList<>();
+    private int currentMeasure;
+
+    private boolean bonded = false;
 
 
     public enum ConnectionState {
@@ -98,6 +111,21 @@ public class OnCallSureSync extends DeviceHandler implements BTSearcherEventList
         CONNECTING,
         CONNECTED
     }
+
+    public enum DeviceMeasurementType
+    {
+        None,
+        AfterMeal,
+        BeforeMeal,
+        Mark,
+        MarkControl
+    }
+
+    private class GlucoseMeasure {
+        String value;
+        Date timestamp;
+        Boolean pre;
+    };
 
     public OnCallSureSync(DeviceListener listener, UserDevice ud) {
         super(listener, ud);
@@ -108,14 +136,18 @@ public class OnCallSureSync extends DeviceHandler implements BTSearcherEventList
 
     @Override
     public void confirmDialog() {
-        prePrandial = false;
-        makeResultData();
+        if (currentMeasure < measures.size()) {
+            measures.get(currentMeasure).pre = false;
+            currentMeasure++;
+            askMeasure();
+        }
     }
 
     @Override
     public void cancelDialog() {
-        prePrandial = true;
-        makeResultData();
+        measures.get(currentMeasure).pre = true;
+        currentMeasure++;
+        askMeasure();
     }
 
     @Override
@@ -129,7 +161,10 @@ public class OnCallSureSync extends DeviceHandler implements BTSearcherEventList
         iServiceSearcher.clearBTSearcherEventListener();
         iServiceSearcher.addBTSearcherEventListener(this);
         iServiceSearcher.startSearchDevices();
-        deviceListener.notifyToUi(ResourceManager.getResource().getString("KSearchingDev"));
+        if (ot == OperationType.Measure)
+            deviceListener.notifyToUi(ResourceManager.getResource().getString("DoMeasureGL"));
+        else
+            deviceListener.notifyToUi(ResourceManager.getResource().getString("KSearchingDev"));
         return true;
     }
 
@@ -216,56 +251,60 @@ public class OnCallSureSync extends DeviceHandler implements BTSearcherEventList
     }
 
     private void askMeasure() {
-        boolean error = false;
-        String message = "";
+        String message;
 
         if (batteryLevel < 20) {
-            error = true;
             message = ResourceManager.getResource().getString("lowBatteryError");
-        }
-        if (error) {
             deviceListener.notifyError(DeviceListener.MEASUREMENT_ERROR,message);
             stop();
             return;
         }
 
-        String date = new SimpleDateFormat("d MMM yyyy", Locale.getDefault()).format(measureDate.getTime());
-        String time = new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(measureDate.getTime());
+        while ((currentMeasure < measures.size()) && (measures.get(currentMeasure).pre != null))
+            currentMeasure ++;
 
-        message = ResourceManager.getResource().getString("KPrePostMsg").concat("\n\n");
+        if (currentMeasure < measures.size()) {
+            String date = new SimpleDateFormat("d MMM yyyy", Locale.getDefault()).format(measures.get(currentMeasure).timestamp);
+            String time = new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(measures.get(currentMeasure).timestamp);
 
-        message = message.concat(ResourceManager.getResource().getString("KDate")).concat(": ");
-        message = message.concat(date).concat("\n");
-        message = message.concat(ResourceManager.getResource().getString("KTime")).concat(": ");
-        message = message.concat(time).concat("\n");
+            message = ResourceManager.getResource().getString("KPrePostMsg").concat("\n\n");
 
-        message = message.concat(ResourceManager.getResource().getString("Glycemia")).concat(": ");
-        message = message.concat(Integer.toString(measureVal)).concat(" ");
-        message = message.concat(ResourceManager.getResource().getString("GlycemiaUnit"));
+            message = message.concat(ResourceManager.getResource().getString("KDate")).concat(": ");
+            message = message.concat(date).concat("\n");
+            message = message.concat(ResourceManager.getResource().getString("KTime")).concat(": ");
+            message = message.concat(time).concat("\n");
 
-        deviceListener.askSomething(message,
-                ResourceManager.getResource().getString("MeasureGlyPOSTBtn"),
-                ResourceManager.getResource().getString("MeasureGlyPREBtn"));
-    }
+            message = message.concat(ResourceManager.getResource().getString("Glycemia")).concat(": ");
+            message = message.concat(measures.get(currentMeasure).value).concat(" ");
+            message = message.concat(ResourceManager.getResource().getString("GlycemiaUnit"));
 
-    private void askMeasures() {
-        // TODO
+            deviceListener.askSomething(message,
+                    ResourceManager.getResource().getString("MeasureGlyPOSTBtn"),
+                    ResourceManager.getResource().getString("MeasureGlyPREBtn"));
+        } else
+            makeResultData();
     }
     
     private void makeResultData() {
-        HashMap<String,String> tmpVal = new HashMap<>();
-        if (prePrandial) {
-            tmpVal.put(GWConst.EGwCode_0E, Integer.toString(measureVal));  // glicemia Pre-prandiale
-        } else {
-            tmpVal.put(GWConst.EGwCode_0T, Integer.toString(measureVal));  // glicemia Post-prandiale
+        ArrayList<Measure> mList = new ArrayList<>();
+        for (GlucoseMeasure gm: measures) {
+            Measure m = getMeasure();
+            HashMap<String,String> tmpVal = new HashMap<>();
+            if (gm.pre) {
+                tmpVal.put(GWConst.EGwCode_0E, gm.value);  // glicemia Pre-prandiale
+            } else {
+                tmpVal.put(GWConst.EGwCode_0T, gm.value);  // glicemia Post-prandiale
+            }
+            if (batteryLevel != -1)
+                tmpVal.put(GWConst.EGwCode_BATTERY, Integer.toString(batteryLevel)); // livello batteria
+            Calendar c = Calendar.getInstance();
+            c.setTime(gm.timestamp);
+            m.setTimestamp(Util.getTimestamp(c));
+            m.setMeasures(tmpVal);
+            m.setFailed(false);
+            mList.add(m);
         }
-        if (batteryLevel != -1)
-            tmpVal.put(GWConst.EGwCode_BATTERY, Integer.toString(batteryLevel)); // livello batteria
-        Measure m = getMeasure();
-        m.setTimestamp(Util.getTimestamp(measureDate));
-        m.setMeasures(tmpVal);
-        m.setFailed(false);
-        deviceListener.showMeasurementResults(m);
+        deviceListener.showMeasurementResults(mList);
         stop();
     }
 
@@ -294,6 +333,10 @@ public class OnCallSureSync extends DeviceHandler implements BTSearcherEventList
         }
         // We want to directly connect to the device, so we are setting the autoConnect
         // parameter to false.
+        if (device.getBondState() == BOND_BONDED)
+            bonded = true;
+        else
+            bonded = false;
         mBluetoothGatt = device.connectGatt(MyApp.getContext(), false, mGattCallback);
         Log.d(TAG, "Trying to create a new connection.");
         mBluetoothDeviceAddress = address;
@@ -305,8 +348,8 @@ public class OnCallSureSync extends DeviceHandler implements BTSearcherEventList
         if (mBluetoothAdapter == null || mBluetoothGatt == null) {
             return;
         }
-        if (mConnectionState != ConnectionState.DISCONNECTED)
-            mBluetoothGatt.disconnect();
+        //if (mConnectionState != ConnectionState.DISCONNECTED)
+        //    mBluetoothGatt.disconnect();
         mBluetoothGatt.close();
         mBluetoothGatt = null;
     }
@@ -316,6 +359,7 @@ public class OnCallSureSync extends DeviceHandler implements BTSearcherEventList
     private final BluetoothGattCallback mGattCallback = new BluetoothGattCallback() {
         @Override
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
+            Log.d(TAG,"onConnectionStateChange: status="+status+" newState="+newState);
             if (newState == BluetoothProfile.STATE_CONNECTED) {
                 mConnectionState = ConnectionState.CONNECTED;
                 connectionRetry = 0;
@@ -366,7 +410,22 @@ public class OnCallSureSync extends DeviceHandler implements BTSearcherEventList
                 if (mainCaracteristic != null && batteryLevelCaracteristic !=null) {
                     // N.B.!: The BT requests are asyncronous, we must wait the end of each operation
                     // (onXxxxxxxx callback) before to start a new request
-                    mBluetoothGatt.readCharacteristic(batteryLevelCaracteristic);
+                    if (bonded) {
+                        if (operationType == OperationType.Pair) {
+                            deviceListener.setBtMAC(iBtDevAddr);
+                            deviceListener.configReady(ResourceManager.getResource().getString("KPairingMsgDone"));
+                            stop();
+                            return;
+                        } else {
+                            mBluetoothGatt.readCharacteristic(batteryLevelCaracteristic);
+                        }
+                    } else {
+                        deviceListener.notifyToUi(ResourceManager.getResource().getString("KPairingMsg"));
+                        IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_BOND_STATE_CHANGED);
+                        MyApp.getContext().registerReceiver(mReceiver, filter);
+                        mBluetoothGatt.readCharacteristic(batteryLevelCaracteristic);
+                    }
+
                 } else {
                     deviceListener.notifyError(DeviceListener.DEVICE_DATA_ERROR, ResourceManager.getResource().getString("EDataReadError"));
                     stop();
@@ -380,16 +439,42 @@ public class OnCallSureSync extends DeviceHandler implements BTSearcherEventList
         public void onDescriptorWrite(BluetoothGatt gatt, BluetoothGattDescriptor descriptor,
                                       int status) {
             Log.d(TAG, "onDescriptorWrite:" + descriptor.getCharacteristic().getUuid().toString() +
-                    " - " + descriptor.getUuid().toString());
+                    " status= " + status);
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 if (descriptor.getUuid().equals(UUID.fromString(CLIENT_CHARACTERISTIC_CONFIG))) {
-                    Log.d(TAG, "onDescriptorWrite: Notification  = " + ((descriptor.getValue()[0] & 0x01)!=0));
-                    Log.d(TAG, "onDescriptorWrite: Indication  = " + ((descriptor.getValue()[0] & 0x02)!=0));
-                    if (descriptor.getCharacteristic().getUuid().equals(UUID_MAIN_CHARACTERISTICS))
-                        ; // TODO
+                    if (descriptor.getCharacteristic().getUuid().equals(UUID_MAIN_CHARACTERISTICS)) {
+                        /*
+                        // TODO
+                        String  message = UPLOAD_LOG_HEADER + CRC_DEL + crc(UPLOAD_LOG_HEADER.toCharArray()) + EOM;
+                        try {
+                            Log.d(TAG, "Writing command Upload Log: " + toHexString(message.getBytes("UTF8")));
+                            mainCaracteristic.setValue(message.getBytes("UTF8"));
+                            mBluetoothGatt.writeCharacteristic(mainCaracteristic);
+                        } catch (UnsupportedEncodingException e) {
+                            Log.e(TAG, "onDescriptorWrite: " + e);
+                        }
+                        */
+                    }
                 }
             }
         }
+
+        /*
+        L'impostazione della data/ora non funziona.
+        Calendar c = Calendar.getInstance();
+        int year = Calendar.getInstance().get(Calendar.YEAR) % 100;
+        int day = Calendar.getInstance().get(Calendar.DAY_OF_MONTH);
+        int month = Calendar.getInstance().get(Calendar.MONTH);
+        int hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
+        int minutes = Calendar.getInstance().get(Calendar.MINUTE);
+        String data = SET_DATE_HEADER +
+                year + " " +
+                month + " " +
+                day + " " +
+                hour + " " +
+                minutes + " ";
+        String  message = data + CRC_DEL + crc(data.toCharArray()) + EOM;
+        */
 
         @Override
         public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic,
@@ -398,14 +483,9 @@ public class OnCallSureSync extends DeviceHandler implements BTSearcherEventList
                 if (UUID_BATTERY_LEVEL_CHARACTERISTICS.equals(characteristic.getUuid())) {
                     Log.d(TAG, "onCharacteristicRead: battery=" + toHexString(characteristic.getValue()));
                     if (parseBatteryLevelCharacteristic(characteristic.getValue())) {
-                        if (iCmdCode == TCmd.ECmdConnByUser)
-                            deviceListener.setBtMAC(iBtDevAddr);
-                        if (operationType == OperationType.Pair) {
-                            deviceListener.configReady(ResourceManager.getResource().getString("KPairingMsgDone"));
-                            stop();
-                        } else {
-                            deviceListener.notifyToUi(ResourceManager.getResource().getString("DoMeasureGL"));
+                        if (operationType != OperationType.Pair && bonded) {
                             setCharacteristicNotification(mainCaracteristic, true);
+                            deviceListener.notifyToUi(ResourceManager.getResource().getString("DoMeasureGL"));
                         }
                     } else {
                         deviceListener.notifyError(DeviceListener.DEVICE_DATA_ERROR, ResourceManager.getResource().getString("EDataReadError"));
@@ -420,7 +500,7 @@ public class OnCallSureSync extends DeviceHandler implements BTSearcherEventList
         @Override
         public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
             if (UUID_MAIN_CHARACTERISTICS.equals(characteristic.getUuid())) {
-                Log.d(TAG, "onCharacteristicChanged: glucose=" + toHexString(characteristic.getValue()));
+                Log.d(TAG, "onCharacteristicChanged: data = " + toHexString(characteristic.getValue()));
                 appendToMessage(characteristic.getValue());
                 if (message.length > 0 && message[message.length-1] == EOM)
                 {
@@ -435,7 +515,6 @@ public class OnCallSureSync extends DeviceHandler implements BTSearcherEventList
         public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
             Log.d(TAG, "onCharacteristicWrite: status = " + status + " char = " + characteristic.toString());
         }
-
     };
 
     private void appendToMessage(byte[] data) {
@@ -472,15 +551,28 @@ public class OnCallSureSync extends DeviceHandler implements BTSearcherEventList
     private void parseMessage(byte[] data) {
         String str = new String(data, Charset.forName("UTF-8"));
 
-        if (!str.startsWith(MSG_HEADER)) {
+        if (!str.startsWith(MEASURE_HEADER)) {
             Log.e(TAG, "parseMessage: wrong characteristic size: " + data.length);
             deviceListener.notifyError(DeviceListener.DEVICE_DATA_ERROR, ResourceManager.getResource().getString("EDataReadError"));
             stop();
             return ;
         }
 
+        // Invio ack per indicare che le misure sono state ricevute.
+        // Se non si invia l'ack:
+        // 1) le misure vengano ritrasmesse ogni 2 secondi per 3 volte
+        // 2) alla prossima misurazione vengono inviate anche le misure precedentemente già ricevute.
+        String  reply = AUTOSEND_STOP + CRC_DEL + crc(AUTOSEND_STOP.toCharArray()) + EOM;
+        try {
+            Log.d(TAG, "Writing command Autosend stop: " + toHexString(reply.getBytes("UTF8")));
+            mainCaracteristic.setValue(reply.getBytes("UTF8"));
+            mBluetoothGatt.writeCharacteristic(mainCaracteristic);
+        } catch (UnsupportedEncodingException e) {
+            Log.e(TAG, "onDescriptorWrite: " + e);
+        }
+
         // remove header
-        str = str.substring(MSG_HEADER.length());
+        str = str.substring(MEASURE_HEADER.length());
 
         // empty data
         if (str.startsWith("y"))
@@ -501,14 +593,67 @@ public class OnCallSureSync extends DeviceHandler implements BTSearcherEventList
         // remove crc
         str = str.substring(0, str.indexOf(CRC_DEL)).trim();
 
+        // Le misure sono in ordine cronologico inverso, dalla più recente alla più vecchia
+        // quindi l'array measures contiene alla posizione 0 la misura più recente.
         String[] dataArray = str.split(Character.toString(REC_SEP));
         for (String s:dataArray) {
-            // TODO Parse each record
+            GlucoseMeasure m = parseMeasure(s);
+            if (m != null)
+                measures.add(m);
         }
-
-        // askMeasure();
+        currentMeasure = 0;
+        askMeasure();
     }
 
+    private GlucoseMeasure parseMeasure(String rawData) {
+        try {
+            String[] values = rawData.split(" ");
+            if (values.length < 3) return null;
+            DateFormat df = new SimpleDateFormat("MMddyyHHmm",Locale.US);
+            Date d = df.parse(values[0]);
+            DeviceMeasurementType mark = ParseMark(values[2]);
+
+            GlucoseMeasure m = new GlucoseMeasure();
+            m.timestamp = d;
+            if (mark == DeviceMeasurementType.AfterMeal)
+                m.pre = false;
+            else if (mark == DeviceMeasurementType.BeforeMeal)
+                m.pre = true;
+            else
+                m.pre = null;
+            m.value = values[1];
+            return m;
+        } catch (ParseException pe) {
+            // TODO
+            Log.e(TAG,"parseMeasure: " + pe);
+        }
+        return null;
+    }
+
+    private DeviceMeasurementType ParseMark(String mark) {
+        if (mark.length() <= 0) { return DeviceMeasurementType.None; }
+        if (mark.charAt(0) == '0') { return DeviceMeasurementType.None; }
+        if (mark.charAt(0) == '1' && mark.length() > 1 && mark.charAt(1) != '2') { return DeviceMeasurementType.AfterMeal; }
+        if (mark.charAt(0) == '2') { return DeviceMeasurementType.BeforeMeal; }
+        if (mark.charAt(0) == '4') { return DeviceMeasurementType.Mark; }
+        if (mark.charAt(0) == '1' && mark.length() > 1 && mark.charAt(1) == '2') { return DeviceMeasurementType.MarkControl; }
+        return DeviceMeasurementType.None;
+    }
+
+    private static String crc(char[] buf)
+    {
+        int crc_calc = 0xffff;
+        for (int i = 0; i < buf.length; i++) {
+            crc_calc ^= (buf[i] & 0xff);
+            for (int j = 8; j > 0; j--)
+            {
+                if ((crc_calc & 0x0001) == 1) { crc_calc = (crc_calc >>> 1) ^ 0xA001; }
+                else { crc_calc >>>= 1; }
+            }
+            crc_calc = crc_calc & 0xffff;
+        }
+        return String.valueOf(crc_calc);
+    }
 
     private void setCharacteristicNotification(BluetoothGattCharacteristic characteristic, boolean enable) {
         if (mBluetoothAdapter == null || mBluetoothGatt == null) {
@@ -533,4 +678,50 @@ public class OnCallSureSync extends DeviceHandler implements BTSearcherEventList
         mBluetoothGatt.writeDescriptor(descriptor);
         mBluetoothGatt.setCharacteristicNotification(characteristic, enable);
     }
+
+    private final BroadcastReceiver mReceiver = new BroadcastReceiver()
+    {
+        @Override
+        public void onReceive(Context context, Intent intent)
+        {
+            final String action = intent.getAction();
+
+            if (action.equals(BluetoothDevice.ACTION_BOND_STATE_CHANGED))
+            {
+                final BluetoothDevice dev = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+                final int state = intent.getIntExtra(BluetoothDevice.EXTRA_BOND_STATE, BluetoothDevice.ERROR);
+                Log.d(TAG, "ACTION_BOND_STATE_CHANGED: address=" + dev.getAddress() + " state=" + state );
+                if (!dev.getAddress().equalsIgnoreCase(iBtDevAddr))
+                    return;
+                Log.d(TAG, "ACTION_BOND_STATE_CHANGED: address=" + dev.getAddress() + " state=" + state );
+
+                switch(state){
+                    case BluetoothDevice.BOND_BONDING:
+                        // Bonding...
+                        Log.d(TAG, "ACTION_BOND_STATE_CHANGED: Bonding...");
+                        break;
+                    case BluetoothDevice.BOND_BONDED:
+                        // Bonded...
+                        Log.d(TAG, "ACTION_BOND_STATE_CHANGED: Bonded!");
+                        MyApp.getContext().unregisterReceiver(mReceiver);
+                        deviceListener.configReady(ResourceManager.getResource().getString("KPairingMsgDone"));
+                        stop();
+                        break;
+                    case BluetoothDevice.BOND_NONE:
+                        Log.d(TAG, "ACTION_BOND_STATE_CHANGED: NOT Bonded!");
+                        MyApp.getContext().unregisterReceiver(mReceiver);
+                        deviceListener.setBtMAC(iBtDevAddr);
+                        deviceListener.notifyError(DeviceListener.DEVICE_DATA_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
+                        stop();
+                        break;
+                    default:
+                        Log.d(TAG, "ACTION_BOND_STATE_CHANGED: STATE UNKNOWN!");
+                        MyApp.getContext().unregisterReceiver(mReceiver);
+                        deviceListener.notifyError(DeviceListener.DEVICE_DATA_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
+                        stop();
+                        break;
+                }
+            }
+        }
+    };
 }

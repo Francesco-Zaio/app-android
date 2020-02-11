@@ -2549,13 +2549,15 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 		builder.setMessage(message);
 		builder.setPositiveButton(positive, 
 				new DialogInterface.OnClickListener(){
-					public void onClick(DialogInterface arg0, int arg1) {		
+					public void onClick(DialogInterface arg0, int arg1) {
+						arg0.dismiss();
 						deviceOperations.confirmDialog();
 					}
 		});
 		builder.setNegativeButton(negative, 
 				new DialogInterface.OnClickListener(){
-					public void onClick(DialogInterface arg0, int arg1) {		
+					public void onClick(DialogInterface arg0, int arg1) {
+						arg0.dismiss();
 						deviceOperations.cancelDialog();
 						myRemoveDialog(PROGRESS_DIALOG);
 					}

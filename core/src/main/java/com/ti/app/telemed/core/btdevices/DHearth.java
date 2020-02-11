@@ -34,7 +34,6 @@ public class DHearth extends DeviceHandler {
 
     private static final String DHEARTH_PACKAGE = "com.dheartcare.dheart";
     private static final String DHEARTH_INTENT = "com.dheartcare.dheart.RECORD_ECG";
-    private static final int DHEART_REQUEST_CODE = 777;
     private static final String PDF_PATH = "PDFPATH";
 
     private boolean stopped = true;

@@ -28,5 +28,5 @@ EC, CHECKMEPRO, Checkme Pro - Viatom, 1
 TC, CHECKMEPRO, Checkme Pro - Viatom, 1
 OS, CHECKMEPRO, Checkme Pro - Viatom, 1
 PR, CHECKMEPRO, Checkme Pro - Viatom, 1
-//GL, ONCALL, Glucometro - On Call, 1
+GL, ONCALL, Glucometro - On Call, 1
 EC, DHEARTH, DHeart, 2

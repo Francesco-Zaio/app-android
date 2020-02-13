@@ -425,7 +425,6 @@ public class OnCallSureSync extends DeviceHandler implements BTSearcherEventList
                         MyApp.getContext().registerReceiver(mReceiver, filter);
                         mBluetoothGatt.readCharacteristic(batteryLevelCaracteristic);
                     }
-
                 } else {
                     deviceListener.notifyError(DeviceListener.DEVICE_DATA_ERROR, ResourceManager.getResource().getString("EDataReadError"));
                     stop();
@@ -444,7 +443,7 @@ public class OnCallSureSync extends DeviceHandler implements BTSearcherEventList
                 if (descriptor.getUuid().equals(UUID.fromString(CLIENT_CHARACTERISTIC_CONFIG))) {
                     if (descriptor.getCharacteristic().getUuid().equals(UUID_MAIN_CHARACTERISTICS)) {
                         /*
-                        // TODO
+                        // Scommentare per richiedere l'ultima misura
                         String  message = UPLOAD_LOG_HEADER + CRC_DEL + crc(UPLOAD_LOG_HEADER.toCharArray()) + EOM;
                         try {
                             Log.d(TAG, "Writing command Upload Log: " + toHexString(message.getBytes("UTF8")));
@@ -568,7 +567,7 @@ public class OnCallSureSync extends DeviceHandler implements BTSearcherEventList
             mainCaracteristic.setValue(reply.getBytes("UTF8"));
             mBluetoothGatt.writeCharacteristic(mainCaracteristic);
         } catch (UnsupportedEncodingException e) {
-            Log.e(TAG, "onDescriptorWrite: " + e);
+            Log.e(TAG, "parseMessage: " + e);
         }
 
         // remove header
@@ -584,7 +583,6 @@ public class OnCallSureSync extends DeviceHandler implements BTSearcherEventList
         }
 
         String dataCount = str.substring(0, str.indexOf(' '));
-        int count = Integer.valueOf(dataCount);
         Log.d(TAG, "total count: " + dataCount);
 
         // remove count
@@ -704,13 +702,13 @@ public class OnCallSureSync extends DeviceHandler implements BTSearcherEventList
                         // Bonded...
                         Log.d(TAG, "ACTION_BOND_STATE_CHANGED: Bonded!");
                         MyApp.getContext().unregisterReceiver(mReceiver);
+                        deviceListener.setBtMAC(iBtDevAddr);
                         deviceListener.configReady(ResourceManager.getResource().getString("KPairingMsgDone"));
                         stop();
                         break;
                     case BluetoothDevice.BOND_NONE:
                         Log.d(TAG, "ACTION_BOND_STATE_CHANGED: NOT Bonded!");
                         MyApp.getContext().unregisterReceiver(mReceiver);
-                        deviceListener.setBtMAC(iBtDevAddr);
                         deviceListener.notifyError(DeviceListener.DEVICE_DATA_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
                         stop();
                         break;

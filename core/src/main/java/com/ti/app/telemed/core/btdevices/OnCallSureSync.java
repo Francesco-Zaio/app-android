@@ -48,15 +48,11 @@ public class OnCallSureSync extends DeviceHandler implements BTSearcherEventList
 
 	private static final String TAG = "OnCallSureSync";
 
-	// Standard Glucose Services
-
-
     // Standard Battery Services
     private static String BATTERY_SERVICE = "0000180f-0000-1000-8000-00805f9b34fb";
     private final static UUID UUID_BATTERY_SERVICE =  UUID.fromString(BATTERY_SERVICE);
     private static String BATTERY_LEVEL_CHARACTERISTIC = "00002a19-0000-1000-8000-00805f9b34fb";
     private final static UUID UUID_BATTERY_LEVEL_CHARACTERISTICS = UUID.fromString(BATTERY_LEVEL_CHARACTERISTIC);
-
 
     // Custom Bluetooth Service
     private static String MAIN_SERVICE = "11223344-5566-7788-99aa-bbccddeeff00";
@@ -70,9 +66,6 @@ public class OnCallSureSync extends DeviceHandler implements BTSearcherEventList
 
     private static final int MAX_CONNCTION_RETRY = 5;
 
-    // iServiceSearcher searches for service this client can
-    // connect to (in symbian version the type was CBTUtil) and
-    // substitutes RSocketServ and RSocket of symbian version too
     private BTSearcher iServiceSearcher;
     private Vector<BluetoothDevice> deviceList = new Vector<>();
 
@@ -682,44 +675,44 @@ public class OnCallSureSync extends DeviceHandler implements BTSearcherEventList
         @Override
         public void onReceive(Context context, Intent intent)
         {
-            final String action = intent.getAction();
+        final String action = intent.getAction();
 
-            if (action.equals(BluetoothDevice.ACTION_BOND_STATE_CHANGED))
-            {
-                final BluetoothDevice dev = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                final int state = intent.getIntExtra(BluetoothDevice.EXTRA_BOND_STATE, BluetoothDevice.ERROR);
-                Log.d(TAG, "ACTION_BOND_STATE_CHANGED: address=" + dev.getAddress() + " state=" + state );
-                if (!dev.getAddress().equalsIgnoreCase(iBtDevAddr))
-                    return;
-                Log.d(TAG, "ACTION_BOND_STATE_CHANGED: address=" + dev.getAddress() + " state=" + state );
+        if (action.equals(BluetoothDevice.ACTION_BOND_STATE_CHANGED))
+        {
+            final BluetoothDevice dev = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+            final int state = intent.getIntExtra(BluetoothDevice.EXTRA_BOND_STATE, BluetoothDevice.ERROR);
+            Log.d(TAG, "ACTION_BOND_STATE_CHANGED: address=" + dev.getAddress() + " state=" + state );
+            if (!dev.getAddress().equalsIgnoreCase(iBtDevAddr))
+                return;
+            Log.d(TAG, "ACTION_BOND_STATE_CHANGED: address=" + dev.getAddress() + " state=" + state );
 
-                switch(state){
-                    case BluetoothDevice.BOND_BONDING:
-                        // Bonding...
-                        Log.d(TAG, "ACTION_BOND_STATE_CHANGED: Bonding...");
-                        break;
-                    case BluetoothDevice.BOND_BONDED:
-                        // Bonded...
-                        Log.d(TAG, "ACTION_BOND_STATE_CHANGED: Bonded!");
-                        MyApp.getContext().unregisterReceiver(mReceiver);
-                        deviceListener.setBtMAC(iBtDevAddr);
-                        deviceListener.configReady(ResourceManager.getResource().getString("KPairingMsgDone"));
-                        stop();
-                        break;
-                    case BluetoothDevice.BOND_NONE:
-                        Log.d(TAG, "ACTION_BOND_STATE_CHANGED: NOT Bonded!");
-                        MyApp.getContext().unregisterReceiver(mReceiver);
-                        deviceListener.notifyError(DeviceListener.DEVICE_DATA_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
-                        stop();
-                        break;
-                    default:
-                        Log.d(TAG, "ACTION_BOND_STATE_CHANGED: STATE UNKNOWN!");
-                        MyApp.getContext().unregisterReceiver(mReceiver);
-                        deviceListener.notifyError(DeviceListener.DEVICE_DATA_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
-                        stop();
-                        break;
-                }
+            switch(state){
+                case BluetoothDevice.BOND_BONDING:
+                    // Bonding...
+                    Log.d(TAG, "ACTION_BOND_STATE_CHANGED: Bonding...");
+                    break;
+                case BluetoothDevice.BOND_BONDED:
+                    // Bonded...
+                    Log.d(TAG, "ACTION_BOND_STATE_CHANGED: Bonded!");
+                    MyApp.getContext().unregisterReceiver(mReceiver);
+                    deviceListener.setBtMAC(iBtDevAddr);
+                    deviceListener.configReady(ResourceManager.getResource().getString("KPairingMsgDone"));
+                    stop();
+                    break;
+                case BluetoothDevice.BOND_NONE:
+                    Log.d(TAG, "ACTION_BOND_STATE_CHANGED: NOT Bonded!");
+                    MyApp.getContext().unregisterReceiver(mReceiver);
+                    deviceListener.notifyError(DeviceListener.DEVICE_DATA_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
+                    stop();
+                    break;
+                default:
+                    Log.d(TAG, "ACTION_BOND_STATE_CHANGED: STATE UNKNOWN!");
+                    MyApp.getContext().unregisterReceiver(mReceiver);
+                    deviceListener.notifyError(DeviceListener.DEVICE_DATA_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
+                    stop();
+                    break;
             }
+        }
         }
     };
 }

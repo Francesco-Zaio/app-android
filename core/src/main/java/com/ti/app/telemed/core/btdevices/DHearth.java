@@ -99,6 +99,7 @@ public class DHearth extends DeviceHandler {
         if (resultCode == Activity.RESULT_OK && data != null) {
             Bundle extras = data.getExtras();
             String filename = extras.getString(PDF_PATH);
+            Log.d(TAG, "file path: " + filename);
             FileInputStream fis = null;
             byte[] fileContent;
             try {

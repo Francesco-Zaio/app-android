@@ -16,6 +16,7 @@ import com.ti.app.telemed.core.exceptions.XmlException;
 import static com.ti.app.telemed.core.xmlmodule.XmlManager.AECG_FILE_TYPE;
 import static com.ti.app.telemed.core.xmlmodule.XmlManager.DOCUMENT_FILE_TYPE;
 import static com.ti.app.telemed.core.xmlmodule.XmlManager.IMG_FILE_TYPE;
+import static com.ti.app.telemed.core.xmlmodule.XmlManager.PDF_FILE_TYPE;
 
 
 // this is a singleton
@@ -151,6 +152,7 @@ public class WebMessageManager {
 			case IMG_FILE_TYPE:
 			case DOCUMENT_FILE_TYPE:
 			case AECG_FILE_TYPE:
+			case PDF_FILE_TYPE:
                 isImageFile = new File(new String(xmlFileContent,"UTF-8")).exists();
                 filePath = new String(xmlFileContent,"UTF-8");
                 String [] tokens  = filePath.split(File.separator);

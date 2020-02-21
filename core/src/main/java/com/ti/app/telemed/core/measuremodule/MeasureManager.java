@@ -514,6 +514,7 @@ public class MeasureManager {
         switch (m.getFileType()) {
             case XmlManager.DOCUMENT_FILE_TYPE:
             case XmlManager.AECG_FILE_TYPE:
+            case XmlManager.PDF_FILE_TYPE:
                 try {
                     Util.deleteTree(new File(new String(m.getFile(), "UTF-8")));
                 } catch (Exception e) {

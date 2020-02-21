@@ -201,6 +201,7 @@ public class SendMeasureService extends IntentService implements WebManagerSendi
                 }
                 break;
             case XmlManager.AECG_FILE_TYPE:
+            case XmlManager.PDF_FILE_TYPE:
                 try {
                     File f = new File(new String(m.getFile(), "UTF-8"));
                     if (f.exists())

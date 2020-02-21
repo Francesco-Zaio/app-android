@@ -17,6 +17,7 @@ import com.ti.app.telemed.core.btmodule.DeviceHandler;
 import com.ti.app.telemed.core.btmodule.DeviceListener;
 import com.ti.app.telemed.core.common.Measure;
 import com.ti.app.telemed.core.common.UserDevice;
+import com.ti.app.telemed.core.usermodule.UserManager;
 import com.ti.app.telemed.core.util.GWConst;
 import com.ti.app.telemed.core.util.Util;
 import com.ti.app.telemed.core.xmlmodule.XmlManager;
@@ -99,48 +100,37 @@ public class DHearth extends DeviceHandler {
         if (resultCode == Activity.RESULT_OK && data != null) {
             Bundle extras = data.getExtras();
             String filename = extras.getString(PDF_PATH);
+            if (filename == null) {
+                deviceListener.notifyError(DeviceListener.DEVICE_DATA_ERROR, ResourceManager.getResource().getString("EDataReadError"));
+                stop();
+                return;
+            }
             Log.d(TAG, "file path: " + filename);
-            FileInputStream fis = null;
-            byte[] fileContent;
             try {
-                File file = new File(filename);
-                fileContent = new byte[(int) file.length()];
-                fis = new FileInputStream(file);
-                long n = fis.read(fileContent);
-                if (n != fileContent.length) {
-                    deviceListener.notifyError(DeviceListener.DEVICE_DATA_ERROR, ResourceManager.getResource().getString("EDataReadError"));
-                    return;
-                }
+                File fileFrom = new File(filename);
+                String name = Util.getMeasuresDir(UserManager.getUserManager().getCurrentPatient().getId())
+                        + File.separator + fileFrom.getName();
+                File fileTo = new File(name);
+                Util.copy(fileFrom, fileTo);
+                fileFrom.delete();
                 m = getMeasure();
                 HashMap<String,String> tmpVal = new HashMap<>();
                 String [] tokens  = filename.split(File.separator);
                 tmpVal.put(GWConst.EGwCode_0W, tokens[tokens.length-1]);  //nome file
                 m.setMeasures(tmpVal);
-                m.setFile(fileContent);
-
+                m.setFile(fileTo.getAbsolutePath().getBytes("UTF-8"));
                 m.setFileType(XmlManager.PDF_FILE_TYPE);
                 m.setFailed(false);
                 m.setBtAddress("N.A.");
-
-                //deviceListener.askSomething(ResourceManager.getResource().getString("KUrgentMsg"),
-                //        ResourceManager.getResource().getString("KMsgYes"),
-                //        ResourceManager.getResource().getString("KMsgNo"));
-
                 m.setUrgent(false);
                 deviceListener.showMeasurementResults(m);
             } catch (Exception e) {
                 deviceListener.notifyError(DeviceListener.DEVICE_DATA_ERROR, ResourceManager.getResource().getString("EDataReadError"));
-                return;
-            } finally {
-                try {
-                    if (fis != null)
-                        fis.close();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+                stop();
             }
         } else {
             deviceListener.notifyError(DeviceListener.NO_MEASURES_FOUND, ResourceManager.getResource().getString("ENoMeasurementDone"));
+            stop();
         }
     }
 

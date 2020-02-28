@@ -122,8 +122,11 @@ public class DHearth extends DeviceHandler {
                 m.setFileType(XmlManager.PDF_FILE_TYPE);
                 m.setFailed(false);
                 m.setBtAddress("N.A.");
-                m.setUrgent(false);
-                deviceListener.showMeasurementResults(m);
+                deviceListener.askSomething(ResourceManager.getResource().getString("KUrgentMsg"),
+                        ResourceManager.getResource().getString("KMsgYes"),
+                        ResourceManager.getResource().getString("KMsgNo"));
+                // m.setUrgent(false);
+                // deviceListener.showMeasurementResults(m);
             } catch (Exception e) {
                 deviceListener.notifyError(DeviceListener.DEVICE_DATA_ERROR, ResourceManager.getResource().getString("EDataReadError"));
                 stop();

@@ -1301,6 +1301,13 @@ public class DbManager {
                 logger.log(Level.INFO, "deleteOldUserDeviceData rows deleted: " + rows);
                 rows = mDb.delete("USER_MEASURE", whereClause, new String[]{userId});
                 logger.log(Level.INFO, "deleteOldUserMeasureData rows deleted: " + rows);
+            } else {
+                // nessuna misura associata all'utente;
+                String whereClause = "ID_USER = ?";
+                int rows = mDb.delete("USER_DEVICE", whereClause, new String[]{userId});
+                logger.log(Level.INFO, "deleteOldUserDeviceData rows deleted: " + rows);
+                rows = mDb.delete("USER_MEASURE", whereClause, new String[]{userId});
+                logger.log(Level.INFO, "deleteOldUserMeasureData rows deleted: " + rows);
             }
         }
 	}

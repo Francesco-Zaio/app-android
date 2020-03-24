@@ -46,6 +46,8 @@ public interface GWConst {
 	String KCheckmePro = "CHECKMEPRO";
 	String KOnCall = "ONCALL";
 	String KDHearth = "DHEARTH";
+	String KOXY10 = "OXY10";
+	String KCMS50DBT = "CMS50DBT";
 
 
 	/**

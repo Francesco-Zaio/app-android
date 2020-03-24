@@ -822,7 +822,6 @@ public class GIMAPC300SpotCheck
             return;
         }
 
-        //iOxyStream = iOxyStream->ReAlloc(BASE_OXY_STREAM_LENGTH + SampleCount*2);
         ByteBuffer tmpStream = ByteBuffer.allocate(BASE_OXY_STREAM_LENGTH + sampleCount*2);
         tmpStream.put(oxyStream);
         oxyStream = tmpStream.array();

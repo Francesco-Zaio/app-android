@@ -344,7 +344,7 @@ public class CheckmePro extends DeviceHandler implements
                     outer.deviceListener.setBtMAC(outer.iBtDevAddr);
                     outer.btBinder.interfaceGetInfo(2000, outer);
                     break;
-                case HANDLER_INFO_RECEIVED:
+                case HANDLER_INFO_RECEIVED:Log.d(TAG, "Requesting data ...");
                     if (outer.operationType == OperationType.Pair) {
                         outer.deviceListener.configReady(ResourceManager.getResource().getString("KPairingMsgDone"));
                         outer.stop();

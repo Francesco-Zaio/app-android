@@ -5,6 +5,8 @@ import android.content.Intent;
 import android.util.Log;
 
 import com.ti.app.telemed.core.btdevices.AgamatrixMyStar;
+import com.ti.app.telemed.core.btdevices.CMS50D;
+import com.ti.app.telemed.core.btdevices.CMS50DLE;
 import com.ti.app.telemed.core.btdevices.CardGuardEasy2CheckClient;
 import com.ti.app.telemed.core.btdevices.CheckmePro;
 import com.ti.app.telemed.core.btdevices.DHearth;
@@ -14,6 +16,7 @@ import com.ti.app.telemed.core.btdevices.GIMAPC300SpotCheck;
 import com.ti.app.telemed.core.btdevices.IHealth;
 import com.ti.app.telemed.core.btdevices.MIRSpirodoc;
 import com.ti.app.telemed.core.btdevices.NoninOximeter;
+import com.ti.app.telemed.core.btdevices.OXY10;
 import com.ti.app.telemed.core.btdevices.OnCallSureSync;
 import com.ti.app.telemed.core.btdevices.RocheProthrombineTimeClient;
 import com.ti.app.telemed.core.btdevices.TouchECG;
@@ -26,8 +29,6 @@ import com.ti.app.telemed.core.dbmodule.DbManager;
 import com.ti.app.telemed.core.usermodule.UserManager;
 import com.ti.app.telemed.core.util.GWConst;
 import com.ti.app.telemed.core.util.Util;
-
-import static com.ti.app.telemed.core.util.GWConst.KDHearth;
 
 /**
  * <h1>Acquisire una misura da un dispsitivo</h1>
@@ -161,8 +162,12 @@ public abstract class DeviceHandler {
                 return new CheckmePro(listener, ud);
             case GWConst.KOnCall:
                 return new OnCallSureSync(listener, ud);
-            case KDHearth:
+            case GWConst.KDHearth:
                 return new DHearth(listener, ud);
+            case GWConst.KOXY10:
+                return new OXY10(listener, ud);
+            case GWConst.KCMS50DBT:
+                return new CMS50D(listener, ud);
             default:
                 return null;
         }

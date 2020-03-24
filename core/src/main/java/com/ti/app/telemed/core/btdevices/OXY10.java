@@ -231,7 +231,6 @@ public class OXY10
         }
 
         initOxyData();
-        deviceListener.notifyToUi(ResourceManager.getResource().getString("DoMeasureOS"));
     }
 
 

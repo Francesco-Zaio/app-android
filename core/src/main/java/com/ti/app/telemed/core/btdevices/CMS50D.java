@@ -54,6 +54,7 @@ public class CMS50D extends DeviceHandler implements BTSearcherEventListener {
 
     @Override
     public boolean startOperation(OperationType ot, BTSearcherEventListener btSearchListener) {
+        Log.d(TAG, "startOperation");
         if (!startInit(ot, btSearchListener))
             return false;
 
@@ -61,7 +62,7 @@ public class CMS50D extends DeviceHandler implements BTSearcherEventListener {
         iServiceSearcher.clearBTSearcherEventListener();
         iServiceSearcher.addBTSearcherEventListener(this);
         iServiceSearcher.startSearchDevices();
-        deviceListener.notifyToUi(ResourceManager.getResource().getString("KSearchingDev"));
+        deviceListener.notifyToUi(ResourceManager.getResource().getString("KConnectingDev"));
         return true;
     }
 
@@ -83,6 +84,8 @@ public class CMS50D extends DeviceHandler implements BTSearcherEventListener {
         }
         commThread = new DeviceCommunicationThread(bd);
         commThread.start();
+        deviceListener.notifyToUi(ResourceManager.getResource().getString("KSearchingDev"));
+
     }
 
 
@@ -139,9 +142,9 @@ public class CMS50D extends DeviceHandler implements BTSearcherEventListener {
         reset();
     }
 
-    private void delay(int mills) {
+    private void delay() {
         try {
-            Thread.sleep(mills);
+            Thread.sleep(200);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -151,7 +154,7 @@ public class CMS50D extends DeviceHandler implements BTSearcherEventListener {
         int messageId = mDevicePackManager.arrangeMessage(buffer, count);
         switch (messageId) {
             case 1:// Confirm command success
-                delay(200);
+                delay();
                 Log.d(TAG, "Sending time sync command ...");
                 os.write(DeviceCommand.correctionDateTime());
                 break;
@@ -162,7 +165,8 @@ public class CMS50D extends DeviceHandler implements BTSearcherEventListener {
                     stop();
                     break;
                 } else {
-                    delay(200);
+                    deviceListener.notifyToUi(ResourceManager.getResource().getString("KMeasuring"));
+                    delay();
                     Log.d(TAG, "Requesting data ...");
                     os.write(DeviceCommand.getDataFromDevice());
                 }
@@ -181,26 +185,12 @@ public class CMS50D extends DeviceHandler implements BTSearcherEventListener {
                 break;
             case 5:
                 Log.d(TAG, "Measure data receive completed");
-                delay(200);
+                delay();
                 makeResultData(mDevicePackManager.getDeviceData50dj().getmSp02DataList());
-                /*
-                DeviceData50DJ_Jar deviceData50D = mDevicePackManager.getDeviceData50dj();
-                for (int i = 0; i < deviceData50D.getmSp02DataList().size(); i++) {
-                    byte[] spo2Data = deviceData50D.getmSp02DataList().get(i);
-                    String string = "year:" + spo2Data[0] + " month:" + spo2Data[1] + "  day:"
-                            + spo2Data[2] + " hour:" + spo2Data[3] + "  min:" + spo2Data[4]
-                            + "  second:" + spo2Data[5] + "  spo2:" + spo2Data[6]
-                            + "  pluse:" + spo2Data[7];
-                    Log.d(TAG, string);
-                }
-                deviceListener.notifyError(DeviceListener.MEASUREMENT_ERROR,
-                    ResourceManager.getResource().getString("EMeasureDateError"));
-                stop();
-                */
                 break;
             case 6:
                 Log.d(TAG, "Measure record received");
-                delay(200);
+                delay();
                 os.write(DeviceCommand.dataUploadSuccessCommand());
                 break;
             case 7:
@@ -214,13 +204,9 @@ public class CMS50D extends DeviceHandler implements BTSearcherEventListener {
 
     private class DeviceCommunicationThread extends Thread {
         private final BluetoothSocket mmSocket;
-        private final BluetoothDevice mmDevice;
-        private InputStream mmInStream = null;
-        private OutputStream mmOutStream = null;
         private boolean stop;
 
         DeviceCommunicationThread(BluetoothDevice device) {
-            mmDevice = device;
             BluetoothSocket tmp = null;
             try {
                 tmp = device.createRfcommSocketToServiceRecord(MY_UUID);
@@ -241,27 +227,38 @@ public class CMS50D extends DeviceHandler implements BTSearcherEventListener {
                 // Blocking call. Will only return on a successful connection or an exception
                 mmSocket.connect();
             } catch (IOException e) {
-                Log.e(TAG, "DeviceCommunicationThread connecton error:", e);
-                // Close the socket
-                try {
-                    mmSocket.close();
-                } catch (IOException e2) {
-                    Log.e(TAG, "unable to close() socket during connection failure", e2);
+                // check if the operation was canceled by the user
+                if (!stop) {
+                    Log.e(TAG, "DeviceCommunicationThread connecton error:", e);
+                    // Close the socket
+                    try {
+                        mmSocket.close();
+                    } catch (IOException e2) {
+                        Log.e(TAG, "unable to close() socket during connection failure", e2);
+                    }
+                    deviceListener.notifyError(DeviceListener.CONNECTION_ERROR, ResourceManager.getResource().getString("EBtDeviceConnError"));
+                    CMS50D.this.stop();
+                } else {
+                    Log.d(TAG, "Connection aborted by the User");
                 }
-                deviceListener.notifyError(DeviceListener.CONNECTION_ERROR, ResourceManager.getResource().getString("EBtDeviceConnError"));
-                CMS50D.this.stop();
                 return;
             }
 
+            InputStream mmInStream;
+            OutputStream mmOutStream;
             try {
                 mmInStream = mmSocket.getInputStream();
                 mmOutStream = mmSocket.getOutputStream();
                 Log.d(TAG, "send device confirm command");
                 mmOutStream.write(DeviceCommand.deviceConfirmCommand());
             } catch (IOException e) {
-                Log.e(TAG, "temp sockets not created", e);
-                deviceListener.notifyError(DeviceListener.CONNECTION_ERROR, ResourceManager.getResource().getString("EBtDeviceConnError"));
-                CMS50D.this.stop();
+                if (!stop) {
+                    Log.e(TAG, "temp sockets not created", e);
+                    deviceListener.notifyError(DeviceListener.CONNECTION_ERROR, ResourceManager.getResource().getString("EBtDeviceConnError"));
+                    CMS50D.this.stop();
+                } else {
+                    Log.d(TAG, "Operation aborted by the User");
+                }
                 return;
             }
 
@@ -274,36 +271,20 @@ public class CMS50D extends DeviceHandler implements BTSearcherEventListener {
                     // // Read from the InputStream
                     bytes = mmInStream.read(buffer);
                     manageMessage(buffer, bytes, mmOutStream);
-                } catch (IOException e) {
-
-                    Log.e(TAG, "disconnected", e);
-                    if (mmInStream != null) {
-                        try {
-                            mmInStream.close();
-                        } catch (IOException e1) {
-                            e1.printStackTrace();
-                        }
-                    }
-                    deviceListener.notifyError(DeviceListener.CONNECTION_ERROR, ResourceManager.getResource().getString("EBtDeviceConnError"));
-                    CMS50D.this.stop();
-                    return;
                 } catch (Exception e) {
-                    Log.e(TAG, "disconnected2", e);
-                    if (mmInStream != null) {
-                        try {
-                            mmInStream.close();
-                        } catch (IOException e1) {
-                            e1.printStackTrace();
-                        }
+                    if (!stop) {
+                        Log.e(TAG, "disconnected", e);
+                        deviceListener.notifyError(DeviceListener.CONNECTION_ERROR, ResourceManager.getResource().getString("EBtDeviceConnError"));
+                        CMS50D.this.stop();
+                    } else {
+                        Log.d(TAG, "Operation aborted by the User");
                     }
-                    deviceListener.notifyError(DeviceListener.CONNECTION_ERROR, ResourceManager.getResource().getString("EBtDeviceConnError"));
-                    CMS50D.this.stop();
                     return;
                 }
             }
         }
 
-        public void cancel() {
+        public synchronized void cancel() {
             try {
                 stop = true;
                 mmSocket.close();

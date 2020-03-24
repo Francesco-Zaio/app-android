@@ -62,7 +62,7 @@ public class CMS50D extends DeviceHandler implements BTSearcherEventListener {
         iServiceSearcher.clearBTSearcherEventListener();
         iServiceSearcher.addBTSearcherEventListener(this);
         iServiceSearcher.startSearchDevices();
-        deviceListener.notifyToUi(ResourceManager.getResource().getString("KConnectingDev"));
+        deviceListener.notifyToUi(ResourceManager.getResource().getString("KSearchingDev"));
         return true;
     }
 
@@ -84,8 +84,7 @@ public class CMS50D extends DeviceHandler implements BTSearcherEventListener {
         }
         commThread = new DeviceCommunicationThread(bd);
         commThread.start();
-        deviceListener.notifyToUi(ResourceManager.getResource().getString("KSearchingDev"));
-
+        deviceListener.notifyToUi(ResourceManager.getResource().getString("KConnectingDev"));
     }
 
 

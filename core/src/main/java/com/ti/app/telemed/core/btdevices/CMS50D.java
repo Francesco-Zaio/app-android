@@ -158,6 +158,7 @@ public class CMS50D extends DeviceHandler implements BTSearcherEventListener {
                 os.write(DeviceCommand.correctionDateTime());
                 break;
             case 2: // Time sync success
+                deviceListener.setBtMAC(iBtDevAddr);
                 if (operationType == OperationType.Pair) {
                     Log.d(TAG, "Pairing done");
                     deviceListener.configReady(ResourceManager.getResource().getString("KPairingMsgDone"));

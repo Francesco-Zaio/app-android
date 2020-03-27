@@ -406,6 +406,49 @@ public class OXY10
         oxyStream = tmpStream.array();
     }
 
+    // L'ossimetro OXY10 invia un campione al secondo e solo 10 campioni dopo di che smette di
+    // inviare anche se il paziente continua la misurazione.
+    // E' stata presa la decisione di considerare solo l'ultimo valore ricevuto dall'Ossimetro
+    private void oxySample(Bundle b) {
+        int aSpO2 = b.getInt("nSpO2");
+        int aHR   = b.getInt("nPR");
+        iSpO2Med = aSpO2;
+        iHRMed   = aHR;
+
+        boolean fingerIn = b.getBoolean("nStatus");
+        float mVolt = b.getFloat("nPower");
+        int pLevel = b.getInt("powerLevel");
+        if(mVolt != 0){
+            // 2.5V=0%  3,0v=100%
+            iBattery = (int)(200f*mVolt - 500f);
+            if (iBattery < 0)
+                iBattery = 0;
+            else if (iBattery > 100)
+                iBattery = 100;
+        } else {
+            iBattery = battValues[pLevel];
+        }
+        Log.d(TAG, "oxySample: aSpO2="+aSpO2+ " aHR="+aHR+" fingerIn="+fingerIn+" mVolt="+mVolt+" pLevel="+pLevel+" iBattery="+iBattery);
+
+        if (!fingerIn || numSamples >= 10) {
+            makeOxyResultData();
+        }
+    }
+
+    private void makeOxyResultData() {
+        HashMap<String,String> tmpVal = new HashMap<>();
+        tmpVal.put(GWConst.EGwCode_07, String.valueOf((int)iSpO2Med));  // O2 Med
+        tmpVal.put(GWConst.EGwCode_0F, String.valueOf((int)iHRMed));   // HR Med
+        tmpVal.put(GWConst.EGwCode_BATTERY, Integer.toString(iBattery)); // livello batteria
+
+        Measure m = getMeasure();
+        m.setMeasures(tmpVal);
+        deviceListener.showMeasurementResults(m);
+        stop();
+
+    }
+
+    /*
     private void oxySample(Bundle b) {
         int aSpO2 = b.getInt("nSpO2");
         int aHR = b.getInt("nPR");
@@ -595,7 +638,7 @@ public class OXY10
         deviceListener.showMeasurementResults(m);
         stop();
     }
-
+*/
     private Time calcTime(int aSec) {
         int hh = aSec/3600;
         int mm = (aSec%3600)/60;

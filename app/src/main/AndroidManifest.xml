@@ -79,7 +79,7 @@
             android:label="@string/select_device"
             android:theme="@android:style/Theme.Dialog"></activity>
         <activity
-            android:name=".gui.ManualTemperatureActivity"
+            android:name=".gui.ManualMeasureActivity"
             android:windowSoftInputMode="stateAlwaysVisible"></activity>
         <activity
             android:name=".gui.ECGDrawActivity"

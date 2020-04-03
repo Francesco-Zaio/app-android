@@ -25,7 +25,7 @@
 
         <service
             android:name=".syncmodule.SendMeasureService"
-            android:exported="false"></service>
+            android:exported="false"/>
     </application>
 
 </manifest>

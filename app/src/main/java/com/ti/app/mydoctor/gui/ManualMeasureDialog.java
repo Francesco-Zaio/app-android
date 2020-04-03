@@ -16,11 +16,11 @@ import com.ti.app.mydoctor.util.AppConst;
 import com.ti.app.mydoctor.AppResourceManager;
 import com.ti.app.telemed.core.util.GWConst;
 
-public class ManualTemperatureDialog extends Dialog implements OnClickListener {
+public class ManualMeasureDialog extends Dialog implements OnClickListener {
 
 	private ManualMeasureDialogListener listener;
 
-	public ManualTemperatureDialog(Context context, ManualMeasureDialogListener listener) {
+	public ManualMeasureDialog(Context context, ManualMeasureDialogListener listener) {
 		super(context);
 		this.listener = listener;
 		setContentView(R.layout.manual_temperature_dialog);
@@ -28,9 +28,9 @@ public class ManualTemperatureDialog extends Dialog implements OnClickListener {
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
-		setTitle(AppResourceManager.getResource().getString("ManualTemperatureDialog.title"));
+		setTitle(AppResourceManager.getResource().getString("ManualMeasureDialog.temperatureTitle"));
 		TextView tempLbl = (TextView) findViewById(R.id.temperatureLbl);
-		tempLbl.setText(AppResourceManager.getResource().getString("ManualTemperatureDialog.temperatureLabel"));
+		tempLbl.setText(AppResourceManager.getResource().getString("ManualMeasureDialog.temperatureLabel"));
 		
 		Button okButton = (Button) findViewById(R.id.okButton);
 		Button cancelButton = (Button) findViewById(R.id.cancelButton);
@@ -64,23 +64,23 @@ public class ManualTemperatureDialog extends Dialog implements OnClickListener {
 	
 	private boolean isValidValue(String value) {
 		TextView validationView = (TextView) findViewById(R.id.temperatureValidationErr);
-		boolean ret = true;     
+		boolean ret = true;
 		if(value == null || value.length() == 0){
         	ret = false;
         } else {
-        	try{        		
+        	try{
         		String tmp = value;
 				if(tmp.indexOf(AppConst.COMMA)!= -1){
 					tmp = tmp.replace(AppConst.COMMA, AppConst.DOT);
-				}				
+				}
 				float fvalue = Float.parseFloat(tmp);
         		if(fvalue < AppConst.MIN_TEMPERATURE || fvalue > AppConst.MAX_TEMPERATURE){
         			ret = false;
-        			validationView.setText(AppResourceManager.getResource().getString("ManualTemperatureDialog.validationMsg"));
+        			validationView.setText(AppResourceManager.getResource().getString("ManualMeasureDialog.validationMsg"));
         		}
         	} catch(NumberFormatException e){
         		ret = false;
-        		validationView.setText(AppResourceManager.getResource().getString("ManualTemperatureDialog.validationFormatMsg"));
+        		validationView.setText(AppResourceManager.getResource().getString("ManualMeasureDialog.validationFormatMsg"));
         	}
         }
         return ret;

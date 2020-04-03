@@ -229,12 +229,11 @@ public class MeasureManager {
 	}
 
     /**
-     * Restituisce un oggetto di tipo Measure che rappresenta il valore di temperatura passato.
-     * @param temperature       Valore della temperatura corporea in gradi centigradi.
+     * Restituisce un oggetto di tipo Measure inizializzato con i dati correnti (Paziente, Timestamp).
      * @param standardProtocol  Indica se la misura e' stata acquisita con il "Protocollo standard".
      * @return                  oggetto di tipo Measure.
      */
-    public Measure getManualTemperature(double temperature, boolean standardProtocol) {
+    public Measure getManualMeasure(String measureType, boolean standardProtocol) {
         User currentUser = UserManager.getUserManager().getCurrentUser();
         Patient currentPatient = UserManager.getUserManager().getCurrentPatient();
         if (currentUser == null || (currentPatient == null && !currentUser.getIsPatient())) {
@@ -243,26 +242,19 @@ public class MeasureManager {
         }
 
         Measure m = new Measure();
+        m.setMeasureType(measureType);
+        m.setDeviceDesc(GWConst.DEVICE_MANUAL);
+        m.setTimestamp(Util.getTimestamp(null));
         HashMap<String, String> map = new HashMap<>();
-        String tempVal = String.format(Locale.ITALY, "%.2f", temperature);
-        map.put(GWConst.EGwCode_0R, tempVal);
-        try {
-            m.setDeviceDesc(GWConst.DEVICE_MANUAL);
-            m.setTimestamp(Util.getTimestamp(null));
-            m.setMeasureType(GWConst.KMsrTemp);
-            m.setMeasures(map);
-            m.setStandardProtocol(standardProtocol);
-            m.setIdUser(currentUser.getId());
-            if (currentPatient != null)
-                m.setIdPatient(currentPatient.getId());
-            else
-                m.setIdPatient(currentUser.getId());
-            m.setFailed(false);
-            return m;
-        } catch (Exception e) {
-            Log.e(TAG,e.getMessage());
-            return null;
-        }
+        m.setMeasures(map);
+        m.setStandardProtocol(standardProtocol);
+        m.setIdUser(currentUser.getId());
+        if (currentPatient != null)
+            m.setIdPatient(currentPatient.getId());
+        else
+            m.setIdPatient(currentUser.getId());
+        m.setFailed(false);
+        return m;
     }
 
     /**

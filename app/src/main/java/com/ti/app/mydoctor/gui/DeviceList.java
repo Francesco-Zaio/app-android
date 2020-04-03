@@ -101,6 +101,7 @@ import java.util.Map;
 import java.util.Vector;
 
 import static com.ti.app.mydoctor.gui.DeviceScanActivity.SELECTED_DEVICE;
+import static com.ti.app.mydoctor.gui.ManualMeasureActivity.MEASURE_OBJECT;
 
 public class DeviceList extends AppCompatActivity implements OnChildClickListener, DeviceListFragmentListener {
 	private static final String TAG = "DeviceList";
@@ -141,8 +142,13 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
     private static final int REQUEST_ENABLE_BT = 3;
     private static final int REQUEST_SCAN_DEVICES = 4;
     private static final int PATIENT_SELECTION = 6;
-    private static final int MANUAL_TEMPERATURE_ENTRY = 9;
     private static final int EXTERNAL_APP = 10;
+	private static final int MANUAL_TEMPERATURE = 9;
+	private static final int MANUAL_BLOOD_PRESSURE_1 = 11;
+	private static final int MANUAL_BLOOD_PRESSURE_2 = 12;
+	private static final int MANUAL_BLOOD_PRESSURE_LAST = 13;
+	private static final int MANUAL_OXIMETRY_1 = 14;
+	private static final int MANUAL_OXIMETRY_LAST = 15;
 
     //Dialog
     private static final int MEASURE_RESULT_DIALOG = 1;
@@ -1417,16 +1423,33 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
     }
 
     private void startManualMeasure() {
-        UserDevice uDevice = getActiveUserDevice(selectedMeasureType);
-        if(userManager.getCurrentPatient() != null && uDevice != null){
-            //We set the current device in device Manager
-            deviceOperations.setCurrentDevice(uDevice);
-            if (uDevice.getMeasure().equalsIgnoreCase(GWConst.KMsrTemp)) {
-                Intent intent = new Intent(DeviceList.this, ManualTemperatureActivity.class);
-                startActivityForResult(intent, MANUAL_TEMPERATURE_ENTRY);
-            }
-        }
-    }
+		UserDevice uDevice = getActiveUserDevice(selectedMeasureType);
+		if(userManager.getCurrentPatient() != null && uDevice != null){
+			//We set the current device in device Manager
+			deviceOperations.setCurrentDevice(uDevice);
+
+			Intent intent = new Intent(DeviceList.this, ManualMeasureActivity.class);
+			Bundle b = new Bundle();
+			b.putString(ManualMeasureActivity.MEASURE_TYPE, uDevice.getMeasure());
+			switch (uDevice.getMeasure()) {
+				case GWConst.KMsrTemp:
+					b.putInt(ManualMeasureActivity.VALUE_TYPE,ManualMeasureActivity.TEMPERATURE);
+					intent.putExtras(b);
+					startActivityForResult(intent, MANUAL_TEMPERATURE);
+					break;
+				case GWConst.KMsrPres:
+					b.putInt(ManualMeasureActivity.VALUE_TYPE,ManualMeasureActivity.PRESS_DIAST);
+					intent.putExtras(b);
+					startActivityForResult(intent, MANUAL_BLOOD_PRESSURE_1);
+					break;
+				case GWConst.KMsrOss:
+					b.putInt(ManualMeasureActivity.VALUE_TYPE,ManualMeasureActivity.OXY);
+					intent.putExtras(b);
+					startActivityForResult(intent, MANUAL_OXIMETRY_1);
+					break;
+			}
+		}
+	}
 
     private boolean measureEnabled(UserDevice device) {
         return device != null && ((device.getBtAddress()!= null && device.getBtAddress().length() > 0)
@@ -1464,6 +1487,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 		super.onActivityResult(requestCode, resultCode, data);
 		Log.d(TAG, "onActivityResult requestCode=" + requestCode + " resultCode=" + resultCode);
 
+		Bundle b;
     	switch(requestCode) {
             case USER_LIST:
                 if(resultCode == RESULT_OK){
@@ -1553,10 +1577,12 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                 }
                 refreshList();
                 break;
-            case MANUAL_TEMPERATURE_ENTRY:
-				Bundle b = data.getExtras();
+            case MANUAL_TEMPERATURE:
+			case MANUAL_BLOOD_PRESSURE_LAST:
+			case MANUAL_OXIMETRY_LAST:
+				b = data.getExtras();
                 if(resultCode == RESULT_OK && b != null){
-                	Measure m = (Measure)b.get(ManualTemperatureActivity.TEMPERATURE_MEASURE);
+                	Measure m = (Measure)b.get(MEASURE_OBJECT);
                     deviceOperations.showMeasurementResults(m);
                     break;
                  }
@@ -1564,6 +1590,49 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                      deviceOperations.setCurrentDevice(null);
                  }
                  break;
+			case MANUAL_BLOOD_PRESSURE_1:
+				b = data.getExtras();
+				if (resultCode == RESULT_OK && b != null){
+					Measure m = (Measure)b.get(MEASURE_OBJECT);
+					Intent intent = new Intent(DeviceList.this, ManualMeasureActivity.class);
+					intent.putExtra(ManualMeasureActivity.MEASURE_TYPE, GWConst.KMsrPres);
+					intent.putExtra(ManualMeasureActivity.VALUE_TYPE, ManualMeasureActivity.PRESS_SIST);
+					intent.putExtra(MEASURE_OBJECT, m);
+					startActivityForResult(intent, MANUAL_BLOOD_PRESSURE_2);
+					break;
+				}
+				if (resultCode == RESULT_CANCELED) {
+					deviceOperations.setCurrentDevice(null);
+				}
+				break;
+			case MANUAL_BLOOD_PRESSURE_2:
+				b = data.getExtras();
+				if (resultCode == RESULT_OK && b != null){
+					Measure m = (Measure)b.get(MEASURE_OBJECT);
+					Intent intent = new Intent(DeviceList.this, ManualMeasureActivity.class);
+					intent.putExtra(ManualMeasureActivity.MEASURE_TYPE, GWConst.KMsrPres);
+					intent.putExtra(ManualMeasureActivity.VALUE_TYPE, ManualMeasureActivity.PRESS_BPM);
+					intent.putExtra(MEASURE_OBJECT, m);
+					startActivityForResult(intent, MANUAL_BLOOD_PRESSURE_LAST);
+					break;
+				} else if (resultCode == RESULT_CANCELED) {
+					deviceOperations.setCurrentDevice(null);
+				}
+				break;
+			case MANUAL_OXIMETRY_1:
+				b = data.getExtras();
+				if (resultCode == RESULT_OK && b != null){
+					Measure m = (Measure)b.get(MEASURE_OBJECT);
+					Intent intent = new Intent(DeviceList.this, ManualMeasureActivity.class);
+					intent.putExtra(ManualMeasureActivity.MEASURE_TYPE, GWConst.KMsrOss);
+					intent.putExtra(ManualMeasureActivity.VALUE_TYPE, ManualMeasureActivity.OXY_BPM);
+					intent.putExtra(MEASURE_OBJECT, m);
+					startActivityForResult(intent, MANUAL_OXIMETRY_LAST);
+					break;
+				} else if (resultCode == RESULT_CANCELED) {
+					deviceOperations.setCurrentDevice(null);
+				}
+				break;
 			case EXTERNAL_APP:
 				deviceOperations.activityResult(requestCode, resultCode, data);
 				break;

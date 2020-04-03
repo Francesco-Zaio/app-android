@@ -15,6 +15,15 @@ public interface AppConst {
 
     float MIN_TEMPERATURE = 30;
     float MAX_TEMPERATURE = 45;
+    int   MIN_PRESS_SIST = 50;
+	int   MAX_PRESS_SIST = 250;
+	int   MIN_PRESS_DIAST = 30;
+	int   MAX_PRESS_DIAST = 200;
+	int   MIN_OXY = 70;
+	int   MAX_OXY = 100;
+	int   MIN_BPM = 30;
+	int   MAX_BPM = 250;
+
     char DOT = '.';
 	char COMMA = ',';
 }

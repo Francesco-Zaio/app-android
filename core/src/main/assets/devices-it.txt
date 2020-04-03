@@ -1,4 +1,6 @@
 TC, MANUALE, Inserimento manuale, 0
+PR, MANUALE, Inserimento manuale, 0
+OS, MANUALE, Inserimento manuale, 0
 IM, CAMERA, Fotocamera, 0
 OS, PO3, PO3 - iHealth, 1
 PR, BP5, BP5 - iHealth, 1

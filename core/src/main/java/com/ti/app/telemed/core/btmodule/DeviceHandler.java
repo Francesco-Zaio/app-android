@@ -18,6 +18,7 @@ import com.ti.app.telemed.core.btdevices.MIRSpirodoc;
 import com.ti.app.telemed.core.btdevices.NoninOximeter;
 import com.ti.app.telemed.core.btdevices.OXY10;
 import com.ti.app.telemed.core.btdevices.OnCallSureSync;
+import com.ti.app.telemed.core.btdevices.POD1W_LE;
 import com.ti.app.telemed.core.btdevices.RocheProthrombineTimeClient;
 import com.ti.app.telemed.core.btdevices.TouchECG;
 import com.ti.app.telemed.core.common.Device;
@@ -168,6 +169,8 @@ public abstract class DeviceHandler {
                 return new OXY10(listener, ud);
             case GWConst.KCMS50DBT:
                 return new CMS50D(listener, ud);
+            case GWConst.KPOD1W:
+                return new POD1W_LE(listener, ud);
             default:
                 return null;
         }

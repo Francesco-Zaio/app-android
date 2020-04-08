@@ -48,6 +48,7 @@ public interface GWConst {
 	String KDHearth = "DHEARTH";
 	String KOXY10 = "OXY10";
 	String KCMS50DBT = "CMS50DBT";
+	String KPOD1W = "POD1W";
 
 
 	/**

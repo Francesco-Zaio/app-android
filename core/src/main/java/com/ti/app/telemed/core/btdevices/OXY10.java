@@ -26,14 +26,10 @@ import com.ti.app.telemed.core.btmodule.DeviceListener;
 import com.ti.app.telemed.core.common.Measure;
 import com.ti.app.telemed.core.common.UserDevice;
 import com.ti.app.telemed.core.util.GWConst;
-import com.ti.app.telemed.core.xmlmodule.XmlManager;
 
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
-import java.text.DecimalFormat;
-import java.util.Calendar;
-import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Vector;
@@ -419,8 +415,8 @@ public class OXY10
         float mVolt = b.getFloat("nPower");
         int pLevel = b.getInt("powerLevel");
         if(mVolt != 0){
-            // 2.5V=0%  3,0v=100%
-            iBattery = (int)(200f*mVolt - 500f);
+            // 2.2V=0%  3.0v=100%
+            iBattery = (int)(125f*mVolt - 275f);
             if (iBattery < 0)
                 iBattery = 0;
             else if (iBattery > 100)

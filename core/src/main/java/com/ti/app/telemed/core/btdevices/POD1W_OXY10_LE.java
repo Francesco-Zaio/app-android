@@ -27,6 +27,9 @@ import com.ti.app.telemed.core.common.UserDevice;
 
 import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
+import java.text.DecimalFormat;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
@@ -38,13 +41,14 @@ import com.pod1w.base.Isender;
 import com.pod1w.FingerOximeter.FingerOximeter;
 import com.pod1w.FingerOximeter.IFingerOximeterCallBack;
 import com.ti.app.telemed.core.util.GWConst;
+import com.ti.app.telemed.core.xmlmodule.XmlManager;
 
-import static android.bluetooth.BluetoothDevice.DEVICE_TYPE_LE;
+import static android.bluetooth.BluetoothDevice.TRANSPORT_LE;
 
 
-public class POD1W_LE extends DeviceHandler implements BTSearcherEventListener {
+public class POD1W_OXY10_LE extends DeviceHandler implements BTSearcherEventListener {
 
-	private static final String TAG = "POD1W_LE";
+	private static final String TAG = "POD1W_OXY10_LE";
 
     // Handler messages
     private static final int MSG_DEVICE_ERROR = 0x13;
@@ -54,11 +58,14 @@ public class POD1W_LE extends DeviceHandler implements BTSearcherEventListener {
     private static final int[] battValues = {10,40,70,100};
 
 
-    private static final UUID UUID_SERVICE_DATA            = UUID.fromString("0000FFB0-0000-1000-8000-00805F9B34FB");
-    private static final UUID UUID_CHARACTER_WRITE         = UUID.fromString("0000FFB2-0000-1000-8000-00805F9B34FB");
-    private static final UUID UUID_CHARACTER_READ		  = UUID.fromString("0000FFB1-0000-1000-8000-00805F9B34FB");
+    private static final UUID UUID_SERVICE_DATA_OXY10            = UUID.fromString("0000FFF0-0000-1000-8000-00805F9B34FB");
+    private static final UUID UUID_CHARACTER_WRITE_OXY10         = UUID.fromString("0000FFF2-0000-1000-8000-00805F9B34FB");
+    private static final UUID UUID_CHARACTER_READ_OXY10		  = UUID.fromString("0000FFF1-0000-1000-8000-00805F9B34FB");
+    private static final UUID UUID_SERVICE_DATA_POD            = UUID.fromString("0000FFB0-0000-1000-8000-00805F9B34FB");
+    private static final UUID UUID_CHARACTER_WRITE_POD         = UUID.fromString("0000FFB2-0000-1000-8000-00805F9B34FB");
+    private static final UUID UUID_CHARACTER_READ_POD		  = UUID.fromString("0000FFB1-0000-1000-8000-00805F9B34FB");
     // Client Characteristic Configuration
-    private static String CLIENT_CHARACTERISTIC_CONFIG = "00002902-0000-1000-8000-00805f9b34fb";
+    private static final String CLIENT_CHARACTERISTIC_CONFIG = "00002902-0000-1000-8000-00805f9b34fb";
 
     private static final int MAX_CONNCTION_RETRY = 5;
 
@@ -75,9 +82,9 @@ public class POD1W_LE extends DeviceHandler implements BTSearcherEventListener {
     private BluetoothGattCharacteristic readCharacteristic = null;
     private BluetoothGattCharacteristic writeCharacteristic = null;
     private FingerOximeter mFingerOximeter;
-    
 
-    public POD1W_LE(DeviceListener listener, UserDevice ud) {
+
+    public POD1W_OXY10_LE(DeviceListener listener, UserDevice ud) {
         super(listener, ud);
         iServiceSearcher = new BTSearcher();
     }
@@ -120,12 +127,18 @@ public class POD1W_LE extends DeviceHandler implements BTSearcherEventListener {
         iServiceSearcher.stopSearchDevices();
         iBtDevAddr = bd.getAddress();
         deviceListener.notifyToUi(ResourceManager.getResource().getString("KConnectingDev"));
-        if (!connect(iBtDevAddr)) {
-            deviceListener.notifyError(DeviceListener.CONNECTION_ERROR,ResourceManager.getResource().getString("EBtDeviceConnError"));
-            stop();
-        }
+        // wait some time (end of BT scan) before to connect
+        final Handler handler = new Handler();
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                if (!connect(iBtDevAddr)) {
+                    deviceListener.notifyError(DeviceListener.CONNECTION_ERROR,ResourceManager.getResource().getString("EBtDeviceConnError"));
+                    stop();
+                }
+            }
+        }, 200);
     }
-
 
     // methods of BTSearchEventListener interface
 
@@ -140,7 +153,7 @@ public class POD1W_LE extends DeviceHandler implements BTSearcherEventListener {
                 break;
             case ECmdConnByUser:
                 BluetoothDevice d = devList.get(devList.size()-1);
-                if (d.getType() == DEVICE_TYPE_LE) {
+                //if (d.getType() == DEVICE_TYPE_LE) {
                     int i;
                     for (i = 0; i < deviceList.size(); i++)
                         if (deviceList.elementAt(i).getAddress().equals(d.getAddress()))
@@ -150,18 +163,14 @@ public class POD1W_LE extends DeviceHandler implements BTSearcherEventListener {
                         if (iBTSearchListener != null)
                             iBTSearchListener.deviceDiscovered(deviceList);
                     }
-                }
+                //}
                 break;
         }
     }
 
     @Override
     public void deviceSearchCompleted() {
-        if (iCmdCode == TCmd.ECmdConnByUser && iBTSearchListener != null) {
-            Log.d(TAG, "BT scan completed");
-            iBTSearchListener.deviceSearchCompleted();
-            stop();
-        } else if (iCmdCode == TCmd.ECmdConnByAddr) {
+        if (mBluetoothDeviceAddress == null) {
             Log.d(TAG, "Restarting BT Scan...");
             iServiceSearcher.startSearchDevices();
         }
@@ -202,10 +211,10 @@ public class POD1W_LE extends DeviceHandler implements BTSearcherEventListener {
             Log.w(TAG, "Device not found.  Unable to connect.");
             return false;
         }
-        // We want to directly connect to the device, so we are setting the autoConnect
-        // parameter to false.
-        mBluetoothGatt = device.connectGatt(MyApp.getContext(), false, mGattCallback);
-        Log.d(TAG, "Trying to create a new connection.");
+        // parametro TRANSPORT_LE necessario per OXY10 altrimenti non si connette
+        Log.d(TAG, "Trying to create a new connection LE.");
+        mBluetoothGatt = device.connectGatt(MyApp.getContext(), true, mGattCallback,TRANSPORT_LE);
+
         mBluetoothDeviceAddress = address;
         return true;
     }
@@ -253,14 +262,18 @@ public class POD1W_LE extends DeviceHandler implements BTSearcherEventListener {
                 Log.i(TAG, "found: " + services.size() + " services");
                 for (BluetoothGattService s:services) {
                     Log.d(TAG, "Service: " + s.getUuid().toString());
-                    if (s.getUuid().equals(UUID_SERVICE_DATA)) {
+                    if (UUID_SERVICE_DATA_OXY10.equals(s.getUuid()) ||
+                            UUID_SERVICE_DATA_POD.equals(s.getUuid())) {
                         Log.d(TAG, "UUID_SERVICE_DATA FOUND");
                         List<BluetoothGattCharacteristic> lc = s.getCharacteristics();
                         for (BluetoothGattCharacteristic c:lc) {
-                            if (c.getUuid().equals(UUID_CHARACTER_WRITE)) {
+                            Log.d(TAG, "Char UUID:" + s.getUuid());
+                            if (c.getUuid().equals(UUID_CHARACTER_WRITE_OXY10) ||
+                                    c.getUuid().equals(UUID_CHARACTER_WRITE_POD)) {
                                 Log.d(TAG, "UUID_CHARACTER_WRITE FOUND");
                                 writeCharacteristic = c;
-                            } else if(c.getUuid().equals(UUID_CHARACTER_READ)) {
+                            } else if (c.getUuid().equals(UUID_CHARACTER_READ_OXY10) ||
+                                    c.getUuid().equals(UUID_CHARACTER_READ_POD)) {
                                 Log.d(TAG, "UUID_CHARACTER_READ FOUND");
                                 readCharacteristic = c;
                             }
@@ -270,7 +283,7 @@ public class POD1W_LE extends DeviceHandler implements BTSearcherEventListener {
                 if (writeCharacteristic != null && readCharacteristic != null ) {
                     // N.B.!: The BT requests are asyncronous, we must wait the end of each operation
                     // (onDescriptorWrite callback) before to start a new request
-                    setCharacteristicNotification(readCharacteristic, true);
+                    enableCharacteristicNotification(readCharacteristic);
                 } else {
                     deviceListener.notifyError(DeviceListener.DEVICE_DATA_ERROR, ResourceManager.getResource().getString("EDataReadError"));
                     stop();
@@ -285,12 +298,12 @@ public class POD1W_LE extends DeviceHandler implements BTSearcherEventListener {
                                       int status) {
             //Log.d(TAG, "onDescriptorWrite:" + descriptor.getCharacteristic().getUuid().toString() + " - " + descriptor.getUuid().toString());
             if (status == BluetoothGatt.GATT_SUCCESS) {
-                if (descriptor.getUuid().equals(UUID.fromString(CLIENT_CHARACTERISTIC_CONFIG))) {
-                    if (descriptor.getCharacteristic().getUuid().equals(UUID_CHARACTER_READ))
-                        setCharacteristicNotification(writeCharacteristic, true);
-                    else if (descriptor.getCharacteristic().getUuid().equals(UUID_CHARACTER_WRITE))
-                        doMeasure();
-                }
+                if (descriptor.getCharacteristic().getUuid().equals(UUID_CHARACTER_READ_OXY10))
+                    doMeasure();
+                else if (descriptor.getCharacteristic().getUuid().equals(UUID_CHARACTER_READ_POD))
+                    enableCharacteristicNotification(writeCharacteristic);
+                else if (descriptor.getCharacteristic().getUuid().equals(UUID_CHARACTER_WRITE_POD))
+                    doMeasure();
             }
         }
 
@@ -314,24 +327,24 @@ public class POD1W_LE extends DeviceHandler implements BTSearcherEventListener {
     public class ReaderBLE implements Ireader{
         @Override
         public int read(byte[] buffer) {
-            return POD1W_LE.this.read(buffer);
+            return POD1W_OXY10_LE.this.read(buffer);
         }
         @Override
         public void close() {
         }
         @Override
         public void clean() {
-            POD1W_LE.this.clean();
+            POD1W_OXY10_LE.this.clean();
         }
         @Override
         public int available() {
-            return POD1W_LE.this.available();
+            return POD1W_OXY10_LE.this.available();
         }
     }
     public class SenderBLE implements Isender{
         @Override
         public void send(byte[] d) {
-            POD1W_LE.this.write(d);
+            POD1W_OXY10_LE.this.write(d);
         }
         @Override
         public void close() {
@@ -390,23 +403,20 @@ public class POD1W_LE extends DeviceHandler implements BTSearcherEventListener {
     private final MyHandler devOpHandler = new MyHandler(this);
 
     private static class MyHandler extends Handler {
-        private final WeakReference<POD1W_LE> mOuter;
+        private final WeakReference<POD1W_OXY10_LE> mOuter;
 
-        private MyHandler(POD1W_LE outer) {
+        private MyHandler(POD1W_OXY10_LE outer) {
             mOuter = new WeakReference<>(outer);
         }
 
         @Override
         public void handleMessage(Message msg) {
             super.handleMessage(msg);
-            POD1W_LE outer = mOuter.get();
+            POD1W_OXY10_LE outer = mOuter.get();
             Bundle d;
             switch (msg.what) {
                 case MSG_OXY:
-                    if (outer.numSamples==0) {
-                        outer.deviceListener.notifyToUi(ResourceManager.getResource().getString("KMeasuring"));
-                    }
-                    outer.numSamples++;
+                    outer.deviceListener.notifyToUi(ResourceManager.getResource().getString("KMeasuring"));
                     d = msg.getData();
                     outer.oxySample(d);
                     break;
@@ -472,6 +482,7 @@ public class POD1W_LE extends DeviceHandler implements BTSearcherEventListener {
             deviceListener.configReady(ResourceManager.getResource().getString("KPairingMsgDone"));
             stop();
         } else {
+            initOxyData();
             deviceListener.notifyToUi(ResourceManager.getResource().getString("DoMeasureOS"));
             mFingerOximeter = new FingerOximeter(new ReaderBLE(), new SenderBLE(), new FingerOximeterCallBack());
             mFingerOximeter.Start();
@@ -479,7 +490,7 @@ public class POD1W_LE extends DeviceHandler implements BTSearcherEventListener {
         }
     }
 
-    private void setCharacteristicNotification(BluetoothGattCharacteristic characteristic, boolean enable) {
+    private void enableCharacteristicNotification(BluetoothGattCharacteristic characteristic) {
         if (mBluetoothAdapter == null || mBluetoothGatt == null) {
             Log.w(TAG, "BluetoothAdapter not initialized");
             return;
@@ -488,15 +499,15 @@ public class POD1W_LE extends DeviceHandler implements BTSearcherEventListener {
                 UUID.fromString(CLIENT_CHARACTERISTIC_CONFIG));
         descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
         mBluetoothGatt.writeDescriptor(descriptor);
-        mBluetoothGatt.setCharacteristicNotification(characteristic, enable);
+        mBluetoothGatt.setCharacteristicNotification(characteristic, true);
     }
 
 
-    private static final int NUMBER_OF_MEASUREMENTS = 300; // = 5 min, 1 measure every sec
+    private static final int MAX_SAMPLES = 300; // = 5 min, 1 measure every sec
     private static final int MIN_SAMPLES = 6;
     private static final int BASE_OXY_STREAM_LENGTH = 189; //
 
-    private class OxyElem {
+    private static class OxyElem {
         private int iSat;
         private int iFreq;
 
@@ -545,7 +556,7 @@ public class POD1W_LE extends DeviceHandler implements BTSearcherEventListener {
         iT90 = iT89 = iT88 = iT87 = 0;
         iT40 = iT120 = 0;
 
-        oxyQueue = new Vector<>(NUMBER_OF_MEASUREMENTS);
+        oxyQueue = new Vector<>(MAX_SAMPLES);
         ByteBuffer tmpStream = ByteBuffer.allocate(BASE_OXY_STREAM_LENGTH);
         tmpStream.put(66, (byte)0x00); //STEP_OXY MSB tempo di campionamento in 1/10 secondo
         tmpStream.put(67, (byte)0x0A); //STEP_OXY LSB
@@ -560,9 +571,6 @@ public class POD1W_LE extends DeviceHandler implements BTSearcherEventListener {
     private void oxySample(Bundle b) {
         int aSpO2 = b.getInt("nSpO2");
         int aHR   = b.getInt("nPR");
-        iSpO2Med = aSpO2;
-        iHRMed   = aHR;
-
         boolean fingerIn = b.getBoolean("nStatus");
         float mVolt = b.getFloat("nPower");
         int pLevel = b.getInt("powerLevel");
@@ -578,12 +586,209 @@ public class POD1W_LE extends DeviceHandler implements BTSearcherEventListener {
         }
         Log.d(TAG, "oxySample: aSpO2="+aSpO2+ " aHR="+aHR+" fingerIn="+fingerIn+" mVolt="+mVolt+" pLevel="+pLevel+" iBattery="+iBattery);
 
-//        if (!fingerIn || numSamples >= 10) {
-          if (!fingerIn) {
+        // aSpO2 or aHR equals to 0 means invalid values
+        if ((aSpO2 != 0) && (aHR != 0)) {
+            numSamples++;
+            if (aSpO2 < iSpO2Min)
+                iSpO2Min = aSpO2;
+            if (aSpO2 > iSpO2Max)
+                iSpO2Max = aSpO2;
+            if (aHR < iHRMin)
+                iHRMin = aHR;
+            if (aHR > iHRMax)
+                iHRMax = aHR;
+            if (aSpO2 < 89) {
+                iEventSpO289Count++;
+                if (iEventSpO289Count == 20)
+                    iEventSpO289++;
+            } else {
+                iEventSpO289Count = 0;
+            }
+            if (aHR < 40)
+                iEventBradi++;
+            if (aHR > 120)
+                iEventTachi++;
+            if (aSpO2 < 90)
+                iT90++;
+            if (aSpO2 < 89)
+                iT89++;
+            if (aSpO2 < 88)
+                iT88++;
+            if (aSpO2 < 87)
+                iT87++;
+            if (aHR < 40)
+                iT40++;
+            if (aHR > 120)
+                iT120++;
+            oxyQueue.add(new OxyElem(aSpO2, aHR));
+        }
+
+        if (!fingerIn || (numSamples >= MAX_SAMPLES)) {
             makeOxyResultData();
         }
     }
+    private void makeOxyResultData() {
+        int hrTot=0, spO2Tot=0, sampleCount;
+        OxyElem elem;
 
+        sampleCount = oxyQueue.size();
+        if (sampleCount < MIN_SAMPLES) {
+            deviceListener.notifyError(DeviceListener.MEASURE_PROCEDURE_ERROR,ResourceManager.getResource().getString("KMinMeasuresMsg"));
+            stop();
+            return;
+        }
+
+        ByteBuffer tmpStream = ByteBuffer.allocate(BASE_OXY_STREAM_LENGTH + sampleCount*2);
+        tmpStream.put(oxyStream);
+        oxyStream = tmpStream.array();
+        // Sample num
+        oxyStream[187] = (byte)((sampleCount>>8) & 0xFF);
+        oxyStream[188] = (byte)((sampleCount) & 0xFF);
+        for (int i=0; i<oxyQueue.size(); i++) {
+            elem = oxyQueue.get(i);
+            hrTot += elem.getIFreq();
+            spO2Tot += elem.getISat();
+            oxyStream[BASE_OXY_STREAM_LENGTH + (i*2)] =	(byte)(elem.getISat() & 0xFF);		//SpO2
+            oxyStream[BASE_OXY_STREAM_LENGTH + (i*2) + 1] = (byte)(elem.getIFreq() & 0xFF);	//HR
+        }
+        int iAnalysisTime = sampleCount; // tempo in secondi
+        iSpO2Med = ((double)spO2Tot/(double)sampleCount);
+        iHRMed = ((double)hrTot/(double)sampleCount);
+
+        DecimalFormat df = new DecimalFormat("0.0");
+        // SpO2 Media
+        int appo = (int) iSpO2Med * 10;
+        oxyStream[94] = (byte)((appo>>8) & 0xFF);
+        oxyStream[95] = (byte)(appo & 0xFF);
+        // HR Media
+        appo = (int)  iHRMed * 10;
+        oxyStream[102] = (byte)((appo>>8) & 0xFF);
+        oxyStream[103] = (byte)(appo & 0xFF);
+        // SpO2 Min
+        oxyStream[92] = (byte)((iSpO2Min>>8) & 0xFF);
+        oxyStream[93] = (byte)(iSpO2Min & 0xFF);
+        // HR Min
+        oxyStream[100] = (byte)((iHRMin>>8) & 0xFF);
+        oxyStream[101] = (byte)(iHRMin & 0xFF);
+        // SpO2 Max
+        oxyStream[96] = (byte)((iSpO2Max>>8) & 0xFF);
+        oxyStream[97] = (byte)(iSpO2Max & 0xFF);
+        // HR Max
+        oxyStream[104] = (byte)((iHRMax>>8) & 0xFF);
+        oxyStream[105] = (byte)(iHRMax & 0xFF);
+        //Eventi SpO2 <89%
+        oxyStream[110] = (byte)((iEventSpO289>>8) & 0xFF);
+        oxyStream[111] = (byte)(iEventSpO289 & 0xFF);
+        //Eventi di Bradicardia (HR<40)
+        oxyStream[114] = (byte)((iEventBradi>>8) & 0xFF);
+        oxyStream[115] = (byte)(iEventBradi & 0xFF);
+        //Eventi di Tachicardia (HR>120)
+        oxyStream[116] = (byte)((iEventTachi>>8) & 0xFF);
+        oxyStream[117] = (byte)(iEventTachi & 0xFF);
+        //SpO2 < 90%
+        oxyStream[124] = (byte)calcTime(iT90).getHh();
+        oxyStream[125] = (byte)calcTime(iT90).getMm();
+        oxyStream[126] = (byte)calcTime(iT90).getSs();
+        //SpO2 < 89%
+        oxyStream[127] = (byte)calcTime(iT89).getHh();
+        oxyStream[128] = (byte)calcTime(iT89).getMm();
+        oxyStream[129] = (byte)calcTime(iT89).getSs();
+        //SpO2 < 88%
+        oxyStream[130] = (byte)calcTime(iT88).getHh();
+        oxyStream[131] = (byte)calcTime(iT88).getMm();
+        oxyStream[132] = (byte)calcTime(iT88).getSs();
+        //SpO2 < 87%
+        oxyStream[133] = (byte)calcTime(iT87).getHh();
+        oxyStream[134] = (byte)calcTime(iT87).getMm();
+        oxyStream[135] = (byte)calcTime(iT87).getSs();
+        //HR < 40 bpm
+        oxyStream[136] = (byte)calcTime(iT40).getHh();
+        oxyStream[137] = (byte)calcTime(iT40).getMm();
+        oxyStream[138] = (byte)calcTime(iT40).getSs();
+        //HR > 120 bpm
+        oxyStream[139] = (byte)calcTime(iT120).getHh();
+        oxyStream[140] = (byte)calcTime(iT120).getMm();
+        oxyStream[141] = (byte)calcTime(iT120).getSs();
+
+        // DURATA
+        Time tDurata = calcTime(iAnalysisTime);
+        String durata = Integer.toString(iAnalysisTime);
+
+        //Recording Time & Analysis Time
+        oxyStream[84] = (byte)tDurata.getHh();
+        oxyStream[85] = (byte)tDurata.getMm();
+        oxyStream[86] = (byte)tDurata.getSs();
+        oxyStream[87] = (byte)tDurata.getHh();
+        oxyStream[88] = (byte)tDurata.getMm();
+        oxyStream[89] = (byte)tDurata.getSs();
+
+        // we make the timestamp
+        int year, month, day, hour, minute, second;
+        GregorianCalendar calendar = new GregorianCalendar();
+        year = calendar.get(Calendar.YEAR);
+        // MONTH begin from 0 to 11, so we need add 1 to use it in the timestamp
+        month = calendar.get(Calendar.MONTH) + 1;
+        day = calendar.get(Calendar.DAY_OF_MONTH);
+        hour = calendar.get(Calendar.HOUR_OF_DAY);
+        minute = calendar.get(Calendar.MINUTE);
+        second = calendar.get(Calendar.SECOND);
+
+        String oxyFileName = "oxy-"+ year + month + day + "-" + hour + minute + second +".oxy";
+
+        // Creo un istanza di Misura del tipo PR
+        HashMap<String,String> tmpVal = new HashMap<>();
+        tmpVal.put(GWConst.EGwCode_07, df.format(iSpO2Med).replace ('.', ','));  // O2 Med
+        tmpVal.put(GWConst.EGwCode_1B, df.format(iSpO2Min).replace ('.', ','));  // O2 Min
+        tmpVal.put(GWConst.EGwCode_1D, df.format(iSpO2Max).replace ('.', ','));  // O2 Max
+        tmpVal.put(GWConst.EGwCode_1F, "0");
+        tmpVal.put(GWConst.EGwCode_0F, df.format(iHRMed).replace ('.', ','));  // HR Med
+        tmpVal.put(GWConst.EGwCode_1A, df.format(iHRMin).replace ('.', ','));  // HR Min
+        tmpVal.put(GWConst.EGwCode_1C, df.format(iHRMax).replace ('.', ','));  // HR Max
+        tmpVal.put(GWConst.EGwCode_1E, "0");
+        tmpVal.put(GWConst.EGwCode_1G, durata);
+        tmpVal.put(GWConst.EGwCode_1H, oxyFileName);  // filename
+        tmpVal.put(GWConst.EGwCode_BATTERY, Integer.toString(iBattery)); // livello batteria
+
+        Measure m = getMeasure();
+        m.setFile(oxyStream);
+        m.setFileType(XmlManager.MIR_OXY_FILE_TYPE);
+        m.setMeasures(tmpVal);
+        deviceListener.showMeasurementResults(m);
+        stop();
+    }
+
+    private Time calcTime(int aSec) {
+        int hh = aSec/3600;
+        int mm = (aSec%3600)/60;
+        int ss = (aSec%3600)%60;
+        return new Time(hh, mm, ss);
+    }
+
+    private static class Time {
+        private int hh;
+        private int mm;
+        private int ss;
+
+        Time(int hh, int mm, int ss) {
+            this.hh = hh;
+            this.mm = mm;
+            this.ss = ss;
+        }
+
+        int getHh() {
+            return hh;
+        }
+
+        int getMm() {
+            return mm;
+        }
+
+        int getSs() {
+            return ss;
+        }
+    }
+
+    /*
     private void makeOxyResultData() {
         HashMap<String,String> tmpVal = new HashMap<>();
         tmpVal.put(GWConst.EGwCode_07, String.valueOf((int)iSpO2Med));  // O2 Med
@@ -596,4 +801,5 @@ public class POD1W_LE extends DeviceHandler implements BTSearcherEventListener {
         stop();
 
     }
+    */
 }

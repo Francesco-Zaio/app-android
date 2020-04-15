@@ -463,7 +463,6 @@ public class OXY10
         }
         Log.d(TAG, "OnGetSpO2Param: aSpO2="+aSpO2+ " aHR="+aHR+" fingerIn="+fingerIn+" mVolt="+mVolt+" pLevel="+pLevel+" iBattery="+iBattery);
 
-        //Log.d(TAG, "aSpO2="+aSpO2+ " aHR="+aHR+" fingerIn="+fingerIn+" mVolt="+mVolt+" pLevel="+pLevel);
         // aSpO2 or aHR equals to 0 means invalid values
         if ((aSpO2 != 0) && (aHR != 0)) {
             if (aSpO2 < iSpO2Min)

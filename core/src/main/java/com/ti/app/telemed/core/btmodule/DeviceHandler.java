@@ -6,7 +6,6 @@ import android.util.Log;
 
 import com.ti.app.telemed.core.btdevices.AgamatrixMyStar;
 import com.ti.app.telemed.core.btdevices.CMS50D;
-import com.ti.app.telemed.core.btdevices.CMS50DLE;
 import com.ti.app.telemed.core.btdevices.CardGuardEasy2CheckClient;
 import com.ti.app.telemed.core.btdevices.CheckmePro;
 import com.ti.app.telemed.core.btdevices.DHearth;
@@ -16,9 +15,8 @@ import com.ti.app.telemed.core.btdevices.GIMAPC300SpotCheck;
 import com.ti.app.telemed.core.btdevices.IHealth;
 import com.ti.app.telemed.core.btdevices.MIRSpirodoc;
 import com.ti.app.telemed.core.btdevices.NoninOximeter;
-import com.ti.app.telemed.core.btdevices.OXY10;
 import com.ti.app.telemed.core.btdevices.OnCallSureSync;
-import com.ti.app.telemed.core.btdevices.POD1W_LE;
+import com.ti.app.telemed.core.btdevices.POD1W_OXY10_LE;
 import com.ti.app.telemed.core.btdevices.RocheProthrombineTimeClient;
 import com.ti.app.telemed.core.btdevices.TouchECG;
 import com.ti.app.telemed.core.common.Device;
@@ -166,11 +164,12 @@ public abstract class DeviceHandler {
             case GWConst.KDHearth:
                 return new DHearth(listener, ud);
             case GWConst.KOXY10:
-                return new OXY10(listener, ud);
+                return new POD1W_OXY10_LE(listener, ud);
+                //return new OXY10(listener, ud);
             case GWConst.KCMS50DBT:
                 return new CMS50D(listener, ud);
             case GWConst.KPOD1W:
-                return new POD1W_LE(listener, ud);
+                return new POD1W_OXY10_LE(listener, ud);
             default:
                 return null;
         }

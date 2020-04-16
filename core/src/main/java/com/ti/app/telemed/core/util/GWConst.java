@@ -13,11 +13,11 @@ public interface GWConst {
     /**
      * numero massimo di tentativi invio misura
      */
-	int MEASURE_SEND_RETRY = 10;
+	int MEASURE_SEND_RETRY = 15;
     /**
-     * Timeout minimo secondi fra tentativi successivi di invio misura
+     * Timeout minimo secondi fra tentativi successivi di invio della stessa misura (in caso di fallimento)
      */
-	int MEASURE_SEND_TIMEOUT = 300;
+	int MEASURE_SEND_TIMEOUT = 60;
 
     /**
      * Stringa che identifica un device fittizio per l'acquisizione manuale di una misura

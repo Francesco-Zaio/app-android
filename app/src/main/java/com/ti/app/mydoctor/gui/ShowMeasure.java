@@ -50,6 +50,7 @@ import com.ti.app.mydoctor.gui.customview.DragSortController.Direction;
 import com.ti.app.mydoctor.gui.customview.DragSortListView;
 import com.ti.app.mydoctor.gui.customview.GWTextView;
 import com.ti.app.mydoctor.gui.adapter.MeasureListAdapter;
+import com.ti.app.telemed.core.util.Util;
 
 
 import static com.ti.app.mydoctor.gui.DocumentSendActivity.DOCUMENT_KEY;
@@ -80,6 +81,7 @@ public class ShowMeasure extends ActionBarListActivity{
 	//Dialog
 	private static final int ALERT_DIALOG = 0;
 	private static final int DELETE_CONFIRM_DIALOG = 1;
+	private static final int WARNING_DIALOG = 2;
 	private static final int SIMPLE_DIALOG = 7;
 	private static final int  NEW_DOCUMENT_DIALOG = 9;
 	private static final int SWIPE_DELETE_CONFIRM_DIALOG = 10;
@@ -252,6 +254,11 @@ public class ShowMeasure extends ActionBarListActivity{
                 builder.setMessage(AppResourceManager.getResource().getString("KMsgNoMeasureToSend"));
                 builder.setNeutralButton(AppResourceManager.getResource().getString("okButton"), simple_dialog_click_listener);
                 break;
+			case WARNING_DIALOG:
+				builder.setTitle(dataBundle.getString(AppConst.TITLE));
+				builder.setMessage(dataBundle.getString(AppConst.MESSAGE));
+				builder.setNeutralButton(AppResourceManager.getResource().getString("okButton"), null);
+				break;
             case ALERT_DIALOG:
                 builder.setTitle(dataBundle.getString(AppConst.TITLE));
                 builder.setMessage(dataBundle.getString(AppConst.MESSAGE));
@@ -377,10 +384,16 @@ public class ShowMeasure extends ActionBarListActivity{
 				showDialog(DELETE_CONFIRM_DIALOG);
 				return true;
 			case R.id.send:
-                Intent intent = new Intent(this, SendMeasureService.class);
-                intent.putExtra(SendMeasureService.MEASURE_TAG,selected_measure);
-                startService(intent);
-                Toast.makeText(this, AppResourceManager.getResource().getString("KMsgSendMeasureStart"), Toast.LENGTH_SHORT).show();
+				if (!Util.isNetworkConnected()) {
+					dataBundle = new Bundle();
+					dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("noConnection"));
+					showDialog(WARNING_DIALOG);
+				} else {
+					Intent intent = new Intent(this, SendMeasureService.class);
+					intent.putExtra(SendMeasureService.MEASURE_TAG, selected_measure);
+					startService(intent);
+					Toast.makeText(this, AppResourceManager.getResource().getString("KMsgSendMeasureStart"), Toast.LENGTH_SHORT).show();
+				}
                 return true;
 			default:
 				return super.onOptionsItemSelected(item);
@@ -618,7 +631,8 @@ public class ShowMeasure extends ActionBarListActivity{
 	 */
 	private void createAlertDialog(String title, String message) {
 		dataBundle = new Bundle();
-		dataBundle.putString(AppConst.TITLE, title);
+		if (title!= null && !title.isEmpty())
+			dataBundle.putString(AppConst.TITLE, title);
 		dataBundle.putString(AppConst.MESSAGE, message);
         showDialog(ALERT_DIALOG);
 	}

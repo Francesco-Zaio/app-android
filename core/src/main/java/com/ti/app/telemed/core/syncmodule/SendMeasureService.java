@@ -7,11 +7,13 @@ import android.net.ConnectivityManager;
 import android.os.PowerManager;
 import android.util.Log;
 
+import com.ti.app.telemed.core.MyApp;
 import com.ti.app.telemed.core.common.Measure;
 import com.ti.app.telemed.core.common.User;
 import com.ti.app.telemed.core.dbmodule.DbManager;
 import com.ti.app.telemed.core.measuremodule.MeasureManager;
 import com.ti.app.telemed.core.util.GWConst;
+import com.ti.app.telemed.core.util.Util;
 import com.ti.app.telemed.core.webmodule.WebManager;
 import com.ti.app.telemed.core.webmodule.webmanagerevents.WebManagerSendingResultEvent;
 import com.ti.app.telemed.core.webmodule.webmanagerevents.WebManagerSendingResultEventListener;
@@ -66,15 +68,19 @@ public class SendMeasureService extends IntentService implements WebManagerSendi
                     Log.e(TAG,"User is Null");
                     return;
                 }
-                if (isNetworkConnected()) {
+                if (Util.isNetworkConnected()) {
                     if (measure != null)
                         sendMeasure(user, measure);
                     else
                         sendMeasures(user);
                 } else {
                     Log.w(TAG, "Network is Not connected");
-                    SyncStatusManager.getSyncStatusManager().setMeasureError(true);
                 }
+                // Update the Warning Flag
+                if (!DbManager.getDbManager().notSentMeasures(user.getId()))
+                    SyncStatusManager.getSyncStatusManager().setMeasureError(false);
+                else
+                    SyncStatusManager.getSyncStatusManager().setMeasureError(true);
             } catch (Exception e) {
                 e.printStackTrace();
             } finally {
@@ -86,7 +92,16 @@ public class SendMeasureService extends IntentService implements WebManagerSendi
         }
     }
 
-    private void sendMeasure(User user, Measure m) {
+    private void sendMeasures(User user) {
+        final ArrayList<Measure> measuresToSend = DbManager.getDbManager().getNotSentMeasures(user.getId());
+        Log.d(TAG,"Nr measure to send = " + measuresToSend.size());
+        for (Measure m:measuresToSend)
+            if (sendMeasure(user, m))
+                break;
+    }
+
+    // return true if the send process must stop (Authentication error)
+    private boolean sendMeasure(User user, Measure m) {
         String xml;
         if (m.getFailed())
             xml = XmlManager.getXmlManager().getFailedMeasureXml(m);
@@ -102,6 +117,7 @@ public class SendMeasureService extends IntentService implements WebManagerSendi
             }
             synchronized (lock) {
                 sendResult = SEND_TIMEOUT;
+                errorCode = 408;
                 WebManager.getWebManager().sendMeasureData(user.getLogin(),
                         user.getPassword(),
                         xml,
@@ -124,33 +140,23 @@ public class SendMeasureService extends IntentService implements WebManagerSendi
                         break;
                     case SEND_TIMEOUT:
                         Log.e(TAG,"Server down o non raggiungibile");
+                        m.setSendFailReason(Integer.toString(errorCode));
+                        DbManager.getDbManager().updateSentMeasure(m);
                         // Inutile provare a spedire altre misure subito
-                        return;
+                        break;
                     case SEND_AUTH_ERROR:
                         Log.e(TAG,"Autenticazione fallita");
+                        m.setSendFailReason(Integer.toString(errorCode));
+                        DbManager.getDbManager().updateSentMeasure(m);
                         // Inutile provare a spedire altre misure
-                        return;
+                        return true;
                 }
             }
         } catch (Exception e) {
             Log.e(TAG, "WebManager error sendMeasureData");
             Log.e(TAG, e.toString());
         }
-    }
-
-    private void sendMeasures(User user) {
-        final ArrayList<Measure> measuresToSend = DbManager.getDbManager().getNotSentMeasures(user.getId());
-        Log.d(TAG,"Nr measure to send = " + measuresToSend.size());
-        if (measuresToSend.isEmpty())
-            SyncStatusManager.getSyncStatusManager().setMeasureError(false);
-        for (Measure m:measuresToSend) {
-            sendMeasure(user, m);
-        }
-    }
-
-    private boolean isNetworkConnected() {
-        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-        return (cm != null) && (cm.getActiveNetworkInfo() != null);
+        return false;
     }
 
     // methods of WebManagerSendingResultEventListener interface
@@ -158,7 +164,6 @@ public class SendMeasureService extends IntentService implements WebManagerSendi
     public void sendingMeasureSucceeded(WebManagerSendingResultEvent evt) {
         synchronized (lock) {
             Log.i(TAG, "sendingMeasureSucceded: Invio misure avvenuto con successo");
-            SyncStatusManager.getSyncStatusManager().setMeasureError(false);
             sendResult = SEND_SUCCESS;
             lock.notifyAll();
         }
@@ -168,7 +173,6 @@ public class SendMeasureService extends IntentService implements WebManagerSendi
     public void webAuthenticationFailed(WebManagerSendingResultEvent evt) {
         synchronized (lock) {
             Log.i(TAG, "webAuthenticationFailed: Invio misura fallito");
-            SyncStatusManager.getSyncStatusManager().setMeasureError(true);
             sendResult = SEND_AUTH_ERROR;
             errorCode = 401;
             lock.notifyAll();
@@ -179,7 +183,6 @@ public class SendMeasureService extends IntentService implements WebManagerSendi
     public void webOperationFailed(WebManagerSendingResultEvent evt, XmlManager.XmlErrorCode code) {
         synchronized (lock) {
             Log.i(TAG, "webOperationFailed: Invio misura fallito");
-            SyncStatusManager.getSyncStatusManager().setMeasureError(true);
             sendResult = SEND_ERROR;
             errorCode = XmlManager.XmlErrorCode.convertFrom(code);
             lock.notifyAll();

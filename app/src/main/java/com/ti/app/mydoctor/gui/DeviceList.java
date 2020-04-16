@@ -298,7 +298,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
         measureManager = MeasureManager.getMeasureManager();
         userManager = UserManager.getUserManager();
         userManager.setHandler(userManagerHandler);
-        SyncStatusManager.getSyncStatusManager().addListener(syncStatusHandler);
 
         //Ottengo il riferimento agli elementi che compongono la view
 		mDrawerLayout = findViewById(R.id.device_list_drawer_layout);
@@ -760,21 +759,36 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                 }
                 break;
             case ITEM_SEND_MEASURES:
-				intent = new Intent(this, SendMeasureService.class);
-				intent.putExtra(SendMeasureService.USER_TAG,userManager.getCurrentUser().getId());
-				startService(intent);
-                Toast.makeText(this, AppResourceManager.getResource().getString("KMsgSendMeasureStart"), Toast.LENGTH_SHORT).show();
+            	if (!Util.isNetworkConnected()) {
+					dataBundle = new Bundle();
+					String msg = AppResourceManager.getResource().getString("noConnection");
+					dataBundle.putString(AppConst.MESSAGE, msg);
+					myShowDialog(ALERT_DIALOG);
+				} else {
+					intent = new Intent(this, SendMeasureService.class);
+					intent.putExtra(SendMeasureService.USER_TAG, userManager.getCurrentUser().getId());
+					startService(intent);
+					Toast.makeText(this, AppResourceManager.getResource().getString("KMsgSendMeasureStart"), Toast.LENGTH_SHORT).show();
+				}
                 break;
             case ITEM_USER_UPDATES:
-                //l'update della configurazione equivale a rifare il login (senza per� chiedere user e pwd)
-                dataBundle = new Bundle();
-                dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("KMsgConf"));
-                dataBundle.putBoolean(AppConst.MESSAGE_CANCELLABLE, false);
-                dataBundle.putBoolean(AppConst.IS_CONFIGURATION, true);
-                myShowDialog(PROGRESS_DIALOG);
-                runningChangePassword = false;
-                retryLocalLogin = false;
-                userManager.logInUser();
+				if (!Util.isNetworkConnected()) {
+					SyncStatusManager.getSyncStatusManager().setLoginError(true);
+					dataBundle = new Bundle();
+					String msg = AppResourceManager.getResource().getString("noConnection");
+					dataBundle.putString(AppConst.MESSAGE, msg);
+					myShowDialog(ALERT_DIALOG);
+				} else {
+					//l'update della configurazione equivale a rifare il login (senza per� chiedere user e pwd)
+					dataBundle = new Bundle();
+					dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("KMsgConf"));
+					dataBundle.putBoolean(AppConst.MESSAGE_CANCELLABLE, false);
+					dataBundle.putBoolean(AppConst.IS_CONFIGURATION, true);
+					myShowDialog(PROGRESS_DIALOG);
+					runningChangePassword = false;
+					retryLocalLogin = false;
+					userManager.logInUser();
+				}
                 break;
             case ITEM_USER_LIST:
                 showUsers(USER_LIST);
@@ -1892,11 +1906,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 
                 activity.titleTV.setText(activity.userManager.getCurrentUser().getName() + "\n" + activity.userManager.getCurrentUser().getSurname());
                 activity.fitTextInPatientNameLabel(activity.getString(R.string.selectPatient));
-                SyncStatusManager ssm = SyncStatusManager.getSyncStatusManager();
-                if (ssm.getLoginError() || ssm.getMeasureError())
-                    activity.statusIcon.setVisibility(View.VISIBLE);
-                else
-                    activity.statusIcon.setVisibility(View.GONE);
 
                 activity.myRemoveDialog(PROGRESS_DIALOG);
                 activity.setupDeviceList();

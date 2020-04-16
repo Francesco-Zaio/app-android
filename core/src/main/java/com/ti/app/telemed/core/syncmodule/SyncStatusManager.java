@@ -2,6 +2,10 @@ package com.ti.app.telemed.core.syncmodule;
 
 import android.os.Handler;
 
+import com.ti.app.telemed.core.common.User;
+import com.ti.app.telemed.core.dbmodule.DbManager;
+import com.ti.app.telemed.core.usermodule.UserManager;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,6 +34,14 @@ public class SyncStatusManager {
     private SyncStatusManager() {
         loginError = false;
         measureError = false;
+    }
+
+    public void userChanged(User u) {
+        boolean newValue = DbManager.getDbManager().notSentMeasures(u.getId());
+        if (newValue == measureError)
+            return;
+        measureError = newValue;
+        notifyListeners(MEASURE_STATUS_CHANGE);
     }
 
     public void addListener(Handler handler) {

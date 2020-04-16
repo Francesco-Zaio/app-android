@@ -363,6 +363,7 @@ public class UserManager {
 	private void selectUser(User user, boolean silent) {
         synchronized (currT) {
             currentUser = user;
+            SyncStatusManager.getSyncStatusManager().userChanged(currentUser);
             DbManager.getDbManager().updateActiveUser(currentUser.getId());
             if (currentUser != null) {
                 Log.i(TAG, "selectUser --> utente corrente: " + user.getName() + " " + user.getSurname());

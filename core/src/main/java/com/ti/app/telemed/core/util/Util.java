@@ -1,7 +1,9 @@
 package com.ti.app.telemed.core.util;
 
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.SharedPreferences;
+import android.net.ConnectivityManager;
 import android.util.Log;
 
 import com.ti.app.telemed.core.MyApp;
@@ -41,6 +43,12 @@ public class Util {
 	private static final String TAG = "Util";
     private static final String KEY_ROCHE_DEMO_MODE = "ROCHE_DEMO_MODE";
     private static final String TIMESTAMPFORMAT = "yyyyMMddHHmmss";
+
+
+	public static boolean isNetworkConnected() {
+		ConnectivityManager cm = (ConnectivityManager) MyApp.getContext().getSystemService(Context.CONNECTIVITY_SERVICE);
+		return (cm != null) && (cm.getActiveNetworkInfo() != null);
+	}
 
 	/**
 	 * Genera un timestamp testuale nel formato richiesto dalla piattaforma.

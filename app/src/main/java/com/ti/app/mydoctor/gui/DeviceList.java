@@ -337,7 +337,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 
             @Override
             public void onDrawerStateChanged (int newState) {
-            	Log.d(TAG,"onDrawerStateChanged - newState="+newState+" isClosed="+(isClosed?"true":"false"));
+            	//Log.d(TAG,"onDrawerStateChanged - newState="+newState+" isClosed="+(isClosed?"true":"false"));
             	switch (newState) {
 					case DrawerLayout.STATE_SETTLING:
 						if(isClosed)

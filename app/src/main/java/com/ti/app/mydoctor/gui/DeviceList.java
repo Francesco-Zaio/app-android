@@ -68,6 +68,7 @@ import com.ti.app.mydoctor.R;
 import com.ti.app.mydoctor.AppResourceManager;
 import com.ti.app.mydoctor.devicemodule.DeviceOperations;
 import com.ti.app.mydoctor.util.AppUtil;
+import com.ti.app.telemed.core.MyApp;
 import com.ti.app.telemed.core.ResourceManager;
 import com.ti.app.telemed.core.btmodule.DeviceListener;
 import com.ti.app.telemed.core.common.Device;
@@ -251,6 +252,8 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 
 		this.setTheme(R.style.Theme_MyDoctorAtHome_Light);
 		setContentView(R.layout.device_list_main_activity);
+
+		MyApp.scheduleSyncWorker(false);
 
 		//La tastiera viene aperta solo quando viene selezionata una edittext
 		getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
@@ -1918,6 +1921,9 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 				} else {
                     activity.currentPatientLL.setVisibility(View.VISIBLE);
 				}
+				Intent intent = new Intent(MyApp.getContext(), SendMeasureService.class);
+				intent.putExtra(SendMeasureService.USER_TAG, activity.userManager.getCurrentUser().getId());
+				MyApp.getContext().startService(intent);
 				break;
 			case UserManager.ERROR_OCCURED:
 				if (activity.retryLocalLogin) {

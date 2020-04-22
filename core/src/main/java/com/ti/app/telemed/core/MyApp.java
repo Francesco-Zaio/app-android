@@ -39,7 +39,6 @@ public class MyApp extends Application {
     public void onCreate() {
         super.onCreate();
         instance = this;
-        scheduleSyncWorker();
 
         AsyncTask.execute(new Runnable() {
             @Override
@@ -70,7 +69,7 @@ public class MyApp extends Application {
         return configurationManager;
     }
 
-    public static void scheduleSyncWorker() {
+    public static void scheduleSyncWorker(boolean boot) {
         Log.d(TAG,"scheduleSyncWorker");
 
         // Run SynkWorker only if Network is connected
@@ -88,11 +87,20 @@ public class MyApp extends Application {
                         .build();
 
         WorkManager workManager = WorkManager.getInstance(instance);
-        workManager.enqueueUniquePeriodicWork(
-                SYNC_WORK_TAG,
-                ExistingPeriodicWorkPolicy.KEEP, //Existing Periodic Work policy
-                periodicSyncDataWork //work request
-        );
+        if (boot) {
+            workManager.enqueueUniquePeriodicWork(
+                    SYNC_WORK_TAG,
+                    ExistingPeriodicWorkPolicy.REPLACE, //Existing Periodic Work policy
+                    periodicSyncDataWork //work request
+            );
+        } else {
+            // at device boot start sync task immediately
+            workManager.enqueueUniquePeriodicWork(
+                    SYNC_WORK_TAG,
+                    ExistingPeriodicWorkPolicy.KEEP, //Existing Periodic Work policy
+                    periodicSyncDataWork //work request
+            );
+        }
     }
 
     public static void setAppVersion(String version) {

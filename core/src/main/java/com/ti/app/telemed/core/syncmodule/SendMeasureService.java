@@ -49,7 +49,7 @@ public class SendMeasureService extends IntentService implements WebManagerSendi
                 Log.e(TAG, "onHandleIntent: PowerManager is NULL!!");
                 return;
             }
-            Log.d(TAG, "onHandleIntent");
+            //Log.d(TAG, "onHandleIntent");
             final PowerManager.WakeLock  wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WLTAG);
             try {
                 wakeLock.setReferenceCounted(false);

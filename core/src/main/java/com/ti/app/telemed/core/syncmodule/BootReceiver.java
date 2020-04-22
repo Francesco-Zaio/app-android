@@ -17,7 +17,7 @@ public class BootReceiver extends BroadcastReceiver {
         if (Intent.ACTION_BOOT_COMPLETED.equalsIgnoreCase(intent.getAction())) {
             Log.d(TAG, "BOOT COMPLETED");
             //MyApp.scheduleSyncJob();
-            MyApp.scheduleSyncWorker();
+            MyApp.scheduleSyncWorker(true);
         }
     }
 

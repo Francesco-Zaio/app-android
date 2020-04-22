@@ -30,6 +30,7 @@ public class SyncWorker extends Worker implements WebManagerResultEventListener 
     private String userId, login;
     private final CountDownLatch countDownLatch = new CountDownLatch(1);
     private volatile boolean success = false;
+    private volatile boolean stopped = false;
 
     public SyncWorker(@NonNull Context appContext, @NonNull WorkerParameters workerParams) {
         super(appContext, workerParams);
@@ -40,6 +41,7 @@ public class SyncWorker extends Worker implements WebManagerResultEventListener 
     public void onStopped() {
         super.onStopped();
         Log.i(TAG, "OnStopped called");
+        stopped = true;
     }
 
     @NonNull
@@ -56,6 +58,10 @@ public class SyncWorker extends Worker implements WebManagerResultEventListener 
                 success = false;
                 WebManager.getWebManager().askOperatorData(u.getLogin(), u.getPassword(), this, false);
                 countDownLatch.await(GWConst.HTTP_CONNECTION_TIMEOUT +GWConst.HTTP_READ_TIMEOUT +2000, TimeUnit.MILLISECONDS);
+                if (stopped) {
+                    Log.w(TAG, "SyncWorker stopped");
+                    return Result.failure();
+                }
                 if (success) {
                     Log.d(TAG, "askOperatorData success");
                     Intent intent = new Intent(MyApp.getContext(), SendMeasureService.class);

@@ -1,10 +1,13 @@
 package com.ti.app.telemed.core.syncmodule;
 
+import android.content.Context;
 import android.content.Intent;
-import android.support.annotation.NonNull;
 import android.util.Log;
 
-import com.evernote.android.job.Job;
+import androidx.annotation.NonNull;
+import androidx.work.Worker;
+import androidx.work.WorkerParameters;
+
 import com.ti.app.telemed.core.MyApp;
 import com.ti.app.telemed.core.common.User;
 import com.ti.app.telemed.core.dbmodule.DbManager;
@@ -18,21 +21,31 @@ import com.ti.app.telemed.core.xmlmodule.XmlManager;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+public class SyncWorker extends Worker implements WebManagerResultEventListener  {
+    private static final String TAG = "HDSyncWorker";
 
-public class SyncJob extends Job implements WebManagerResultEventListener {
-    private static final String TAG = "SyncJob";
+    public static final String SYNC_WORK_TAG = "HD_SYNC_WORKER";
 
-    public static final String JOB_TAG = "synch_job_tag";
-
+    private final Context ctx;
     private String userId, login;
     private final CountDownLatch countDownLatch = new CountDownLatch(1);
     private volatile boolean success = false;
 
-    @Override
-    @NonNull
-    protected Result onRunJob(@NonNull Params params) {
+    public SyncWorker(@NonNull Context appContext, @NonNull WorkerParameters workerParams) {
+        super(appContext, workerParams);
+        ctx = appContext;
+    }
 
-        Log.d(TAG, "Job started!");
+    @Override
+    public void onStopped() {
+        super.onStopped();
+        Log.i(TAG, "OnStopped called");
+    }
+
+    @NonNull
+    @Override
+    public Result doWork() {
+        Log.d(TAG, "SyncWorker started!");
         User u = UserManager.getUserManager().getCurrentUser();
         if (u == null)
             u = DbManager.getDbManager().getActiveUser();
@@ -46,18 +59,19 @@ public class SyncJob extends Job implements WebManagerResultEventListener {
                 if (success) {
                     Log.d(TAG, "askOperatorData success");
                     Intent intent = new Intent(MyApp.getContext(), SendMeasureService.class);
-                    intent.putExtra(SendMeasureService.USER_TAG,UserManager.getUserManager().getCurrentUser().getId());
-                    MyApp.getContext().startService(intent);
+                    intent.putExtra(SendMeasureService.USER_TAG, userId);
+                    ctx.startService(intent);
                     Log.d(TAG, "SendMeasureService started");
-                } else
-                    Log.w(TAG,"askOperatorData failed");
-            } catch (InterruptedException e) {
-                Log.e(TAG, e.toString());
+                } else {
+                    Log.w(TAG, "askOperatorData failed");
+                    return Result.failure();
+                }
             } catch (Exception e) {
                 Log.e(TAG, e.toString());
+                return Result.failure();
             }
         }
-        return Result.SUCCESS;
+        return Result.success();
     }
 
     @Override

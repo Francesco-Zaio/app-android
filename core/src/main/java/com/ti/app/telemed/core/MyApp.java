@@ -1,17 +1,21 @@
 package com.ti.app.telemed.core;
 
-
 import android.app.Application;
 import android.content.Context;
 import android.os.AsyncTask;
-
-import com.evernote.android.job.JobManager;
-import com.evernote.android.job.JobRequest;
+import android.util.Log;
+import androidx.work.BackoffPolicy;
+import androidx.work.Constraints;
+import androidx.work.ExistingPeriodicWorkPolicy;
+import androidx.work.NetworkType;
+import androidx.work.PeriodicWorkRequest;
+import androidx.work.WorkManager;
 import com.ti.app.telemed.core.configuration.ConfigurationManager;
-import com.ti.app.telemed.core.syncmodule.SyncJob;
-import com.ti.app.telemed.core.syncmodule.SynchJobCreator;
+import com.ti.app.telemed.core.syncmodule.SyncWorker;
 
 import java.util.concurrent.TimeUnit;
+
+import static com.ti.app.telemed.core.syncmodule.SyncWorker.SYNC_WORK_TAG;
 
 /**
  * <h1>Inizializzazione Libreria</h1>
@@ -22,6 +26,7 @@ import java.util.concurrent.TimeUnit;
  */
 
 public class MyApp extends Application {
+    private static final String TAG = "MyAppCore";
 
 	private static MyApp instance;
     private static String appVerson;
@@ -34,8 +39,7 @@ public class MyApp extends Application {
     public void onCreate() {
         super.onCreate();
         instance = this;
-        JobManager.create(this).addJobCreator(new SynchJobCreator());
-        scheduleSyncJob();
+        scheduleSyncWorker();
 
         AsyncTask.execute(new Runnable() {
             @Override
@@ -66,20 +70,29 @@ public class MyApp extends Application {
         return configurationManager;
     }
 
-    public static void scheduleSyncJob() {
-        /*
-        Set<JobRequest> jobRequests = JobManager.instance().getAllJobRequestsForTag(SyncJob.JOB_TAG);
-        if (!jobRequests.isEmpty()) {
-            return;
-        }
-        */
-        new JobRequest.Builder(SyncJob.JOB_TAG)
-                .setPeriodic(TimeUnit.HOURS.toMillis(1), TimeUnit.MINUTES.toMillis(30))
-                .setRequiredNetworkType(JobRequest.NetworkType.CONNECTED)
-                .setRequirementsEnforced(true)
-                .setUpdateCurrent(true)
-                .build()
-                .schedule();
+    public static void scheduleSyncWorker() {
+        Log.d(TAG,"scheduleSyncWorker");
+
+        // Run SynkWorker only if Network is connected
+        Constraints constraints = new Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build();
+
+        PeriodicWorkRequest periodicSyncDataWork =
+                // Schedule sync worker every 60 minutes
+                new PeriodicWorkRequest.Builder(SyncWorker.class, 60, TimeUnit.MINUTES)
+                        .addTag(SYNC_WORK_TAG)
+                        .setConstraints(constraints)
+                        // setting backoff on case the work needs to retry
+                        .setBackoffCriteria(BackoffPolicy.LINEAR, 15, TimeUnit.MINUTES)
+                        .build();
+
+        WorkManager workManager = WorkManager.getInstance(instance);
+        workManager.enqueueUniquePeriodicWork(
+                SYNC_WORK_TAG,
+                ExistingPeriodicWorkPolicy.KEEP, //Existing Periodic Work policy
+                periodicSyncDataWork //work request
+        );
     }
 
     public static void setAppVersion(String version) {

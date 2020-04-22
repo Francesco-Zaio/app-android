@@ -4,7 +4,7 @@ import com.ti.app.mydoctor.R;
 import com.ti.app.mydoctor.gui.customview.GWTextView;
 
 import android.os.Bundle;
-import android.support.v4.app.ListFragment;
+import androidx.fragment.app.ListFragment;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
 import android.view.LayoutInflater;

@@ -1,13 +1,10 @@
 package com.ti.app.telemed.core.syncmodule;
 
 import android.app.IntentService;
-import android.content.Context;
 import android.content.Intent;
-import android.net.ConnectivityManager;
 import android.os.PowerManager;
 import android.util.Log;
 
-import com.ti.app.telemed.core.MyApp;
 import com.ti.app.telemed.core.common.Measure;
 import com.ti.app.telemed.core.common.User;
 import com.ti.app.telemed.core.dbmodule.DbManager;
@@ -20,6 +17,7 @@ import com.ti.app.telemed.core.webmodule.webmanagerevents.WebManagerSendingResul
 import com.ti.app.telemed.core.xmlmodule.XmlManager;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 
 
@@ -110,9 +108,9 @@ public class SendMeasureService extends IntentService implements WebManagerSendi
         try {
             byte[] data = m.getFile();
             if (XmlManager.DOCUMENT_FILE_TYPE.equals(m.getFileType())) {
-                File f = new File(new String(m.getFile(), "UTF-8"));
+                File f = new File(new String(m.getFile(), StandardCharsets.UTF_8));
                 if (f.exists() && f.isDirectory()) {
-                    data = new File(f, MeasureManager.DOCUMENT_SEND_TMPFILE).getAbsolutePath().getBytes("UTF-8");
+                    data = new File(f, MeasureManager.DOCUMENT_SEND_TMPFILE).getAbsolutePath().getBytes(StandardCharsets.UTF_8);
                 }
             }
             synchronized (lock) {
@@ -196,7 +194,7 @@ public class SendMeasureService extends IntentService implements WebManagerSendi
             case XmlManager.DOCUMENT_FILE_TYPE:
                 try {
                     // rimuovo il file zip temporaneo utilizzato per l'invio di tutti i files nella directory
-                    File f = new File(new String(m.getFile(), "UTF-8"));
+                    File f = new File(new String(m.getFile(), StandardCharsets.UTF_8));
                     if (f.exists() && f.isDirectory())
                         new File(f, MeasureManager.DOCUMENT_SEND_TMPFILE).delete();
                 } catch (Exception e) {
@@ -206,7 +204,7 @@ public class SendMeasureService extends IntentService implements WebManagerSendi
             case XmlManager.AECG_FILE_TYPE:
             case XmlManager.PDF_FILE_TYPE:
                 try {
-                    File f = new File(new String(m.getFile(), "UTF-8"));
+                    File f = new File(new String(m.getFile(), StandardCharsets.UTF_8));
                     if (f.exists())
                         f.delete();
                 } catch (Exception e) {

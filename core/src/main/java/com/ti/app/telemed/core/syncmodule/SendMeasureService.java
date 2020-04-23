@@ -114,30 +114,31 @@ public class SendMeasureService extends IntentService implements WebManagerSendi
             byte[] data = m.getFile();
             long size = 0;
             File tmpFile;
-            switch (m.getFileType()) {
-                case DOCUMENT_FILE_TYPE:
-                    File f = new File(new String(m.getFile(), StandardCharsets.UTF_8));
-                    if (f.exists())
-                        if (f.isDirectory()) {
-                            tmpFile = new File(f, MeasureManager.DOCUMENT_SEND_TMPFILE);
-                            data = tmpFile.getAbsolutePath().getBytes(StandardCharsets.UTF_8);
+            if (data != null && m.getFileType() != null)
+                switch (m.getFileType()) {
+                    case DOCUMENT_FILE_TYPE:
+                        File f = new File(new String(m.getFile(), StandardCharsets.UTF_8));
+                        if (f.exists())
+                            if (f.isDirectory()) {
+                                tmpFile = new File(f, MeasureManager.DOCUMENT_SEND_TMPFILE);
+                                data = tmpFile.getAbsolutePath().getBytes(StandardCharsets.UTF_8);
+                                size = tmpFile.length();
+                            } else {
+                                tmpFile = new File(new String(m.getFile(), StandardCharsets.UTF_8));
+                                size = tmpFile.length();
+                            }
+                        break;
+                    case IMG_FILE_TYPE:
+                    case AECG_FILE_TYPE:
+                    case PDF_FILE_TYPE:
+                        tmpFile = new File(new String(m.getFile(), StandardCharsets.UTF_8));
+                        if (tmpFile.exists())
                             size = tmpFile.length();
-                        } else {
-                            tmpFile = new File(new String(m.getFile(), StandardCharsets.UTF_8));
-                            size = tmpFile.length();
-                        }
-                    break;
-                case IMG_FILE_TYPE:
-                case AECG_FILE_TYPE:
-                case PDF_FILE_TYPE:
-                    tmpFile = new File(new String(m.getFile(), StandardCharsets.UTF_8));
-                    if (tmpFile.exists())
-                        size = tmpFile.length();
-                    break;
-            }
+                        break;
+                }
             long sendTimeout;
-            // Send timeout: minimo fra 5 minuti e timeout calcolato sulla base del file da inviare (min 50Kb/sec)
-            sendTimeout = Math.min(5*60*1000,  GWConst.HTTP_CONNECTION_TIMEOUT +
+            // Send timeout: minimo fra 10 minuti e timeout calcolato sulla base del file da inviare (min 50Kb/sec)
+            sendTimeout = Math.min(10*60*1000,  GWConst.HTTP_CONNECTION_TIMEOUT +
                     GWConst.HTTP_READ_TIMEOUT  +
                     (size/1024/50*1000));
             Log.d(TAG, "Send file size is " + size/1024 + "Kb");

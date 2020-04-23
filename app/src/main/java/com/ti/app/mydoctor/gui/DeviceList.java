@@ -436,15 +436,13 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        switch (requestCode) {
-            case PERMISSIONS_REQUEST:
-                for (int result: grantResults)
-                    if (result != PackageManager.PERMISSION_GRANTED) {
-                        myShowDialog(PERMISSION_FAILURE_DIALOG);
-                        return;
-                    }
-				checkUser(userManager.getActiveUser());
-                //new InitTask().execute();
+        if (requestCode == PERMISSIONS_REQUEST) {
+            for (int result: grantResults)
+                if (result != PackageManager.PERMISSION_GRANTED) {
+                    myShowDialog(PERMISSION_FAILURE_DIALOG);
+                    return;
+                }
+            checkUser(userManager.getActiveUser());
         }
     }
 
@@ -660,7 +658,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
     }
 
     @Override
-    public void onConfigurationChanged(Configuration newConfig) {
+    public void onConfigurationChanged(@NonNull Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
         // Pass any configuration change to the drawer toggls
         mActionBarDrawerToggle.onConfigurationChanged(newConfig);
@@ -724,7 +722,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
     	Intent intent;
     	switch( menuItem ) {
             case ITEM_MEASURE:
-                if(patientNameTV.getText().toString().trim().equals(getText(R.string.selectPatient))) {
+                if(patientNameTV.getText().toString().trim().equals(getString(R.string.selectPatient))) {
                     if(patients == null || patients.length == 0) {
                         dataBundle = new Bundle();
                         dataBundle.putString(AppConst.MESSAGE, getString(R.string.noPatient));
@@ -743,7 +741,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                 }
                 break;
             case ITEM_DOCUMENTS:
-                if(patientNameTV.getText().toString().trim().equals(getText(R.string.selectPatient))) {
+                if(patientNameTV.getText().toString().trim().equals(getString(R.string.selectPatient))) {
                     if(patients == null || patients.length == 0) {
                         dataBundle = new Bundle();
                         dataBundle.putString(AppConst.MESSAGE, getString(R.string.noPatient));
@@ -871,9 +869,10 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	}
 
 	private UserDevice getActiveUserDevice(String measureType) {
-        for (UserDevice ud : userDevicesMap.get(measureType))
-            if (ud.isActive())
-                return ud;
+	    if (userDevicesMap != null && measureType != null)
+            for (UserDevice ud : userDevicesMap.get(measureType))
+                if (ud.isActive())
+                    return ud;
         return null;
     }
 

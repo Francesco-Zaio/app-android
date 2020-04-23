@@ -39,7 +39,8 @@
 
         <activity
             android:name=".gui.AboutScreen"
-            android:configChanges="orientation|screenSize|keyboardHidden"></activity>
+            android:configChanges="orientation|screenSize|keyboardHidden">
+        </activity>
         <activity
             android:name=".gui.DeviceList"
             android:configChanges="orientation|screenSize|keyboardHidden"
@@ -53,7 +54,8 @@
         <activity
             android:name=".gui.ShowUtilitySettings"
             android:label="@string/show_settings"
-            android:windowSoftInputMode="stateHidden"></activity>
+            android:windowSoftInputMode="stateHidden">
+        </activity>
         <activity android:name=".gui.SelectPatient">
             <intent-filter>
                 <action android:name=".DeviceList" />
@@ -67,29 +69,29 @@
                 <action android:name=".DeviceList" />
             </intent-filter>
         </activity>
-        <activity android:name=".gui.MeasureDetails"></activity>
-        <activity android:name=".gui.DocumentDetails"></activity>
-        <activity android:name=".gui.DeviceSettingsActivity"></activity>
+        <activity android:name=".gui.MeasureDetails" />
+        <activity android:name=".gui.DocumentDetails" />
+        <activity android:name=".gui.DeviceSettingsActivity" />
         <activity
             android:name=".gui.UsersList"
-            android:label="@string/users_title"></activity>
+            android:label="@string/users_title" />
         <activity
             android:name=".gui.DeviceScanActivity"
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:label="@string/select_device"
-            android:theme="@android:style/Theme.Dialog"></activity>
+            android:theme="@android:style/Theme.Dialog" />
         <activity
             android:name=".gui.ManualMeasureActivity"
-            android:windowSoftInputMode="stateAlwaysVisible"></activity>
+            android:windowSoftInputMode="stateAlwaysVisible" />
         <activity
             android:name=".gui.ECGDrawActivity"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.AppCompat.Light"
-            android:windowSoftInputMode="stateAlwaysHidden"></activity>
+            android:windowSoftInputMode="stateAlwaysHidden" />
         <activity
             android:name=".gui.DocumentSendActivity"
-            android:label="@string/title_activity_document_send"></activity>
-        <activity android:name=".gui.AgendaActivity"></activity>
+            android:label="@string/title_activity_document_send" />
+        <activity android:name=".gui.AgendaActivity" />
     </application>
 
 </manifest>

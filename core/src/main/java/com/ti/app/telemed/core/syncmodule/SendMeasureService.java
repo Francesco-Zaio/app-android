@@ -20,6 +20,11 @@ import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 
+import static com.ti.app.telemed.core.xmlmodule.XmlManager.AECG_FILE_TYPE;
+import static com.ti.app.telemed.core.xmlmodule.XmlManager.DOCUMENT_FILE_TYPE;
+import static com.ti.app.telemed.core.xmlmodule.XmlManager.IMG_FILE_TYPE;
+import static com.ti.app.telemed.core.xmlmodule.XmlManager.PDF_FILE_TYPE;
+
 
 public class SendMeasureService extends IntentService implements WebManagerSendingResultEventListener {
     private static final String TAG = "SendMeasureService";
@@ -107,12 +112,36 @@ public class SendMeasureService extends IntentService implements WebManagerSendi
             xml = XmlManager.getXmlManager().getMeasureXml(m);
         try {
             byte[] data = m.getFile();
-            if (XmlManager.DOCUMENT_FILE_TYPE.equals(m.getFileType())) {
-                File f = new File(new String(m.getFile(), StandardCharsets.UTF_8));
-                if (f.exists() && f.isDirectory()) {
-                    data = new File(f, MeasureManager.DOCUMENT_SEND_TMPFILE).getAbsolutePath().getBytes(StandardCharsets.UTF_8);
-                }
+            long size = 0;
+            File tmpFile;
+            switch (m.getFileType()) {
+                case DOCUMENT_FILE_TYPE:
+                    File f = new File(new String(m.getFile(), StandardCharsets.UTF_8));
+                    if (f.exists())
+                        if (f.isDirectory()) {
+                            tmpFile = new File(f, MeasureManager.DOCUMENT_SEND_TMPFILE);
+                            data = tmpFile.getAbsolutePath().getBytes(StandardCharsets.UTF_8);
+                            size = tmpFile.length();
+                        } else {
+                            tmpFile = new File(new String(m.getFile(), StandardCharsets.UTF_8));
+                            size = tmpFile.length();
+                        }
+                    break;
+                case IMG_FILE_TYPE:
+                case AECG_FILE_TYPE:
+                case PDF_FILE_TYPE:
+                    tmpFile = new File(new String(m.getFile(), StandardCharsets.UTF_8));
+                    if (tmpFile.exists())
+                        size = tmpFile.length();
+                    break;
             }
+            long sendTimeout;
+            // Send timeout: minimo fra 5 minuti e timeout calcolato sulla base del file da inviare (min 50Kb/sec)
+            sendTimeout = Math.min(5*60*1000,  GWConst.HTTP_CONNECTION_TIMEOUT +
+                    GWConst.HTTP_READ_TIMEOUT  +
+                    (size/1024/50*1000));
+            Log.d(TAG, "Send file size is " + size/1024 + "Kb");
+            Log.d(TAG, "Send timeout is " + sendTimeout/1000 + "sec");
             synchronized (lock) {
                 sendResult = SEND_TIMEOUT;
                 errorCode = 408;
@@ -122,7 +151,7 @@ public class SendMeasureService extends IntentService implements WebManagerSendi
                         data,
                         m.getFileType(),
                         this);
-                lock.wait(GWConst.HTTP_CONNECTION_TIMEOUT+GWConst.HTTP_READ_TIMEOUT+1000);
+                lock.wait(sendTimeout);
                 switch (sendResult) {
                     case SEND_SUCCESS:
                         Log.d(TAG,"Measure send success");

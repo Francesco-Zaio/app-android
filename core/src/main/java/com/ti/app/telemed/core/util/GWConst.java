@@ -7,9 +7,9 @@ public interface GWConst {
      */
 	int HTTP_CONNECTION_TIMEOUT = 10000;
     /**
-     * Timeout su attesa risposta http (millisec)
+     * Timeout su ricezione/invio dati http (millisec)
      */
-	int HTTP_READ_TIMEOUT = 15000;
+	int HTTP_READ_TIMEOUT = 40000;
     /**
      * numero massimo di tentativi invio misura
      */

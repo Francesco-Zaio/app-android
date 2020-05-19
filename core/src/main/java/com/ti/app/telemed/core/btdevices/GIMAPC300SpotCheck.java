@@ -30,6 +30,8 @@ import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.Vector;
 
 import com.creative.bluetooth.IBluetoothCallBack;
@@ -483,6 +485,7 @@ public class GIMAPC300SpotCheck
                     }
                     break;
                 case MSG_OXY:
+                    outer.scheduleMeasureAlarm();
                     if (outer.firstRead) {
                         outer.deviceListener.notifyToUi(ResourceManager.getResource().getString("KMeasuring"));
                         outer.firstRead = false;
@@ -807,11 +810,15 @@ public class GIMAPC300SpotCheck
         }
 
         if (!fingerIn) {
+            Log.d(TAG, "oxySample : Finger Out!");
             makeOxyResultData();
         }
     }
 
     private void makeOxyResultData() {
+
+        cancelMeasureAlarm();
+
         int hrTot=0, spO2Tot=0, sampleCount;
         OxyElem elem;
 
@@ -971,5 +978,32 @@ public class GIMAPC300SpotCheck
             return ss;
         }
     }
+
+    private Timer measureTimer;
+    private static final int MEASURE_TIMEOUT = 2000; /*msec*/;
+
+    private class MeasureTimeoutTask extends TimerTask {
+        public void run() {
+           Log.d(TAG, "MeasureTimeoutTask fired!");
+            makeOxyResultData();
+        }
+    }
+
+    private void scheduleMeasureAlarm() {
+        Log.d(TAG, "scheduleMeasureAlarm");
+        if (measureTimer != null) {
+            measureTimer.cancel();
+        }
+        measureTimer = new Timer();
+        measureTimer.schedule(new MeasureTimeoutTask(),MEASURE_TIMEOUT);
+    }
+
+    private void cancelMeasureAlarm() {
+        if (measureTimer!=null) {
+            measureTimer.cancel();
+        }
+    }
+
+
 }
 

@@ -379,4 +379,73 @@ public interface GWConst {
      * Livello della batteria (%)
      */
 	String EGwCode_BATTERY = "A0";
+
+
+	/* Codici per l'integrazione con l'app di Comftech */
+	/* Frequenza Cardiaca */
+	String EGwCode_X0 = "X0";
+	/* Tempo minimo fuori soglia Freq. Cardiaca */
+	String EGwCode_X1 = "X1";
+	/* Frequenza Respiratoria */
+	String EGwCode_X2 = "X2";
+	/* Tempo minimo fuori soglia Freq. Respiratoria */
+	String EGwCode_X3 = "X3";
+	/* Temperatura */
+	String EGwCode_X4 = "X4";
+	/* Tempo minimo fuori soglia Temperatura */
+	String EGwCode_X5 = "X5";
+	/* Media della frequenza cardiaca nell’intervallo di tempo desiderato */
+	String EGwCode_X6 = "X6";
+	/* Deviazione standard della frequenza cardiaca nell’intervallo di tempo desiderato */
+	String EGwCode_X7 = "X7";
+	/* Massimo della frequenza cardiaca nell’intervallo di tempo desiderato */
+	String EGwCode_X8 = "X8";
+	/* Minimo della frequenza cardiaca nell’intervallo di tempo desiderato */
+	String EGwCode_X9 = "X9";
+	/* Secondi in cui la frequenza cardiaca è sopra soglia. */
+	String EGwCode_XA = "XA";
+	/* Secondi in cui la frequenza cardiaca è sotto soglia. */
+	String EGwCode_XB = "XB";
+	/* Minuti in cui viene rilevata una frequenza cardiaca valida nell’intervallo di tempo desiderato.  */
+	String EGwCode_XC = "XC";
+	/* Media della frequenza respiratoria nell’intervallo di tempo desiderato */
+	String EGwCode_XD = "XD";
+	/* Deviazione standard della frequenza respiratoria nell’intervallo di tempo desiderato */
+	String EGwCode_XE = "XE";
+	/* Massimo della frequenza respiratoria nell’intervallo di tempo desiderato */
+	String EGwCode_XF = "XF";
+	/* Minimo della frequenza respiratoria nell’intervallo di tempo desiderato */
+	String EGwCode_XG = "XG";
+	/* Secondi in cui la frequenza respiratoria è sopra soglia. */
+	String EGwCode_XH = "XH";
+	/* Secondi in cui la frequenza respiratoria è sotto soglia. */
+	String EGwCode_XJ = "XJ";
+	/* Minuti in cui viene rilevata una frequenza respiratoria valida nell’intervallo di tempo desiderato.  */
+	String EGwCode_XK = "XK";
+	/* Media della temperatura nell’intervallo di tempo desiderato */
+	String EGwCode_XL = "XL";
+	/* Deviazione standard della temperatura nell’intervallo di tempo desiderato */
+	String EGwCode_XM = "XM";
+	/* Massimo della temperatura nell’intervallo di tempo desiderato */
+	String EGwCode_XN = "XN";
+	/* Minimo della temperatura nell’intervallo di tempo desiderato */
+	String EGwCode_XP = "XP";
+	/* Secondi in cui la temperatura è sopra soglia. */
+	String EGwCode_XQ = "XQ";
+	/* Secondi in cui la temperatura è sotto soglia. */
+	String EGwCode_XR = "XR";
+	/* Minuti in cui viene rilevata una temperatura valida nell’intervallo di tempo desiderato.  */
+	String EGwCode_XS = "XS";
+	/* Percentuale di carica della batteria (0 – 100) */
+	String EGwCode_AF = "AF";
+	/* Minuti in posizione supina */
+	String EGwCode_XT = "XT";
+	/* Minuti in posizione prona */
+	String EGwCode_XU = "XU";
+	/* Minuti in posizione fianco sx */
+	String EGwCode_XV = "XV";
+	/* Minuti in posizione fianco dx */
+	String EGwCode_XW = "XW";
+	/* Minuti in posizione seduto/in piedi */
+	String EGwCode_XX = "XX";
 }

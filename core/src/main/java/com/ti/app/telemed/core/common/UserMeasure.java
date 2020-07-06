@@ -21,6 +21,46 @@ public class UserMeasure implements Cloneable {
 	private boolean outOfRange;	    // flag di stato Out of Range
 	private Date lastDay;		    // Data dell'ultima misura effettuata
 	private int nrLastDay;		    // contatore misure effettuate nel 'lastDay'
+	private int sendFrequencyNormal; // Frequenza invio misure per monitoraggio (no superamento soglie)
+	private int sendFrequencyAlarm; // Frequenza invio misure per monitoraggio (si superamento soglie)
+
+
+	// N.B.: L'ordine di dichiarazione dei valori è importante e viene
+	// usato nella valutazione dei valre limite delle soglie
+	public enum ThresholdLevel {
+		NONE,
+		RED,
+		ORANGE,
+		YELLOW,
+		GREEN
+	}
+
+	public Float getThresholdValue (ThresholdLevel level, String measureKey) {
+		if (!getThresholds().containsKey(measureKey))
+			return null;
+		String thStringValue = thresholds.get(measureKey);
+		thStringValue = thStringValue.replace (',', '.');
+		String[] thl1 = thStringValue.split(" ");
+		for (String th : thl1) {
+			String[] thl2 = th.split(":");
+			float thValue = Float.parseFloat(thl2[1]);
+			switch (thl2[0]) {
+				case "R":
+					if (level == ThresholdLevel.RED)
+						return thValue;
+				case "O":
+					if (level == ThresholdLevel.ORANGE)
+						return thValue;
+				case "Y":
+					if (level == ThresholdLevel.YELLOW)
+						return thValue;
+				case "G":
+					if (level == ThresholdLevel.GREEN)
+						return thValue;
+			}
+		}
+		return null;
+	}
 
 	public UserMeasure() {
 		outOfRange = false;
@@ -29,6 +69,8 @@ public class UserMeasure implements Cloneable {
         schedule = "";
         measure = "";
         idUser = "";
+		sendFrequencyNormal = 0;
+		sendFrequencyAlarm = 0;
 	}
 
 	public Integer getId() {
@@ -87,6 +129,20 @@ public class UserMeasure implements Cloneable {
         this.thresholds = thresholds;
     }
 
+    public int getSendFrequencyNormal() {
+		return sendFrequencyNormal;
+	}
+	public void setSendFrequencyNormal(int val) {
+		sendFrequencyNormal = val;
+	}
+
+	public int getSendFrequencyAlarm() {
+		return sendFrequencyAlarm;
+	}
+	public void setSendFrequencyAlarm(int val) {
+		sendFrequencyAlarm = val;
+	}
+
     public  List<Date> getTodaySchedule ()  {
         if (!schedule.isEmpty()) {
             CrontabManager.parse(schedule);
@@ -116,6 +172,8 @@ public class UserMeasure implements Cloneable {
 			newDevice.setOutOfRange(this.outOfRange);
 			newDevice.setLastDay(this.lastDay);
 			newDevice.setNrLastDay(this.nrLastDay);
+			newDevice.sendFrequencyNormal = this.sendFrequencyNormal;
+			newDevice.sendFrequencyAlarm = this.sendFrequencyAlarm;
 			return newDevice;
 		} catch (CloneNotSupportedException e) {
 			e.printStackTrace();

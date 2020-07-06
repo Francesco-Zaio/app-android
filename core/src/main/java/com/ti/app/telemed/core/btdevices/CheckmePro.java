@@ -420,7 +420,7 @@ public class CheckmePro extends DeviceHandler implements
                     df.format(item.getDate()),
                     df.format(item.getDate()),
                     GWConst.KMsrEcg,
-                    null, null, null);
+                    null, null, null, 1);
             if (m != null && !m.isEmpty()) {
                 // the measure is already into the DB
                 i.remove();
@@ -473,7 +473,7 @@ public class CheckmePro extends DeviceHandler implements
                     df.format(item.getDate()),
                     df.format(item.getDate()),
                     GWConst.KMsrOss,
-                    null, null, null);
+                    null, null, null, 1);
             if (m != null && !m.isEmpty()) {
                 // the measure is already into the DB
                 i.remove();
@@ -636,7 +636,7 @@ public class CheckmePro extends DeviceHandler implements
                         df.format(item.getDate()),
                         df.format(item.getDate()),
                         GWConst.KMsrTemp,
-                        null, null, null);
+                        null, null, null, 1);
                 if (mList == null || mList.isEmpty()) {
                     HashMap<String, String> tmpVal = new HashMap<>();
                     tmpVal.put(GWConst.EGwCode_0R, String.format(Locale.ITALY, "%.2f", item.getResult()));
@@ -668,7 +668,7 @@ public class CheckmePro extends DeviceHandler implements
                         df.format(item.getDate()),
                         df.format(item.getDate()),
                         GWConst.KMsrPres,
-                        null, null, null);
+                        null, null, null, 1);
                 if (mList == null || mList.isEmpty()) {
                     HashMap<String, String> tmpVal = new HashMap<>();
                     tmpVal.put(GWConst.EGwCode_03, Integer.toString(item.getDiastolic())); // pressione minima
@@ -703,7 +703,7 @@ public class CheckmePro extends DeviceHandler implements
                         df.format(item.getDate()),
                         df.format(item.getDate()),
                         GWConst.KMsrOss,
-                        null, null, null);
+                        null, null, null, 1);
                 if (mList == null || mList.isEmpty()) {
                     HashMap<String, String> tmpVal = new HashMap<>();
                     tmpVal.put(GWConst.EGwCode_07, String.valueOf(item.getOxygen())); // O2 Med

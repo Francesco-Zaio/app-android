@@ -3,6 +3,7 @@ package com.ti.app.telemed.core.common;
 import android.util.Log;
 
 import com.ti.app.telemed.core.dbmodule.DbManager;
+import com.ti.app.telemed.core.common.UserMeasure.ThresholdLevel;
 
 import java.io.Serializable;
 import java.util.HashMap;
@@ -36,17 +37,14 @@ public class Measure implements Serializable{
     private Integer sendFailCount = 0;
     private String sendFailReason = "";
     private boolean urgent = false;
+    private String result = RESULT_NONE;
 
+    public static final String RESULT_NONE = "N";
+    public static final String RESULT_GREEN = "G";
+    public static final String RESULT_YELLOW = "Y";
+    public static final String RESULT_ORANGE = "O";
+    public static final String RESULT_RED = "R";
 
-    // N.B.: L'ordine di dichiarazione dei valori è importante e viene
-    // usato nella valutazione dei valre limite delle soglie
-    public enum ThresholdLevel {
-        NONE,
-        RED,
-        ORANGE,
-        YELLOW,
-        GREEN
-    }
 
     public static MeasureFamily getFamily(String measureType) {
         if (measureType.matches("D\\d+"))
@@ -210,6 +208,15 @@ public class Measure implements Serializable{
         this.urgent = urgent;
     }
 
+    public String getResult() {
+        return this.result;
+    }
+
+    public void setResult(String result) {
+        this.result = result;
+    }
+
+
     /**
      * Metodo che restituisce i valori delle soglie calcolati per ogni valore della misura
      * @return hashmap di oggetti {@code ThresholdLevel} che contiene le soglie calcolate per ogni chiave della misura
@@ -284,7 +291,7 @@ public class Measure implements Serializable{
             }
         } catch (Exception e) {
             e.printStackTrace();
-            Log.e(TAG, "checkThresholdValue BAD FROMAT ERROR threshold=" + thStringValue + " measure=" + measureStringValue);
+            Log.e(TAG, "checkThresholdValue BAD FORMAT ERROR threshold=" + thStringValue + " measure=" + measureStringValue);
             return ThresholdLevel.NONE;
         }
         return ret;

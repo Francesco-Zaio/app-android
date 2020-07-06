@@ -96,7 +96,7 @@ public class AgendaActivity extends AppCompatActivity {
         smallTextSize = (int) getResources().getDimension(R.dimen.font_size_small);
         DateFormat df = new SimpleDateFormat("HH:mm", Locale.getDefault());
 
-        List<UserMeasure> data = MeasureManager.getMeasureManager().getBiometricUserMeasures(UserManager.getUserManager().getCurrentUser().getId());
+        List<UserMeasure> data = MeasureManager.getMeasureManager().getBiometricUserMeasures(UserManager.getUserManager().getCurrentUser());
 
         int rows = data.size();
         //getSupportActionBar().setTitle("Invoices (" + String.valueOf(rows) + ")");

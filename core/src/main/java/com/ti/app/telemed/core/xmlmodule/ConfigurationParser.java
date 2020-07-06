@@ -57,6 +57,8 @@ public class ConfigurationParser {
 	private static final String DEVICE_MEASURE_KEY = "Measure";
 	private static final String DEVICE_SCHEDULE_KEY = "Schedule";
 	private static final String DEVICE_THRESHOLD_KEY = "Tresholds";
+	private static final String DEVICE_SEND_FREQ_NORMAL = "ComftechFrequenzaInvioMisureInSoglia";
+	private static final String DEVICE_SEND_FREQ_ALARM = "ComftechFrequenzaInvioMisureFuoriSoglia";
 
 
 	private Vector<Object> dataContainer;
@@ -149,6 +151,10 @@ public class ConfigurationParser {
                                 		if  (userMeasure != null) userMeasure.setMeasure(value);
                                 	} else if (key.equalsIgnoreCase(DEVICE_SCHEDULE_KEY)) {
 										if  (userMeasure != null) userMeasure.setSchedule(value);
+									} else if (key.equalsIgnoreCase(DEVICE_SEND_FREQ_NORMAL)) {
+										if  (userMeasure != null) userMeasure.setSendFrequencyNormal(Integer.parseInt(value));
+									} else if (key.equalsIgnoreCase(DEVICE_SEND_FREQ_ALARM)) {
+										if  (userMeasure != null) userMeasure.setSendFrequencyAlarm(Integer.parseInt(value));
 									} else if (key.toUpperCase().startsWith(DEVICE_THRESHOLD_KEY.toUpperCase())) {
 										thresholds.put(key.toUpperCase().substring(DEVICE_THRESHOLD_KEY.length()),value);
 									} else if (currentSection.equalsIgnoreCase(USER_DATA_SECTION) && key.equalsIgnoreCase(USER_DATA_NAME_KEY)) {

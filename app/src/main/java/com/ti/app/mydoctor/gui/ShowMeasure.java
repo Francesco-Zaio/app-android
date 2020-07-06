@@ -537,7 +537,8 @@ public class ShowMeasure extends ActionBarListActivity{
 		public void onItemClick(AdapterView<?> parent, View view,
 				int position, long id) {
 			selected_measure = listaMisure.get(position);
-			if (!selected_measure.getMeasureType().equals(GWConst.KMsrEcg)) {
+			if (!selected_measure.getMeasureType().equals(GWConst.KMsrEcg) &&
+					selected_measure.getMeasureType().equals(GWConst.KMsr_Comftech)) {
 				if (Measure.MeasureFamily.DOCUMENTO.equals(selected_measure.getFamily())) {
                     Intent intent = new Intent(ShowMeasure.this, DocumentDetails.class);
                     intent.putExtra(MEASURE_KEY, selected_measure);
@@ -559,7 +560,8 @@ public class ShowMeasure extends ActionBarListActivity{
 		String idUser = UserManager.getUserManager().getCurrentUser().getId();
 		measures.clear();
 		String idPatient = UserManager.getUserManager().getCurrentPatient().getId();
-		listaMisure = measureManager.getMeasureData(idUser, null, null, currentMeasureType, idPatient, false, currentMeasureFamily);
+		listaMisure = measureManager.getMeasureData(idUser, null, null,
+				currentMeasureType, idPatient, false, currentMeasureFamily, 150);
 		for (Measure misura : listaMisure) {
 			HashMap<String, String> map = new HashMap<>();
 			map.put(KEY_ICON_SENT, String.valueOf(getIconSent(misura.getSent())));

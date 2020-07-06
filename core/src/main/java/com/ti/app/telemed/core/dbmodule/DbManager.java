@@ -46,7 +46,7 @@ public class DbManager {
 
     // Versione del DB: incrementare il nr se vi sono modifiche allo schema ed inserire le modifice
     // nel metoto onUpgrade
-    private static final int DATABASE_VERSION = 18;
+    private static final int DATABASE_VERSION = 19;
     // versione DB minima richiesta per cui è possibile effettuare un upgrade del DB senza
     // dover droppare e ricreare tutte le tabelle (vedi metodo onUpgrade)
     private static final int MIN_OLD_VERSION = 10;
@@ -137,6 +137,8 @@ public class DbManager {
 			+ "LAST_DAY int, "
 			+ "NR_LAST_DAY integer, "
             + "THRESHOLDS text, "
+            + "SEND_FREQ_NORMAL integer, "
+            + "SEND_FREQ_ALARM integer, "
 			+ "FOREIGN KEY (ID_USER) REFERENCES USER (ID) ON DELETE CASCADE )";
 
     private static final String CREATE_MEASURE_TBL = "CREATE table MEASURE ("
@@ -160,6 +162,7 @@ public class DbManager {
 		+ "SEND_FAIL_REASON text, "
         + "SEND_FAIL_TIMESTAMP integer DEFAULT 0, "
         + "URGENT integer, "
+        + "RESULT text, "
         + "PRIMARY KEY (TIMESTAMP, MEASURE_TYPE), "
 		+ "FOREIGN KEY (ID_PATIENT) REFERENCES PATIENT (ID) ON DELETE CASCADE, "
 		+ "FOREIGN KEY (ID_USER) REFERENCES USER (ID) ON DELETE CASCADE )";
@@ -226,6 +229,13 @@ public class DbManager {
                     case 17:
                         db.execSQL("ALTER TABLE MEASURE ADD COLUMN URGENT integer");
                         db.execSQL("UPDATE MEASURE SET URGENT=0");
+                    case 18:
+                        db.execSQL("ALTER TABLE USER_MEASURE ADD COLUMN SEND_FREQ_NORMAL integer");
+                        db.execSQL("ALTER TABLE USER_MEASURE ADD COLUMN SEND_FREQ_ALARM integer");
+                        db.execSQL("UPDATE USER_MEASURE SET SEND_FREQ_NORMAL=0");
+                        db.execSQL("UPDATE USER_MEASURE SET SEND_FREQ_ALARM=0");
+                        db.execSQL("ALTER TABLE MEASURE ADD COLUMN RESULT text");
+                        db.execSQL("UPDATE MEASURE SET RESULT='N'");
                 }
             }
         }
@@ -721,7 +731,6 @@ public class DbManager {
         }
 
         updateConfiguration(dataContainer, "default", "default");
-
         return getUser( DEFAULT_USER_ID );
     }
 
@@ -861,7 +870,7 @@ public class DbManager {
             values.put("SURNAME", u.getSurname());
             values.put("TIMESTAMP", System.currentTimeMillis());
             values.put("AUTO_LOGIN",u.getHasAutoLogin()? 1:0);
-            values.put("IS_PATIENT",u.getIsPatient()? 1:0);
+            values.put("IS_PATIENT",u.isPatient()? 1:0);
             values.put("LOGIN", u.getLogin());
             values.put("PASSWORD", u.getPassword());
             values.put("BLOCKED", 0);
@@ -1168,6 +1177,8 @@ public class DbManager {
             values.put("OUT_OF_RANGE", um.isOutOfRange() ? 1 : 0);
             values.put("LAST_DAY", um.getLastDay().getTime());
             values.put("NR_LAST_DAY", um.getNrLastDay());
+            values.put("SEND_FREQ_NORMAL", um.getSendFrequencyNormal());
+            values.put("SEND_FREQ_ALARM", um.getSendFrequencyAlarm());
             mDb.insert("USER_MEASURE", null, values);
             logger.log(Level.INFO, "UserMeasure inserted: " + um.toString());
         }
@@ -1178,6 +1189,8 @@ public class DbManager {
             ContentValues values = new ContentValues();
             values.put("SCHEDULE", um.getSchedule());
             values.put("THRESHOLDS", new JSONObject(um.getThresholds()).toString());
+            values.put("SEND_FREQ_NORMAL", um.getSendFrequencyNormal());
+            values.put("SEND_FREQ_ALARM", um.getSendFrequencyAlarm());
             String[] args = new String[]{ um.getIdUser(), um.getMeasure() };
             mDb.update("USER_MEASURE", values, " ID_USER = ? AND MEASURE = ? ", args);
             logger.log(Level.INFO, "UserMeasure cfg updated: "+ um.toString());
@@ -1218,6 +1231,8 @@ public class DbManager {
             ud.setLastDay(new Date(c.getInt(c.getColumnIndex("LAST_DAY"))));
             ud.setNrLastDay(c.getInt(c.getColumnIndex("NR_LAST_DAY")));
             ud.setThresholds(Util.jsonToStringMap(c.getString(c.getColumnIndex("THRESHOLDS"))));
+            ud.setSendFrequencyNormal(c.getInt(c.getColumnIndex("SEND_FREQ_NORMAL")));
+            ud.setSendFrequencyAlarm(c.getInt(c.getColumnIndex("SEND_FREQ_ALARM")));
             return ud;
         }
 	}
@@ -1501,6 +1516,7 @@ public class DbManager {
             m.setSendFailReason(c.getString(c.getColumnIndex("SEND_FAIL_REASON")));
             m.setSendFailCount(c.getInt(c.getColumnIndex("SEND_FAIL_COUNT")));
             m.setUrgent(c.getInt(c.getColumnIndex("URGENT")) == 1);
+            m.setResult(c.getString(c.getColumnIndex("RESULT")));
 
             return m;
         }
@@ -1516,7 +1532,7 @@ public class DbManager {
      * @param failed {@code int} 0 solo misure valide, 1 solo misure fallite, qualsiasi altro valore per non filtrare
 	 * @return oggetto di tipo {@code List<Measure>} che contiene la lista delle misure associate all'utente
 	 */
-	public ArrayList<Measure> getMeasureData(String idUser, String dateFrom, String dateTo, String measureType, String idPatient, Boolean failed, Measure.MeasureFamily family) {
+	public ArrayList<Measure> getMeasureData(String idUser, String dateFrom, String dateTo, String measureType, String idPatient, Boolean failed, Measure.MeasureFamily family, int limit) {
         synchronized (this) {
             ArrayList<Measure> listaMisure = new ArrayList<>();
             Cursor c = null;
@@ -1558,7 +1574,10 @@ public class DbManager {
             }
 
             try {
-                c = mDb.query("MEASURE", null, where, values, null, null, "TIMESTAMP DESC");
+                if (limit > 0)
+                    c = mDb.query("MEASURE", null, where, values, null, null, "TIMESTAMP DESC", Integer.toString(limit));
+                else
+                    c = mDb.query("MEASURE", null, where, values, null, null, "TIMESTAMP DESC");
                 if (c != null) {
                     while (c.moveToNext()) {
                         listaMisure.add(getMeasureObject(c));
@@ -1594,6 +1613,7 @@ public class DbManager {
             values.put("SEND_FAIL_COUNT", measure.getSendFailCount());
             values.put("SEND_FAIL_REASON", measure.getSendFailReason());
             values.put("URGENT", measure.getUrgent()? 1:0);
+            values.put("RESULT", measure.getResult());
             // if there are measures, add also the corresponding actual thresholds
             HashMap<String,String> map = new HashMap<>();
             if (measure.getMeasures() != null) {

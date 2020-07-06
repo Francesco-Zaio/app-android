@@ -13,7 +13,7 @@
         </receiver>
 
         <service
-            android:name=".services.Comftech"
+            android:name=".services.ComftechService"
             android:enabled="true"
             android:exported="true"></service>
 

@@ -98,7 +98,7 @@ public class User implements Serializable {
 		this.blocked = blocked;
 	}
 
-	public boolean getIsPatient() {
+	public boolean isPatient() {
 		return this.isPatient;
 	}
 	

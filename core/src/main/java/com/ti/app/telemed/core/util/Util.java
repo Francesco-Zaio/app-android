@@ -166,6 +166,17 @@ public class Util {
 	}
 
 	/**
+	 * Rimuove una chiave dal registry.
+	 * @param key	chiave
+	 */
+	public static void removeRegistryKey(String key) {
+		SharedPreferences sp = MyApp.getContext().getSharedPreferences(KEY_SHARED_PREFS, 0);
+		SharedPreferences.Editor editor = sp.edit();
+		editor.remove(key);
+		editor.apply();
+	}
+
+	/**
 	 * Scrive un booleano dal registry.
 	 * @param key	chiave
 	 * @param value	valore
@@ -197,7 +208,10 @@ public class Util {
 	public static void setRegistryValue(String key, String value) {
 		SharedPreferences sp = MyApp.getContext().getSharedPreferences(KEY_SHARED_PREFS, 0);
 		SharedPreferences.Editor editor = sp.edit();
-	    editor.putString(key, value);
+		if (value != null)
+			editor.putString(key, value);
+		else
+			editor.remove(key);
 	    editor.apply();
 	}
 

@@ -5,6 +5,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import com.ti.app.telemed.core.ResourceManager;
+import com.ti.app.telemed.core.btdevices.ComftechManager;
 import com.ti.app.telemed.core.common.Patient;
 import com.ti.app.telemed.core.common.User;
 import com.ti.app.telemed.core.dbmodule.DbManager;
@@ -14,6 +15,7 @@ import com.ti.app.telemed.core.webmodule.webmanagerevents.WebManagerResultEvent;
 import com.ti.app.telemed.core.webmodule.webmanagerevents.WebManagerResultEventListener;
 import com.ti.app.telemed.core.xmlmodule.XmlManager.XmlErrorCode;
 
+import android.app.Activity;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
@@ -90,6 +92,10 @@ public class UserManager {
      * Messaggio inviato all'handler nel caso di cambio password e la nuova password non rispetta i requisiti minimi di sicurezza.
      */
     public static final int BAD_PASSWORD = 5;
+    /**
+     * Messaggio inviato all'handler nel caso in cui c'è un monitoraggio attivo per un altro utente.
+     */
+    public static final int MONITORING_ACTIVE = 6;
 
 	private UserManager() {
 		currentOpOn = Op.IDLE;
@@ -374,6 +380,8 @@ public class UserManager {
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
+                // Check if monitoring active and and eventually update the monitoring parametres
+                ComftechManager.getInstance().checkMonitoring(currentUser.getId());
             }
             if (!silent)
                 sendMessage(USER_CHANGED, null);

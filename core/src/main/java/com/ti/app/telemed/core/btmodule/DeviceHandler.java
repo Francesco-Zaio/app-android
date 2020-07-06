@@ -8,6 +8,7 @@ import com.ti.app.telemed.core.btdevices.AgamatrixMyStar;
 import com.ti.app.telemed.core.btdevices.CMS50D;
 import com.ti.app.telemed.core.btdevices.CardGuardEasy2CheckClient;
 import com.ti.app.telemed.core.btdevices.CheckmePro;
+import com.ti.app.telemed.core.btdevices.ComftechDevice;
 import com.ti.app.telemed.core.btdevices.DHearth;
 import com.ti.app.telemed.core.btdevices.EcgProtocol;
 import com.ti.app.telemed.core.btdevices.ForaThermometerClient;
@@ -28,6 +29,8 @@ import com.ti.app.telemed.core.dbmodule.DbManager;
 import com.ti.app.telemed.core.usermodule.UserManager;
 import com.ti.app.telemed.core.util.GWConst;
 import com.ti.app.telemed.core.util.Util;
+
+import static com.ti.app.telemed.core.util.GWConst.KCOMFTECH;
 
 /**
  * <h1>Acquisire una misura da un dispsitivo</h1>
@@ -164,12 +167,12 @@ public abstract class DeviceHandler {
             case GWConst.KDHearth:
                 return new DHearth(listener, ud);
             case GWConst.KOXY10:
-                return new POD1W_OXY10_LE(listener, ud);
-                //return new OXY10(listener, ud);
-            case GWConst.KCMS50DBT:
-                return new CMS50D(listener, ud);
             case GWConst.KPOD1W:
                 return new POD1W_OXY10_LE(listener, ud);
+            case GWConst.KCMS50DBT:
+                return new CMS50D(listener, ud);
+            case KCOMFTECH:
+                return new ComftechDevice(listener, ud);
             default:
                 return null;
         }
@@ -321,7 +324,7 @@ public abstract class DeviceHandler {
         user = UserManager.getUserManager().getCurrentUser();
         patient = UserManager.getUserManager().getCurrentPatient();
         if ((patient == null) && (user != null)) {
-            if (user.getIsPatient())
+            if (user.isPatient())
                 patient = DbManager.getDbManager().getPatientData(user.getId());
         }
         if ((user == null) || (patient==null)) {

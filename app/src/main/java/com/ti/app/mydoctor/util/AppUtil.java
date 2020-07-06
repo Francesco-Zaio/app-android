@@ -95,6 +95,8 @@ public class AppUtil {
 					return R.drawable.temperatura_icon;
 				else if (measure.equalsIgnoreCase(GWConst.KMsrImg))
 					return R.drawable.immagini_icon;
+				else if (measure.equalsIgnoreCase(GWConst.KMsr_Comftech))
+					return R.drawable.spirometria_icon;
 				else
 					return R.drawable.icon;
 			case DOCUMENTO:
@@ -125,6 +127,8 @@ public class AppUtil {
 					return R.drawable.small_temperatura_icon;
 				else if (measure.equalsIgnoreCase(GWConst.KMsrImg))
 					return R.drawable.small_immagini_icon;
+				else if (measure.equalsIgnoreCase(GWConst.KMsr_Comftech))
+					return R.drawable.small_ecg_icon;
 				else
 					return R.drawable.icon;
 			case DOCUMENTO:

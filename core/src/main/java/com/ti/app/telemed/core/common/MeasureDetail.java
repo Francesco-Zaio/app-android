@@ -21,15 +21,18 @@ public class MeasureDetail {
     private static final String[] PT_Detail = {GWConst.EGwCode_0Z,GWConst.EGwCode_0X,GWConst.EGwCode_0V,GWConst.EGwCode_BATTERY};
     private static final String[] SP_Short = {GWConst.EGwCode_08,GWConst.EGwCode_09,GWConst.EGwCode_0A,GWConst.EGwCode_0C,GWConst.EGwCode_0L};
     private static final String[] SP_Detail = {GWConst.EGwCode_08,GWConst.EGwCode_09,GWConst.EGwCode_0A,GWConst.EGwCode_0C,GWConst.EGwCode_0D,GWConst.EGwCode_0L,GWConst.EGwCode_BATTERY};
-    private static final String[] GL_Short = {GWConst.EGwCode_0E,GWConst.EGwCode_0T,};
+    private static final String[] GL_Short = {GWConst.EGwCode_0E,GWConst.EGwCode_0T};
     private static final String[] GL_Detail = {GWConst.EGwCode_0E,GWConst.EGwCode_0T,GWConst.EGwCode_BATTERY};
+    private static final String[] FF_Short = {GWConst.EGwCode_X6,GWConst.EGwCode_XD,GWConst.EGwCode_XL};
+    private static final String[] FF_Detail = {GWConst.EGwCode_X6,GWConst.EGwCode_XD,GWConst.EGwCode_XL,GWConst.EGwCode_XT,
+            GWConst.EGwCode_XU,GWConst.EGwCode_XV,GWConst.EGwCode_XW,GWConst.EGwCode_XX,GWConst.EGwCode_AF,GWConst.EGwCode_AG};
     // utilizzato per gruppi misura che non prevedono la visualizzazione delle misure (es.ECG)
     private static final String[] NoShow = {};
 
 	private String name; 
 	private String value;
 	private String unit;
-	private Measure.ThresholdLevel thresholdLevel;
+	private UserMeasure.ThresholdLevel thresholdLevel;
 
 	static public Vector<MeasureDetail> getMeasureDetails(Measure m, boolean detailed){
         String[] toShow;
@@ -76,13 +79,18 @@ public class MeasureDetail {
                 else
                     toShow = GL_Short;
                 break;
-
+            case GWConst.KMsr_Comftech:
+                if (detailed)
+                    toShow = FF_Detail;
+                else
+                    toShow = FF_Short;
+                break;
             default:
                 toShow = NoShow;
 		}
 
         Vector<MeasureDetail> ret = new Vector<>();
-        Map<String,Measure.ThresholdLevel> thls = m.checkTresholds();
+        Map<String,UserMeasure.ThresholdLevel> thls = m.checkTresholds();
 		String val;
 		for (String key : toShow) {
             MeasureDetail md;
@@ -91,7 +99,7 @@ public class MeasureDetail {
                     case GWConst.KMsrSpir:
                         if (detailed) {
                             md = spirDetail(m.getMeasures(), key);
-                            md.setThresholdLevel(thls.get(key)==null? Measure.ThresholdLevel.NONE:thls.get(key));
+                            md.setThresholdLevel(thls.get(key)==null? UserMeasure.ThresholdLevel.NONE:thls.get(key));
                             break;
                         }
                         // se non devo visualizzare il dettaglio vale il ramo default:
@@ -100,7 +108,7 @@ public class MeasureDetail {
                         md.setName(ResourceManager.getResource().getString("MeasureName_" + key));
                         md.setValue(val);
                         md.setUnit(ResourceManager.getResource().getString("MeasureUnit_" + key));
-                        md.setThresholdLevel(thls.get(key)==null? Measure.ThresholdLevel.NONE:thls.get(key));
+                        md.setThresholdLevel(thls.get(key)==null? UserMeasure.ThresholdLevel.NONE:thls.get(key));
                         break;
                 }
                 ret.add(md);
@@ -167,7 +175,7 @@ public class MeasureDetail {
 		this.unit = unit;
 	}
 
-    public void setThresholdLevel(Measure.ThresholdLevel thresholdLevel) {
+    public void setThresholdLevel(UserMeasure.ThresholdLevel thresholdLevel) {
         this.thresholdLevel = thresholdLevel;
     }
 
@@ -183,7 +191,7 @@ public class MeasureDetail {
 		return unit;
 	}
 
-    public Measure.ThresholdLevel getThresholdLevel() {
+    public UserMeasure.ThresholdLevel getThresholdLevel() {
         return thresholdLevel;
     }
 }

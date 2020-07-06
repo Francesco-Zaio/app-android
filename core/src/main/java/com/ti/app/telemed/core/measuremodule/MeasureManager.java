@@ -4,7 +4,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 
 import com.ti.app.telemed.core.MyApp;
 import com.ti.app.telemed.core.common.Measure;
@@ -23,6 +22,8 @@ import com.ti.app.telemed.core.xmlmodule.XmlManager;
 import android.content.Intent;
 import android.os.Handler;
 import android.util.Log;
+
+import static com.ti.app.telemed.core.util.GWConst.KMsr_Comftech;
 
 /**
  * <h1>Gestione della misure sul DB</h1>.
@@ -212,7 +213,7 @@ public class MeasureManager {
                 }
                 User currentUser = UserManager.getUserManager().getCurrentUser();
                 Patient currentPatient = UserManager.getUserManager().getCurrentPatient();
-                if (currentUser == null || (currentPatient == null && !currentUser.getIsPatient())) {
+                if (currentUser == null || (currentPatient == null && !currentUser.isPatient())) {
                     Log.e(TAG, "saveDocument - currentUser or Patient is Null");
                     return false;
                 }
@@ -236,7 +237,7 @@ public class MeasureManager {
     public Measure getManualMeasure(String measureType, boolean standardProtocol) {
         User currentUser = UserManager.getUserManager().getCurrentUser();
         Patient currentPatient = UserManager.getUserManager().getCurrentPatient();
-        if (currentUser == null || (currentPatient == null && !currentUser.getIsPatient())) {
+        if (currentUser == null || (currentPatient == null && !currentUser.isPatient())) {
             Log.e(TAG, "saveManualTemperature - currentUser or Patient is Null");
             return null;
         }
@@ -267,7 +268,7 @@ public class MeasureManager {
 	public boolean saveNotBioMeasure(NotBioMeasureType type, int level, boolean standardProtocol) {
         User currentUser = UserManager.getUserManager().getCurrentUser();
         Patient currentPatient = UserManager.getUserManager().getCurrentPatient();
-        if (currentUser == null || (currentPatient == null && !currentUser.getIsPatient())) {
+        if (currentUser == null || (currentPatient == null && !currentUser.isPatient())) {
             Log.e(TAG, "saveNotBioMeasure - currentUser or Patient is Null");
             return false;
         }
@@ -379,6 +380,7 @@ public class MeasureManager {
      * @param idPatient     Identifivo del paziente (se e' null il filtro non viene considerato).
      * @param failed        Indica se devono essere selezionate anche le misure fallite (se e' null il filtro non viene considerato).
      * @param family        Indica la famiglia di misura (vedi {@link com.ti.app.telemed.core.common.Measure.MeasureFamily}) (se e' null il filtro non viene considerato).
+     * @param limit         Indica il numero massimo di misure da restituire (se <= 0 viene ignorato).
      * @return              La lista di misure selezionate o {@code null} in caso di errore.
      */
 	public ArrayList<Measure> getMeasureData(String idUser,
@@ -387,10 +389,11 @@ public class MeasureManager {
                                              String measureType,
                                              String idPatient,
                                              Boolean failed,
-                                             Measure.MeasureFamily family) {
+                                             Measure.MeasureFamily family,
+                                             int limit) {
         if (idUser==null || idUser.isEmpty())
             return null;
-        return DbManager.getDbManager().getMeasureData(idUser, dateFrom, dateTo, measureType, idPatient, failed, family);
+        return DbManager.getDbManager().getMeasureData(idUser, dateFrom, dateTo, measureType, idPatient, failed, family, limit);
 	}
 
     /**
@@ -403,13 +406,22 @@ public class MeasureManager {
 
     /**
      * Restituisce la configurazione dei diversi tipi di misura biometriche abilitati per l'utente specificato.
-     * @param userId        Identificativo dell'utente (vedi {@link User#getId() User.getId()}) (non puo' essere null).
-     * @return              Lista di oggetti {@link UserMeasure}.
+     * @param user       Utente (vedi {@link User User}) (non puo' essere null).
+     * @return           Lista di oggetti {@link UserMeasure}.
      */
-    public List<UserMeasure> getBiometricUserMeasures (String userId) {
-        if (userId == null)
+    public List<UserMeasure> getBiometricUserMeasures (User user) {
+        if (user == null)
             return null;
-        return DbManager.getDbManager().getBiometricUserMeasures(userId);
+        List<UserMeasure> mList = DbManager.getDbManager().getBiometricUserMeasures(user.getId());
+        if (!user.isPatient())
+            for (UserMeasure um:mList) {
+                // Monitoraggio Comftech abilitato solo per utente paziente
+                if (um.getMeasure().equals(KMsr_Comftech)) {
+                    mList.remove(um);
+                    break;
+                }
+            }
+        return mList;
     }
 
     /**
@@ -487,7 +499,7 @@ public class MeasureManager {
     private void deleteMeasures() {
         try {
             ArrayList<Measure> measures =
-                    DbManager.getDbManager().getMeasureData(idUser,null,null,measureType,idPatient,null,measureFamily);
+                    DbManager.getDbManager().getMeasureData(idUser,null,null,measureType,idPatient,null,measureFamily, -1);
             for (Measure m:measures) {
                 deleteMeasure(m);
             }

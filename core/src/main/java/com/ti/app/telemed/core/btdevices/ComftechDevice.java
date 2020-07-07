@@ -11,6 +11,7 @@ import com.ti.app.telemed.core.btmodule.DeviceListener;
 import com.ti.app.telemed.core.common.UserDevice;
 
 import static com.ti.app.telemed.core.btmodule.DeviceListener.COMMUNICATION_ERROR;
+import static com.ti.app.telemed.core.btmodule.DeviceListener.USER_CFG_ERROR;
 
 
 public class ComftechDevice extends DeviceHandler implements ComftechManager.ResultListener{
@@ -75,8 +76,7 @@ public class ComftechDevice extends DeviceHandler implements ComftechManager.Res
                     ResourceManager.getResource().getString("KMsgYes"),
                     ResourceManager.getResource().getString("KMsgNo"));
         } else {
-            // TODO
-            deviceListener.notifyError(COMMUNICATION_ERROR, "");
+            deviceListener.notifyError(USER_CFG_ERROR, "Wrong User");
             stop();
             return false;
         }

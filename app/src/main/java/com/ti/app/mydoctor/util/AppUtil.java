@@ -7,6 +7,7 @@ import android.util.Log;
 
 import com.ti.app.mydoctor.R;
 import com.ti.app.mydoctor.MyDoctorApp;
+import com.ti.app.telemed.core.btdevices.ComftechManager;
 import com.ti.app.telemed.core.common.Device;
 import com.ti.app.telemed.core.common.Measure;
 import com.ti.app.telemed.core.util.GWConst;
@@ -96,7 +97,11 @@ public class AppUtil {
 				else if (measure.equalsIgnoreCase(GWConst.KMsrImg))
 					return R.drawable.immagini_icon;
 				else if (measure.equalsIgnoreCase(GWConst.KMsr_Comftech))
-					return R.drawable.spirometria_icon;
+					// TODO prevedere le icone diverse nel caso di monitoraggio attivo/disattivo
+					if (ComftechManager.getInstance().getMonitoringUserId().isEmpty())
+						return R.drawable.spirometria_icon;
+					else
+						return R.drawable.immagini_icon;
 				else
 					return R.drawable.icon;
 			case DOCUMENTO:
@@ -136,10 +141,6 @@ public class AppUtil {
 			default:
 				return R.drawable.icon;
 		}
-	}	
-	
-	public static int getIconRunningId(String measure) {
-		return getIconId(measure);
 	}
 	
 	public static boolean isManualMeasure(Device device) {

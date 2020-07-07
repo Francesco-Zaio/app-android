@@ -57,13 +57,6 @@ public class ComftechManager implements Runnable{
     public static final int MSG_DATA_ALARM = 5;
     public static final int MSG_RESULT = 6;
 
-    private static final int MY_BASE_CODE = 10000;
-    public static final int CODE_RESPONSE_ERROR = MY_BASE_CODE + 1;
-    public static final int CODE_SENDDATA_ERROR = MY_BASE_CODE + 2;
-    public static final int CODE_TIMEOUT_ERROR = MY_BASE_CODE + 3;
-    public static final int CODE_BIND_ERROR = MY_BASE_CODE + 4;
-
-
     /* Message key values */
     public static final String KEY_PATIENT ="PATIENT";
     public static final String KEY_FC_TH_MIN ="FC_TH_MIN";
@@ -111,6 +104,14 @@ public class ComftechManager implements Runnable{
     public static final String KEY_BATTERY_TE ="BATTERY_TE";
 
     private static final String KEY_RESULT = "RESULT";
+
+    /* Result codes */
+    private static final int MY_BASE_CODE = 10000;
+    public static final int CODE_RESPONSE_ERROR = MY_BASE_CODE + 1;
+    public static final int CODE_SENDDATA_ERROR = MY_BASE_CODE + 2;
+    public static final int CODE_TIMEOUT_ERROR = MY_BASE_CODE + 3;
+    public static final int CODE_BIND_ERROR = MY_BASE_CODE + 4;
+
 
     private final static ComftechManager mInstance = new ComftechManager();
 
@@ -439,11 +440,11 @@ public class ComftechManager implements Runnable{
                     Util.removeRegistryKey(KEY_COMFTECH_PATIENT);
                     for (int i=0; i<list.size();i++) {
                         RequestData rd = list.get(i);
-                        if (rd.operation == OpType.StopMonitoring)
+                        if (rd.operation == OpType.StopMonitoring) {
                             list.remove(i);
-                        break;
+                            break;
+                        }
                     }
-                    // TODO rimuovere eventuali altre request di stop da list
                     break;
             }
         }
@@ -476,6 +477,7 @@ public class ComftechManager implements Runnable{
     private void resetTimer() {
         if (timer != null) {
             timer.cancel();
+            timer = null;
         }
     }
 }

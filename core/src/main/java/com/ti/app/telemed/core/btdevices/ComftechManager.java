@@ -119,7 +119,6 @@ public class ComftechManager implements Runnable{
         void result(int resultCode);
     }
 
-
     private enum OpType {
         StartMonitoring,
         StopMonitoring
@@ -151,14 +150,6 @@ public class ComftechManager implements Runnable{
         currT = new Thread(this);
         currT.setName("ComftechManager thread");
         currT.start();
-        /*
-        new Handler(Looper.getMainLooper()).post(new Runnable() {
-            @Override
-            public void run() {
-                replyMessenger = new Messenger(new HandlerReplyMsg());
-            }
-        });
-        */
     }
 
     // handler for message from service
@@ -264,7 +255,6 @@ public class ComftechManager implements Runnable{
         return Util.getRegistryValue(ComftechManager.KEY_COMFTECH_PATIENT);
     }
 
-
     /**
      * Bind to the Comftech Service
      * @return true in case of success
@@ -366,7 +356,6 @@ public class ComftechManager implements Runnable{
             }
         }
     };
-
 
     @Override
     public void run() {

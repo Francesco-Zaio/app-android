@@ -11,6 +11,7 @@ import com.ti.app.telemed.core.btmodule.DeviceListener;
 import com.ti.app.telemed.core.common.UserDevice;
 
 import static com.ti.app.telemed.core.btmodule.DeviceListener.COMMUNICATION_ERROR;
+import static com.ti.app.telemed.core.btmodule.DeviceListener.MEASUREMENT_ERROR;
 import static com.ti.app.telemed.core.btmodule.DeviceListener.USER_CFG_ERROR;
 
 
@@ -35,6 +36,7 @@ public class ComftechDevice extends DeviceHandler implements ComftechManager.Res
 
     @Override
     public void cancelDialog() {
+        deviceListener.notifyError(MEASUREMENT_ERROR, ResourceManager.getResource().getString("KAbortMeasure"));
         stop();
     }
 

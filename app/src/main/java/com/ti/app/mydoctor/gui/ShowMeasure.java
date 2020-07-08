@@ -402,6 +402,7 @@ public class ShowMeasure extends ActionBarListActivity{
 
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+		super.onActivityResult(requestCode,resultCode,data);
 		switch (requestCode) {
 			case MEASURE_DETAILS:
 				if(resultCode == RESULT_OK){
@@ -537,8 +538,7 @@ public class ShowMeasure extends ActionBarListActivity{
 		public void onItemClick(AdapterView<?> parent, View view,
 				int position, long id) {
 			selected_measure = listaMisure.get(position);
-			if (!selected_measure.getMeasureType().equals(GWConst.KMsrEcg) &&
-					selected_measure.getMeasureType().equals(GWConst.KMsr_Comftech)) {
+			if (!selected_measure.getMeasureType().equals(GWConst.KMsrEcg)) {
 				if (Measure.MeasureFamily.DOCUMENTO.equals(selected_measure.getFamily())) {
                     Intent intent = new Intent(ShowMeasure.this, DocumentDetails.class);
                     intent.putExtra(MEASURE_KEY, selected_measure);

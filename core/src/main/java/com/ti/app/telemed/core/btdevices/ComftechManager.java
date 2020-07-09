@@ -8,6 +8,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.Bundle;
@@ -38,7 +39,7 @@ public class ComftechManager implements Runnable{
     private static final String TAG = "ComftechManager";
 
     private static final String COMFTECH_PACKAGE = "com.comftech";
-    private static final String COMFTECH_SERVICE = "com.comftech.service";
+    private static final String COMFTECH_SERVICE = "com.comftech.ListenerService";
 
     private static final String KEY_COMFTECH_PATIENT = "COMFTECH_PATIENT";
     private static final String KEY_COMFTECH_TH_EGwCode_X0 = "COMFTECH_TH_EGwCode_X0";
@@ -263,7 +264,7 @@ public class ComftechManager implements Runnable{
         try {
             Intent intent = new Intent();
             intent.setComponent(new ComponentName(COMFTECH_PACKAGE, COMFTECH_SERVICE));
-            return MyApp.getContext().bindService(intent, mConnection, 0);
+            return MyApp.getContext().bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
         } catch (SecurityException e) {
             Log.e(TAG, "can't bind to ModemWatcherService, check permission in Manifest");
             return false;

@@ -48,15 +48,19 @@ public class UserMeasure implements Cloneable {
 				case "R":
 					if (level == ThresholdLevel.RED)
 						return thValue;
+					break;
 				case "O":
 					if (level == ThresholdLevel.ORANGE)
 						return thValue;
+					break;
 				case "Y":
 					if (level == ThresholdLevel.YELLOW)
 						return thValue;
+					break;
 				case "G":
 					if (level == ThresholdLevel.GREEN)
 						return thValue;
+					break;
 			}
 		}
 		return null;

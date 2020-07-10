@@ -24,6 +24,7 @@ import com.ti.app.telemed.core.MyApp;
 import com.ti.app.telemed.core.common.User;
 import com.ti.app.telemed.core.common.UserMeasure;
 import com.ti.app.telemed.core.dbmodule.DbManager;
+import com.ti.app.telemed.core.services.ComftechService;
 import com.ti.app.telemed.core.usermodule.UserManager;
 import com.ti.app.telemed.core.util.Util;
 
@@ -202,18 +203,26 @@ public class ComftechManager implements Runnable{
     public boolean updateMonitoring(String userId) {
         UserMeasure um  = DbManager.getDbManager().getUserMeasure(userId, KMsr_Comftech);
         Map<String,String> thresholds = um.getThresholds();
-        return !(Util.getRegistryValue(KEY_COMFTECH_TH_EGwCode_X0).equals(thresholds.get(EGwCode_X0)) &&
-                Util.getRegistryValue(KEY_COMFTECH_TH_EGwCode_X1).equals(thresholds.get(EGwCode_X1)) &&
-                Util.getRegistryValue(KEY_COMFTECH_TH_EGwCode_X2).equals(thresholds.get(EGwCode_X2)) &&
-                Util.getRegistryValue(KEY_COMFTECH_TH_EGwCode_X3).equals(thresholds.get(EGwCode_X3)) &&
-                Util.getRegistryValue(KEY_COMFTECH_TH_EGwCode_X4).equals(thresholds.get(EGwCode_X4)) &&
-                Util.getRegistryValue(KEY_COMFTECH_TH_EGwCode_X5).equals(thresholds.get(EGwCode_X5)) &&
+        String th_X0,th_X1,th_X2,th_X3,th_X4,th_X5;
+        th_X0 = (thresholds.get(EGwCode_X0) == null)?"":thresholds.get(EGwCode_X0);
+        th_X1 = (thresholds.get(EGwCode_X0) == null)?"":thresholds.get(EGwCode_X1);
+        th_X2 = (thresholds.get(EGwCode_X0) == null)?"":thresholds.get(EGwCode_X2);
+        th_X3 = (thresholds.get(EGwCode_X0) == null)?"":thresholds.get(EGwCode_X3);
+        th_X4 = (thresholds.get(EGwCode_X0) == null)?"":thresholds.get(EGwCode_X4);
+        th_X5 = (thresholds.get(EGwCode_X0) == null)?"":thresholds.get(EGwCode_X5);
+        return !(Util.getRegistryValue(KEY_COMFTECH_TH_EGwCode_X0).equals(th_X0) &&
+                Util.getRegistryValue(KEY_COMFTECH_TH_EGwCode_X1).equals(th_X1) &&
+                Util.getRegistryValue(KEY_COMFTECH_TH_EGwCode_X2).equals(th_X2) &&
+                Util.getRegistryValue(KEY_COMFTECH_TH_EGwCode_X3).equals(th_X3) &&
+                Util.getRegistryValue(KEY_COMFTECH_TH_EGwCode_X4).equals(th_X4) &&
+                Util.getRegistryValue(KEY_COMFTECH_TH_EGwCode_X5).equals(th_X5) &&
                 (Util.getRegistryIntValue(KEY_COMFTECH_INTERVAL_NORMAL) == um.getSendFrequencyNormal()) &&
                 (Util.getRegistryIntValue(KEY_COMFTECH_INTERVAL_ALARM) == um.getSendFrequencyAlarm()));
     }
 
     // check if the monitoring for the userId
     public void checkMonitoring(String userId) {
+        Log.d(TAG, "checkMonitoring");
         String monitoredId = getMonitoringUserId();
         if (monitoredId.isEmpty())
             return;
@@ -243,7 +252,7 @@ public class ComftechManager implements Runnable{
         if ((userId == null) || userId.isEmpty())
             return;
         RequestData data = new RequestData();
-        data.userId = null;
+        data.userId = userId;
         data.listener = listener;
         data.operation = OpType.StartMonitoring;
         synchronized (currT) {
@@ -261,14 +270,15 @@ public class ComftechManager implements Runnable{
      * @return true in case of success
      */
     private boolean bindToComftechService() {
+        boolean flag = false;
         try {
             Intent intent = new Intent();
             intent.setComponent(new ComponentName(COMFTECH_PACKAGE, COMFTECH_SERVICE));
-            return MyApp.getContext().bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
+            flag = MyApp.getContext().bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
         } catch (SecurityException e) {
             Log.e(TAG, "can't bind to ModemWatcherService, check permission in Manifest");
-            return false;
         }
+        return flag;
     }
 
     /**
@@ -289,7 +299,7 @@ public class ComftechManager implements Runnable{
             }
             msg.what = MSG_START_MONITORING;
             Bundle bundle = new Bundle();
-            bundle.putInt(KEY_PATIENT, Integer.parseInt(currServed.userId));
+            bundle.putString(KEY_PATIENT, currServed.userId);
             // Soglia con min/max : “R:40 G:120 R:1000” (min=40 max=120)
             // soglia con solo min : “G:60 R:1000” (min=60)
             Float fval;
@@ -313,11 +323,11 @@ public class ComftechManager implements Runnable{
             val = (fval == null)? -1: fval.intValue();
             bundle.putInt(KEY_FR_TH_TIME, val);
             fval = userMeasure.getThresholdValue(UserMeasure.ThresholdLevel.RED, EGwCode_X4);
-            val = (fval == null)? -1: fval.intValue();
-            bundle.putInt(KEY_TE_TH_MIN, val);
+            fval = (fval == null)? -1f: fval;
+            bundle.putFloat(KEY_TE_TH_MIN, fval);
             fval = userMeasure.getThresholdValue(UserMeasure.ThresholdLevel.GREEN, EGwCode_X4);
-            val = (fval == null)? -1: fval.intValue();
-            bundle.putInt(KEY_TE_TH_MAX, val);
+            fval = (fval == null)? -1f: fval;
+            bundle.putFloat(KEY_TE_TH_MAX, fval);
             fval = userMeasure.getThresholdValue(UserMeasure.ThresholdLevel.GREEN, EGwCode_X5);
             val = (fval == null)? -1: fval.intValue();
             bundle.putInt(KEY_TE_TH_TIME, val);

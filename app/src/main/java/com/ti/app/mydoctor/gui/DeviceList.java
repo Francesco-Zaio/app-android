@@ -2143,11 +2143,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 				builder.setPositiveButton(R.string.okButton, new DialogInterface.OnClickListener() {
 					@Override
 					public void onClick(DialogInterface dialog, int which) {
-						ComftechManager.getInstance().stopMonitoring(new ComftechManager.ResultListener() {
-							@Override
-							public void result(int resultCode) {
-							}
-						});
 						dialog.dismiss();
 						myShowDialog(PROGRESS_DIALOG);
 						userManager.logInUser(userid, password);

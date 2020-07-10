@@ -1,6 +1,7 @@
 package com.ti.app.telemed.core.services;
 
 import android.app.Service;
+import android.content.ComponentName;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
@@ -102,7 +103,28 @@ public class ComftechService extends Service {
     public ComftechService() {
     }
 
-    private static class IncomingHandler extends Handler implements ComftechManager.ResultListener {
+    private static String getSoglia(float min, float max) {
+        String ret = null;
+        if (min != -1f && max != -1f)
+            ret = "R:".concat(String.valueOf(min)).concat(" G:").concat(String.valueOf(max)).concat(" R:1000");
+        else if (min != -1)
+            ret = "R:".concat(String.valueOf(min)).concat(" G:1000");
+        else if (max != -1)
+            ret = "G:".concat(String.valueOf(max)).concat(" R:1000");
+        return ret;
+    }
+    private static String getSoglia(int min, int max) {
+        String ret = null;
+        if (min != -1 && max != -1)
+            ret = "R:".concat(String.valueOf(min)).concat(" G:").concat(String.valueOf(max)).concat(" R:1000");
+        else if (min != -1)
+            ret = "R:".concat(String.valueOf(min)).concat(" G:1000");
+        else if (max != -1)
+            ret = "G:".concat(String.valueOf(max)).concat(" R:1000");
+        return ret;
+    }
+
+    private static class IncomingHandler extends Handler {
         private final ComftechService mInstance;
 
         IncomingHandler(ComftechService c) {
@@ -124,50 +146,62 @@ public class ComftechService extends Service {
                 Log.d(TAG,"wakeLock acquired");
 
                 Bundle data = msg.getData();
-                String userId = Integer.toString(data.getInt(KEY_PATIENT));
+                String userId = data.getString(KEY_PATIENT);
                 if (!cm.isMonitoringValid(userId)) {
                     Log.w(TAG, "Stopping monitoring");
-                    cm.stopMonitoring(this);
-                    mInstance.wait(15000);
+                    cm.stopMonitoring(null);
                     return;
                 }
 
                 if (cm.updateMonitoring(userId)) {
                     Log.i(TAG, "Update monitoring parameters");
-                    cm.startMonitoring(userId, this);
-                    mInstance.wait(15000);
+                    cm.startMonitoring(userId, null);
                 }
 
                 /*
                 soglia minima e massima pari ad esempio a 40 e 120  “R:40 G:120 R:1000”
                 tempo minimo fuori soglia pari ad esempio a 60 secondi  “G:60 R:1000”
                  */
+                int min,max;
+                float fmin,fmax;
+                String soglia;
                 HashMap<String,String> thMap = new HashMap<>();
-                int min = data.getInt(KEY_FC_TH_MIN);
-                int max = data.getInt(KEY_FC_TH_MAX);
-                String soglia = "R:".concat(String.valueOf(min)).concat(" ".concat(" G:")).concat(String.valueOf(max)).concat(" R:1000");
-                thMap.put(EGwCode_X0, soglia);
+
+                min = data.getInt(KEY_FC_TH_MIN);
+                max = data.getInt(KEY_FC_TH_MAX);
+                soglia = getSoglia(min, max);
+                if (soglia != null)
+                    thMap.put(EGwCode_X0, soglia);
+
                 min = data.getInt(KEY_FC_TH_TIME);
-                soglia = "G:".concat(String.valueOf(min)).concat(" R:1000");
-                thMap.put(EGwCode_X1, soglia);
+                soglia = getSoglia(min, -1);
+                if (soglia != null)
+                    thMap.put(EGwCode_X1, soglia);
 
                 min = data.getInt(KEY_FR_TH_MIN);
                 max = data.getInt(KEY_FR_TH_MAX);
-                soglia = "R:".concat(String.valueOf(min)).concat(" ".concat(" G:")).concat(String.valueOf(max)).concat(" R:1000");
-                thMap.put(EGwCode_X2, soglia);
-                min = data.getInt(KEY_FR_TH_TIME);
-                soglia = "G:".concat(String.valueOf(min)).concat(" R:1000");
-                thMap.put(EGwCode_X3, soglia);
+                soglia = getSoglia(min, max);
+                if (soglia != null)
+                    thMap.put(EGwCode_X2, soglia);
 
-                min = data.getInt(KEY_TE_TH_MIN);
-                max = data.getInt(KEY_TE_TH_MAX);
-                soglia = "R:".concat(String.valueOf(min)).concat(" ".concat(" G:")).concat(String.valueOf(max)).concat(" R:1000");
-                thMap.put(EGwCode_X4, soglia);
+                min = data.getInt(KEY_FR_TH_TIME);
+                soglia = getSoglia(min, -1);
+                if (soglia != null)
+                    thMap.put(EGwCode_X3, soglia);
+
+                fmin = data.getFloat(KEY_TE_TH_MIN);
+                fmax = data.getFloat(KEY_TE_TH_MAX);
+                soglia = getSoglia(fmin, -fmax);
+                if (soglia != null)
+                    thMap.put(EGwCode_X4, soglia);
+
                 min = data.getInt(KEY_TE_TH_TIME);
-                soglia = "G:".concat(String.valueOf(min)).concat(" R:1000");
-                thMap.put(EGwCode_X5, soglia);
+                soglia = getSoglia(min, -1);
+                if (soglia != null)
+                    thMap.put(EGwCode_X5, soglia);
 
                 int val;
+                float fval;
                 HashMap<String,String> measureMap = new HashMap<>();
                 val = data.getInt(KEY_FC_AVG);
                 if (val != -1)
@@ -213,18 +247,18 @@ public class ComftechService extends Service {
                 if (val != -1)
                     measureMap.put(EGwCode_XK,String.valueOf(val));
 
-                val = data.getInt(KEY_TE_AVG);
-                if (val != -1)
-                    measureMap.put(EGwCode_XL,String.valueOf(val));
-                val = data.getInt(KEY_TE_SIGMA);
-                if (val != -1)
-                    measureMap.put(EGwCode_XM,String.valueOf(val));
-                val = data.getInt(KEY_TE_MAX);
-                if (val != -1)
-                    measureMap.put(EGwCode_XN,String.valueOf(val));
-                val = data.getInt(KEY_TE_MIN);
-                if (val != -1)
-                    measureMap.put(EGwCode_XP,String.valueOf(val));
+                fval = data.getFloat(KEY_TE_AVG);
+                if (fval != -1f)
+                    measureMap.put(EGwCode_XL,String.valueOf(fval));
+                fval = data.getFloat(KEY_TE_SIGMA);
+                if (fval != -1f)
+                    measureMap.put(EGwCode_XM,String.valueOf(fval));
+                fval = data.getFloat(KEY_TE_MAX);
+                if (fval != -1f)
+                    measureMap.put(EGwCode_XN,String.valueOf(fval));
+                fval = data.getFloat(KEY_TE_MIN);
+                if (fval != -1f)
+                    measureMap.put(EGwCode_XP,String.valueOf(fval));
                 val = data.getInt(KEY_TE_OVER);
                 if (val != -1)
                     measureMap.put(EGwCode_XQ,String.valueOf(val));
@@ -284,12 +318,6 @@ public class ComftechService extends Service {
                     Log.d(TAG,"wakeLock released");
                 }
             }
-        }
-
-        @Override
-        public void result(int resultCode) {
-            Log.d(TAG,"stop monitoring result: " + resultCode);
-            mInstance.notifyAll();
         }
     }
 

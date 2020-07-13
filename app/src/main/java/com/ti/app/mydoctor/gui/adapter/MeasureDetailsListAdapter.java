@@ -68,7 +68,7 @@ public class MeasureDetailsListAdapter extends BaseAdapter {
     public View getView(int position, View convertView, ViewGroup parent) {
         ViewHolder holder;
         int type = getItemViewType(position);
-        System.out.println("getView " + position + " " + convertView + " type = " + type);
+        //System.out.println("getView " + position + " " + convertView + " type = " + type);
         if (convertView == null) {
             holder = new ViewHolder();
             switch (type) {

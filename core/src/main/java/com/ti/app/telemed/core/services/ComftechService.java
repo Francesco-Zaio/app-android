@@ -166,43 +166,55 @@ public class ComftechService extends Service {
                 float fmin,fmax;
                 String soglia;
                 HashMap<String,String> thMap = new HashMap<>();
+                int val;
+                float fval;
+                HashMap<String,String> measureMap = new HashMap<>();
 
                 min = data.getInt(KEY_FC_TH_MIN);
                 max = data.getInt(KEY_FC_TH_MAX);
                 soglia = getSoglia(min, max);
-                if (soglia != null)
+                if (soglia != null) {
                     thMap.put(EGwCode_X0, soglia);
+                    measureMap.put(EGwCode_X0,"0");
+                }
 
                 min = data.getInt(KEY_FC_TH_TIME);
                 soglia = getSoglia(min, -1);
-                if (soglia != null)
+                if (soglia != null) {
                     thMap.put(EGwCode_X1, soglia);
+                    measureMap.put(EGwCode_X1,"0");
+                }
 
                 min = data.getInt(KEY_FR_TH_MIN);
                 max = data.getInt(KEY_FR_TH_MAX);
                 soglia = getSoglia(min, max);
-                if (soglia != null)
+                if (soglia != null) {
                     thMap.put(EGwCode_X2, soglia);
+                    measureMap.put(EGwCode_X2,"0");
+                }
 
                 min = data.getInt(KEY_FR_TH_TIME);
                 soglia = getSoglia(min, -1);
-                if (soglia != null)
+                if (soglia != null) {
                     thMap.put(EGwCode_X3, soglia);
+                    measureMap.put(EGwCode_X3,"0");
+                }
 
                 fmin = data.getFloat(KEY_TE_TH_MIN);
                 fmax = data.getFloat(KEY_TE_TH_MAX);
-                soglia = getSoglia(fmin, -fmax);
-                if (soglia != null)
+                soglia = getSoglia(fmin, fmax);
+                if (soglia != null) {
                     thMap.put(EGwCode_X4, soglia);
+                    measureMap.put(EGwCode_X4,"0");
+                }
 
                 min = data.getInt(KEY_TE_TH_TIME);
                 soglia = getSoglia(min, -1);
-                if (soglia != null)
+                if (soglia != null) {
                     thMap.put(EGwCode_X5, soglia);
+                    measureMap.put(EGwCode_X5,"0");
+                }
 
-                int val;
-                float fval;
-                HashMap<String,String> measureMap = new HashMap<>();
                 val = data.getInt(KEY_FC_AVG);
                 if (val != -1)
                     measureMap.put(EGwCode_X6,String.valueOf(val));

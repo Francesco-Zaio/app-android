@@ -800,11 +800,25 @@ public class DbManager {
         }
     }
 
-    public void updateUserBlocked(String login, boolean blocked) {
+    public User updateUserBlocked(String login, boolean blocked) {
         synchronized (this) {
             ContentValues values = new ContentValues();
             values.put("BLOCKED", blocked ?  1 : 0);
-            mDb.update("USER", values, "LOGIN = ? ", new String[]{login});
+            int n = mDb.update("USER", values, "LOGIN = ? ", new String[]{login});
+
+            User ret = null;
+            if (n > 0) {
+                Cursor c = null;
+                try {
+                    c = mDb.query("USER", null, "LOGIN = ?", new String[]{login}, null, null, null);
+                    if (c != null && c.moveToFirst())
+                            ret = getUserObject(c);
+                } finally {
+                    if (c != null)
+                        c.close();
+                }
+            }
+            return ret;
         }
     }
 

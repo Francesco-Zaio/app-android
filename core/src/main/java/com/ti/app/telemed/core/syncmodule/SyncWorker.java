@@ -9,6 +9,7 @@ import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
 import com.ti.app.telemed.core.MyApp;
+import com.ti.app.telemed.core.btdevices.ComftechManager;
 import com.ti.app.telemed.core.common.User;
 import com.ti.app.telemed.core.dbmodule.DbManager;
 import com.ti.app.telemed.core.usermodule.UserManager;
@@ -27,7 +28,7 @@ public class SyncWorker extends Worker implements WebManagerResultEventListener 
     public static final String SYNC_WORK_TAG = "HD_SYNC_WORKER";
 
     private final Context ctx;
-    private String userId, login;
+    private User user;
     private final CountDownLatch countDownLatch = new CountDownLatch(1);
     private volatile boolean success = false;
     private volatile boolean stopped = false;
@@ -48,15 +49,13 @@ public class SyncWorker extends Worker implements WebManagerResultEventListener 
     @Override
     public Result doWork() {
         Log.d(TAG, "SyncWorker started!");
-        User u = UserManager.getUserManager().getCurrentUser();
-        if (u == null)
-            u = DbManager.getDbManager().getActiveUser();
-        if (u != null && !u.isDefaultUser() && !u.isBlocked()) {
+        user = UserManager.getUserManager().getCurrentUser();
+        if (user == null)
+            user = DbManager.getDbManager().getActiveUser();
+        if (user != null && !user.isDefaultUser() && !user.isBlocked()) {
             try {
-                userId = u.getId();
-                login = u.getLogin();
                 success = false;
-                WebManager.getWebManager().askOperatorData(u.getLogin(), u.getPassword(), this, false);
+                WebManager.getWebManager().askOperatorData(user.getLogin(), user.getPassword(), this, false);
                 countDownLatch.await(GWConst.HTTP_CONNECTION_TIMEOUT +GWConst.HTTP_READ_TIMEOUT +2000, TimeUnit.MILLISECONDS);
                 if (stopped) {
                     Log.w(TAG, "SyncWorker stopped");
@@ -65,7 +64,7 @@ public class SyncWorker extends Worker implements WebManagerResultEventListener 
                 if (success) {
                     Log.d(TAG, "askOperatorData success");
                     Intent intent = new Intent(MyApp.getContext(), SendMeasureService.class);
-                    intent.putExtra(SendMeasureService.USER_TAG, userId);
+                    intent.putExtra(SendMeasureService.USER_TAG, user.getId());
                     ctx.startService(intent);
                     Log.d(TAG, "SendMeasureService started");
                 } else {
@@ -83,11 +82,7 @@ public class SyncWorker extends Worker implements WebManagerResultEventListener 
     @Override
     public void webAuthenticationSucceeded(WebManagerResultEvent evt){
         SyncStatusManager.getSyncStatusManager().setLoginError(false);
-
-        User u = UserManager.getUserManager().getCurrentUser();
-        // verifico se nel frattempo non è cambiato l'utente
-        if (u != null && u.getId().equals(userId))
-            UserManager.getUserManager().reloadCurrentUser();
+        UserManager.getUserManager().selectUser(DbManager.getDbManager().getUser(user.getId()), true);
         success = true;
         countDownLatch.countDown();
     }
@@ -100,9 +95,10 @@ public class SyncWorker extends Worker implements WebManagerResultEventListener 
         // sul DB il flag ACTIVE a false altrimenti ogni ora verrà comunque ritentata
         // l'autenticazione
         SyncStatusManager.getSyncStatusManager().setLoginError(true);
-        DbManager.getDbManager().resetActiveUser(userId);
+        DbManager.getDbManager().resetActiveUser(user.getId());
+        ComftechManager.getInstance().checkMonitoring(user.getId(), true);
         User u = UserManager.getUserManager().getCurrentUser();
-        if (u != null && u.getId().equals(userId)) {
+        if (u != null && u.getId().equals(user.getId())) {
             UserManager.getUserManager().reset();
         }
         success = false;
@@ -121,7 +117,7 @@ public class SyncWorker extends Worker implements WebManagerResultEventListener 
         SyncStatusManager.getSyncStatusManager().setLoginError(true);
         // l'utente corrente è stato disattivato
         if(code != null && code.equals(XmlManager.XmlErrorCode.USER_BLOCKED)) {
-            UserManager.getUserManager().setUserBlocked(login);
+            UserManager.getUserManager().setUserBlocked(user.getLogin());
         }
         success = false;
         countDownLatch.countDown();

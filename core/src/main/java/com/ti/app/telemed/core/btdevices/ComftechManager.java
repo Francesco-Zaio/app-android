@@ -221,14 +221,14 @@ public class ComftechManager implements Runnable{
     }
 
     // check if the monitoring for the userId
-    public void checkMonitoring(String userId) {
+    public void checkMonitoring(String userId, boolean stop) {
         Log.d(TAG, "checkMonitoring");
         String monitoredId = getMonitoringUserId();
         if (monitoredId.isEmpty())
             return;
 
         UserMeasure um  = DbManager.getDbManager().getUserMeasure(userId, KMsr_Comftech);
-        if (!monitoredId.equals(userId) || um == null) {
+        if (!monitoredId.equals(userId) || um == null || stop) {
             stopMonitoring(null);
             return;
         }

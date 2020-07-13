@@ -350,23 +350,15 @@ public class UserManager {
     public void setUserBlocked(String login) {
         synchronized (currT) {
             if (login != null) {
-                DbManager.getDbManager().updateUserBlocked(login, true);
-                if (currentUser != null && currentUser.getLogin().equals(login)) {
-                    try {
-                        User user = (DbManager.getDbManager()).getUser(currentUser.getId());
-                        if (user != null)
-                            selectUser(user, true);
-                        else
-                            reset();
-                    } catch (Exception e) {
-                        logger.log(Level.SEVERE, "Failed to load current user from login and password");
-                    }
-                }
+                User u = DbManager.getDbManager().updateUserBlocked(login, true);
+                if (u != null)
+                    ComftechManager.getInstance().checkMonitoring(u.getId(), true);
+                reset();
             }
         }
     }
 
-	private void selectUser(User user, boolean silent) {
+	public void selectUser(User user, boolean silent) {
         synchronized (currT) {
             currentUser = user;
             SyncStatusManager.getSyncStatusManager().userChanged(currentUser);
@@ -381,7 +373,7 @@ public class UserManager {
                     e.printStackTrace();
                 }
                 // Check if monitoring active and and eventually update the monitoring parametres
-                ComftechManager.getInstance().checkMonitoring(currentUser.getId());
+                ComftechManager.getInstance().checkMonitoring(currentUser.getId(), false);
             }
             if (!silent)
                 sendMessage(USER_CHANGED, null);
@@ -418,6 +410,9 @@ public class UserManager {
             // log in failed, we must require to the user to repeat the log in operation
             Log.i(TAG, "webAuthenticationFailed()");
             SyncStatusManager.getSyncStatusManager().setLoginError(true);
+            User u = DbManager.getDbManager().getUser(login, password);
+            if (u != null)
+                ComftechManager.getInstance().checkMonitoring(u.getId(), true);
             sendMessage(LOGIN_FAILED, ResourceManager.getResource().getString("LoginDialog.badCredentials"));
         }
 
@@ -429,7 +424,6 @@ public class UserManager {
                 if (code.equals(XmlErrorCode.PLATFORM_ERROR))
                     sendMessage(ERROR_OCCURED, ResourceManager.getResource().getString("errorPlatform"));
                 else if (code.equals(XmlErrorCode.CONNECTION_ERROR))
-                    // Troppi tentativi di autenticazione falliti, utente temporaneamente bloccato
                     sendMessage(ERROR_OCCURED, ResourceManager.getResource().getString("errorHttp"));
                 else if (code.equals(XmlErrorCode.PASSWORD_WRONG_TOO_MANY_TIMES))
                     // Troppi tentativi di autenticazione falliti, utente temporaneamente bloccato

@@ -302,7 +302,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
         deviceOperations.setHandler(deviceManagerHandler);
         measureManager = MeasureManager.getMeasureManager();
         userManager = UserManager.getUserManager();
-        userManager.setHandler(userManagerHandler);
+        userManager.setGuiHandler(userManagerHandler);
 
         //Ottengo il riferimento agli elementi che compongono la view
 		mDrawerLayout = findViewById(R.id.device_list_drawer_layout);
@@ -413,8 +413,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 		super.onResume();
 		Log.i(TAG, "onResume()");
 		try {
-			deviceOperations.setHandler(deviceManagerHandler);
-			userManager.setHandler(userManagerHandler);
             SyncStatusManager ssm = SyncStatusManager.getSyncStatusManager();
             ssm.addListener(syncStatusHandler);
             if (ssm.getLoginError() || ssm.getMeasureError())
@@ -1817,6 +1815,13 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 		return msg;
 	}
 
+	private void checkPatient() {
+		User currentUser = userManager.getCurrentUser();
+		Patient currentPatient = userManager.getCurrentPatient();
+		if ((currentUser != null) && (currentPatient != null) && !currentUser.getPatients().contains(currentPatient))
+			userManager.setCurrentPatient(null);
+	}
+
     private static class DeviceManagerMessageHandler extends Handler {
             private final WeakReference<DeviceList> mActivity;
 
@@ -1909,9 +1914,17 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
             DeviceList activity = mActivity.get();
 			switch (msg.what) {
 			case UserManager.USER_CHANGED:
-                activity.resetView();
-                activity.userManager.setCurrentPatient(null);
+				// Autenticazione sulla piattaforma eseguita con successo
 				Log.i(TAG, "userManangerHandler: user changed");
+                activity.resetView();
+
+				if (activity.userManager.getCurrentUser().isPatient()) {
+					activity.currentPatientLL.setVisibility(View.GONE);
+				} else {
+					activity.currentPatientLL.setVisibility(View.VISIBLE);
+				}
+				// reset currentPatient to null if not present in the new patientList
+                activity.checkPatient();
 
                 activity.titleTV.setText(activity.userManager.getCurrentUser().getName() + "\n" + activity.userManager.getCurrentUser().getSurname());
                 activity.fitTextInPatientNameLabel(activity.getString(R.string.selectPatient));
@@ -1922,16 +1935,12 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 				//Forzo la ricostruzione del menu
                 activity.supportInvalidateOptionsMenu();
 
-				if (activity.userManager.getCurrentUser().isPatient()) {
-                    activity.currentPatientLL.setVisibility(View.GONE);
-				} else {
-                    activity.currentPatientLL.setVisibility(View.VISIBLE);
-				}
 				Intent intent = new Intent(MyApp.getContext(), SendMeasureService.class);
 				intent.putExtra(SendMeasureService.USER_TAG, activity.userManager.getCurrentUser().getId());
 				MyApp.getContext().startService(intent);
 				break;
 			case UserManager.ERROR_OCCURED:
+				// Errore nel dialogo con la piattaforma
 				if (activity.retryLocalLogin) {
                     activity.retryLocalLogin = false;
                     activity.userManager.logInUserFromDb(activity.userid,activity.password);
@@ -1945,6 +1954,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                 }
                 break;
             case UserManager.BAD_PASSWORD:
+            	// Errore nel cambio password
                 Log.d(TAG, "UserManager.BAD_PASSWORD:");
                 activity.myRemoveDialog(PROGRESS_DIALOG);
                 dataBundle = new Bundle();
@@ -1954,6 +1964,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                 activity.myShowDialog(ALERT_DIALOG);
 				break;
 			case UserManager.LOCAL_LOGIN_FAILED:
+				// Autenticazione utente con credenziali sul DB local fallita
                 Log.e(TAG, "userManagerHandler: LOCAL_LOGIN_FAILED");
                 activity.myRemoveDialog(PROGRESS_DIALOG);
                 dataBundle = new Bundle();
@@ -1963,8 +1974,18 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                 activity.myShowDialog(ALERT_DIALOG);
                 break;
             case UserManager.LOGIN_FAILED:
+            	// Credenziali errate
                 Log.e(TAG, "userManagerHandler: LOGIN_FAILED");
                 activity.myRemoveDialog(PROGRESS_DIALOG);
+				if (!activity.runningChangePassword) {
+					activity.measureList = new ArrayList<>();
+					activity.setupView();
+					activity.resetView();
+					activity.userManager.setCurrentPatient(null);
+					activity.setCurrentUserLabel("");
+					activity.currentPatientLL.setVisibility(View.GONE);
+					activity.doLogout();
+				}
                 dataBundle = new Bundle();
                 dataBundle.putString(AppConst.MESSAGE, (String)msg.obj);
                 if (!activity.runningChangePassword)
@@ -1972,6 +1993,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                 activity.myShowDialog(ALERT_DIALOG);
                 break;
             case UserManager.USER_BLOCKED:
+            	// L'utente è stato bloccato lato piattafroma
                 Log.e(TAG, "userManagerHandler: User Blocked");
                 activity.myRemoveDialog(PROGRESS_DIALOG);
 			    DialogManager.showToastMessage(activity, AppResourceManager.getResource().getString("userBlocked"));
@@ -1984,6 +2006,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                 activity.doLogout();
                 break;
             case UserManager.USER_LOCKED:
+            	// Utente bloccato per troppi errori nell'autenticazione
 				Log.e(TAG, "userManagerHandler: User Locked");
                 activity.myRemoveDialog(PROGRESS_DIALOG);
                 dataBundle = new Bundle();
@@ -2015,6 +2038,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 
 	private void setupDeviceList() {
 		User currentUser = userManager.getCurrentUser();
+		Patient currentPatient = userManager.getCurrentPatient();
 		if(currentUser != null){
 			//L'utente corrente diventa utente attivo
 			currentUser.setActive(true);
@@ -2023,7 +2047,9 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 			initMeasureModelsMap();
 
 			patientList = currentUser.getPatients();
-			if (patientList == null || patientList.size() == 0) {
+			if ((currentPatient != null) && patientList.contains(currentPatient)) {
+				setCurrentUserLabel(currentPatient.getName() + " " + currentPatient.getSurname());
+			} else if (patientList == null || patientList.size() == 0) {
 				dataBundle = new Bundle();
 				dataBundle.putString(AppConst.MESSAGE, getString(R.string.noPatient));
 				myShowDialog(SIMPLE_DIALOG);
@@ -2044,9 +2070,9 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	        		startSelectPatientActivity();
 	        	}
 			}  else {
-				Patient p = patientList.get(0);
-				setCurrentUserLabel(p.getName() + " " + p.getSurname());
-				userManager.setCurrentPatient(p);
+				currentPatient = patientList.get(0);
+				setCurrentUserLabel(currentPatient.getName() + " " + currentPatient.getSurname());
+				userManager.setCurrentPatient(currentPatient);
 			}
 
 			setupView();

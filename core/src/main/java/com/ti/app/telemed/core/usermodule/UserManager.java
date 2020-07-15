@@ -146,6 +146,11 @@ public class UserManager {
         return DbManager.getDbManager().getPatientData(patientId);
     }
 
+    public String getUserId(String login) {
+        User u = DbManager.getDbManager().getUserByLogin(login);
+        return (u == null)? null:u.getId();
+    }
+
     /**
      * Restituisce l'utente corrente loggato
      * @return               Utente corrente
@@ -221,7 +226,7 @@ public class UserManager {
 
     public void syncActiveUser(Handler handler) {
         User u = getActiveUser();
-        if (u == null || syncHandler == null)
+        if (u == null || handler == null)
             return;
         synchronized (currT) {
             syncHandler = handler;

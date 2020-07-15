@@ -80,11 +80,11 @@ public class SyncWorker extends Worker {
                     Log.d(TAG, "SendMeasureService started");
                 } else {
                     Log.w(TAG, "askOperatorData failed");
-                    return Result.failure();
+                    return Result.success();
                 }
             } catch (Exception e) {
                 Log.e(TAG, e.toString());
-                return Result.failure();
+                return Result.success();
             }
         }
         return Result.success();

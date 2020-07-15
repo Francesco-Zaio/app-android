@@ -773,6 +773,26 @@ public class DbManager {
         }
     }
 
+    public User getUserByLogin(String login) {
+        synchronized (this) {
+            User ret = null;
+            Cursor c = null;
+            try {
+                c = mDb.query("USER", null, "LOGIN = ?", new String[]{login}, null, null, null);
+                if (c != null) {
+                    if (c.moveToFirst()) {
+                        // the query returns something
+                        ret = getUserObject(c);
+                    }
+                }
+            } finally {
+                if (c != null)
+                    c.close();
+            }
+            return ret;
+        }
+    }
+
     public void resetActiveUser(String userId) {
         synchronized (this) {
             int count;

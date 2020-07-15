@@ -175,17 +175,16 @@ public class ComftechManager implements Runnable{
         }
     }
 
+    // All'arrivo di ogni misura viene chiamato questo metodo per verificare se il monitoraggio è
+    // ancora valido
     public boolean isMonitoringValid(String userId) {
-        String monitoredId = ComftechManager.getInstance().getMonitoringUserId();
-        User u = UserManager.getUserManager().getCurrentUser();
-
-        if (u == null)
-            u = DbManager.getDbManager().getActiveUser();
+        User u = UserManager.getUserManager().getActiveUser();
         if (u == null || u.isDefaultUser() || u.isBlocked() || !u.isPatient() || !u.getId().equals(userId)) {
             Log.w(TAG, "Current User is Null, or is Blocked, or not patient or different ");
             return false;
         }
 
+        String monitoredId = ComftechManager.getInstance().getMonitoringUserId();
         if (monitoredId.isEmpty() || !monitoredId.equals(userId)) {
             Log.w(TAG, "Monitoring not active or monitored User is different ");
             return false;
@@ -200,6 +199,8 @@ public class ComftechManager implements Runnable{
         return true;
     }
 
+    // All'arrivo di ogni misura viene chiamato questo metodo per verificare se il monitoraggio è
+    // ancora valido
     public boolean updateMonitoring(String userId) {
         UserMeasure um  = DbManager.getDbManager().getUserMeasure(userId, KMsr_Comftech);
         Map<String,String> thresholds = um.getThresholds();

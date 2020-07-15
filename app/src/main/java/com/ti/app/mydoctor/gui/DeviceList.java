@@ -212,7 +212,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
     private boolean retryLocalLogin = true;
     // variabili dove vengono memorizzate le credenziali dell'utente durante l'operazone di login
     // per poter fare il retry in locale nel caso la piattaforma non risponda
-    private String userid,password;
+    private String login,password;
 
 	private GWTextView patientNameTV;
 	
@@ -1914,6 +1914,9 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
             DeviceList activity = mActivity.get();
 			switch (msg.what) {
 			case UserManager.USER_CHANGED:
+				// TODO remove
+				// MyApp.testSyncWorker();
+
 				// Autenticazione sulla piattaforma eseguita con successo
 				Log.i(TAG, "userManangerHandler: user changed");
                 activity.resetView();
@@ -1943,7 +1946,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 				// Errore nel dialogo con la piattaforma
 				if (activity.retryLocalLogin) {
                     activity.retryLocalLogin = false;
-                    activity.userManager.logInUserFromDb(activity.userid,activity.password);
+                    activity.userManager.logInUserFromDb(activity.login,activity.password);
                 } else {
                     activity.myRemoveDialog(PROGRESS_DIALOG);
                     dataBundle = new Bundle();
@@ -2171,7 +2174,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 					public void onClick(DialogInterface dialog, int which) {
 						dialog.dismiss();
 						myShowDialog(PROGRESS_DIALOG);
-						userManager.logInUser(userid, password);
+						userManager.logInUser(login, password);
 					}
 				});
 				builder.setNegativeButton(R.string.cancelButton, new DialogInterface.OnClickListener() {
@@ -2350,11 +2353,11 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 				dataBundle.putBoolean(AppConst.IS_CONFIGURATION, true);
                 runningChangePassword = false;
                 retryLocalLogin = true;
-                userid = loginET.getText().toString();
+                login = loginET.getText().toString();
                 password = pwdET.getText().toString();
 
 				String patientId = ComftechManager.getInstance().getMonitoringUserId();
-				if (patientId.isEmpty() || patientId.equals(userid)) {
+				if (patientId.isEmpty() || patientId.equals(userManager.getUserId(login))) {
 					myShowDialog(PROGRESS_DIALOG);
 					userManager.logInUser(loginET.getText().toString(), pwdET.getText().toString());
 				} else {
@@ -2675,7 +2678,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 			myShowDialog(PROGRESS_DIALOG);
 			runningChangePassword = false;
 			retryLocalLogin = true;
-			userid = user.getLogin();
+			login = user.getLogin();
 			password = user.getPassword();
 			userManager.logInUser(user.getLogin(), user.getPassword());
         }

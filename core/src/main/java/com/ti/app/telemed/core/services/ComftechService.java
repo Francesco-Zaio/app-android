@@ -153,10 +153,12 @@ public class ComftechService extends Service {
                     return;
                 }
 
+                /*
                 if (cm.updateMonitoring(userId)) {
                     Log.i(TAG, "Update monitoring parameters");
                     cm.startMonitoring(userId, null);
                 }
+                */
 
                 /*
                 soglia minima e massima pari ad esempio a 40 e 120  “R:40 G:120 R:1000”

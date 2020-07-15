@@ -8,8 +8,11 @@ import androidx.work.BackoffPolicy;
 import androidx.work.Constraints;
 import androidx.work.ExistingPeriodicWorkPolicy;
 import androidx.work.NetworkType;
+import androidx.work.OneTimeWorkRequest;
 import androidx.work.PeriodicWorkRequest;
 import androidx.work.WorkManager;
+import androidx.work.WorkRequest;
+
 import com.ti.app.telemed.core.configuration.ConfigurationManager;
 import com.ti.app.telemed.core.syncmodule.SyncWorker;
 
@@ -67,6 +70,21 @@ public class MyApp extends Application {
      */
     public static ConfigurationManager getConfigurationManager(){
         return configurationManager;
+    }
+
+    public static void testSyncWorker() {
+        Constraints constraints = new Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build();
+
+        WorkRequest myWorkRequest =
+                new OneTimeWorkRequest.Builder(SyncWorker.class)
+                        .addTag("TEST_SYNC_WORKER")
+                        .setConstraints(constraints)
+                        .setInitialDelay(2, TimeUnit.MINUTES)
+                        .build();
+        WorkManager workManager = WorkManager.getInstance(instance);
+        workManager.enqueue(myWorkRequest);
     }
 
     public static void scheduleSyncWorker(boolean boot) {

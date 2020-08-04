@@ -97,11 +97,10 @@ public class AppUtil {
 				else if (measure.equalsIgnoreCase(GWConst.KMsrImg))
 					return R.drawable.immagini_icon;
 				else if (measure.equalsIgnoreCase(GWConst.KMsr_Comftech))
-					// TODO prevedere le icone diverse nel caso di monitoraggio attivo/disattivo
 					if (ComftechManager.getInstance().getMonitoringUserId().isEmpty())
-						return R.drawable.spirometria_icon;
+						return R.drawable.cardioresp_icon;
 					else
-						return R.drawable.immagini_icon;
+						return R.drawable.cardioresp_off_icon;
 				else
 					return R.drawable.icon;
 			case DOCUMENTO:
@@ -133,7 +132,7 @@ public class AppUtil {
 				else if (measure.equalsIgnoreCase(GWConst.KMsrImg))
 					return R.drawable.small_immagini_icon;
 				else if (measure.equalsIgnoreCase(GWConst.KMsr_Comftech))
-					return R.drawable.small_ecg_icon;
+					return R.drawable.small_cardioresp_icon;
 				else
 					return R.drawable.icon;
 			case DOCUMENTO:

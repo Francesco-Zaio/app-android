@@ -1,7 +1,6 @@
 package com.ti.app.telemed.core.services;
 
 import android.app.Service;
-import android.content.ComponentName;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
@@ -152,13 +151,6 @@ public class ComftechService extends Service {
                     cm.stopMonitoring(null);
                     return;
                 }
-
-                /*
-                if (cm.updateMonitoring(userId)) {
-                    Log.i(TAG, "Update monitoring parameters");
-                    cm.startMonitoring(userId, null);
-                }
-                */
 
                 /*
                 soglia minima e massima pari ad esempio a 40 e 120  “R:40 G:120 R:1000”

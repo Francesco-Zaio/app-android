@@ -462,7 +462,7 @@ public class GIMAPC300SpotCheck
                     outer.deviceListener.notifyWaitToUi(ResourceManager.getResource().getString("KMeasuring"));
                     break;
                 case MSG_MEASURE_CANCELED:
-                    outer.deviceListener.notifyError(DeviceListener.MEASUREMENT_ERROR, ResourceManager.getResource().getString("KAbortMeasure"));
+                    outer.deviceListener.notifyError(DeviceListener.MEASUREMENT_ERROR, ResourceManager.getResource().getString("KAbortOperation"));
                     outer.stop();
                     break;
                 case MSG_GLU:

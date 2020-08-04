@@ -6,6 +6,8 @@ import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
+
 import android.os.Bundle;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -45,7 +47,7 @@ public class AgendaActivity extends AppCompatActivity {
         ActionBar customActionBar = getSupportActionBar();
         if (customActionBar != null) {
             //Setta il gradiente di sfondo della action bar
-            Drawable cd = this.getResources().getDrawable(R.drawable.action_bar_background_color);
+            Drawable cd = ContextCompat.getDrawable(this, R.drawable.action_bar_background_color);
             customActionBar.setBackgroundDrawable(cd);
 
             customActionBar.setDisplayShowCustomEnabled(true);

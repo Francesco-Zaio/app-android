@@ -39,8 +39,8 @@ import static com.ti.app.telemed.core.util.GWConst.KMsr_Comftech;
 public class ComftechManager implements Runnable{
     private static final String TAG = "ComftechManager";
 
-    private static final String COMFTECH_PACKAGE = "com.comftech";
-    private static final String COMFTECH_SERVICE = "com.comftech.ListenerService";
+    private static final String COMFTECH_PACKAGE = "com.comftech.howdy";
+    private static final String COMFTECH_SERVICE = "com.comftech.howdy.timremoteservices";
 
     private static final String KEY_COMFTECH_PATIENT = "COMFTECH_PATIENT";
     private static final String KEY_COMFTECH_TH_EGwCode_X0 = "COMFTECH_TH_EGwCode_X0";
@@ -109,6 +109,7 @@ public class ComftechManager implements Runnable{
 
     /* Result codes */
     private static final int MY_BASE_CODE = 10000;
+    public static final int CODE_OK = 0;
     public static final int CODE_RESPONSE_ERROR = MY_BASE_CODE + 1;
     public static final int CODE_SENDDATA_ERROR = MY_BASE_CODE + 2;
     public static final int CODE_TIMEOUT_ERROR = MY_BASE_CODE + 3;
@@ -140,7 +141,7 @@ public class ComftechManager implements Runnable{
     private List<RequestData> list = Collections.synchronizedList(new LinkedList<RequestData>());
     private RequestData currServed = null;
     private boolean responseReceived = false;
-    private int responseCode = 0;
+    private int responseCode = CODE_OK;
     private boolean bindingInProgress = false;
 
     private Messenger mService = null;
@@ -353,6 +354,7 @@ public class ComftechManager implements Runnable{
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
             synchronized (currT) {
+                resetTimer();
                 mService = new Messenger(service);
                 bindingInProgress = false;
                 currT.notifyAll();
@@ -403,27 +405,29 @@ public class ComftechManager implements Runnable{
                         currServed.listener.result(CODE_BIND_ERROR);
                 }
                 currServed = null;
-            } else
+            } else {
+                scheduleTimer(3*1000);
                 bindingInProgress = true;
+            }
             return;
         }
         if (!list.isEmpty()) {
             currServed = list.get(0);
             list.remove(0);
-            responseCode = 0;
+            responseCode = CODE_OK;
             responseReceived = false;
             if (!sendRequest()) {
                 if (currServed.listener != null)
                     currServed.listener.result(CODE_SENDDATA_ERROR);
                 currServed = null;
             } else
-                scheduleTimer();
+                scheduleTimer(6*1000);
         }
     }
 
     private void manageResponse() {
         resetTimer();
-        if (responseCode == 0) {
+        if (responseCode == CODE_OK) {
             switch (currServed.operation) {
                 case StartMonitoring:
                     Util.setRegistryValue(KEY_COMFTECH_PATIENT, currServed.userId);
@@ -454,25 +458,31 @@ public class ComftechManager implements Runnable{
         currServed = null;
     }
 
-    private static final int KTimeOut = 10 * 1000; // milliseconds (10 sec)
     private Timer timer;
     private class TimerExpired extends TimerTask {
         @Override
         public void run(){
             Log.w(TAG, "Timeout!");
             synchronized (currT) {
-                responseCode = CODE_TIMEOUT_ERROR;
+                if (bindingInProgress) {
+                    currServed = list.get(0);
+                    list.remove(0);
+                    bindingInProgress = false;
+                    responseCode = CODE_BIND_ERROR;
+                } else {
+                    responseCode = CODE_TIMEOUT_ERROR;
+                }
                 responseReceived = true;
                 currT.notifyAll();
             }
         }
     }
 
-    private void scheduleTimer() {
+    private void scheduleTimer(int millisec) {
         resetTimer();
         TimerExpired timerExpired = new TimerExpired();
         timer = new Timer();
-        timer.schedule(timerExpired, KTimeOut);
+        timer.schedule(timerExpired, millisec);
     }
 
     private void resetTimer() {

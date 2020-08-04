@@ -104,7 +104,7 @@ public class Contec8000GWActivity extends Activity {
                 buttonStart.setEnabled(true);
                 buttonAbort.setEnabled(false);
 				data.cancelCase();// Cancel the saved file
-                Toast.makeText(Contec8000GWActivity.this, ResourceManager.getResource().getString("KAbortMeasure"),Toast.LENGTH_LONG).show();
+                Toast.makeText(Contec8000GWActivity.this, ResourceManager.getResource().getString("KAbortOperation"),Toast.LENGTH_LONG).show();
 			}
 		});
         buttonAbort.setEnabled(false);

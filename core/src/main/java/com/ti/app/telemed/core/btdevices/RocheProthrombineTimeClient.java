@@ -207,7 +207,7 @@ public class RocheProthrombineTimeClient extends DeviceHandler implements
 
     @Override
     public void cancelDialog(){
-        String msg = ResourceManager.getResource().getString("KAbortMeasure");
+        String msg = ResourceManager.getResource().getString("KAbortOperation");
 		deviceListener.notifyError(DeviceListener.NO_MEASURES_FOUND,msg);
         stop();
     }

@@ -11,6 +11,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import com.ti.app.telemed.core.MyApp;
+import com.ti.app.telemed.core.common.Appointment;
 import com.ti.app.telemed.core.common.MeasureProtocolCfg;
 import com.ti.app.telemed.core.common.Device;
 import com.ti.app.telemed.core.common.Measure;
@@ -46,7 +47,7 @@ public class DbManager {
 
     // Versione del DB: incrementare il nr se vi sono modifiche allo schema ed inserire le modifice
     // nel metoto onUpgrade
-    private static final int DATABASE_VERSION = 19;
+    private static final int DATABASE_VERSION = 20;
     // versione DB minima richiesta per cui è possibile effettuare un upgrade del DB senza
     // dover droppare e ricreare tutte le tabelle (vedi metodo onUpgrade)
     private static final int MIN_OLD_VERSION = 10;
@@ -167,7 +168,16 @@ public class DbManager {
 		+ "FOREIGN KEY (ID_PATIENT) REFERENCES PATIENT (ID) ON DELETE CASCADE, "
 		+ "FOREIGN KEY (ID_USER) REFERENCES USER (ID) ON DELETE CASCADE )";
 
-	private static class DatabaseHelper extends SQLiteOpenHelper {
+    private static final String CREATE_APPOINTMENT_TBL = "CREATE table APPOINTMENT ("
+            + "ID_USER text, "
+            + "TIMESTAMP integer NOT NULL, "
+            + "ID text, "
+            + "TYPE integer, "
+            + "DATA text, "
+            + "FOREIGN KEY (ID_USER) REFERENCES USER (ID) ON DELETE CASCADE )";
+
+
+    private static class DatabaseHelper extends SQLiteOpenHelper {
 
         DatabaseHelper(Context context) {
             super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -185,6 +195,7 @@ public class DbManager {
             db.execSQL(CREATE_CURRENT_DEVICE_TBL);
             db.execSQL(CREATE_SERVER_CONF_TBL);
             db.execSQL(CREATE_MEASURE_PROTOCOL_CFG_TBL);
+            db.execSQL(CREATE_APPOINTMENT_TBL);
             Log.i(TAG, "Database created");
         }
 
@@ -236,6 +247,8 @@ public class DbManager {
                         db.execSQL("UPDATE USER_MEASURE SET SEND_FREQ_ALARM=0");
                         db.execSQL("ALTER TABLE MEASURE ADD COLUMN RESULT text");
                         db.execSQL("UPDATE MEASURE SET RESULT='N'");
+                    case 19:
+                        db.execSQL(CREATE_APPOINTMENT_TBL);
                 }
             }
         }
@@ -287,6 +300,72 @@ public class DbManager {
             dbManager.open();
         }
         return dbManager;
+    }
+
+    // Appointment methods
+    private Appointment geAppointment(String id) {
+        synchronized (this) {
+            Cursor c = null;
+            Appointment ret = null;
+            try {
+                c = mDb.query("APPOINTMENT", null, "ID = ?", new String[]{id}, null, null, null);
+                if (c != null) {
+                    if (c.moveToNext()) {
+                        ret = getAppointmentObject(c);
+                    }
+                }
+            } finally {
+                if (c != null)
+                    c.close();
+            }
+            return ret;
+        }
+    }
+
+    private Appointment getAppointmentObject(Cursor c) {
+        synchronized (this) {
+            Appointment app = new Appointment();
+            app.setId(c.getString(c.getColumnIndex("ID")));
+            app.setIdUser(c.getString(c.getColumnIndex("ID_USER")));
+            app.setType(c.getInt(c.getColumnIndex("TYPE")));
+            app.setData(c.getString(c.getColumnIndex("DATA")));
+            app.setTimestamp(c.getLong(c.getColumnIndex("TIMESTAMP")));
+            return app;
+        }
+    }
+
+    public void insertAppointment(Appointment app) {
+        synchronized (this) {
+            ContentValues values = new ContentValues();
+            values.put("ID", app.getId());
+            values.put("ID_USER", app.getIdUser());
+            values.put("TYPE", app.getType());
+            values.put("DATA", app.getData());
+            values.put("TIMESTAMP", app.getTimestamp());
+            if (mDb.insert("APPOINTMENT", null, values) > 0)
+                logger.log(Level.INFO, "Appointment inserted: " + app.getId());
+            else
+                logger.log(Level.INFO, "Appointment insert failed: " + app.getId());
+        }
+    }
+
+    public void updateAppointment(Appointment app) {
+        synchronized (this) {
+            ContentValues values = new ContentValues();
+            values.put("DATA", app.getData());
+            values.put("TIMESTAMP", app.getTimestamp());
+            String[] args = new String[]{app.getId(), app.getIdUser(), String.valueOf(app.getType())};
+            if (mDb.update("APPOINTMENT", values, "ID = ? AND ID_USER =  ? AND TYPE = ?", args) > 0)
+                logger.log(Level.INFO, "Appointment updated: "+ app.getId());
+            else
+                logger.log(Level.INFO, "Appointment update failed: "+ app.getId());
+        }
+    }
+    public void deleteAppointment(String id) {
+        synchronized (this) {
+            int rows = mDb.delete("APPOINTMENT", "ID = ? ", new String[]{id});
+            logger.log(Level.INFO, "deleteAppointment " + id + " deleted " + rows + " rows");
+        }
     }
 
     // Device methods

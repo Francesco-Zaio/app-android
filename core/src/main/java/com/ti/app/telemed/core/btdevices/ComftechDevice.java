@@ -28,15 +28,18 @@ public class ComftechDevice extends DeviceHandler implements ComftechManager.Res
 
     @Override
     public void confirmDialog() {
-        if (isStart)
+        if (isStart) {
+            deviceListener.notifyToUi(ResourceManager.getResource().getString("KMonitoringWaitingOn"));
             ComftechManager.getInstance().startMonitoring(patient.getId(), this);
-        else
+        } else {
+            deviceListener.notifyToUi(ResourceManager.getResource().getString("KMonitoringWaitingOff"));
             ComftechManager.getInstance().stopMonitoring(this);
+        }
     }
 
     @Override
     public void cancelDialog() {
-        deviceListener.notifyError(MEASUREMENT_ERROR, ResourceManager.getResource().getString("KAbortMeasure"));
+        deviceListener.notifyError(MEASUREMENT_ERROR, ResourceManager.getResource().getString("KAbortOperation"));
         stop();
     }
 

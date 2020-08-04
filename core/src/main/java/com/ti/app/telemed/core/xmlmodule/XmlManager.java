@@ -318,7 +318,7 @@ public class XmlManager extends DefaultHandler {
 	// sax management
     @Override
     public void startElement(String uri, String localName, String qName, Attributes attributes) {
-    	Log.d(TAG, "startElement (localName): " + localName);
+    	//Log.d(TAG, "startElement (localName): " + localName);
         if (localName.equals(M2MXML_TAGNAME)) {
         	if (attributes.getValue(VERSION_ATTRIBUTENAME) != null) {
         		if (attributes.getValue(VERSION_ATTRIBUTENAME).equals(M2MXML_VERSION)) {
@@ -361,7 +361,7 @@ public class XmlManager extends DefaultHandler {
 
     @Override
 	public void endElement(String uri, String localName, String qName) {
-		Log.d(TAG, "endElement (localName): " + localName);
+		//Log.d(TAG, "endElement (localName): " + localName);
     	if (localName.equals(M2MXML_TAGNAME)) {
     		// when this tag finishes we don't do anything else
             rightM2mXml = false;

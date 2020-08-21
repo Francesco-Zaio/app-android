@@ -169,10 +169,12 @@ public class DbManager {
 		+ "FOREIGN KEY (ID_USER) REFERENCES USER (ID) ON DELETE CASCADE )";
 
     private static final String CREATE_APPOINTMENT_TBL = "CREATE table APPOINTMENT ("
+            + "ID integer primary key autoincrement, "
             + "ID_USER text, "
             + "TIMESTAMP integer NOT NULL, "
-            + "ID text, "
+            + "APP_ID text, "
             + "TYPE integer, "
+            + "URL text, "
             + "DATA text, "
             + "FOREIGN KEY (ID_USER) REFERENCES USER (ID) ON DELETE CASCADE )";
 
@@ -303,12 +305,12 @@ public class DbManager {
     }
 
     // Appointment methods
-    private Appointment geAppointment(String id) {
+    public Appointment getAppointment(String id) {
         synchronized (this) {
             Cursor c = null;
             Appointment ret = null;
             try {
-                c = mDb.query("APPOINTMENT", null, "ID = ?", new String[]{id}, null, null, null);
+                c = mDb.query("APPOINTMENT", null, "APP_ID = ?", new String[]{id}, null, null, null);
                 if (c != null) {
                     if (c.moveToNext()) {
                         ret = getAppointmentObject(c);
@@ -325,9 +327,11 @@ public class DbManager {
     private Appointment getAppointmentObject(Cursor c) {
         synchronized (this) {
             Appointment app = new Appointment();
-            app.setId(c.getString(c.getColumnIndex("ID")));
+            app.setId(c.getInt(c.getColumnIndex("ID")));
+            app.setAppointmentId(c.getString(c.getColumnIndex("APP_ID")));
             app.setIdUser(c.getString(c.getColumnIndex("ID_USER")));
             app.setType(c.getInt(c.getColumnIndex("TYPE")));
+            app.setUrl(c.getString(c.getColumnIndex("URL")));
             app.setData(c.getString(c.getColumnIndex("DATA")));
             app.setTimestamp(c.getLong(c.getColumnIndex("TIMESTAMP")));
             return app;
@@ -337,33 +341,35 @@ public class DbManager {
     public void insertAppointment(Appointment app) {
         synchronized (this) {
             ContentValues values = new ContentValues();
-            values.put("ID", app.getId());
+            values.put("APP_ID", app.getAppointmentId());
             values.put("ID_USER", app.getIdUser());
             values.put("TYPE", app.getType());
+            values.put("URL", app.getUrl());
             values.put("DATA", app.getData());
             values.put("TIMESTAMP", app.getTimestamp());
             if (mDb.insert("APPOINTMENT", null, values) > 0)
-                logger.log(Level.INFO, "Appointment inserted: " + app.getId());
+                logger.log(Level.INFO, "Appointment inserted: " + app.getAppointmentId());
             else
-                logger.log(Level.INFO, "Appointment insert failed: " + app.getId());
+                logger.log(Level.INFO, "Appointment insert failed: " + app.getAppointmentId());
         }
     }
 
     public void updateAppointment(Appointment app) {
         synchronized (this) {
             ContentValues values = new ContentValues();
+            values.put("URL", app.getUrl());
             values.put("DATA", app.getData());
             values.put("TIMESTAMP", app.getTimestamp());
-            String[] args = new String[]{app.getId(), app.getIdUser(), String.valueOf(app.getType())};
-            if (mDb.update("APPOINTMENT", values, "ID = ? AND ID_USER =  ? AND TYPE = ?", args) > 0)
-                logger.log(Level.INFO, "Appointment updated: "+ app.getId());
+            String[] args = new String[]{app.getAppointmentId(), app.getIdUser(), String.valueOf(app.getType())};
+            if (mDb.update("APPOINTMENT", values, "APP_ID = ? AND ID_USER =  ? AND TYPE = ?", args) > 0)
+                logger.log(Level.INFO, "Appointment updated: "+ app.getAppointmentId());
             else
-                logger.log(Level.INFO, "Appointment update failed: "+ app.getId());
+                logger.log(Level.INFO, "Appointment update failed: "+ app.getAppointmentId());
         }
     }
     public void deleteAppointment(String id) {
         synchronized (this) {
-            int rows = mDb.delete("APPOINTMENT", "ID = ? ", new String[]{id});
+            int rows = mDb.delete("APPOINTMENT", "APP_ID = ? ", new String[]{id});
             logger.log(Level.INFO, "deleteAppointment " + id + " deleted " + rows + " rows");
         }
     }

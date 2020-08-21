@@ -366,7 +366,9 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                 (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_NETWORK_STATE) != PackageManager.PERMISSION_GRANTED) ||
                 (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) ||
 				(ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) ||
-                (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) ) {
+                (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) ||
+        	    (ContextCompat.checkSelfPermission(this, Manifest.permission.RECEIVE_SMS) != PackageManager.PERMISSION_GRANTED) ) {
+
             new Handler().postDelayed(new Runnable() {
                 @Override
                 public void run() {
@@ -378,7 +380,8 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 										Manifest.permission.ACCESS_NETWORK_STATE,
 										Manifest.permission.WRITE_EXTERNAL_STORAGE,
 										Manifest.permission.CAMERA,
-										Manifest.permission.READ_PHONE_STATE
+										Manifest.permission.READ_PHONE_STATE,
+										Manifest.permission.RECEIVE_SMS
 								},
 								PERMISSIONS_REQUEST);
 					} catch(Exception e) {

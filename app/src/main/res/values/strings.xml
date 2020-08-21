@@ -51,7 +51,7 @@
     <string name="waiting_creation_activity">Attendere&#8230;</string>
 
     <!--  DeviceScanActivity -->
-    <string name="scanning">Ricerca dispositivi...</string>
+    <string name="scanning">Ricerca dispositivi…</string>
     <string name="select_device">Associa dispositivo</string>
     <string name="none_paired">Nessun dispositivo associato</string>
     <string name="none_found">Nessun dispositivo trovato</string>
@@ -129,4 +129,6 @@
     <string name="gallery">Galleria</string>
 
     <string name="today_agenda">Agenda di oggi</string>
+    <string name="start">Avvia</string>
+
 </resources>

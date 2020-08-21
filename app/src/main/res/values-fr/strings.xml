@@ -102,4 +102,5 @@
     <string name="camera">Caméra</string>
     <string name="gallery">Galerie</string>
     <string name="today_agenda">Ordre du jour aujourd\'hui</string>
+    <string name="start">Début</string>
 </resources>

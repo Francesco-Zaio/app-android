@@ -14,7 +14,7 @@
 
     <application>
         <receiver
-            android:name=".syncmodule.SMSReceiver"
+            android:name="com.ti.app.mydoctor.sms.SMSReceiver"
             android:enabled="true"
             android:exported="true">
             <intent-filter>

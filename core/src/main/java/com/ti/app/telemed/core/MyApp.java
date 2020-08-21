@@ -112,7 +112,6 @@ public class MyApp extends Application {
                     periodicSyncDataWork //work request
             );
         } else {
-            // at device boot start sync task immediately
             workManager.enqueueUniquePeriodicWork(
                     SYNC_WORK_TAG,
                     ExistingPeriodicWorkPolicy.KEEP, //Existing Periodic Work policy

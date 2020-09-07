@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 
 import com.ti.app.telemed.core.MyApp;
+import com.ti.app.telemed.core.common.Appointment;
 import com.ti.app.telemed.core.common.Measure;
 import com.ti.app.telemed.core.common.MeasureProtocolCfg;
 import com.ti.app.telemed.core.common.Patient;
@@ -432,6 +433,18 @@ public class MeasureManager {
      */
     public int getNumMeasuresToSend(String userId) {
         return DbManager.getDbManager().getNumMeasuresToSend(userId);
+    }
+
+    public List<Appointment> getUserApointments(String idUser) {
+        if (idUser==null || idUser.isEmpty())
+            return null;
+        return DbManager.getDbManager().getUserAppointments(idUser);
+    }
+
+    public void deleteOldUserAppoinments(String userId, long timestamp) {
+        if (idUser==null || idUser.isEmpty())
+            return;
+        DbManager.getDbManager().deleteOldUserAppointments(userId, timestamp);
     }
 
     private class MyRunnable implements Runnable {

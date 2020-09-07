@@ -164,9 +164,9 @@ public class SMSReceiver extends BroadcastReceiver {
                 .build();
 
         OneTimeWorkRequest oneTimeWork =
-                // TODO schedule 10 minutes before and check if in the future
+                // TODO check if in the future
                 new OneTimeWorkRequest.Builder(AppointmentWorker.class)
-                        .setInitialDelay(timestamp - System.currentTimeMillis(), TimeUnit.MILLISECONDS)
+                        .setInitialDelay(timestamp - System.currentTimeMillis() - (1000*60*15), TimeUnit.MILLISECONDS)
                         // setting backoff on case the work needs to retry
                         .setBackoffCriteria(BackoffPolicy.LINEAR,5,TimeUnit.MINUTES)
                         .addTag(appointmentId)

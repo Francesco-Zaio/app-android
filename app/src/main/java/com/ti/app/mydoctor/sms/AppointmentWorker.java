@@ -5,8 +5,6 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Build;
 import android.util.Log;
@@ -18,12 +16,11 @@ import androidx.work.Data;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
+import com.ti.app.mydoctor.AppResourceManager;
 import com.ti.app.mydoctor.R;
 import com.ti.app.telemed.core.MyApp;
 import com.ti.app.telemed.core.common.Appointment;
-import com.ti.app.telemed.core.common.User;
 import com.ti.app.telemed.core.dbmodule.DbManager;
-import com.ti.app.telemed.core.usermodule.UserManager;
 
 public class AppointmentWorker extends Worker {
     private static final String TAG = "AppointmentWorker";
@@ -32,11 +29,8 @@ public class AppointmentWorker extends Worker {
     private static final String CHANNEL_ID = "TELEMONITORING_CHANNEL";
     private static boolean channelRegisterd = false;
 
-    private final Context ctx;
-
     public AppointmentWorker(@NonNull Context appContext, @NonNull WorkerParameters workerParams) {
         super(appContext, workerParams);
-        ctx = appContext;
     }
 
     @Override
@@ -76,11 +70,11 @@ public class AppointmentWorker extends Worker {
 
         //Bitmap bm = BitmapFactory.decodeResource(MyApp.getContext().getResources(), R.drawable.logo_icon);
         NotificationCompat.Builder builder = new NotificationCompat.Builder(MyApp.getContext(), CHANNEL_ID)
-                .setSmallIcon(R.drawable.logo_icon)
-                //.setLargeIcon(bm)
+                // TODO creare icona bianco/nero
+                .setSmallIcon(R.drawable.ic_notification_televisita)
                 .setWhen(app.getTimestamp())
                 .setShowWhen(true)
-                .setContentTitle("Televisita")
+                .setContentTitle(AppResourceManager.getResource().getString("AppointmentType." + app.getType()))
                 //.setContentText(app.getData())
                 //.setStyle(new NotificationCompat.BigTextStyle().bigText(app.getData()))
                 .setPriority(NotificationCompat.PRIORITY_MAX)

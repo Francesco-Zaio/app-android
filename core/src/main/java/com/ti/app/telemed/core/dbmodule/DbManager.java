@@ -304,6 +304,26 @@ public class DbManager {
         return dbManager;
     }
 
+    public List<Appointment> getUserAppointments(String userId) {
+        synchronized (this) {
+            Cursor c = null;
+            List<Appointment> apps = new ArrayList<>();
+            try {
+                c = mDb.query("APPOINTMENT", null, "ID_USER = ?", new String[]{userId}, null, null, "TIMESTAMP DESC");
+                if (c != null) {
+                    while (c.moveToNext()) {
+                        Appointment app = getAppointmentObject(c);
+                        apps.add(app);
+                    }
+                }
+            } finally {
+                if (c != null)
+                    c.close();
+            }
+            return apps;
+        }
+    }
+
     // Appointment methods
     public Appointment getAppointment(String id) {
         synchronized (this) {
@@ -367,10 +387,18 @@ public class DbManager {
                 logger.log(Level.INFO, "Appointment update failed: "+ app.getAppointmentId());
         }
     }
+
     public void deleteAppointment(String id) {
         synchronized (this) {
             int rows = mDb.delete("APPOINTMENT", "APP_ID = ? ", new String[]{id});
             logger.log(Level.INFO, "deleteAppointment " + id + " deleted " + rows + " rows");
+        }
+    }
+
+    public void deleteOldUserAppointments(String userId, long timestamp) {
+        synchronized (this) {
+            int rows = mDb.delete("APPOINTMENT", "ID_USER = ?  AND TIMESTAMP < ?", new String[]{userId, String.valueOf(timestamp)});
+            logger.log(Level.INFO, "deleteAppointments: deleted " + rows + " rows");
         }
     }
 

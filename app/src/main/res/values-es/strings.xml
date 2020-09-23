@@ -130,4 +130,5 @@
 
 	<string name="today_agenda">Agenda de hoy</string>
 	<string name="start">Comienzo</string>
+	<string name="close">Cierra</string>
 </resources>

@@ -74,7 +74,7 @@ public class AppointmentWorker extends Worker {
                 .setSmallIcon(R.drawable.ic_notification_televisita)
                 .setWhen(app.getTimestamp())
                 .setShowWhen(true)
-                .setContentTitle(AppResourceManager.getResource().getString("AppointmentType." + app.getType()))
+                .setContentTitle(app.getTitle())
                 //.setContentText(app.getData())
                 //.setStyle(new NotificationCompat.BigTextStyle().bigText(app.getData()))
                 .setPriority(NotificationCompat.PRIORITY_MAX)

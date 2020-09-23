@@ -1,8 +1,10 @@
 package com.ti.app.mydoctor.gui;
 
 import android.annotation.SuppressLint;
+import android.app.AlertDialog;
 import android.app.PendingIntent;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Typeface;
@@ -231,7 +233,8 @@ public class AgendaActivity extends AppCompatActivity implements View.OnClickLis
             tv2.setBackgroundColor(Color.parseColor("#f8f8f8"));
             tv2.setTextColor(Color.parseColor("#000000"));
             tv2.setTypeface(Typeface.create("roboto_condensed", Typeface.NORMAL));
-            tv2.setText(AppResourceManager.getResource().getString("AppointmentType." + app.getType()));
+            tv2.setText(app.getTitle());
+            //tv2.setText(AppResourceManager.getResource().getString("AppointmentType." + app.getType()));
 
             final TextView tv3 = new TextView(this);
             tv3.setLayoutParams(new TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT,
@@ -300,7 +303,29 @@ public class AgendaActivity extends AppCompatActivity implements View.OnClickLis
         if (v.getId() < appointmentsOffset)
             return;
         Appointment app = appointments.get(v.getId() - appointmentsOffset);
-        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(app.getUrl()));
-        startActivity(intent);
+        showAppointmentDialog(app);
+    }
+
+    private void showAppointmentDialog(final Appointment app) {
+        setTheme(R.style.Theme_MyDoctorAtHome_Light);
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setMessage(app.getData());
+        builder.setTitle(app.getTitle());
+        if ((System.currentTimeMillis() > (app.getTimestamp() - 1000*60*10)) && (System.currentTimeMillis() < (app.getTimestamp() + 1000*60*60)))
+            builder.setPositiveButton(R.string.start, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.dismiss();
+                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(app.getUrl()));
+                startActivity(intent);
+            }
+        });
+        builder.setNegativeButton(R.string.close, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.dismiss();
+            }
+        });
+        builder.show();
     }
 }

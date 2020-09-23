@@ -20,6 +20,7 @@ import com.ti.app.telemed.core.dbmodule.DbManager;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
@@ -29,48 +30,9 @@ public class SMSReceiver extends BroadcastReceiver {
 
 
     private static final String TAG = "SMSReceiver";
-    // TODO definire il mittente
-    private static final String SENDER="TODO";
 
     @Override
     public void onReceive(Context context, Intent intent) {
-
-    /*
-        // Retrieve the sms message chunks from the intent
-        SmsMessage[] rawSmsChunks;
-        try {
-            rawSmsChunks = Telephony.Sms.Intents.getMessagesFromIntent(intent);
-        } catch (NullPointerException ignored) { return; }
-
-        // Gather all sms chunks for each sender separately
-        Map<String, StringBuilder> sendersMap = new HashMap<>();
-        for (SmsMessage rawSmsChunk : rawSmsChunks) {
-            if (rawSmsChunk != null) {
-                String sender = rawSmsChunk.getDisplayOriginatingAddress();
-                String smsChunk = rawSmsChunk.getDisplayMessageBody();
-                StringBuilder smsBuilder;
-                if ( ! sendersMap.containsKey(sender) ) {
-                    // For each new sender create a separate StringBuilder
-                    smsBuilder = new StringBuilder();
-                    sendersMap.put(sender, smsBuilder);
-                } else {
-                    // Sender already in map. Retrieve the StringBuilder
-                    smsBuilder = sendersMap.get(sender);
-                }
-                // Add the sms chunk to the string builder
-                smsBuilder.append(smsChunk);
-            }
-        }
-
-        // Loop over every sms thread and concatenate the sms chunks to one piece
-        for ( Map.Entry<String, StringBuilder> smsThread : sendersMap.entrySet() ) {
-            String sender  = smsThread.getKey();
-            StringBuilder smsBuilder = smsThread.getValue();
-            String message = smsBuilder.toString();
-            handler.handleSms(sender, message);
-        }
-     */
-
         Log.i(TAG, "onReceive");
         if (Telephony.Sms.Intents.SMS_RECEIVED_ACTION.equals(intent.getAction())) {
             SmsMessage[] smsMessages = Telephony.Sms.Intents.getMessagesFromIntent(intent);
@@ -79,16 +41,8 @@ public class SMSReceiver extends BroadcastReceiver {
                 String message = smsMessage.getDisplayMessageBody();
                 String body = smsMessage.getMessageBody();
                 String originAddress = smsMessage.getOriginatingAddress();
-                // TODO filter the sender
                 Log.i(TAG, "SMS Received: sender=" + phoneNumber + " - message=" + message + " - body=" + body + " - originAddr=" + originAddress);
                 parseSMS(body);
-                /*
-                if (SENDER.equals(phoneNumber)) {
-                    parseSMS(body);
-                    Log.i(TAG, "Valid SMS Received: sender=" + phoneNumber + " - message=" + message + " - body=" + body + " - originAddr=" + originAddress);
-                } else
-                    Log.i(TAG, "Not Valid SMS Received: sender="+phoneNumber+" - message="+message+" - body="+body+" - originAddr="+originAddress);
-                */
                 setResultCode(Activity.RESULT_OK);
             }
         } else {
@@ -96,66 +50,119 @@ public class SMSReceiver extends BroadcastReceiver {
         }
     }
 
+    /*
+    I 7 parametri inclusi nelle parentesi quadre sono nell’ordine:
+    1.	id VC
+    2.	id utente
+    3.	timestamp VC (yyyyMMddHHmm)
+    4.	titolo VC
+    5.	azione riguardante la VC  sempre uno tra: “C” = creazione; “M” = modifica; “D” = cancellazione
+    6.	codice ripetizione (solo per action di ”creazione”)   sempre uno tra: “G” = giornaliera; “S” = settimanale; “M” = mensile
+    7.	numero totale appuntamenti ripetuti (solo per action di ”creazione”)
+    Tutti i parametri vengono sempre valorizzati; qualora il valore sia da ignorare viene valorizzato con la stringa “-1”.
+    Qualora il codice ripetizione e il numero totale di appuntamenti siano diversi da “-1”, il primo parametro “id VC” si riferisce all’ID della prima Video Conferenza creata: l’ID delle successive è per costruzione pari ai numeri successivi.
+    Il codice ripetizione può essere valorizzato solo per l'azione "C"
+    Cancellazione/Modifica vengono invite solo per singolo evento.
+    */
     private void parseSMS(String str) {
-        String id, idUser, url, body;
-        long timestamp;
-        boolean isDelete;
 
         Log.d(TAG, "parseSMS - started!");
-        body = str.substring(0, str.indexOf("["));
-        url = str.substring(str.indexOf("https"));
-        url = url.split("\\r?\\n")[0];
-        String[] s = str.substring(str.indexOf("[") + 1, str.indexOf("]")).split(",");
-        if (s.length != 4) {
-            Log.e(TAG, "parseSMS Error: message=" + str);
+        int i1 = str.indexOf("[");
+        int i2 = str.indexOf("]");
+        if ((i1 == -1) || (i2 == -1)) {
+            Log.i(TAG, "parseSMS: message not valid");
             return;
         }
-        id = s[0];
+        String[] s = str.substring(i1 + 1, i2).split(",");
+        if (s.length != 7) {
+            Log.i(TAG, "parseSMS: message not valid");
+            return;
+        }
+
+        int id;
+        String idUser, url, title, body;
+        boolean isDelete;
+        id = Integer.parseInt(s[0]);
         // TODO check if user exist and is not blocked
         idUser = s[1];
-        isDelete = s[3].equalsIgnoreCase("D");
         SimpleDateFormat format = new SimpleDateFormat("yyyyMMddHHmm", Locale.getDefault());
+        Calendar cal = Calendar.getInstance();
         try {
-            timestamp = format.parse(s[2]).getTime();
+            cal.setTime(format.parse(s[2]));
         } catch (ParseException e) {
             Log.e(TAG, "parseSMS Date format error: message=" + str);
             return;
         }
-        manageAppointment(id, idUser, url, body, timestamp, isDelete);
+        title = s[3];
+        isDelete = s[4].equalsIgnoreCase("D");
+        body = str.substring(0, str.indexOf("["));
+        url = str.substring(str.indexOf("https"));
+        url = url.split("\\r?\\n")[0];
+        int i;
+        int num;
+        switch (s[5]) {
+            case "G":
+                num = Integer.parseInt(s[6]);
+                manageAppointment(String.valueOf(id), idUser, url, title, body, cal, isDelete);
+                for (i=1;i<num;i++) {
+                    cal.add(Calendar.DATE, 1);
+                    manageAppointment(String.valueOf(id+i), idUser, url, title, body, cal, isDelete);
+                }
+                break;
+            case "S":
+                num = Integer.parseInt(s[6]);
+                manageAppointment(String.valueOf(id), idUser, url, title, body, cal, isDelete);
+                for (i=1;i<num;i++) {
+                    cal.add(Calendar.DATE, 7);
+                    manageAppointment(String.valueOf(id+i), idUser, url, title, body, cal, isDelete);
+                }
+                break;
+            case "M":
+                num = Integer.parseInt(s[6]);
+                manageAppointment(String.valueOf(id), idUser, url, title, body, cal, isDelete);
+                for (i=1;i<num;i++) {
+                    cal.add(Calendar.MONTH, 1);
+                    manageAppointment(String.valueOf(id+i), idUser, url, title, body, cal, isDelete);
+                }
+                break;
+            case "-1":
+            default:
+                manageAppointment(String.valueOf(id), idUser, url, title, body, cal, isDelete);
+                break;
+        }
     }
 
-    private void manageAppointment(String appointmentId, String idUser, String url, String body, long timestamp, boolean delete) {
+    private void manageAppointment(String appointmentId, String idUser, String url, String title, String body, Calendar cal, boolean delete) {
         Log.d(TAG, "manageAppointment - started!");
         DbManager dbManager = DbManager.getDbManager();
         Appointment app = dbManager.getAppointment(appointmentId);
         if (app == null) {
-            scheduleNotification(appointmentId, timestamp);
+            scheduleWorkRequest(appointmentId, cal.getTimeInMillis());
             app = new Appointment();
             app.setAppointmentId(appointmentId);
             app.setType(0);
             app.setIdUser(idUser);
             app.setUrl(url);
+            app.setTitle(title);
             app.setData(body);
-            app.setTimestamp(timestamp);
+            app.setTimestamp(cal.getTimeInMillis());
             dbManager.insertAppointment(app);
         } else {
             if (delete) {
-                removeNotification(appointmentId);
-                dbManager.deleteAppointment(app.getAppointmentId());
+                removeWorkRequest(appointmentId);
+                dbManager.deleteAppointment(app.getAppointmentId(), 0);
             } else {
-                long currTimestamp = app.getTimestamp();
-                String currData = app.getData();
-                if (timestamp != currTimestamp || !body.equals(currData)) {
-                    app.setTimestamp(timestamp);
-                    app.setData(body);
-                    dbManager.updateAppointment(app);
-                    scheduleNotification(appointmentId, timestamp);
-                }
+                app.setUrl(url);
+                app.setTimestamp(cal.getTimeInMillis());
+                app.setTitle(title);
+                app.setData(body);
+                dbManager.updateAppointment(app);
+                scheduleWorkRequest(appointmentId, cal.getTimeInMillis());
             }
         }
     }
 
-    private void scheduleNotification(String appointmentId, long timestamp) {
+    private void scheduleWorkRequest(String appointmentId, long timestamp) {
         Log.d(TAG, "scheduleNotification - started!");
         WorkManager workManager = WorkManager.getInstance(MyApp.getContext());
 
@@ -175,7 +182,7 @@ public class SMSReceiver extends BroadcastReceiver {
         workManager.enqueueUniqueWork(appointmentId, ExistingWorkPolicy.REPLACE,oneTimeWork);
     }
 
-    private void removeNotification(String appointmentId) {
+    private void removeWorkRequest(String appointmentId) {
         Log.d(TAG, "removeNotification - started!");
         WorkManager workManager = WorkManager.getInstance(MyApp.getContext());
         workManager.cancelUniqueWork(appointmentId);

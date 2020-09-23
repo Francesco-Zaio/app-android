@@ -8,6 +8,7 @@ public class Appointment {
     private String idUser;
     private long timestamp;
     private String url;
+    private String title;
     private String data;
 
     public void setId(int id) {
@@ -38,6 +39,10 @@ public class Appointment {
         this.data = data;
     }
 
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
     public int getId() {
         return id;
     }
@@ -60,6 +65,10 @@ public class Appointment {
 
     public String getUrl() {
         return url;
+    }
+
+    public String getTitle() {
+        return title;
     }
 
     public String getData() {

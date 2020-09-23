@@ -175,6 +175,7 @@ public class DbManager {
             + "APP_ID text, "
             + "TYPE integer, "
             + "URL text, "
+            + "TITLE text, "
             + "DATA text, "
             + "FOREIGN KEY (ID_USER) REFERENCES USER (ID) ON DELETE CASCADE )";
 
@@ -352,6 +353,7 @@ public class DbManager {
             app.setIdUser(c.getString(c.getColumnIndex("ID_USER")));
             app.setType(c.getInt(c.getColumnIndex("TYPE")));
             app.setUrl(c.getString(c.getColumnIndex("URL")));
+            app.setTitle(c.getString(c.getColumnIndex("TITLE")));
             app.setData(c.getString(c.getColumnIndex("DATA")));
             app.setTimestamp(c.getLong(c.getColumnIndex("TIMESTAMP")));
             return app;
@@ -365,6 +367,7 @@ public class DbManager {
             values.put("ID_USER", app.getIdUser());
             values.put("TYPE", app.getType());
             values.put("URL", app.getUrl());
+            values.put("TITLE", app.getTitle());
             values.put("DATA", app.getData());
             values.put("TIMESTAMP", app.getTimestamp());
             if (mDb.insert("APPOINTMENT", null, values) > 0)
@@ -378,19 +381,20 @@ public class DbManager {
         synchronized (this) {
             ContentValues values = new ContentValues();
             values.put("URL", app.getUrl());
+            values.put("TITLE", app.getTitle());
             values.put("DATA", app.getData());
             values.put("TIMESTAMP", app.getTimestamp());
-            String[] args = new String[]{app.getAppointmentId(), app.getIdUser(), String.valueOf(app.getType())};
-            if (mDb.update("APPOINTMENT", values, "APP_ID = ? AND ID_USER =  ? AND TYPE = ?", args) > 0)
+            String[] args = new String[]{app.getAppointmentId(), String.valueOf(app.getType())};
+            if (mDb.update("APPOINTMENT", values, "APP_ID = ? AND TYPE = ?", args) > 0)
                 logger.log(Level.INFO, "Appointment updated: "+ app.getAppointmentId());
             else
                 logger.log(Level.INFO, "Appointment update failed: "+ app.getAppointmentId());
         }
     }
 
-    public void deleteAppointment(String id) {
+    public void deleteAppointment(String id, int type) {
         synchronized (this) {
-            int rows = mDb.delete("APPOINTMENT", "APP_ID = ? ", new String[]{id});
+            int rows = mDb.delete("APPOINTMENT", "APP_ID = ?  AND TYPE = ?", new String[]{id, String.valueOf(type)});
             logger.log(Level.INFO, "deleteAppointment " + id + " deleted " + rows + " rows");
         }
     }

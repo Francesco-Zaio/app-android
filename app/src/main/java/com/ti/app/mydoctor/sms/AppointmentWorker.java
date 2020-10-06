@@ -22,6 +22,9 @@ import com.ti.app.telemed.core.MyApp;
 import com.ti.app.telemed.core.common.Appointment;
 import com.ti.app.telemed.core.dbmodule.DbManager;
 
+import java.util.Calendar;
+import java.util.Date;
+
 public class AppointmentWorker extends Worker {
     private static final String TAG = "AppointmentWorker";
 
@@ -62,6 +65,12 @@ public class AppointmentWorker extends Worker {
 
     private void createNotification(@NonNull Appointment app) {
         Log.d(TAG, "createNotification - started!");
+
+        // if phone was switched off, all pending work request are fired.
+        // if the appointment is past by 1 hour or more, do nothing
+        long oneHourAgo = System.currentTimeMillis() - (60 * 60 * 1000);
+        if (app.getTimestamp() <= oneHourAgo)
+            return;
 
         if (!channelRegisterd)
             registerNotificationChannel();

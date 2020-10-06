@@ -100,7 +100,7 @@ public class SMSReceiver extends BroadcastReceiver {
         url = url.split("\\r?\\n")[0];
         int i;
         int num;
-        switch (s[5]) {
+        switch (s[5].toUpperCase()) {
             case "G":
                 num = Integer.parseInt(s[6]);
                 manageAppointment(String.valueOf(id), idUser, url, title, body, cal, isDelete);

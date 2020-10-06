@@ -165,9 +165,11 @@ public class ComftechManager implements Runnable{
         public void handleMessage(Message msg) {
             super.handleMessage(msg);
             synchronized (currT) {
+                Log.d(TAG, "Message received: id=" + msg.what + " data=\n" + bundle2string(msg.getData()));
                 if ((msg.what == MSG_RESULT) && (msg.getData().containsKey(KEY_RESULT))) {
                     responseCode = msg.getData().getInt(KEY_RESULT);
                 } else {
+                    Log.d(TAG, "Message is Wrong");
                     responseCode = CODE_RESPONSE_ERROR;
                 }
                 responseReceived = true;
@@ -338,6 +340,8 @@ public class ComftechManager implements Runnable{
             msg.setData(bundle);
         }
 
+        Log.d(TAG, "Sending message: id=" + msg.what + " data=\n" + bundle2string(msg.getData()));
+
         try {
             mService.send(msg);
         } catch (RemoteException e) {
@@ -345,6 +349,18 @@ public class ComftechManager implements Runnable{
             return false;
         }
         return true;
+    }
+
+    public static String bundle2string(Bundle bundle) {
+        if (bundle == null) {
+            return null;
+        }
+        String string = "Bundle{";
+        for (String key : bundle.keySet()) {
+            string += " " + key + " => " + bundle.get(key) + ";";
+        }
+        string += " }Bundle";
+        return string;
     }
 
     /**

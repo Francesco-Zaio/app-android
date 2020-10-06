@@ -123,6 +123,19 @@ public class ComftechService extends Service {
         return ret;
     }
 
+    public static String bundle2string(Bundle bundle) {
+        if (bundle == null) {
+            return null;
+        }
+        String string = "Bundle{";
+        for (String key : bundle.keySet()) {
+            string += " " + key + " => " + bundle.get(key) + ";";
+        }
+        string += " }Bundle";
+        return string;
+    }
+
+
     private static class IncomingHandler extends Handler {
         private final ComftechService mInstance;
 
@@ -145,6 +158,7 @@ public class ComftechService extends Service {
                 Log.d(TAG,"wakeLock acquired");
 
                 Bundle data = msg.getData();
+                Log.d(TAG,"Message arrived: id=" + msg.what + " data=\n" + bundle2string(data));
                 String userId = data.getString(KEY_PATIENT);
                 if (!cm.isMonitoringValid(userId)) {
                     Log.w(TAG, "Stopping monitoring");

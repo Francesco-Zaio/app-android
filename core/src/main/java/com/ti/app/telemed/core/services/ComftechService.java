@@ -145,6 +145,7 @@ public class ComftechService extends Service {
 
         @Override
         public void handleMessage(Message msg) {
+            Log.d(TAG, "handleMessage");
             ComftechManager cm = ComftechManager.getInstance();
             PowerManager pm = (PowerManager) mInstance.getSystemService(POWER_SERVICE);
             if (pm == null) {
@@ -345,6 +346,17 @@ public class ComftechService extends Service {
 
     @Override
     public IBinder onBind(Intent intent) {
+        Log.d(TAG, "onBind");
         return myMessenger.getBinder();
+    }
+    @Override
+    public boolean onUnbind(Intent intent) {
+        Log.d(TAG, "onUnbind");
+        return super.onUnbind(intent);
+    }
+    @Override
+    public void onRebind(Intent intent) {
+        Log.d(TAG, "onUnbind");
+        super.onRebind(intent);
     }
 }

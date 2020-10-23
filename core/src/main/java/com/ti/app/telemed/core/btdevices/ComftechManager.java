@@ -275,6 +275,7 @@ public class ComftechManager implements Runnable{
      */
     private boolean bindToComftechService() {
         boolean flag = false;
+        Log.d(TAG, "bindToComftechService");
         try {
             Intent intent = new Intent();
             intent.setComponent(new ComponentName(COMFTECH_PACKAGE, COMFTECH_SERVICE));
@@ -369,6 +370,7 @@ public class ComftechManager implements Runnable{
     private ServiceConnection mConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
+            Log.d (TAG, "onServiceConnected");
             synchronized (currT) {
                 resetTimer();
                 mService = new Messenger(service);
@@ -379,10 +381,19 @@ public class ComftechManager implements Runnable{
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
+            Log.d (TAG, "onServiceDisconnected");
+            synchronized (currT) {
+                mService = null;
+                bindingInProgress = true;
+            }
+        }
+
+        @Override
+        public void onBindingDied(ComponentName name) {
+            Log.d (TAG, "onBindingDied");
             synchronized (currT) {
                 mService = null;
                 bindingInProgress = false;
-                currT.notifyAll();
             }
         }
     };
@@ -471,7 +482,10 @@ public class ComftechManager implements Runnable{
         }
         if (currServed.listener != null)
             currServed.listener.result(responseCode);
+        MyApp.getContext().unbindService(mConnection);
+        mService = null;
         currServed = null;
+        bindingInProgress = false;
     }
 
     private Timer timer;

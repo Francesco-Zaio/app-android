@@ -21,6 +21,7 @@ import java.util.HashMap;
 
 import static com.ti.app.telemed.core.btdevices.ComftechManager.KEY_BATTERY;
 import static com.ti.app.telemed.core.btdevices.ComftechManager.KEY_BATTERY_TE;
+import static com.ti.app.telemed.core.btdevices.ComftechManager.KEY_DURATION;
 import static com.ti.app.telemed.core.btdevices.ComftechManager.KEY_FC_TH_MAX;
 import static com.ti.app.telemed.core.btdevices.ComftechManager.KEY_FC_TH_MIN;
 import static com.ti.app.telemed.core.btdevices.ComftechManager.KEY_FC_TH_TIME;
@@ -50,13 +51,11 @@ import static com.ti.app.telemed.core.btdevices.ComftechManager.KEY_SUPINO;
 import static com.ti.app.telemed.core.btdevices.ComftechManager.KEY_TE_AVG;
 import static com.ti.app.telemed.core.btdevices.ComftechManager.KEY_TE_MAX;
 import static com.ti.app.telemed.core.btdevices.ComftechManager.KEY_TE_MIN;
-import static com.ti.app.telemed.core.btdevices.ComftechManager.KEY_TE_OVER;
 import static com.ti.app.telemed.core.btdevices.ComftechManager.KEY_TE_SIGMA;
 import static com.ti.app.telemed.core.btdevices.ComftechManager.KEY_TE_TH_MAX;
 import static com.ti.app.telemed.core.btdevices.ComftechManager.KEY_TE_TH_MIN;
 import static com.ti.app.telemed.core.btdevices.ComftechManager.KEY_TE_TH_TIME;
-import static com.ti.app.telemed.core.btdevices.ComftechManager.KEY_TE_TIME;
-import static com.ti.app.telemed.core.btdevices.ComftechManager.KEY_TE_UNDER;
+import static com.ti.app.telemed.core.btdevices.ComftechManager.KEY_TIME;
 import static com.ti.app.telemed.core.util.GWConst.EGwCode_AF;
 import static com.ti.app.telemed.core.util.GWConst.EGwCode_AG;
 import static com.ti.app.telemed.core.util.GWConst.EGwCode_X0;
@@ -83,14 +82,12 @@ import static com.ti.app.telemed.core.util.GWConst.EGwCode_XL;
 import static com.ti.app.telemed.core.util.GWConst.EGwCode_XM;
 import static com.ti.app.telemed.core.util.GWConst.EGwCode_XN;
 import static com.ti.app.telemed.core.util.GWConst.EGwCode_XP;
-import static com.ti.app.telemed.core.util.GWConst.EGwCode_XQ;
-import static com.ti.app.telemed.core.util.GWConst.EGwCode_XR;
-import static com.ti.app.telemed.core.util.GWConst.EGwCode_XS;
 import static com.ti.app.telemed.core.util.GWConst.EGwCode_XT;
 import static com.ti.app.telemed.core.util.GWConst.EGwCode_XU;
 import static com.ti.app.telemed.core.util.GWConst.EGwCode_XV;
 import static com.ti.app.telemed.core.util.GWConst.EGwCode_XW;
 import static com.ti.app.telemed.core.util.GWConst.EGwCode_XX;
+import static com.ti.app.telemed.core.util.GWConst.EGwCode_XY;
 import static com.ti.app.telemed.core.util.GWConst.KCOMFTECH;
 import static com.ti.app.telemed.core.util.GWConst.KMsr_Comftech;
 
@@ -127,12 +124,12 @@ public class ComftechService extends Service {
         if (bundle == null) {
             return null;
         }
-        String string = "Bundle{";
+        StringBuilder stringBuilder = new StringBuilder("Bundle{");
         for (String key : bundle.keySet()) {
-            string += " " + key + " => " + bundle.get(key) + ";";
+            stringBuilder.append(" ").append(key).append(" => ").append(bundle.get(key)).append(";");
         }
-        string += " }Bundle";
-        return string;
+        stringBuilder.append(" }Bundle");
+        return stringBuilder.toString();
     }
 
 
@@ -280,16 +277,6 @@ public class ComftechService extends Service {
                 fval = data.getFloat(KEY_TE_MIN);
                 if (fval != -1f)
                     measureMap.put(EGwCode_XP,String.valueOf(fval));
-                val = data.getInt(KEY_TE_OVER);
-                if (val != -1)
-                    measureMap.put(EGwCode_XQ,String.valueOf(val));
-                val = data.getInt(KEY_TE_UNDER);
-                if (val != -1)
-                    measureMap.put(EGwCode_XR,String.valueOf(val));
-                val = data.getInt(KEY_TE_TIME);
-                if (val != -1)
-                    measureMap.put(EGwCode_XS,String.valueOf(val));
-
                 val = data.getInt(KEY_SUPINO);
                 if (val != -1)
                     measureMap.put(EGwCode_XT,String.valueOf(val));
@@ -313,6 +300,11 @@ public class ComftechService extends Service {
                 if (val != -1)
                     measureMap.put(EGwCode_AG,String.valueOf(val));
 
+                val = data.getInt(KEY_DURATION);
+                if (val != -1)
+                    measureMap.put(EGwCode_XY,String.valueOf(val));
+                String measureTimestamp = data.getString(KEY_TIME);
+
                 Device d = DbManager.getDbManager().getDeviceWhereMeasureModel(KMsr_Comftech, KCOMFTECH);
                 Measure m = new Measure();
                 if (msg.what == ComftechManager.MSG_DATA_NORMAL)
@@ -321,7 +313,10 @@ public class ComftechService extends Service {
                     m.setResult(Measure.RESULT_RED);
                 m.setMeasureType(KMsr_Comftech);
                 m.setDeviceDesc(d.getDescription());
-                m.setTimestamp(Util.getTimestamp(null));
+                if (measureTimestamp != null)
+                    m.setTimestamp(measureTimestamp);
+                else
+                    m.setTimestamp(Util.getTimestamp(null));
                 m.setFile(null);
                 m.setFileType(null);
                 m.setFailed(false);

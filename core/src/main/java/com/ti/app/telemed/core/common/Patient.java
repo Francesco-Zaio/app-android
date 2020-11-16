@@ -28,6 +28,14 @@ public class Patient implements Serializable{
 		this.id = id;
 	}
 
+	public String getCf() {
+		return cf;
+	}
+
+	public void setCf(String cf) {
+		this.cf = cf;
+	}
+
 	public String getName() {
 		return name;
 	}
@@ -116,13 +124,5 @@ public class Patient implements Serializable{
 		} else {
 			return false;
 		}
-	}
-
-	public void setCf(String cf) {
-		this.cf = cf;
-	}
-
-	public String getCf() {
-		return cf;
 	}
 }

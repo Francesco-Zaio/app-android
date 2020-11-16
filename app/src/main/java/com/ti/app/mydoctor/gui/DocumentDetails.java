@@ -2,16 +2,19 @@ package com.ti.app.mydoctor.gui;
 
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import androidx.core.content.FileProvider;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.util.Log;
 import android.view.View;
 import android.view.Window;
 import android.widget.AdapterView;
@@ -32,7 +35,9 @@ import com.ti.app.telemed.core.usermodule.UserManager;
 import com.ti.app.telemed.core.util.Util;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FilenameFilter;
+import java.security.acl.AclNotFoundException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -122,43 +127,52 @@ public class DocumentDetails extends AppCompatActivity {
 
             gridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 public void onItemClick(AdapterView<?> parent, View v, int position, long id) {
-                    Intent intent = new Intent(Intent.ACTION_VIEW);
-                    Uri photoURI = FileProvider.getUriForFile(DocumentDetails.this, getApplicationContext().getPackageName() + ".provider", fileList.get(position));
-                    intent.setDataAndType(photoURI, "image/*");
-                    intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                    startActivity(intent);
+					Intent intent = new Intent(Intent.ACTION_VIEW);
+					File file = fileList.get(position);
+					try {
+						Uri uri = FileProvider.getUriForFile(DocumentDetails.this, getPackageName() + ".provider", file);
+						intent = new Intent(Intent.ACTION_VIEW);
+						intent.setData(uri);
+						intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+						startActivity(intent);
+					} catch (ActivityNotFoundException e) {
+						Log.d(TAG, "Nessuna attività trovata per aprire il file" + file.getName());
+					}
                 }
             });
 		}
 	}
 
     private void initImages() {
-        File[] files = docBaseDir.listFiles(new FilenameFilter() {
-            @Override
-            public boolean accept(File dir, String name) {
-                return name.toLowerCase().endsWith(".jpg");
-            }
-        });
-
+		File[] files = docBaseDir.listFiles();
         imageItems.clear();
         fileList.clear();
-        for (File file : files) {
-            Bitmap bitmap = createBitmap(file.getAbsolutePath());
-            imageItems.add(gridAdapter.new ImageItem(bitmap, "Image#"));
-            fileList.add(file);
-        }
+		for (File file : files) {
+			Bitmap bitmap;
+			if (file.getName().endsWith(".pdf")) {
+				bitmap = createBitmap(null, true);
+			} else
+				bitmap = createBitmap(file.getAbsolutePath(), false);
+			imageItems.add(gridAdapter.new ImageItem(bitmap, file.getName()));
+			fileList.add(file);
+		}
+
         gridAdapter.notifyDataSetChanged();
     }
 
-    private Bitmap createBitmap(String path) {
-        BitmapFactory.Options options = new BitmapFactory.Options();
-        options.inJustDecodeBounds = true;
-        BitmapFactory.decodeFile(path, options);
-        int scale = Math.max(options.outWidth/BITMAP_MAX_SIZE,options.outHeight/BITMAP_MAX_SIZE)+1;
-        options.inJustDecodeBounds = false;
-        options.inSampleSize=scale;
-        return BitmapFactory.decodeFile(path, options);
-    }
+	private Bitmap createBitmap(String path, boolean isPdf) {
+		BitmapFactory.Options options = new BitmapFactory.Options();
+		if (isPdf) {
+			return BitmapFactory.decodeResource(getResources(), R.drawable.pdf);
+		} else {
+			options.inJustDecodeBounds = true;
+			BitmapFactory.decodeFile(path, options);
+			int scale = Math.max(options.outWidth/BITMAP_MAX_SIZE,options.outHeight/BITMAP_MAX_SIZE)+1;
+			options.inJustDecodeBounds = false;
+			options.inSampleSize=scale;
+			return BitmapFactory.decodeFile(path, options);
+		}
+	}
 
 	@Override
 	public Dialog onCreateDialog(int id) {

@@ -203,6 +203,8 @@ public class BTSocketRead implements Runnable {
                             	fireErrorThrown(2, "bluetooth read error IOOB");                            
                             }
                         } catch (NullPointerException npe) {
+							Log.e(TAG, "NullPointerException: " + npe);
+							npe.printStackTrace();
                         	reset();
                             if (!isClosed) {
                             	//L'errore viene comunicato nel caso i cui la read fallisca, ma lo stream

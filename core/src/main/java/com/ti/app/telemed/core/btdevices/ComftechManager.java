@@ -24,7 +24,6 @@ import com.ti.app.telemed.core.MyApp;
 import com.ti.app.telemed.core.common.User;
 import com.ti.app.telemed.core.common.UserMeasure;
 import com.ti.app.telemed.core.dbmodule.DbManager;
-import com.ti.app.telemed.core.services.ComftechService;
 import com.ti.app.telemed.core.usermodule.UserManager;
 import com.ti.app.telemed.core.util.Util;
 
@@ -47,8 +46,6 @@ public class ComftechManager implements Runnable{
     private static final String KEY_COMFTECH_TH_EGwCode_X1 = "COMFTECH_TH_EGwCode_X1";
     private static final String KEY_COMFTECH_TH_EGwCode_X2 = "COMFTECH_TH_EGwCode_X2";
     private static final String KEY_COMFTECH_TH_EGwCode_X3 = "COMFTECH_TH_EGwCode_X3";
-    private static final String KEY_COMFTECH_TH_EGwCode_X4 = "COMFTECH_TH_EGwCode_X4";
-    private static final String KEY_COMFTECH_TH_EGwCode_X5 = "COMFTECH_TH_EGwCode_X5";
     private static final String KEY_COMFTECH_INTERVAL_NORMAL = "COMFTECH_INTERVAL_NORMAL";
     private static final String KEY_COMFTECH_INTERVAL_ALARM = "COMFTECH_INTERVAL_ALARM";
 
@@ -93,9 +90,6 @@ public class ComftechManager implements Runnable{
     public static final String KEY_TE_SIGMA ="TE_SIGMA";
     public static final String KEY_TE_MAX ="TE_MAX";
     public static final String KEY_TE_MIN ="TE_MIN";
-    public static final String KEY_TE_OVER ="TE_OVER";
-    public static final String KEY_TE_UNDER ="TE_UNDER";
-    public static final String KEY_TE_TIME ="TE_TIME";
 
     public static final String KEY_BATTERY ="BATTERY";
     public static final String KEY_SUPINO ="SUPINO";
@@ -104,6 +98,8 @@ public class ComftechManager implements Runnable{
     public static final String KEY_FIANCO_DX ="FIANCO_DX";
     public static final String KEY_IN_PIEDI ="IN_PIEDI";
     public static final String KEY_BATTERY_TE ="BATTERY_TE";
+    public static final String KEY_TIME ="TIME";
+    public static final String KEY_DURATION ="DURATION";
 
     private static final String KEY_RESULT = "RESULT";
 
@@ -207,19 +203,15 @@ public class ComftechManager implements Runnable{
     public boolean updateMonitoring(String userId) {
         UserMeasure um  = DbManager.getDbManager().getUserMeasure(userId, KMsr_Comftech);
         Map<String,String> thresholds = um.getThresholds();
-        String th_X0,th_X1,th_X2,th_X3,th_X4,th_X5;
+        String th_X0,th_X1,th_X2,th_X3;
         th_X0 = (thresholds.get(EGwCode_X0) == null)?"":thresholds.get(EGwCode_X0);
         th_X1 = (thresholds.get(EGwCode_X0) == null)?"":thresholds.get(EGwCode_X1);
         th_X2 = (thresholds.get(EGwCode_X0) == null)?"":thresholds.get(EGwCode_X2);
         th_X3 = (thresholds.get(EGwCode_X0) == null)?"":thresholds.get(EGwCode_X3);
-        th_X4 = (thresholds.get(EGwCode_X0) == null)?"":thresholds.get(EGwCode_X4);
-        th_X5 = (thresholds.get(EGwCode_X0) == null)?"":thresholds.get(EGwCode_X5);
         return !(Util.getRegistryValue(KEY_COMFTECH_TH_EGwCode_X0).equals(th_X0) &&
                 Util.getRegistryValue(KEY_COMFTECH_TH_EGwCode_X1).equals(th_X1) &&
                 Util.getRegistryValue(KEY_COMFTECH_TH_EGwCode_X2).equals(th_X2) &&
                 Util.getRegistryValue(KEY_COMFTECH_TH_EGwCode_X3).equals(th_X3) &&
-                Util.getRegistryValue(KEY_COMFTECH_TH_EGwCode_X4).equals(th_X4) &&
-                Util.getRegistryValue(KEY_COMFTECH_TH_EGwCode_X5).equals(th_X5) &&
                 (Util.getRegistryIntValue(KEY_COMFTECH_INTERVAL_NORMAL) == um.getSendFrequencyNormal()) &&
                 (Util.getRegistryIntValue(KEY_COMFTECH_INTERVAL_ALARM) == um.getSendFrequencyAlarm()));
     }
@@ -356,12 +348,12 @@ public class ComftechManager implements Runnable{
         if (bundle == null) {
             return null;
         }
-        String string = "Bundle{";
+        StringBuilder stringBuilder = new StringBuilder("Bundle{");
         for (String key : bundle.keySet()) {
-            string += " " + key + " => " + bundle.get(key) + ";";
+            stringBuilder.append(" ").append(key).append(" => ").append(bundle.get(key)).append(";");
         }
-        string += " }Bundle";
-        return string;
+        stringBuilder.append(" }Bundle");
+        return stringBuilder.toString();
     }
 
     /**
@@ -463,8 +455,6 @@ public class ComftechManager implements Runnable{
                     Util.setRegistryValue(KEY_COMFTECH_TH_EGwCode_X1, thresholds.get(EGwCode_X1));
                     Util.setRegistryValue(KEY_COMFTECH_TH_EGwCode_X2, thresholds.get(EGwCode_X2));
                     Util.setRegistryValue(KEY_COMFTECH_TH_EGwCode_X3, thresholds.get(EGwCode_X3));
-                    Util.setRegistryValue(KEY_COMFTECH_TH_EGwCode_X4, thresholds.get(EGwCode_X4));
-                    Util.setRegistryValue(KEY_COMFTECH_TH_EGwCode_X5, thresholds.get(EGwCode_X5));
                     Util.setRegistryValue(KEY_COMFTECH_INTERVAL_NORMAL, userMeasure.getSendFrequencyNormal());
                     Util.setRegistryValue(KEY_COMFTECH_INTERVAL_ALARM, userMeasure.getSendFrequencyAlarm());
                     break;

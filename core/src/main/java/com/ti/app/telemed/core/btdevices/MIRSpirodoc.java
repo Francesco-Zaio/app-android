@@ -198,33 +198,6 @@ public class MIRSpirodoc extends DeviceHandler implements
         currentPos = 0;
     }
 
-
-    private void connectToServer() throws IOException {
-		// this function is called when we are in EGettingService state and
-		// we are going to EGettingConnection state
-		if (operationType == OperationType.Pair) {
-            BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-            Set<BluetoothDevice> pairedDevices = mBluetoothAdapter.getBondedDevices();
-            if (pairedDevices.size() > 0) {
-                for (BluetoothDevice device : pairedDevices) {
-                    if (device.getAddress().equalsIgnoreCase(iBtDevAddr)) {
-                        try {
-                            Method m = device.getClass().getMethod("removeBond", (Class[]) null);
-                            m.invoke(device, (Object[]) null);
-                        } catch (Exception e) {
-                            Log.e(TAG, e.getMessage());
-                        }
-                    }
-                }
-            }
-		}
-		
-		// iCGBloodPressureSocket is an RSocket in the Symbian version
-		iMIRSpiroDocSocket.addBTSocketEventListener(this);
-		iMIRSpiroDocSocket.connectInsecure(selectedDevice);
-	}
-
-
     private void reset() {
         iBtDevAddr = null;
         deviceSearchCompleted = false;
@@ -232,19 +205,45 @@ public class MIRSpirodoc extends DeviceHandler implements
         iState = TState.EWaitingToGetDevice;
     }
 
-    private void stop()  {
-        iServiceSearcher.stopSearchDevices();
-        iServiceSearcher.removeBTSearcherEventListener(this);
-        iServiceSearcher.close();
-        iMIRSpiroDocSocket.close();
-        iMIRSpiroDocSocket.removeBTSocketEventListener(this);
 
-        if (iState == TState.EDisconnectingFromUser) {
-            runBTSocket();
-        }
-        reset();
-    }
+	private void stop()  {
+		iServiceSearcher.stopSearchDevices();
+		iServiceSearcher.removeBTSearcherEventListener(this);
+		iServiceSearcher.close();
+		iMIRSpiroDocSocket.close();
+		iMIRSpiroDocSocket.removeBTSocketEventListener(this);
 
+		if (iState == TState.EDisconnectingFromUser) {
+			runBTSocket();
+		}
+		reset();
+	}
+
+	private void connectToServer() throws IOException {
+		// this function is called when we are in EGettingService state and
+		// we are going to EGettingConnection state
+		if (operationType == OperationType.Pair) {
+			BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+			Set<BluetoothDevice> pairedDevices = mBluetoothAdapter.getBondedDevices();
+			if (pairedDevices.size() > 0) {
+				for (BluetoothDevice device : pairedDevices) {
+					if (device.getAddress().equalsIgnoreCase(iBtDevAddr)) {
+						try {
+							Method m = device.getClass().getMethod("removeBond", (Class[]) null);
+							m.invoke(device, (Object[]) null);
+						} catch (Exception e) {
+							Log.e(TAG, e.getMessage());
+						}
+					}
+				}
+			}
+		}
+
+		// iCGBloodPressureSocket is an RSocket in the Symbian version
+		iMIRSpiroDocSocket.addBTSocketEventListener(this);
+//		iMIRSpiroDocSocket.connectInsecure(selectedDevice);
+		iMIRSpiroDocSocket.connect(selectedDevice);
+	}
 
 	// BTSocketEventListener Interface Methods
 
@@ -264,7 +263,6 @@ public class MIRSpirodoc extends DeviceHandler implements
 
     @Override
     public void errorThrown(int type, String description) {
-		
 		Log.d(TAG, "writeErrorThrown type=" + type + " description=" + description);
 		
 		switch (type) {

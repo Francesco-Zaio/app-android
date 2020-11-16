@@ -34,6 +34,7 @@ public class GridViewAdapter extends ArrayAdapter<GridViewAdapter.ImageItem> {
 
     static class ViewHolder {
         ImageView image;
+        TextView title;
     }
 
     @Override
@@ -46,6 +47,7 @@ public class GridViewAdapter extends ArrayAdapter<GridViewAdapter.ImageItem> {
             row = inflater.inflate(layoutResourceId, parent, false);
             holder = new ViewHolder();
             holder.image = row.findViewById(R.id.image);
+            holder.title = row.findViewById(R.id.title);
             row.setTag(holder);
         } else {
             holder = (ViewHolder) row.getTag();
@@ -53,6 +55,7 @@ public class GridViewAdapter extends ArrayAdapter<GridViewAdapter.ImageItem> {
 
         ImageItem item = data.get(position);
         holder.image.setImageBitmap(item.getImage());
+        holder.title.setText(item.getTitle());
         return row;
     }
 
@@ -93,14 +96,20 @@ public class GridViewAdapter extends ArrayAdapter<GridViewAdapter.ImageItem> {
 
     public class ImageItem {
         private Bitmap image;
+        private String title;
 
         public ImageItem(Bitmap image, String title) {
             super();
             this.image = image;
+            this.title = title;
         }
 
         public Bitmap getImage() {
             return image;
+        }
+
+        public String getTitle() {
+            return title;
         }
 
         public void setImage(Bitmap image) {

@@ -15,6 +15,7 @@ import com.ti.app.telemed.core.btdevices.ForaThermometerClient;
 import com.ti.app.telemed.core.btdevices.GIMAPC300SpotCheck;
 import com.ti.app.telemed.core.btdevices.IHealth;
 import com.ti.app.telemed.core.btdevices.MIRSpirodoc;
+import com.ti.app.telemed.core.btdevices.MIRSpirodocNew;
 import com.ti.app.telemed.core.btdevices.NoninOximeter;
 import com.ti.app.telemed.core.btdevices.OnCallSureSync;
 import com.ti.app.telemed.core.btdevices.POD1W_OXY10_LE;
@@ -150,6 +151,8 @@ public abstract class DeviceHandler {
                 return new ForaThermometerClient(listener, ud);
             case GWConst.KSpirodoc:
                 return new MIRSpirodoc(listener, ud);
+            case GWConst.KSpirodocNew:
+                return new MIRSpirodocNew(listener, ud);
             case GWConst.KOximeterNon:
                 return new NoninOximeter(listener, ud);
             case GWConst.KPC300SpotCheck:
@@ -197,6 +200,7 @@ public abstract class DeviceHandler {
     public static boolean needPairing(UserDevice ud){
         switch(ud.getDevice().getModel()) {
             case GWConst.KSpirodoc:
+            case GWConst.KSpirodocNew:
             case GWConst.KPC300SpotCheck:
             case GWConst.KTDCC:
             case GWConst.KCheckmePro:
@@ -242,6 +246,8 @@ public abstract class DeviceHandler {
         switch(ud.getDevice().getModel()) {
             case GWConst.KSpirodoc:
                 return MIRSpirodoc.needConfig(ud);
+            case GWConst.KSpirodocNew:
+                return MIRSpirodocNew.needConfig(ud);
             default:
                 return false;
         }

@@ -1,6 +1,7 @@
 package com.ti.app.mydoctor.gui;
 
 import android.app.ProgressDialog;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -25,6 +26,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
+import android.webkit.MimeTypeMap;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.GridView;
@@ -40,6 +42,7 @@ import com.ti.app.telemed.core.usermodule.UserManager;
 import com.ti.app.telemed.core.util.Util;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FilenameFilter;
@@ -202,18 +205,22 @@ public class DocumentSendActivity extends AppCompatActivity implements View.OnCl
 
     private void initImages() {
         if (docBaseDir != null) {
-            File[] files = docBaseDir.listFiles(new FilenameFilter() {
+            File[] files = docBaseDir.listFiles(new FileFilter() {
                 @Override
-                public boolean accept(File dir, String name) {
-                    return name.toLowerCase().endsWith(".jpg");
+                public boolean accept(File file) {
+                    return (!file.isDirectory());
                 }
             });
 
             imageItems.clear();
             fileList.clear();
             for (File file : files) {
-                Bitmap bitmap = createBitmap(file.getAbsolutePath());
-                imageItems.add(gridAdapter.new ImageItem(bitmap, "Image#"));
+                Bitmap bitmap;
+                if (file.getName().endsWith(".pdf")) {
+                    bitmap = createBitmap(null, true);
+                } else
+                    bitmap = createBitmap(file.getAbsolutePath(), false);
+                imageItems.add(gridAdapter.new ImageItem(bitmap, file.getName()));
                 fileList.add(file);
             }
             gridAdapter.notifyDataSetChanged();
@@ -223,14 +230,18 @@ public class DocumentSendActivity extends AppCompatActivity implements View.OnCl
         updateButtons(false);
     }
 
-    private Bitmap createBitmap(String path) {
+    private Bitmap createBitmap(String path, boolean isPdf) {
         BitmapFactory.Options options = new BitmapFactory.Options();
-        options.inJustDecodeBounds = true;
-        BitmapFactory.decodeFile(path, options);
-        int scale = Math.max(options.outWidth/BITMAP_MAX_SIZE,options.outHeight/BITMAP_MAX_SIZE)+1;
-        options.inJustDecodeBounds = false;
-        options.inSampleSize=scale;
-        return BitmapFactory.decodeFile(path, options);
+        if (isPdf) {
+            return BitmapFactory.decodeResource(getResources(), R.drawable.pdf);
+        } else {
+            options.inJustDecodeBounds = true;
+            BitmapFactory.decodeFile(path, options);
+            int scale = Math.max(options.outWidth/BITMAP_MAX_SIZE,options.outHeight/BITMAP_MAX_SIZE)+1;
+            options.inJustDecodeBounds = false;
+            options.inSampleSize=scale;
+            return BitmapFactory.decodeFile(path, options);
+        }
     }
 
     private void updateButtons(boolean forceDisable) {
@@ -270,8 +281,8 @@ public class DocumentSendActivity extends AppCompatActivity implements View.OnCl
         }
     }
 
-    private File getImageFile() {
-        return new File(docBaseDir, new SimpleDateFormat("yyyyMMddhhmmss", Locale.ITALY).format(new Date())+".jpg");
+    private File getImageFile(String extension) {
+        return new File(docBaseDir, new SimpleDateFormat("yyyyMMddhhmmss", Locale.ITALY).format(new Date())+"."+extension);
     }
 
     private void sendDocuments() {
@@ -312,7 +323,7 @@ public class DocumentSendActivity extends AppCompatActivity implements View.OnCl
     }
 
     private void startCamera() {
-        currentFile = getImageFile();
+        currentFile = getImageFile("jpg");
         Uri outputFileUri = Uri.fromFile(currentFile);
         Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
@@ -333,8 +344,15 @@ public class DocumentSendActivity extends AppCompatActivity implements View.OnCl
         }
     }
 
+    private Intent getFileChooserIntent() {
+        String[] mimeTypes = {"image/*", "application/pdf"};
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT).setType("image/*|application/pdf").putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes);
+        return intent;
+    }
+
     private void startGallery() {
-        Intent galleryIntent = new Intent(Intent.ACTION_PICK, android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+        // Intent galleryIntent = new Intent(Intent.ACTION_PICK, android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+        Intent galleryIntent = getFileChooserIntent();
         startActivityForResult(galleryIntent, GALLERY_REQUEST);
     }
 
@@ -350,13 +368,19 @@ public class DocumentSendActivity extends AppCompatActivity implements View.OnCl
             // altrimenti la createBitmap non conosce la dimensione delle bitmap da creare
             if (data != null) {
                 Uri contentURI = data.getData();
-                saveImage(contentURI);
-                gridView.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        initImages();
-                    }
-                });
+                if (contentURI != null) {
+                    String mimeType = getContentResolver().getType(contentURI);
+                    MimeTypeMap mime = MimeTypeMap.getSingleton(); // return String like "image/jpeg" or "application/pdf"
+                    String type = mime.getExtensionFromMimeType(mimeType); // return String like "jpg" or "pdf"
+
+                    saveImage(contentURI, type);
+                    gridView.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            initImages();
+                        }
+                    });
+                }
             }
         } else if (requestCode == CAMERA_REQUEST) {
             // nel caso in cui sia cmbiato l'orientamento dello schermo l'activity è
@@ -404,9 +428,9 @@ public class DocumentSendActivity extends AppCompatActivity implements View.OnCl
         }
     }
 
-    private File saveImage(Uri sourceuri)
+    private File saveImage(Uri sourceuri, String extension)
     {
-        File outputFile = getImageFile();
+        File outputFile = getImageFile(extension);
         InputStream inputStream = null;
         FileOutputStream fileOutputStream = null;
         try {

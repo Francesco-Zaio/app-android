@@ -38,6 +38,7 @@ public interface GWConst {
 	String KCcxsRoche = "CCXS";
 	String KFORATherm = "FORAIR21B";
     String KSpirodoc = "SPIRODOC";
+	String KSpirodocNew = "SPIRODOCNEW";
 	String KOximeterNon = "NONIN4100";
 	String KPC300SpotCheck = "PC300";
 	String KAgamtrixJazz = "AGAMATRIXMYSTAR";
@@ -431,11 +432,11 @@ public interface GWConst {
 	/* Minimo della temperatura nell’intervallo di tempo desiderato */
 	String EGwCode_XP = "XP";
 	/* Secondi in cui la temperatura è sopra soglia. */
-	String EGwCode_XQ = "XQ";
+	// String EGwCode_XQ = "XQ"; NON USATO
 	/* Secondi in cui la temperatura è sotto soglia. */
-	String EGwCode_XR = "XR";
+	// String EGwCode_XR = "XR"; NON USATO
 	/* Minuti in cui viene rilevata una temperatura valida nell’intervallo di tempo desiderato.  */
-	String EGwCode_XS = "XS";
+	// String EGwCode_XS = "XS"; NON USATO
 
 	/* Minuti in posizione supina */
 	String EGwCode_XT = "XT";
@@ -447,6 +448,8 @@ public interface GWConst {
 	String EGwCode_XW = "XW";
 	/* Minuti in posizione seduto/in piedi */
 	String EGwCode_XX = "XX";
+	/* Durata della misura in secondi */
+	String EGwCode_XY = "XY";
 
 	/* Percentuale di carica della batteria (0 – 100) */
 	String EGwCode_AF = "AF";

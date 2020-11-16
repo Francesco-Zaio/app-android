@@ -461,7 +461,12 @@ public class ShowMeasure extends ActionBarListActivity{
 					//Vengono eliminate tutte le misure di un certo tipo
 					String idUser = UserManager.getUserManager().getCurrentUser().getId();
 					String idPatient = UserManager.getUserManager().getCurrentPatient().getId();
-					if (measureManager.deleteMeasures(idUser, idPatient, currentMeasureFamily)) {
+					boolean result;
+					if (currentMeasureType != null && !currentMeasureType.isEmpty())
+						result = measureManager.deleteMeasures(idUser, idPatient, currentMeasureType);
+					else
+						result = measureManager.deleteMeasures(idUser, idPatient, currentMeasureFamily);
+					if (result) {
                         progressDialog = new ProgressDialog(ShowMeasure.this);
                         progressDialog.setIndeterminate(true);
                         progressDialog.setCancelable(true);

@@ -524,6 +524,7 @@ public class MIRSpirodocNew extends DeviceHandler implements
 				break;
 
 			case SendingWriteProgRecord:
+				//deviceListener.configReady();
 				deviceListener.notifyError(DeviceListener.MEASUREMENT_ERROR, "");
 				currentPos = 0;
 				comStatus = CommunicationStatus.Disconnecting;
@@ -553,7 +554,7 @@ public class MIRSpirodocNew extends DeviceHandler implements
 			case WaitingGetBestnumBytes:
 				int num = numBytes[0] * 256 + numBytes[1];
 				Log.d(TAG, "Num Bytes = " + num);
-				bestRecord = new byte[num];
+				bestRecord = new byte[num+8];
 				comStatus = CommunicationStatus.WaitingGetBestRecord;
 				RequestData();
 				break;
@@ -635,6 +636,7 @@ public class MIRSpirodocNew extends DeviceHandler implements
 
 	private void logMeasure() {
 		Log.d(TAG,"Dati Misura:");
+		Util.logFile("MIRLog.log",bestRecord);
 		Calendar c = GregorianCalendar.getInstance();
 		int day = (bestRecord[3] & 255) + ((bestRecord[2] & 255) << 8);
 		int month = (bestRecord[5] & 255) + ((bestRecord[4] & 255) << 8) - 1;
@@ -651,10 +653,12 @@ public class MIRSpirodocNew extends DeviceHandler implements
 		int fvv1 = (bestRecord[77] & 255) + ((bestRecord[76] & 255) << 8);
 		Log.d(TAG,"fvc="+fvc+" fev1="+fev1);
 		Log.d(TAG,"fvvc="+fvvc+" fvv1="+fvv1);
+		/*
 		for (byte b : bestRecord) {
 			int v = b & 0xff;
 			Log.d(TAG, "" + v);
 		}
+		*/
 	}
 
 	private int getAge(String birthDate) {

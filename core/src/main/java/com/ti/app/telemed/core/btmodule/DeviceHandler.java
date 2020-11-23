@@ -15,6 +15,7 @@ import com.ti.app.telemed.core.btdevices.ForaThermometerClient;
 import com.ti.app.telemed.core.btdevices.GIMAPC300SpotCheck;
 import com.ti.app.telemed.core.btdevices.IHealth;
 import com.ti.app.telemed.core.btdevices.MIRSpirodoc;
+import com.ti.app.telemed.core.btdevices.MIRSpirodocMiniLab;
 import com.ti.app.telemed.core.btdevices.MIRSpirodocNew;
 import com.ti.app.telemed.core.btdevices.NoninOximeter;
 import com.ti.app.telemed.core.btdevices.OnCallSureSync;
@@ -152,7 +153,7 @@ public abstract class DeviceHandler {
             case GWConst.KSpirodoc:
                 return new MIRSpirodoc(listener, ud);
             case GWConst.KSpirodocNew:
-                return new MIRSpirodocNew(listener, ud);
+                return new MIRSpirodocMiniLab(listener, ud);
             case GWConst.KOximeterNon:
                 return new NoninOximeter(listener, ud);
             case GWConst.KPC300SpotCheck:
@@ -247,7 +248,7 @@ public abstract class DeviceHandler {
             case GWConst.KSpirodoc:
                 return MIRSpirodoc.needConfig(ud);
             case GWConst.KSpirodocNew:
-                return MIRSpirodocNew.needConfig(ud);
+                return MIRSpirodocMiniLab.needConfig(ud);
             default:
                 return false;
         }

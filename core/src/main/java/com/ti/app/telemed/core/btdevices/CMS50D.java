@@ -76,6 +76,7 @@ public class CMS50D extends DeviceHandler implements BTSearcherEventListener {
     public void selectDevice(BluetoothDevice bd){
         Log.d(TAG, "selectDevice: addr=" + bd.getAddress());
         iServiceSearcher.stopSearchDevices();
+        iServiceSearcher.removeBTSearcherEventListener(this);
         iBtDevAddr = bd.getAddress();
 
         if (commThread != null) {
@@ -289,7 +290,7 @@ public class CMS50D extends DeviceHandler implements BTSearcherEventListener {
                 stop = true;
                 mmSocket.close();
             } catch (IOException e) {
-                Log.e(TAG, "close() of connect socket failed", e);
+                Log.e(TAG, "socket close() failed", e);
             }
         }
     }

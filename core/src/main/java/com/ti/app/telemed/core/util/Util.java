@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
+import android.os.Environment;
 import android.util.Log;
 
 import com.ti.app.telemed.core.MyApp;
@@ -15,12 +16,15 @@ import org.json.JSONObject;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -261,14 +265,39 @@ public class Util {
 			fos.write(buffer);
 			fos.close();
             return true;
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 			Log.e(TAG, "storeFile Error: " + e);
             return false;
 		}
     }
 
+	/**
+	 * Esegue un dump di un array di bytes in valore esadecimali in un file.
+	 * @param fileName		Path del file in cui memorizzare l'array.
+	 * @param buffer		Array di bytes da memorizzare.
+	 * @return			true in caso di successo o false in caso di errore.
+	 */
+	public static void logFile(String fileName, byte[] buffer) {
+		try {
+			File dir = Environment.getExternalStorageDirectory();
+			Log.d(TAG, "Store file " + fileName);
+			File file = new File(dir, fileName);
+			Log.d(TAG, "Logging buffer to " + file.getAbsolutePath());
+			BufferedWriter bw = new BufferedWriter(new FileWriter(file));
+			bw.write("------------\n");
+			for (int i=0; i<buffer.length;i++) {
+				bw.write(Integer.toString(buffer[i]&0xff));
+				bw.write("\n");
+			}
+			bw.write("------------\n");
+			bw.flush();
+			bw.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+			Log.e(TAG, "storeFile Error: " + e);
+		}
+	}
     /**
      * Comprime inputFile e lo memorizza in outputFile. Se inputFile e' una directory
      * tutti i files della directory vengono compressi e memorizzati in outputFile.

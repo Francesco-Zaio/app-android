@@ -278,19 +278,19 @@ public class Util {
 	 * @param buffer		Array di bytes da memorizzare.
 	 * @return			true in caso di successo o false in caso di errore.
 	 */
-	public static void logFile(String fileName, byte[] buffer) {
+	public static void logFile(String fileName, byte[] buffer, String tag, boolean append) {
 		try {
 			File dir = Environment.getExternalStorageDirectory();
 			Log.d(TAG, "Store file " + fileName);
 			File file = new File(dir, fileName);
 			Log.d(TAG, "Logging buffer to " + file.getAbsolutePath());
-			BufferedWriter bw = new BufferedWriter(new FileWriter(file));
-			bw.write("------------\n");
-			for (int i=0; i<buffer.length;i++) {
-				bw.write(Integer.toString(buffer[i]&0xff));
-				bw.write("\n");
-			}
-			bw.write("------------\n");
+			BufferedWriter bw = new BufferedWriter(new FileWriter(file, append));
+			bw.write(tag +"\n");
+			if (buffer != null)
+				for (byte b : buffer) {
+					bw.write(Integer.toString(b & 0xff));
+					bw.write("\n");
+				}
 			bw.flush();
 			bw.close();
 		} catch (Exception e) {

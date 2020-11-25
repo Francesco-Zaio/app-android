@@ -636,7 +636,7 @@ public class MIRSpirodocNew extends DeviceHandler implements
 
 	private void logMeasure() {
 		Log.d(TAG,"Dati Misura:");
-		Util.logFile("MIRLog.log",bestRecord);
+		Util.logFile("MIRLog.log",bestRecord, "BestRecord", false);
 		Calendar c = GregorianCalendar.getInstance();
 		int day = (bestRecord[3] & 255) + ((bestRecord[2] & 255) << 8);
 		int month = (bestRecord[5] & 255) + ((bestRecord[4] & 255) << 8) - 1;

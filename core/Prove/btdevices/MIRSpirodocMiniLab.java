@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.UUID;
 import java.util.Vector;
 
@@ -31,17 +32,6 @@ public class MIRSpirodocMiniLab extends DeviceHandler implements BTSearcherEvent
 
 	private static final byte[] getCommand = {(byte)85,0,2,0,(byte)210,0,0,0,3,2,0,(byte)255,0,0,0,3,1,(byte)219};
 	private static final byte[] readConfigCommand = {(byte)85,0,2,0,(byte)128,0,0,0,3,2,0,(byte)255,0,0,0,3,1,(byte)137};
-
-	private static final byte[] cfgData = {
-			(byte)85,0, // START
-			2,0,(byte)144,0,0,16, // DEVICE_CONFIG header
-			9, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 2, 1, 2, 3,// DEVICE_CONFIG Obj (abilitazione curve e sistema metrico decimale)
-			2,0,(byte)150,0,0,11, // DATETIME_CONFIG header
-			2, 0, 24, 11, 7, (byte)228, 14, 40, 42, 0, 0, 3, // DATETIME_CONFIG Obj
-			2,0,(byte)150,0,0,11, // SPIROMETRY_CONFIG header
-			55, (byte)134, 0, 0, 24, 7, 0, 0, 0, 0, 7, 0, 0, 3, 0, 0, 0, 50, (byte)80, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, // SPIROMETRY_CONFIG Obj
-			0,0  // CRC
-	};
 
 	private MsgParser parser = new MsgParser();
 
@@ -159,23 +149,6 @@ public class MIRSpirodocMiniLab extends DeviceHandler implements BTSearcherEvent
 		reset();
 	}
 
-	private boolean manageMessage(byte[] buffer, int count, OutputStream os) throws IOException {
-		if (parser.parseMessage(buffer, count)) {
-			if (parser.error) {
-				os.write(NACK);
-				deviceListener.notifyError(DeviceListener.CONNECTION_ERROR, ResourceManager.getResource().getString("EDataReadError"));
-			} else {
-				os.write(ACK);
-				if (parser.spiroObjs.isEmpty())
-					deviceListener.notifyError(DeviceListener.NO_MEASURES_FOUND, ResourceManager.getResource().getString("ENoMeasuresFound"));
-				else
-					deviceListener.notifyError(DeviceListener.NO_MEASURES_FOUND, ResourceManager.getResource().getString("ENoMeasurementDone"));
-			}
-			return true;
-		}
-		return false;
-	}
-
 	private static class MsgParser {
 		byte[] msg = new byte[16384];
 		int length = 0;
@@ -186,6 +159,7 @@ public class MIRSpirodocMiniLab extends DeviceHandler implements BTSearcherEvent
 		byte[] info = null;
 		byte[] devConfig = null;
 		byte[] dateTimeConfig = null;
+		byte[] spiroConfig = null;
 		byte[] endOfFile = null;
 		private Vector<byte[]> spiroObjs = new Vector<>();
 		//private Vector<byte[]> curvesObjs = new Vector<>();
@@ -281,6 +255,7 @@ public class MIRSpirodocMiniLab extends DeviceHandler implements BTSearcherEvent
 				case (byte)0x91:
 					// SPIROMETRY_CONFIG
 					Log.d(TAG,"parseMessage: SPIROMETRY_CONFIG Object received");
+					spiroConfig = Arrays.copyOfRange(msg, offset, offset+6+objLength+1);
 					Util.logFile("MIRLog.log",Arrays.copyOfRange(msg, offset+6, offset+6+objLength+1), "- SPIROMETRY_CONFIG", true);
 					break;
 				case (byte)0x92:
@@ -342,17 +317,65 @@ public class MIRSpirodocMiniLab extends DeviceHandler implements BTSearcherEvent
 		public void run() {
 			deviceListener.notifyToUi(ResourceManager.getResource().getString("KConnectingDev"));
 
-			// Make a connection to the BluetoothSocket
+			if (operationType == OperationType.Pair)
+				runCfg();
+			else
+				runGetMeasures();
+		}
+
+		private void runGetMeasures() {
 			try {
 				mmSocket = device.createRfcommSocketToServiceRecord(SPP_UUID);
 				mmSocket.connect();
 
-				if (operationType == OperationType.Pair) {
-					deviceListener.configReady(ResourceManager.getResource().getString("KPairingMsgDone"));
-					deviceListener.setBtMAC(iBtDevAddr);
-					MIRSpirodocMiniLab.this.stop();
-					return;
+				InputStream mmInStream  = mmSocket.getInputStream();
+				OutputStream mmOutStream = mmSocket.getOutputStream();
+
+				Log.d(TAG, "sending getCommand");
+				mmOutStream.write(getCommand);
+
+				byte[] buffer = new byte[1024];
+				int numRead;
+				//Ricezione messaggi
+				Util.logFile("MIRLog.log",null, " ** Objects Log ***", false);
+				boolean endMessage = false;
+				while (!endMessage) {
+					// Read from the InputStream
+					Log.d(TAG, "waiting data...");
+					numRead = mmInStream.read(buffer);
+					endMessage = parser.parseMessage(buffer, numRead);
 				}
+
+				if (parser.error) {
+					mmOutStream.write(NACK);
+					deviceListener.notifyError(DeviceListener.CONNECTION_ERROR, ResourceManager.getResource().getString("EDataReadError"));
+				} else {
+					mmOutStream.write(ACK);
+					if (parser.spiroObjs.isEmpty())
+						deviceListener.notifyError(DeviceListener.NO_MEASURES_FOUND, ResourceManager.getResource().getString("ENoMeasuresFound"));
+					else
+						// TODO gestire e invare misure
+						deviceListener.notifyError(DeviceListener.NO_MEASURES_FOUND, ResourceManager.getResource().getString("ENoMeasurementDone"));
+				}
+			} catch (IOException e) {
+				Log.e(TAG, "disconnected", e);
+				deviceListener.notifyError(DeviceListener.CONNECTION_ERROR, ResourceManager.getResource().getString("EBtDeviceConnError"));
+				MIRSpirodocMiniLab.this.stop();
+			} finally {
+				try {
+					if (mmSocket != null)
+						mmSocket.close();
+				} catch (Exception e2) {
+					e2.printStackTrace();
+				}
+			}
+		}
+
+		private void runCfg() {
+			// Make a connection to the BluetoothSocket
+			try {
+				mmSocket = device.createRfcommSocketToServiceRecord(SPP_UUID);
+				mmSocket.connect();
 
 				InputStream mmInStream  = mmSocket.getInputStream();
 				OutputStream mmOutStream = mmSocket.getOutputStream();
@@ -363,6 +386,7 @@ public class MIRSpirodocMiniLab extends DeviceHandler implements BTSearcherEvent
 				if (val != ACK) {
 					deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
 					MIRSpirodocMiniLab.this.stop();
+					return;
 				}
 
 				Log.d(TAG, "ACK received");
@@ -388,9 +412,23 @@ public class MIRSpirodocMiniLab extends DeviceHandler implements BTSearcherEvent
 					// Read from the InputStream
 					Log.d(TAG, "waiting data...");
 					numRead = mmInStream.read(buffer);
-					endMessage = manageMessage(buffer, numRead, mmOutStream);
+					endMessage = parser.parseMessage(buffer, numRead);
 				}
 
+				// Invio NACK per poter ricevere di nuovo eventuali misure presenti
+				mmOutStream.write(NACK);
+				
+				if (parser.error) {
+					deviceListener.notifyError(DeviceListener.CONNECTION_ERROR, ResourceManager.getResource().getString("EDataReadError"));
+					MIRSpirodocMiniLab.this.stop();
+					return;
+				} else {
+					if (parser.dateTimeConfig == null || parser.devConfig == null || parser.spiroConfig == null) {
+						deviceListener.notifyError(DeviceListener.NO_MEASURES_FOUND, ResourceManager.getResource().getString("EWrongConfiguration"));
+						MIRSpirodocMiniLab.this.stop();
+						return;
+					}
+				}
 
 				mmSocket.close();
 				mmSocket = null;
@@ -400,17 +438,41 @@ public class MIRSpirodocMiniLab extends DeviceHandler implements BTSearcherEvent
 				mmInStream = mmSocket.getInputStream();
 				mmOutStream = mmSocket.getOutputStream();
 
-
 				Log.d(TAG, "sending new CFG");
-				mmOutStream.write(newCfg());
+				mmOutStream.write(getCfgMessage());
 				Log.d(TAG, "waiting ack");
 				val = mmInStream.read();
 				if (val != ACK) {
-					Log.e(TAG, "CFG ACK Not received: " + val);
+					Log.e(TAG, "ACK Not received: " + val);
 					deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
 					MIRSpirodocMiniLab.this.stop();
+					return;
 				}
-				Log.d(TAG, "CFG ACK received");
+				Log.d(TAG, "ACK received");
+
+				mmSocket.close();
+				mmSocket = null;
+				Thread.sleep(2500);
+				mmSocket = device.createRfcommSocketToServiceRecord(SPP_UUID);
+				mmSocket.connect();
+				mmInStream = mmSocket.getInputStream();
+				mmOutStream = mmSocket.getOutputStream();
+
+				Log.d(TAG, "setting Time");
+				mmOutStream.write(getTimeMessage());
+				Log.d(TAG, "waiting ack");
+				val = mmInStream.read();
+				if (val != ACK) {
+					Log.e(TAG, "ACK Not received: " + val);
+					deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
+					MIRSpirodocMiniLab.this.stop();
+					return;
+				}
+				Log.d(TAG, "ACK received");
+
+				deviceListener.configReady(ResourceManager.getResource().getString("KPairingMsgDone"));
+				deviceListener.setBtMAC(iBtDevAddr);
+				MIRSpirodocMiniLab.this.stop();
 			} catch (IOException e) {
 				Log.e(TAG, "disconnected", e);
 				deviceListener.notifyError(DeviceListener.CONNECTION_ERROR, ResourceManager.getResource().getString("EBtDeviceConnError"));
@@ -422,36 +484,68 @@ public class MIRSpirodocMiniLab extends DeviceHandler implements BTSearcherEvent
 					if (mmSocket != null)
 						mmSocket.close();
 				} catch (Exception e2) {
-
+					e2.printStackTrace();
 				}
 			}
 		}
 
-		private byte[] newCfg() {
-			byte[] cfgMsg = new byte[
+		private byte[] getCfgMessage() {
+			byte[] msg = new byte[
 					2
-					+parser.dateTimeConfig.length
-//					+parser.devConfig.length
+					+parser.devConfig.length
+					+parser.spiroConfig.length
 					+parser.endOfFile.length
 					+2];
-			cfgMsg[0] = (byte)85;
-			cfgMsg[1] = 0;
+
+			msg[0] = (byte)85;
+			msg[1] = 0;
 			int offset = 2;
-			parser.dateTimeConfig[7] = 1;
-			parser.dateTimeConfig[8] = 25;
-			System.arraycopy(parser.dateTimeConfig,0,cfgMsg,offset,parser.dateTimeConfig.length);
-			offset += parser.dateTimeConfig.length;
-//			parser.devConfig[11] = 1;
-//			System.arraycopy(parser.devConfig,0,cfgMsg,offset,parser.devConfig.length);
-//			offset += parser.devConfig.length;
-			System.arraycopy(parser.endOfFile,0,cfgMsg,offset,parser.endOfFile.length);
+			parser.devConfig[11] = 1; // Abilita invio Curve
+			System.arraycopy(parser.devConfig,0,msg,offset,parser.devConfig.length);
+			offset += parser.devConfig.length;
+			parser.spiroConfig[16] = 7; // Invio di tutte e 3 le curve
+			System.arraycopy(parser.spiroConfig,0,msg,offset,parser.spiroConfig.length);
+			offset += parser.spiroConfig.length;
+			System.arraycopy(parser.endOfFile,0,msg,offset,parser.endOfFile.length);
+
 			int crc = 0;
-			for (int i=1; i<cfgMsg.length-2; i++)
-				crc += cfgMsg[i] & 0xff;
-			cfgMsg[cfgMsg.length-2] = (byte) (crc >>> 8);
-			cfgMsg[cfgMsg.length-1] = (byte) crc;
-			Util.logFile("MIRLog.log",cfgMsg, "- NEW_CFG", false);
-			return cfgMsg;
+			for (int i=1; i<msg.length-2; i++)
+				crc += msg[i] & 0xff;
+			msg[msg.length-2] = (byte) (crc >>> 8);
+			msg[msg.length-1] = (byte) crc;
+			return msg;
 		}
+	}
+
+	private byte[] getTimeMessage() {
+		byte[] msg = new byte[
+				2
+				+parser.dateTimeConfig.length
+				+parser.endOfFile.length
+				+2];
+
+		msg[0] = (byte)85;
+		msg[1] = 0;
+		int offset = 2;
+		Calendar now = Calendar.getInstance();
+		parser.dateTimeConfig[6] = 1; // formato dd/mm/aaaa
+		parser.dateTimeConfig[7] = 1; // enable time setting
+		parser.dateTimeConfig[8] = (byte)now.get(Calendar.DAY_OF_MONTH);
+		parser.dateTimeConfig[9] = (byte)(now.get(Calendar.MONTH) + 1);
+		parser.dateTimeConfig[10] = (byte)(now.get(Calendar.YEAR) >>> 8);
+		parser.dateTimeConfig[11] = (byte)now.get(Calendar.YEAR);
+		parser.dateTimeConfig[12] = (byte)now.get(Calendar.HOUR_OF_DAY);
+		parser.dateTimeConfig[13] = (byte)now.get(Calendar.MINUTE);
+		parser.dateTimeConfig[14] = (byte)now.get(Calendar.SECOND);
+		System.arraycopy(parser.dateTimeConfig,0,msg,offset,parser.dateTimeConfig.length);
+		offset += parser.dateTimeConfig.length;
+		System.arraycopy(parser.endOfFile,0,msg,offset,parser.endOfFile.length);
+
+		int crc = 0;
+		for (int i=1; i<msg.length-2; i++)
+			crc += msg[i] & 0xff;
+		msg[msg.length-2] = (byte) (crc >>> 8);
+		msg[msg.length-1] = (byte) crc;
+		return msg;
 	}
 }

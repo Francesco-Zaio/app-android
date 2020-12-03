@@ -1,9 +1,13 @@
 package com.ti.app.telemed.core.syncmodule;
 
 import android.app.IntentService;
+import android.content.Context;
 import android.content.Intent;
 import android.os.PowerManager;
 import android.util.Log;
+
+import androidx.annotation.NonNull;
+import androidx.core.app.JobIntentService;
 
 import com.ti.app.telemed.core.common.Measure;
 import com.ti.app.telemed.core.common.User;
@@ -26,7 +30,13 @@ import static com.ti.app.telemed.core.xmlmodule.XmlManager.IMG_FILE_TYPE;
 import static com.ti.app.telemed.core.xmlmodule.XmlManager.PDF_FILE_TYPE;
 
 
-public class SendMeasureService extends IntentService implements WebManagerSendingResultEventListener {
+public class SendMeasureService extends JobIntentService implements WebManagerSendingResultEventListener {
+
+    /**
+     * Unique job ID for this service.
+     */
+    static final int JOB_ID = 1000;
+
     private static final String TAG = "SendMeasureService";
     private static final String WLTAG = "com.ti.app.telemed.core.syncmodule:SendMeasuresService";
     public static final String USER_TAG = "USERTAG";
@@ -42,55 +52,68 @@ public class SendMeasureService extends IntentService implements WebManagerSendi
     private int errorCode = 0;
     private final Object lock = new Object();
 
+    /**
+     * Convenience method for enqueuing work in to this service.
+     */
+    public static void enqueueWork(Context context, Measure measure, String userId) {
+        if (measure == null && (userId == null || userId.isEmpty()))
+            return;
+        Intent intent = new Intent(context, SendMeasureService.class);
+        if (measure != null) {
+            intent.putExtra(SendMeasureService.MEASURE_TAG, measure);
+        }
+        if (userId != null && !userId.isEmpty())
+            intent.putExtra(SendMeasureService.USER_TAG, userId);
+        enqueueWork(context, SendMeasureService.class, JOB_ID, intent);
+    }
+
     public SendMeasureService() {
-        super("SendMeasureService");
+        super();
     }
 
     @Override
-    protected void onHandleIntent(Intent intent) {
-        if (intent != null) {
-            PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
-            if (pm == null) {
-                Log.e(TAG, "onHandleIntent: PowerManager is NULL!!");
+    protected void onHandleWork(@NonNull Intent intent) {
+        PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
+        if (pm == null) {
+            Log.e(TAG, "onHandleIntent: PowerManager is NULL!!");
+            return;
+        }
+        //Log.d(TAG, "onHandleIntent");
+        final PowerManager.WakeLock  wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WLTAG);
+        try {
+            wakeLock.setReferenceCounted(false);
+            wakeLock.acquire(60000);
+            Log.d(TAG,"wakeLock acquired");
+            String userId;
+            final Measure measure = (Measure) intent.getSerializableExtra(MEASURE_TAG);
+            if (measure != null)
+                userId = measure.getIdUser();
+            else
+                userId = intent.getStringExtra(USER_TAG);
+            final User user = DbManager.getDbManager().getUser(userId);
+            if (user == null) {
+                Log.e(TAG,"User is Null");
                 return;
             }
-            //Log.d(TAG, "onHandleIntent");
-            final PowerManager.WakeLock  wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WLTAG);
-            try {
-                wakeLock.setReferenceCounted(false);
-                wakeLock.acquire(60000);
-                Log.d(TAG,"wakeLock acquired");
-                String userId;
-                final Measure measure = (Measure) intent.getSerializableExtra(MEASURE_TAG);
+            if (Util.isNetworkConnected()) {
                 if (measure != null)
-                    userId = measure.getIdUser();
+                    sendMeasure(user, measure);
                 else
-                    userId = intent.getStringExtra(USER_TAG);
-                final User user = DbManager.getDbManager().getUser(userId);
-                if (user == null) {
-                    Log.e(TAG,"User is Null");
-                    return;
-                }
-                if (Util.isNetworkConnected()) {
-                    if (measure != null)
-                        sendMeasure(user, measure);
-                    else
-                        sendMeasures(user);
-                } else {
-                    Log.w(TAG, "Network is Not connected");
-                }
-                // Update the Warning Flag
-                if (!DbManager.getDbManager().notSentMeasures(user.getId()))
-                    SyncStatusManager.getSyncStatusManager().setMeasureError(false);
-                else
-                    SyncStatusManager.getSyncStatusManager().setMeasureError(true);
-            } catch (Exception e) {
-                e.printStackTrace();
-            } finally {
-                if (wakeLock.isHeld()) {
-                    wakeLock.release();
-                    Log.d(TAG,"wakeLock released");
-                }
+                    sendMeasures(user);
+            } else {
+                Log.w(TAG, "Network is Not connected");
+            }
+            // Update the Warning Flag
+            if (!DbManager.getDbManager().notSentMeasures(user.getId()))
+                SyncStatusManager.getSyncStatusManager().setMeasureError(false);
+            else
+                SyncStatusManager.getSyncStatusManager().setMeasureError(true);
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (wakeLock.isHeld()) {
+                wakeLock.release();
+                Log.d(TAG,"wakeLock released");
             }
         }
     }

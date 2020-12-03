@@ -40,6 +40,7 @@ import com.ti.app.mydoctor.R;
 import com.ti.app.mydoctor.util.AppConst;
 import com.ti.app.mydoctor.AppResourceManager;
 import com.ti.app.mydoctor.util.AppUtil;
+import com.ti.app.telemed.core.MyApp;
 import com.ti.app.telemed.core.common.Measure;
 import com.ti.app.telemed.core.measuremodule.MeasureManager;
 import com.ti.app.telemed.core.syncmodule.SendMeasureService;
@@ -389,9 +390,7 @@ public class ShowMeasure extends ActionBarListActivity{
 					dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("noConnection"));
 					showDialog(WARNING_DIALOG);
 				} else {
-					Intent intent = new Intent(this, SendMeasureService.class);
-					intent.putExtra(SendMeasureService.MEASURE_TAG, selected_measure);
-					startService(intent);
+					SendMeasureService.enqueueWork(this, selected_measure, null);
 					Toast.makeText(this, AppResourceManager.getResource().getString("KMsgSendMeasureStart"), Toast.LENGTH_SHORT).show();
 				}
                 return true;

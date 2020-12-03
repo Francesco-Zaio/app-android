@@ -13,8 +13,8 @@ Q2, Q2, Questionario 2, 0
 PT, CCXS, Coaguchek XS - Roche, 1
 TC, FORAIR21B, IR 20b/21b - Fora, 1
 OS, SPIRODOC, Spirodoc - MIR, 1
-SP, SPIRODOC, Spirodoc - MIR, 1
-SP, SPIRODOCNEW, SpirodocNew - MIR, 1
+SP, SPIRODOC, Spirodoc 3.5 - MIR, 1
+SP, SPIRODOCNEW, Spirodoc 4.6 - MIR, 1
 // EC, 8000GW, 8000GW - Contec, 1
 TC, PC300, PC-300 - GIMA, 1
 OS, PC300, PC-300 - GIMA, 1
@@ -36,4 +36,4 @@ EC, DHEARTH, D-Heart, 2
 OS, OXY10, OXY-10 - GIMA, 1
 OS, POD1W, POD-1W - Creative, 1
 //OS, CMS50DBT, CMS50D-BT - GIMA, 1
-FF, COMFTECH, Howdy - Comftech, 2
+//FF, COMFTECH, Howdy - Comftech, 2

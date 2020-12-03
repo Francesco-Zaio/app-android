@@ -13,6 +13,7 @@ import androidx.work.WorkerParameters;
 
 import com.ti.app.telemed.core.MyApp;
 import com.ti.app.telemed.core.common.User;
+import com.ti.app.telemed.core.measuremodule.MeasureManager;
 import com.ti.app.telemed.core.usermodule.UserManager;
 import com.ti.app.telemed.core.util.GWConst;
 
@@ -74,10 +75,10 @@ public class SyncWorker extends Worker {
                 }
                 if (success) {
                     Log.d(TAG, "askOperatorData success");
-                    Intent intent = new Intent(MyApp.getContext(), SendMeasureService.class);
-                    intent.putExtra(SendMeasureService.USER_TAG, user.getId());
-                    ctx.startService(intent);
-                    Log.d(TAG, "SendMeasureService started");
+                    if (MeasureManager.getMeasureManager().getNumMeasuresToSend(user.getId()) > 0) {
+                        SendMeasureService.enqueueWork(ctx, null, user.getId());
+                        Log.d(TAG, "SendMeasureService started");
+                    }
                 } else {
                     Log.w(TAG, "askOperatorData failed");
                     return Result.success();

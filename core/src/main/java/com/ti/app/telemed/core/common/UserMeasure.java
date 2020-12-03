@@ -137,14 +137,18 @@ public class UserMeasure implements Cloneable {
 		return sendFrequencyNormal;
 	}
 	public void setSendFrequencyNormal(int val) {
-		sendFrequencyNormal = val;
+		// TODO
+		// sendFrequencyNormal = val;
+		sendFrequencyNormal = 60;
 	}
 
 	public int getSendFrequencyAlarm() {
 		return sendFrequencyAlarm;
 	}
 	public void setSendFrequencyAlarm(int val) {
-		sendFrequencyAlarm = val;
+		// TODO
+		// sendFrequencyAlarm = val;
+		sendFrequencyAlarm = 60;
 	}
 
     public  List<Date> getTodaySchedule ()  {

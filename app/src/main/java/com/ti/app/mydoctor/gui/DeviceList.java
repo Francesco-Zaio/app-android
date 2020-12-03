@@ -771,9 +771,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 					dataBundle.putString(AppConst.MESSAGE, msg);
 					myShowDialog(ALERT_DIALOG);
 				} else {
-					intent = new Intent(this, SendMeasureService.class);
-					intent.putExtra(SendMeasureService.USER_TAG, userManager.getCurrentUser().getId());
-					startService(intent);
+					SendMeasureService.enqueueWork(this, null, userManager.getCurrentUser().getId());
 					Toast.makeText(this, AppResourceManager.getResource().getString("KMsgSendMeasureStart"), Toast.LENGTH_SHORT).show();
 				}
                 break;
@@ -1941,9 +1939,9 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 				//Forzo la ricostruzione del menu
                 activity.supportInvalidateOptionsMenu();
 
-				Intent intent = new Intent(MyApp.getContext(), SendMeasureService.class);
-				intent.putExtra(SendMeasureService.USER_TAG, activity.userManager.getCurrentUser().getId());
-				MyApp.getContext().startService(intent);
+				if (MeasureManager.getMeasureManager().getNumMeasuresToSend(activity.userManager.getCurrentUser().getId()) > 0) {
+					SendMeasureService.enqueueWork(MyApp.getContext(), null, activity.userManager.getCurrentUser().getId());
+				}
 				break;
 			case UserManager.ERROR_OCCURED:
 				// Errore nel dialogo con la piattaforma

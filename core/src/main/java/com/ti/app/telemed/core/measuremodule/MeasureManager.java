@@ -181,9 +181,7 @@ public class MeasureManager {
         Log.i(TAG, "saveMeasureData: ");
         try {
             boolean result = DbManager.getDbManager().insertMeasure(m);
-            Intent intent = new Intent(MyApp.getContext(), SendMeasureService.class);
-            intent.putExtra(SendMeasureService.USER_TAG,m.getIdUser());
-            MyApp.getContext().startService(intent);
+            SendMeasureService.enqueueWork(MyApp.getContext(), null, m.getIdUser());
             return result;
         } catch (Exception sqle) {
             Log.e(TAG, "ERROR SAVE MEASURE DB " + sqle);

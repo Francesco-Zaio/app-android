@@ -10,7 +10,7 @@ public class MeasureDetail {
 
     // elenco ordinato delle misure da visualizzare per ogni gruppo misura (visualizzazione breve/dettagliata)
     private static final String[] OS_Short = {GWConst.EGwCode_07,GWConst.EGwCode_0F};
-    private static final String[] OS_Detail = {GWConst.EGwCode_07,GWConst.EGwCode_1B,GWConst.EGwCode_1D,GWConst.EGwCode_1F,GWConst.EGwCode_0F,GWConst.EGwCode_1A,GWConst.EGwCode_1C,GWConst.EGwCode_1E,GWConst.EGwCode_1G,GWConst.EGwCode_BATTERY};
+    private static final String[] OS_Detail = {GWConst.EGwCode_07,GWConst.EGwCode_1B,GWConst.EGwCode_1D,GWConst.EGwCode_0F,GWConst.EGwCode_1A,GWConst.EGwCode_1C,GWConst.EGwCode_1G,GWConst.EGwCode_BATTERY};
     private static final String[] PR_Short = {GWConst.EGwCode_03,GWConst.EGwCode_04,GWConst.EGwCode_06};
     private static final String[] PR_Detail = {GWConst.EGwCode_03,GWConst.EGwCode_04,GWConst.EGwCode_05,GWConst.EGwCode_06,GWConst.EGwCode_BATTERY};
     private static final String[] PS_Short = {GWConst.EGwCode_01,GWConst.EGwCode_S0};

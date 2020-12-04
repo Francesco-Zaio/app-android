@@ -13,6 +13,7 @@ Q2, Q2, Questionario 2, 0
 PT, CCXS, Coaguchek XS - Roche, 1
 TC, FORAIR21B, IR 20b/21b - Fora, 1
 OS, SPIRODOC, Spirodoc - MIR, 1
+OS, SPIRODOCNEW, Spirodoc 4.6 - MIR, 1
 SP, SPIRODOC, Spirodoc 3.5 - MIR, 1
 SP, SPIRODOCNEW, Spirodoc 4.6 - MIR, 1
 // EC, 8000GW, 8000GW - Contec, 1

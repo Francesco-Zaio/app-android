@@ -104,26 +104,29 @@ public class SMSReceiver extends BroadcastReceiver {
             case "G":
                 num = Integer.parseInt(s[6]);
                 manageAppointment(String.valueOf(id), idUser, url, title, body, cal, isDelete);
-                for (i=1;i<num;i++) {
-                    cal.add(Calendar.DATE, 1);
-                    manageAppointment(String.valueOf(id+i), idUser, url, title, body, cal, isDelete);
-                }
+                if (s[4].equalsIgnoreCase("C"))
+                    for (i=1;i<num;i++) {
+                        cal.add(Calendar.DATE, 1);
+                        manageAppointment(String.valueOf(id+i), idUser, url, title, body, cal, isDelete);
+                    }
                 break;
             case "S":
                 num = Integer.parseInt(s[6]);
                 manageAppointment(String.valueOf(id), idUser, url, title, body, cal, isDelete);
-                for (i=1;i<num;i++) {
-                    cal.add(Calendar.DATE, 7);
-                    manageAppointment(String.valueOf(id+i), idUser, url, title, body, cal, isDelete);
-                }
+                if (s[4].equalsIgnoreCase("C"))
+                    for (i=1;i<num;i++) {
+                        cal.add(Calendar.DATE, 7);
+                        manageAppointment(String.valueOf(id+i), idUser, url, title, body, cal, isDelete);
+                    }
                 break;
             case "M":
                 num = Integer.parseInt(s[6]);
                 manageAppointment(String.valueOf(id), idUser, url, title, body, cal, isDelete);
-                for (i=1;i<num;i++) {
-                    cal.add(Calendar.MONTH, 1);
-                    manageAppointment(String.valueOf(id+i), idUser, url, title, body, cal, isDelete);
-                }
+                if (s[4].equalsIgnoreCase("C"))
+                    for (i=1;i<num;i++) {
+                        cal.add(Calendar.MONTH, 1);
+                        manageAppointment(String.valueOf(id+i), idUser, url, title, body, cal, isDelete);
+                    }
                 break;
             case "-1":
             default:
@@ -136,6 +139,14 @@ public class SMSReceiver extends BroadcastReceiver {
         Log.d(TAG, "manageAppointment - started!");
         DbManager dbManager = DbManager.getDbManager();
         Appointment app = dbManager.getAppointment(appointmentId);
+        if (delete) {
+            removeWorkRequest(appointmentId);
+            if (app != null) {
+                dbManager.deleteAppointment(app.getAppointmentId(), 0);
+                Log.d(TAG, "Appointment " + app.getAppointmentId() + " deleted");
+            }
+            return;
+        }
         if (app == null) {
             scheduleWorkRequest(appointmentId, cal.getTimeInMillis());
             app = new Appointment();
@@ -148,17 +159,12 @@ public class SMSReceiver extends BroadcastReceiver {
             app.setTimestamp(cal.getTimeInMillis());
             dbManager.insertAppointment(app);
         } else {
-            if (delete) {
-                removeWorkRequest(appointmentId);
-                dbManager.deleteAppointment(app.getAppointmentId(), 0);
-            } else {
-                app.setUrl(url);
-                app.setTimestamp(cal.getTimeInMillis());
-                app.setTitle(title);
-                app.setData(body);
-                dbManager.updateAppointment(app);
-                scheduleWorkRequest(appointmentId, cal.getTimeInMillis());
-            }
+            app.setUrl(url);
+            app.setTimestamp(cal.getTimeInMillis());
+            app.setTitle(title);
+            app.setData(body);
+            dbManager.updateAppointment(app);
+            scheduleWorkRequest(appointmentId, cal.getTimeInMillis());
         }
     }
 

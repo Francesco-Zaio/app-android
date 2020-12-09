@@ -41,16 +41,17 @@ public class MIRSpirodoc46 extends DeviceHandler implements BTSearcherEventListe
 
 	private static final UUID SPP_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
 
+	// Comandi da inviare al dispositivo MIR
 	private static final byte Cod_ON = 0x00;
-	private static final byte COD_RX_APRO = (byte) 0xC5;
-	private static final byte Cod_FVC = 0x08; // Comando per avviare Spirometria FVC con turbina riusabile
+	private static final byte Cod_RX_APRO = (byte) 0xC5;
+	//private static final byte Cod_FVC = 0x08; // Comando per avviare Spirometria FVC con turbina riusabile
+	private static final byte Cod_FVC_M = (byte)0x88; // Comando per avviare Spirometria FVC con turbina usa e getta
 	private static final byte Cod_OSS = 0x10; // Comando per avviare Ossimetria
 	private static final byte Cod_ESC = (byte)0x1B; // Comando per terminare l'Ossimetria
 	private static final byte Cod_LAST = (byte)0xA2; // Comando per ricevere l'ultima Spirometria FVC Real Time
 
 	private static final int STARTUP_SEQUENCE_LEN = 32;
 	private static final int PROG_AREA_LEN = 718;
-
 
 	private static final int MIN_OXY_SAMPLES = 14;
 	private static final int MAX_OXY_SAMPLES = 27;
@@ -75,6 +76,7 @@ public class MIRSpirodoc46 extends DeviceHandler implements BTSearcherEventListe
 			commThread.notifyAll();
 		}
     }
+
     @Override
     public void cancelDialog(){
 		synchronized (commThread) {
@@ -123,6 +125,7 @@ public class MIRSpirodoc46 extends DeviceHandler implements BTSearcherEventListe
 
 	@Override
 	public void deviceDiscovered(Vector<BluetoothDevice> devList) {
+		Log.d(TAG,"deviceDiscovered:");
 		switch (iCmdCode) {
 			case ECmdConnByAddr:
 				for (int i = 0; i < devList.size(); i++)
@@ -148,6 +151,7 @@ public class MIRSpirodoc46 extends DeviceHandler implements BTSearcherEventListe
 
     @Override
     public void deviceSearchCompleted() {
+		Log.d(TAG,"deviceSearchCompleted:");
 		if (iCmdCode == TCmd.ECmdConnByUser && iBTSearchListener != null) {
 			Log.d(TAG, "BT scan completed");
 			iBTSearchListener.deviceSearchCompleted();
@@ -266,7 +270,7 @@ public class MIRSpirodoc46 extends DeviceHandler implements BTSearcherEventListe
 
 				// Invio COD_RX_APRO
 				Log.d(TAG, "sending COD_RX_APRO");
-				mmOutStream.write(COD_RX_APRO);
+				mmOutStream.write(Cod_RX_APRO);
 
 				// Ricezione Prog Area
 				byte[] progArea = new byte[PROG_AREA_LEN];
@@ -318,7 +322,7 @@ public class MIRSpirodoc46 extends DeviceHandler implements BTSearcherEventListe
 
 				// Invio Cod_FVC (Avvio Spirometria FVC)
 				Log.d(TAG, "sending Cod_FVC");
-				mmOutStream.write(Cod_FVC);
+				mmOutStream.write(Cod_FVC_M);
 
 				// Ricezione dati real time
 				byte[] realTimeData = new byte[3];
@@ -744,7 +748,6 @@ public class MIRSpirodoc46 extends DeviceHandler implements BTSearcherEventListe
 		tmpStream.put(69, (byte)0x20);
 		oxyStream = tmpStream.array();
 	}
-
 
 	private boolean addOxySample(byte[] data) {
 		if (currElem == null)

@@ -272,16 +272,9 @@ public class Util {
 		}
     }
 
-	/**
-	 * Esegue un dump di un array di bytes in valore esadecimali in un file.
-	 * @param fileName		Path del file in cui memorizzare l'array.
-	 * @param buffer		Array di bytes da memorizzare.
-	 * @return			true in caso di successo o false in caso di errore.
-	 */
 	public static void logFile(String fileName, byte[] buffer, String tag, boolean append) {
 		try {
-			File dir = Environment.getExternalStorageDirectory();
-			Log.d(TAG, "Store file " + fileName);
+			File dir = MyApp.getContext().getExternalFilesDir(null);
 			File file = new File(dir, fileName);
 			Log.d(TAG, "Logging buffer to " + file.getAbsolutePath());
 			BufferedWriter bw = new BufferedWriter(new FileWriter(file, append));

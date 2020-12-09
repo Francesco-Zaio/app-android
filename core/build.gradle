@@ -1,13 +1,13 @@
 apply plugin: 'com.android.library'
 
 android {
-    compileSdkVersion 28
+    compileSdkVersion 29
 
     defaultConfig {
         minSdkVersion 23
-        targetSdkVersion 26
-        versionCode 2401
-        versionName "2.4.0.b"
+        targetSdkVersion 29
+        versionCode 2410
+        versionName "2.4.1.a"
     }
     buildTypes {
         release {
@@ -24,10 +24,10 @@ android {
 
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
-    implementation 'androidx.appcompat:appcompat:1.1.0'
+    implementation 'androidx.appcompat:appcompat:1.2.0'
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
     // WorkManager
-    def work_version = "2.3.4"
+    def work_version = "2.4.0"
     implementation "androidx.work:work-runtime:$work_version"
     // CheckMePro Device library module
     implementation project(':checkmelib')

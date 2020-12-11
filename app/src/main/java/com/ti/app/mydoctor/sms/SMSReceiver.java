@@ -1,27 +1,36 @@
 package com.ti.app.mydoctor.sms;
 
 import android.app.Activity;
+import android.app.NotificationManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Bundle;
 import android.provider.Telephony;
 import android.telephony.SmsMessage;
 import android.util.Log;
 
+import androidx.core.app.NotificationManagerCompat;
 import androidx.work.BackoffPolicy;
 import androidx.work.Data;
 import androidx.work.ExistingWorkPolicy;
 import androidx.work.OneTimeWorkRequest;
 import androidx.work.WorkManager;
 
+import com.ti.app.mydoctor.AppResourceManager;
 import com.ti.app.telemed.core.MyApp;
+import com.ti.app.telemed.core.ResourceManager;
 import com.ti.app.telemed.core.common.Appointment;
 import com.ti.app.telemed.core.dbmodule.DbManager;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static com.ti.app.mydoctor.sms.AppointmentWorker.KEY_WORK_ID;
@@ -34,20 +43,50 @@ public class SMSReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         Log.i(TAG, "onReceive");
+
         if (Telephony.Sms.Intents.SMS_RECEIVED_ACTION.equals(intent.getAction())) {
-            SmsMessage[] smsMessages = Telephony.Sms.Intents.getMessagesFromIntent(intent);
-            for (SmsMessage smsMessage : smsMessages) {
-                String phoneNumber = smsMessage.getDisplayOriginatingAddress();
-                String message = smsMessage.getDisplayMessageBody();
-                String body = smsMessage.getMessageBody();
-                String originAddress = smsMessage.getOriginatingAddress();
-                Log.i(TAG, "SMS Received: sender=" + phoneNumber + " - message=" + message + " - body=" + body + " - originAddr=" + originAddress);
+            Map<String, String> msg = RetrieveMessages(intent);
+            if (msg.isEmpty()) {
+                // unable to retrieve SMS
+                setResultCode(Activity.RESULT_CANCELED);
+                return;
+            }
+            for (Map.Entry<String, String> mapEntry : msg.entrySet()) {
+                String originAddress = mapEntry.getKey();
+                String body = mapEntry.getValue();
+                Log.i(TAG, "SMS Received: originAddress=" + originAddress + " - message=" + body);
                 parseSMS(body);
                 setResultCode(Activity.RESULT_OK);
             }
         } else {
             setResultCode(Activity.RESULT_CANCELED);
         }
+    }
+
+    private Map<String, String> RetrieveMessages(Intent intent) {
+        Map<String, String> msg = new HashMap<>();
+        SmsMessage[] smsMessages = Telephony.Sms.Intents.getMessagesFromIntent(intent);
+
+        // There can be multiple SMS from multiple senders
+        // However, send long SMS of same sender in one message
+        for (SmsMessage smsMessage : smsMessages) {
+            String originatinAddress = smsMessage.getOriginatingAddress();
+
+            // Check if index with number exists
+            if (!msg.containsKey(originatinAddress)) {
+                // Index with number doesn't exist
+                // Save string into associative array with sender number as index
+                msg.put(smsMessage.getOriginatingAddress(), smsMessage.getMessageBody());
+            } else {
+                // Number has been there, add content but consider that
+                // msg.get(originatinAddress) already contains sms:sndrNbr:previousparts of SMS,
+                // so just add the part of the current PDU
+                String previousparts = msg.get(originatinAddress);
+                String msgString = previousparts + smsMessage.getMessageBody();
+                msg.put(originatinAddress, msgString);
+            }
+        }
+        return msg;
     }
 
     /*
@@ -65,88 +104,128 @@ public class SMSReceiver extends BroadcastReceiver {
     Cancellazione/Modifica vengono invite solo per singolo evento.
     */
     private void parseSMS(String str) {
-
         Log.d(TAG, "parseSMS - started!");
+        // Verifico che ci siano le due parentesi
         int i1 = str.indexOf("[");
         int i2 = str.indexOf("]");
         if ((i1 == -1) || (i2 == -1)) {
             Log.i(TAG, "parseSMS: message not valid");
             return;
         }
-        String[] s = str.substring(i1 + 1, i2).split(",");
+        String[] s = str.substring(i1 + 1, i2).split("#");
+        // verifico che ci siano esattamente 7 campi separati da '#'
         if (s.length != 7) {
             Log.i(TAG, "parseSMS: message not valid");
             return;
         }
 
         int id;
-        String idUser, url, title, body;
+        String idUser, url = null, title = null, body = null;
+        Calendar cal = null;
         boolean isDelete;
-        id = Integer.parseInt(s[0]);
-        // TODO check if user exist and is not blocked
-        idUser = s[1];
-        SimpleDateFormat format = new SimpleDateFormat("yyyyMMddHHmm", Locale.getDefault());
-        Calendar cal = Calendar.getInstance();
+        // recupero l'ID della visita
         try {
-            cal.setTime(format.parse(s[2]));
+            id = Integer.parseInt(s[0]);
+        } catch (NumberFormatException e) {
+            Log.e(TAG, "parseSMS: id format error");
+            return;
+        }
+
+        // Non verifico se l'utente esiste
+        // Vengono gestite tutte le visite anche se il paziente non è ancora registrato nel DB
+        idUser = s[1];
+
+        // Nel caso di delete ignoro gli altri dati e cancello la visita
+        if (s[4].equalsIgnoreCase("D")) {
+            deleteAppointment(String.valueOf(id));
+            return;
+        }
+
+        // Timestamp
+        SimpleDateFormat format = new SimpleDateFormat("yyyyMMddHHmm", Locale.getDefault());
+        cal = Calendar.getInstance();
+        try {
+            Date d = format.parse(s[2]);
+            if (d != null)
+                cal.setTime(d);
         } catch (ParseException e) {
             Log.e(TAG, "parseSMS Date format error: message=" + str);
             return;
         }
-        title = s[3];
-        isDelete = s[4].equalsIgnoreCase("D");
-        body = str.substring(0, str.indexOf("["));
-        url = str.substring(str.indexOf("https"));
-        url = url.split("\\r?\\n")[0];
+
+        // Titolo
+        if (s[3] == null || s[3].isEmpty() || s[3].equalsIgnoreCase("-1"))
+            title = AppResourceManager.getResource().getString("AppointmentType.0");
+        else
+            title = s[3];
+
+        // Body e URL
+        i1 = str.indexOf("[");
+        i2 = str.indexOf("https");
+        if ((i1 == -1) || (i2 == -1)) {
+            Log.i(TAG, "parseSMS: message not valid");
+            return;
+        }
+        body = str.substring(0, i1);
+        url = str.substring(i2);
+        url = url.split("\\r?\\n|\\[")[0];
+
+        // Creazione appuntamento e gestione eventule ripetizione
         int i;
         int num;
         switch (s[5].toUpperCase()) {
             case "G":
                 num = Integer.parseInt(s[6]);
-                manageAppointment(String.valueOf(id), idUser, url, title, body, cal, isDelete);
+                manageAppointment(String.valueOf(id), idUser, url, title, body, cal);
                 if (s[4].equalsIgnoreCase("C"))
                     for (i=1;i<num;i++) {
                         cal.add(Calendar.DATE, 1);
-                        manageAppointment(String.valueOf(id+i), idUser, url, title, body, cal, isDelete);
+                        manageAppointment(String.valueOf(id+i), idUser, url, title, body, cal);
                     }
                 break;
             case "S":
                 num = Integer.parseInt(s[6]);
-                manageAppointment(String.valueOf(id), idUser, url, title, body, cal, isDelete);
+                manageAppointment(String.valueOf(id), idUser, url, title, body, cal);
                 if (s[4].equalsIgnoreCase("C"))
                     for (i=1;i<num;i++) {
                         cal.add(Calendar.DATE, 7);
-                        manageAppointment(String.valueOf(id+i), idUser, url, title, body, cal, isDelete);
+                        manageAppointment(String.valueOf(id+i), idUser, url, title, body, cal);
                     }
                 break;
             case "M":
                 num = Integer.parseInt(s[6]);
-                manageAppointment(String.valueOf(id), idUser, url, title, body, cal, isDelete);
+                manageAppointment(String.valueOf(id), idUser, url, title, body, cal);
                 if (s[4].equalsIgnoreCase("C"))
                     for (i=1;i<num;i++) {
                         cal.add(Calendar.MONTH, 1);
-                        manageAppointment(String.valueOf(id+i), idUser, url, title, body, cal, isDelete);
+                        manageAppointment(String.valueOf(id+i), idUser, url, title, body, cal);
                     }
                 break;
             case "-1":
             default:
-                manageAppointment(String.valueOf(id), idUser, url, title, body, cal, isDelete);
+                manageAppointment(String.valueOf(id), idUser, url, title, body, cal);
                 break;
         }
     }
 
-    private void manageAppointment(String appointmentId, String idUser, String url, String title, String body, Calendar cal, boolean delete) {
+    private void deleteAppointment(String appointmentId) {
+        Log.d(TAG, "deleteAppointment - started!");
+        DbManager dbManager = DbManager.getDbManager();
+        Appointment app = dbManager.getAppointment(appointmentId);
+        removeWorkRequest(appointmentId);
+        if (app != null) {
+            // Rimuovo l'eventuale notifica se è già visualizzata
+            NotificationManagerCompat notificationManager = NotificationManagerCompat.from(MyApp.getContext());
+            notificationManager.cancel(app.getId());
+            dbManager.deleteAppointment(app.getAppointmentId(), 0);
+            Log.d(TAG, "Appointment " + app.getAppointmentId() + " deleted");
+        }
+    }
+
+    private void manageAppointment(String appointmentId, String idUser, String url, String title, String body, Calendar cal) {
         Log.d(TAG, "manageAppointment - started!");
         DbManager dbManager = DbManager.getDbManager();
         Appointment app = dbManager.getAppointment(appointmentId);
-        if (delete) {
-            removeWorkRequest(appointmentId);
-            if (app != null) {
-                dbManager.deleteAppointment(app.getAppointmentId(), 0);
-                Log.d(TAG, "Appointment " + app.getAppointmentId() + " deleted");
-            }
-            return;
-        }
         if (app == null) {
             scheduleWorkRequest(appointmentId, cal.getTimeInMillis());
             app = new Appointment();
@@ -160,9 +239,9 @@ public class SMSReceiver extends BroadcastReceiver {
             dbManager.insertAppointment(app);
         } else {
             app.setUrl(url);
-            app.setTimestamp(cal.getTimeInMillis());
             app.setTitle(title);
             app.setData(body);
+            app.setTimestamp(cal.getTimeInMillis());
             dbManager.updateAppointment(app);
             scheduleWorkRequest(appointmentId, cal.getTimeInMillis());
         }

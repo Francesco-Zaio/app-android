@@ -152,9 +152,10 @@ public class MIRSpirodoc46 extends DeviceHandler implements BTSearcherEventListe
     @Override
     public void deviceSearchCompleted() {
 		Log.d(TAG,"deviceSearchCompleted:");
-		if (iCmdCode == TCmd.ECmdConnByUser && iBTSearchListener != null) {
+		if (iCmdCode == TCmd.ECmdConnByUser) {
 			Log.d(TAG, "BT scan completed");
-			iBTSearchListener.deviceSearchCompleted();
+			if (iBTSearchListener != null)
+				iBTSearchListener.deviceSearchCompleted();
 			stop();
 		} else if (iCmdCode == TCmd.ECmdConnByAddr) {
 			Log.d(TAG, "Restarting BT Scan...");
@@ -219,21 +220,13 @@ public class MIRSpirodoc46 extends DeviceHandler implements BTSearcherEventListe
 					startOxy();
 				else if (GWConst.KMsrSpir.equals(iUserDevice.getMeasure()))
 					startSpiro();
-			} catch (IOException e) {
+			} catch (Exception e) {
 				if (!stopped) {
-					Log.e(TAG, "disconnected", e);
+					Log.e(TAG, "Connection Exception", e);
 					deviceListener.notifyError(DeviceListener.CONNECTION_ERROR, ResourceManager.getResource().getString("EBtDeviceConnError"));
 					MIRSpirodoc46.this.stop();
 				} else
 					Log.d(TAG, "Connection Stopped");
-			} catch (InterruptedException e) {
-				if (!stopped) {
-					Log.e(TAG, "interrupted", e);
-					deviceListener.notifyError(DeviceListener.CONNECTION_ERROR, ResourceManager.getResource().getString("EBtDeviceConnError"));
-					MIRSpirodoc46.this.stop();
-				} else {
-					Log.d(TAG, "Operation Stopped");
-				}
 			} finally {
 				try {
 					if (mmSocket != null)
@@ -244,298 +237,254 @@ public class MIRSpirodoc46 extends DeviceHandler implements BTSearcherEventListe
 			}
 		}
 
-		private boolean getInfo() {
-			try {
-				// Invio Cod_ON
-				Log.d(TAG, "sending Cod_ON");
-				mmOutStream.write(Cod_ON);
+		private boolean getInfo() throws Exception{
+			// Invio Cod_ON
+			Log.d(TAG, "sending Cod_ON");
+			mmOutStream.write(Cod_ON);
 
-				// Ricezione StartupSequence (SDA)
-				byte[] startupSequence = new byte[STARTUP_SEQUENCE_LEN];
-				int numRead = 0;
-				Util.logFile("MIRLog.log", null, " ** MIR SPP Log ***", false);
-				while (numRead < STARTUP_SEQUENCE_LEN) {
-					int ret = mmInStream.read(startupSequence, numRead, STARTUP_SEQUENCE_LEN - numRead);
-					if (ret < 0) {
-						Log.e(TAG, "Read EOF");
-						deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
-						MIRSpirodoc46.this.stop();
-						return true;
-					}
-					numRead += ret;
-					//Log.d(TAG, "StartupSequence: numRead = " + numRead);
-				}
-				Util.logFile("MIRLog.log", startupSequence, " -- StartupSequence", true);
-				Log.d(TAG, "StartupSequence (SDA) received");
-
-				// Invio COD_RX_APRO
-				Log.d(TAG, "sending COD_RX_APRO");
-				mmOutStream.write(Cod_RX_APRO);
-
-				// Ricezione Prog Area
-				byte[] progArea = new byte[PROG_AREA_LEN];
-				numRead = 0;
-				while (numRead < PROG_AREA_LEN) {
-					int ret = mmInStream.read(progArea, numRead, PROG_AREA_LEN - numRead);
-					if (ret < 0) {
-						Log.e(TAG, "Read EOF");
-						deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
-						MIRSpirodoc46.this.stop();
-						return true;
-					}
-					numRead += ret;
-				}
-				Util.logFile("MIRLog.log", progArea, " -- Prog Area", true);
-				Log.d(TAG, "Programmable Area received");
-
-				batteryLevel = (progArea[97] & 255) + ((progArea[96] & 255) << 8);
-				Log.d(TAG,"BatteryLevel="+batteryLevel);
-
-				return false;
-			} catch (IOException e) {
-				if (!stopped) {
-					Log.e(TAG, "disconnected", e);
-					deviceListener.notifyError(DeviceListener.CONNECTION_ERROR, ResourceManager.getResource().getString("EBtDeviceConnError"));
+			// Ricezione StartupSequence (SDA)
+			byte[] startupSequence = new byte[STARTUP_SEQUENCE_LEN];
+			int numRead = 0;
+			Util.logFile("MIRLog.log", null, " ** MIR SPP Log ***", false);
+			while (numRead < STARTUP_SEQUENCE_LEN) {
+				int ret = mmInStream.read(startupSequence, numRead, STARTUP_SEQUENCE_LEN - numRead);
+				if (ret < 0) {
+					Log.e(TAG, "Read EOF");
+					deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
 					MIRSpirodoc46.this.stop();
-				} else
-					Log.d(TAG, "Connection Stopped");
-				return true;
+					return true;
+				}
+				numRead += ret;
+				//Log.d(TAG, "StartupSequence: numRead = " + numRead);
 			}
+			Util.logFile("MIRLog.log", startupSequence, " -- StartupSequence", true);
+			Log.d(TAG, "StartupSequence (SDA) received");
+
+			// Invio COD_RX_APRO
+			Log.d(TAG, "sending COD_RX_APRO");
+			mmOutStream.write(Cod_RX_APRO);
+
+			// Ricezione Prog Area
+			byte[] progArea = new byte[PROG_AREA_LEN];
+			numRead = 0;
+			while (numRead < PROG_AREA_LEN) {
+				int ret = mmInStream.read(progArea, numRead, PROG_AREA_LEN - numRead);
+				if (ret < 0) {
+					Log.e(TAG, "Read EOF");
+					deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
+					MIRSpirodoc46.this.stop();
+					return true;
+				}
+				numRead += ret;
+			}
+			Util.logFile("MIRLog.log", progArea, " -- Prog Area", true);
+			Log.d(TAG, "Programmable Area received");
+
+			batteryLevel = (progArea[97] & 255) + ((progArea[96] & 255) << 8);
+			Log.d(TAG,"BatteryLevel="+batteryLevel);
+
+			return false;
 		}
 
-		private void startSpiro() {
-			try {
-				// Mostra messaggio avvio misura e attende OK
-				String lcdMessageString = ResourceManager.getResource().getString("mirMeasureMessage");
-				deviceListener.askSomething(lcdMessageString + "\n\n" + ResourceManager.getResource().getString("KMeasStartMsgOK"),
-						ResourceManager.getResource().getString("confirmButton"),
-						ResourceManager.getResource().getString("cancelButton"));
-				synchronized (this) {
-					this.wait();
-				}
-				if (stopped) {
-					deviceListener.notifyError(DeviceListener.MEASUREMENT_ERROR, ResourceManager.getResource().getString("KAbortOperation"));
-					MIRSpirodoc46.this.stop();
-					return;
-				}
-				deviceListener.notifyToUi(lcdMessageString);
-
-				// Invio Cod_FVC (Avvio Spirometria FVC)
-				Log.d(TAG, "sending Cod_FVC");
-				mmOutStream.write(Cod_FVC_M);
-
-				// Ricezione dati real time
-				byte[] realTimeData = new byte[3];
-				int numRead = 0;
-				boolean end = false;
-				boolean flag = true;
-				while (!end) {
-					int ret = mmInStream.read(realTimeData, numRead, 3-numRead);
-					if (ret < 0) {
-						Log.e(TAG, "Read EOF");
-						deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
-						MIRSpirodoc46.this.stop();
-						return;
-					}
-  					numRead +=ret;
-					if (numRead == 3) {
-						if (realTimeData[0] == 0x04)
-							// header id = 4 -> fine dati real time
-							end = true;
-						else {
-							numRead = 0;
-							// Log.d(TAG, "Real Time Data: " + (realTimeData[0] & 255));
-						}
-						if (flag && (realTimeData[0] == 0x10)) {
-							deviceListener.notifyToUi(ResourceManager.getResource().getString("KMeasuring"));
-							flag = false;
-						}
-					}
-				}
-
-				// Invio Cod_LAST (Ricezione record ultima misura)
-				Log.d(TAG, "sending Cod_LAST");
-				mmOutStream.write(Cod_LAST);
-
-				// Ricezione nr bytes della misura (primi 3 bytes)
-				numRead = 0;
-				while (numRead < 3) {
-					int ret = mmInStream.read(realTimeData, numRead, 3-numRead);
-					if (ret < 0) {
-						Log.e(TAG, "Read EOF");
-						deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
-						MIRSpirodoc46.this.stop();
-						return;
-					}
-					numRead += ret;
-				}
-				int numBytes = ((realTimeData[0] & 255) << 16) + ((realTimeData[1] & 255) << 8) + (realTimeData[2] & 255);
-				numBytes -= 3; // tolgo i primi tre bytes già letti
-				Log.d(TAG, "Numero bytes misura: " + numBytes);
-
-				// Ricezione dati misura
-				byte[] measureData = new byte[numBytes];
-				numRead = 0;
-				while (numRead < numBytes) {
-					int ret = mmInStream.read(measureData, numRead, numBytes-numRead);
-					if (ret < 0) {
-						Log.e(TAG, "Read EOF");
-						deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
-						MIRSpirodoc46.this.stop();
-						return;
-					}
-					numRead += ret;
-					// Log.d(TAG, "Misura: numRead = " + numRead);
-				}
-				Log.d(TAG, "Dati Misura letti");
-
-				// verifica crc
-				int crc = (realTimeData[0] & 0xff) + (realTimeData[1] & 0xff) +(realTimeData[2] & 0xff);
-				for (int i=1; i<measureData.length-2; i++)
-					crc += measureData[i] & 0xff;
-				if ((measureData[measureData.length-2] != (byte)(crc >>> 8)) || (measureData[measureData.length-1] != (byte) crc)) {
-					Log.e(TAG, "CRC Error");
-					deviceListener.notifyError(DeviceListener.DEVICE_DATA_ERROR, ResourceManager.getResource().getString("EDataReadError"));
-					MIRSpirodoc46.this.stop();
-					return;
-				}
-
-				Util.logFile("MIRLog.log",measureData, " -- SPIRO Measure Data", true);
-
-				// Gestione dati misura
-				makeSpiroResultData(measureData);
+		private void startSpiro() throws Exception {
+			// Mostra messaggio avvio misura e attende OK
+			String lcdMessageString = ResourceManager.getResource().getString("mirMeasureMessage");
+			deviceListener.askSomething(lcdMessageString + "\n\n" + ResourceManager.getResource().getString("KMeasStartMsgOK"),
+					ResourceManager.getResource().getString("confirmButton"),
+					ResourceManager.getResource().getString("cancelButton"));
+			synchronized (this) {
+				this.wait();
+			}
+			if (stopped) {
+				deviceListener.notifyError(DeviceListener.MEASUREMENT_ERROR, ResourceManager.getResource().getString("KAbortOperation"));
 				MIRSpirodoc46.this.stop();
-			} catch (IOException e) {
-				if (!stopped) {
-					Log.e(TAG, "disconnected", e);
-					deviceListener.notifyError(DeviceListener.CONNECTION_ERROR, ResourceManager.getResource().getString("EBtDeviceConnError"));
-					MIRSpirodoc46.this.stop();
-				} else
-					Log.d(TAG, "Connection Stopped");
-			} catch (InterruptedException e) {
-				if (!stopped) {
-					Log.e(TAG, "interrupted", e);
-					deviceListener.notifyError(DeviceListener.CONNECTION_ERROR, ResourceManager.getResource().getString("EBtDeviceConnError"));
-					MIRSpirodoc46.this.stop();
-				} else {
-					Log.d(TAG, "Operation Stopped");
-				}
+				return;
 			}
-		}
+			deviceListener.notifyToUi(lcdMessageString);
 
-		private void startOxy() {
-			try {
-				initOxyData();
+			// Invio Cod_FVC (Avvio Spirometria FVC)
+			Log.d(TAG, "sending Cod_FVC");
+			mmOutStream.write(Cod_FVC_M);
 
-				// Mostra messaggio avvio misura e attende OK
-				deviceListener.askSomething(ResourceManager.getResource().getString("KMeasStartMsgOK"),
-						ResourceManager.getResource().getString("confirmButton"),
-						ResourceManager.getResource().getString("cancelButton"));
-				synchronized (this) {
-					this.wait();
-				}
-				if (stopped) {
-					deviceListener.notifyError(DeviceListener.MEASUREMENT_ERROR, ResourceManager.getResource().getString("KAbortOperation"));
+			// Ricezione dati real time
+			byte[] realTimeData = new byte[3];
+			int numRead = 0;
+			boolean end = false;
+			boolean flag = true;
+			while (!end) {
+				int ret = mmInStream.read(realTimeData, numRead, 3-numRead);
+				if (ret < 0) {
+					Log.e(TAG, "Read EOF");
+					deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
 					MIRSpirodoc46.this.stop();
 					return;
 				}
-				deviceListener.notifyToUi(ResourceManager.getResource().getString("DoMeasureOS"));
+				numRead +=ret;
+				if (numRead == 3) {
+					if (realTimeData[0] == 0x04)
+						// header id = 4 -> fine dati real time
+						end = true;
+					else {
+						numRead = 0;
+						// Log.d(TAG, "Real Time Data: " + (realTimeData[0] & 255));
+					}
+					if (flag && (realTimeData[0] == 0x10)) {
+						deviceListener.notifyToUi(ResourceManager.getResource().getString("KMeasuring"));
+						flag = false;
+					}
+				}
+			}
 
-				// Invio Cod_FVC (Avvio Spirometria FVC)
-				Log.d(TAG, "sending Cod_OSS");
-				mmOutStream.write(Cod_OSS);
+			// Invio Cod_LAST (Ricezione record ultima misura)
+			Log.d(TAG, "sending Cod_LAST");
+			mmOutStream.write(Cod_LAST);
 
-				// Ricezione dati real time
-				byte[] realTimeData = new byte[3];
-				int numRead = 0;
-				int numSamples = 0;
-				boolean end = false;
-				boolean stopSended = false;
-				long startTime = 0;
+			// Ricezione nr bytes della misura (primi 3 bytes)
+			numRead = 0;
+			while (numRead < 3) {
+				int ret = mmInStream.read(realTimeData, numRead, 3-numRead);
+				if (ret < 0) {
+					Log.e(TAG, "Read EOF");
+					deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
+					MIRSpirodoc46.this.stop();
+					return;
+				}
+				numRead += ret;
+			}
+			int numBytes = ((realTimeData[0] & 255) << 16) + ((realTimeData[1] & 255) << 8) + (realTimeData[2] & 255);
+			numBytes -= 3; // tolgo i primi tre bytes già letti
+			Log.d(TAG, "Numero bytes misura: " + numBytes);
 
-				while (!end) {
-					int ret = mmInStream.read(realTimeData, numRead, 3-numRead);
-					if (ret < 0) {
-						Log.e(TAG, "Read EOF");
-						deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
+			// Ricezione dati misura
+			byte[] measureData = new byte[numBytes];
+			numRead = 0;
+			while (numRead < numBytes) {
+				int ret = mmInStream.read(measureData, numRead, numBytes-numRead);
+				if (ret < 0) {
+					Log.e(TAG, "Read EOF");
+					deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
+					MIRSpirodoc46.this.stop();
+					return;
+				}
+				numRead += ret;
+				// Log.d(TAG, "Misura: numRead = " + numRead);
+			}
+			Log.d(TAG, "Dati Misura letti");
+
+			// verifica crc
+			int crc = (realTimeData[0] & 0xff) + (realTimeData[1] & 0xff) +(realTimeData[2] & 0xff);
+			for (int i=1; i<measureData.length-2; i++)
+				crc += measureData[i] & 0xff;
+			if ((measureData[measureData.length-2] != (byte)(crc >>> 8)) || (measureData[measureData.length-1] != (byte) crc)) {
+				Log.e(TAG, "CRC Error");
+				deviceListener.notifyError(DeviceListener.DEVICE_DATA_ERROR, ResourceManager.getResource().getString("EDataReadError"));
+				MIRSpirodoc46.this.stop();
+				return;
+			}
+
+			Util.logFile("MIRLog.log",measureData, " -- SPIRO Measure Data", true);
+
+			// Gestione dati misura
+			makeSpiroResultData(measureData);
+			MIRSpirodoc46.this.stop();
+		}
+
+		private void startOxy() throws Exception {
+			initOxyData();
+
+			// Mostra messaggio avvio misura e attende OK
+			deviceListener.askSomething(ResourceManager.getResource().getString("KMeasStartMsgOK"),
+					ResourceManager.getResource().getString("confirmButton"),
+					ResourceManager.getResource().getString("cancelButton"));
+			synchronized (this) {
+				this.wait();
+			}
+			if (stopped) {
+				deviceListener.notifyError(DeviceListener.MEASUREMENT_ERROR, ResourceManager.getResource().getString("KAbortOperation"));
+				MIRSpirodoc46.this.stop();
+				return;
+			}
+			deviceListener.notifyToUi(ResourceManager.getResource().getString("DoMeasureOS"));
+
+			// Invio Cod_FVC (Avvio Spirometria FVC)
+			Log.d(TAG, "sending Cod_OSS");
+			mmOutStream.write(Cod_OSS);
+
+			// Ricezione dati real time
+			byte[] realTimeData = new byte[3];
+			int numRead = 0;
+			int numSamples = 0;
+			boolean end = false;
+			boolean stopSended = false;
+			long startTime = 0;
+
+			while (!end) {
+				int ret = mmInStream.read(realTimeData, numRead, 3-numRead);
+				if (ret < 0) {
+					Log.e(TAG, "Read EOF");
+					deviceListener.notifyError(DeviceListener.COMMUNICATION_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
+					MIRSpirodoc46.this.stop();
+					return;
+				}
+				numRead +=ret;
+				if (stopSended) {
+					if (realTimeData[0] == 0x04) // 4 = fine dati real time (inviato solo 1 byte invece di 3!!!)
+						end = true;
+				}
+				if (numRead == 3) {
+					if (realTimeData[0] == (byte)0xF9) {
+						// Sensore SPO2 scollegato
+						deviceListener.notifyError(DeviceListener.MEASUREMENT_ERROR, ResourceManager.getResource().getString("ESensorUnplugged"));
 						MIRSpirodoc46.this.stop();
 						return;
-					}
-					numRead +=ret;
-					if (stopSended) {
-						if (realTimeData[0] == 0x04) // 4 = fine dati real time (inviato solo 1 byte invece di 3!!!)
-							end = true;
-					}
-					if (numRead == 3) {
-						if (realTimeData[0] == (byte)0xF9) {
-							// Sensore SPO2 scollegato
-							deviceListener.notifyError(DeviceListener.MEASUREMENT_ERROR, ResourceManager.getResource().getString("ESensorUnplugged"));
+					} else if ((realTimeData[0] == (byte) 0xFA) && (numSamples > 0) && !stopSended) {
+						// Dito disinserito
+						if (numSamples < MIN_OXY_SAMPLES) {
+							deviceListener.notifyError(DeviceListener.MEASUREMENT_ERROR, ResourceManager.getResource().getString("KMinMeasuresMsg"));
 							MIRSpirodoc46.this.stop();
 							return;
-						} else if ((realTimeData[0] == (byte) 0xFA) && (numSamples > 0) && !stopSended) {
-							// Dito disinserito
-							if (numSamples < MIN_OXY_SAMPLES) {
-								deviceListener.notifyError(DeviceListener.MEASUREMENT_ERROR, ResourceManager.getResource().getString("KMinMeasuresMsg"));
-								MIRSpirodoc46.this.stop();
-								return;
-							}
+						}
+						// invio comando di termine misura
+						Log.d(TAG,"Dito fuori: Sending Cod_ESC");
+						mmOutStream.write(Cod_ESC);
+						stopSended = true;
+					} else if (realTimeData[0] == (byte)0xED) {
+						// misura di SPO2
+						if (addOxySample(realTimeData)) {
+							deviceListener.notifyError(DeviceListener.DEVICE_DATA_ERROR, ResourceManager.getResource().getString("EDataReadError"));
+							MIRSpirodoc46.this.stop();
+							return;
+						}
+						if (numSamples == 0) {
+							startTime = System.currentTimeMillis();
+							deviceListener.notifyToUi(ResourceManager.getResource().getString("KMeasuring"));
+						}
+						numSamples++;
+						if (numSamples > 1)
+							Log.d(TAG,"Num Samples="+numSamples+" value="+realTimeData[2]+"" +
+									" Step Oxy="+((System.currentTimeMillis()-startTime) / (numSamples-1)));
+
+						if (numSamples == MAX_OXY_SAMPLES) {
 							// invio comando di termine misura
-							Log.d(TAG,"Dito fuori: Sending Cod_ESC");
+							Log.d(TAG,"Sending Cod_ESC");
 							mmOutStream.write(Cod_ESC);
 							stopSended = true;
-						} else if (realTimeData[0] == (byte)0xED) {
-							// misura di SPO2
-							if (addOxySample(realTimeData)) {
-								deviceListener.notifyError(DeviceListener.DEVICE_DATA_ERROR, ResourceManager.getResource().getString("EDataReadError"));
-								MIRSpirodoc46.this.stop();
-								return;
-							}
-							if (numSamples == 0) {
-								startTime = System.currentTimeMillis();
-								deviceListener.notifyToUi(ResourceManager.getResource().getString("KMeasuring"));
-							}
-							numSamples++;
-							if (numSamples > 1)
-								Log.d(TAG,"Num Samples="+numSamples+" value="+realTimeData[2]+"" +
-										" Step Oxy="+((System.currentTimeMillis()-startTime) / (numSamples-1)));
-
-							if (numSamples == MAX_OXY_SAMPLES) {
-								// invio comando di termine misura
-								Log.d(TAG,"Sending Cod_ESC");
-								mmOutStream.write(Cod_ESC);
-								stopSended = true;
-							}
-						} else if (realTimeData[0] == (byte)0xEE) {
-							// misura di HR
-							if (addOxySample(realTimeData)) {
-								deviceListener.notifyError(DeviceListener.DEVICE_DATA_ERROR, ResourceManager.getResource().getString("EDataReadError"));
-								MIRSpirodoc46.this.stop();
-								return;
-							}
 						}
-						numRead = 0;
+					} else if (realTimeData[0] == (byte)0xEE) {
+						// misura di HR
+						if (addOxySample(realTimeData)) {
+							deviceListener.notifyError(DeviceListener.DEVICE_DATA_ERROR, ResourceManager.getResource().getString("EDataReadError"));
+							MIRSpirodoc46.this.stop();
+							return;
+						}
 					}
-				}
-
-				// Gestione dati misura
-				makeOxyResultData(startTime, System.currentTimeMillis());
-				MIRSpirodoc46.this.stop();
-			} catch (IOException e) {
-				if (!stopped) {
-					Log.e(TAG, "disconnected", e);
-					deviceListener.notifyError(DeviceListener.CONNECTION_ERROR, ResourceManager.getResource().getString("EBtDeviceConnError"));
-					MIRSpirodoc46.this.stop();
-				} else
-					Log.d(TAG, "Connection Stopped");
-			} catch (InterruptedException e) {
-				if (!stopped) {
-					Log.e(TAG, "interrupted", e);
-					deviceListener.notifyError(DeviceListener.CONNECTION_ERROR, ResourceManager.getResource().getString("EBtDeviceConnError"));
-					MIRSpirodoc46.this.stop();
-				} else {
-					Log.d(TAG, "Operation Stopped");
+					numRead = 0;
 				}
 			}
+
+			// Gestione dati misura
+			makeOxyResultData(startTime, System.currentTimeMillis());
+			MIRSpirodoc46.this.stop();
 		}
 
 		public void stopOperation() {

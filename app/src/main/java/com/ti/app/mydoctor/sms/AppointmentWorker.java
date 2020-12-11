@@ -16,14 +16,11 @@ import androidx.work.Data;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
-import com.ti.app.mydoctor.AppResourceManager;
 import com.ti.app.mydoctor.R;
 import com.ti.app.telemed.core.MyApp;
 import com.ti.app.telemed.core.common.Appointment;
 import com.ti.app.telemed.core.dbmodule.DbManager;
 
-import java.util.Calendar;
-import java.util.Date;
 
 public class AppointmentWorker extends Worker {
     private static final String TAG = "AppointmentWorker";

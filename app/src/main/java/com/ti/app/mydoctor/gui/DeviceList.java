@@ -1012,10 +1012,10 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 						operationType = DeviceListOperationType.measure;
 						selectPatient();
 					}
-			} else {
-				Log.i(TAG, "operation running: click ignored");
-				Toast.makeText(getApplicationContext(), AppResourceManager.getResource().getString("KOperationRunning"), Toast.LENGTH_SHORT).show();
-			}
+				} else {
+					Log.i(TAG, "operation running: click ignored");
+					Toast.makeText(getApplicationContext(), AppResourceManager.getResource().getString("KOperationRunning"), Toast.LENGTH_SHORT).show();
+				}
 			}
 		});
 	}

@@ -222,7 +222,7 @@ public class AgendaActivity extends AppCompatActivity implements View.OnClickLis
                     TableRow.LayoutParams.WRAP_CONTENT));
             iv.setPadding(10, 10, 10, 10);
             iv.setBackgroundColor(Color.parseColor("#f8f8f8"));
-            iv.setImageResource(AppUtil.getSmallIconId(GWConst.KMsrImg));
+            iv.setImageResource(R.drawable.small_televisit_icon);
 
             final TextView tv2 = new TextView(this);
             tv2.setLayoutParams(new TableRow.LayoutParams(TableRow.LayoutParams.WRAP_CONTENT,

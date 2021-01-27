@@ -9,6 +9,8 @@ import java.util.Vector;
 
 import com.ti.app.telemed.core.util.CrontabManager;
 
+import static com.ti.app.telemed.core.util.GWConst.MIN_MONITORING_MEASURE_INTERVAL;
+
 public class UserMeasure implements Cloneable {
 
 	private Integer id;
@@ -137,18 +139,14 @@ public class UserMeasure implements Cloneable {
 		return sendFrequencyNormal;
 	}
 	public void setSendFrequencyNormal(int val) {
-		// TODO
-		// sendFrequencyNormal = val;
-		sendFrequencyNormal = 60;
+		sendFrequencyNormal = Math.max(val, MIN_MONITORING_MEASURE_INTERVAL);
 	}
 
 	public int getSendFrequencyAlarm() {
 		return sendFrequencyAlarm;
 	}
 	public void setSendFrequencyAlarm(int val) {
-		// TODO
-		// sendFrequencyAlarm = val;
-		sendFrequencyAlarm = 60;
+		sendFrequencyAlarm = Math.max(val, MIN_MONITORING_MEASURE_INTERVAL);
 	}
 
     public  List<Date> getTodaySchedule ()  {

@@ -19,6 +19,11 @@ public interface GWConst {
      */
 	int MEASURE_SEND_TIMEOUT = 60;
 
+	/**
+	 * Intervallo minimo in secondi per l'invio delle misure di monitoraggio (Per ora solo Conmftech)
+	 */
+	int MIN_MONITORING_MEASURE_INTERVAL = 60;
+
     /**
      * Stringa che identifica un device fittizio per l'acquisizione manuale di una misura
      */

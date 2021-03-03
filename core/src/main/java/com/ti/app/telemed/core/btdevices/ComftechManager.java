@@ -139,6 +139,7 @@ public class ComftechManager implements Runnable{
     private boolean responseReceived = false;
     private int responseCode = CODE_OK;
     private boolean bindingInProgress = false;
+    private boolean bindDone = false;
 
     private Messenger mService = null;
     private final Messenger replyMessenger = new Messenger(new HandlerReplyMsg(Looper.getMainLooper()));
@@ -267,7 +268,7 @@ public class ComftechManager implements Runnable{
      */
     private boolean bindToComftechService() {
         boolean flag = false;
-        Log.d(TAG, "bindToComftechService");
+        Log.d(TAG,"Binding to Comftech Service ...");
         try {
             Intent intent = new Intent();
             intent.setComponent(new ComponentName(COMFTECH_PACKAGE, COMFTECH_SERVICE));
@@ -367,6 +368,7 @@ public class ComftechManager implements Runnable{
                 resetTimer();
                 mService = new Messenger(service);
                 bindingInProgress = false;
+                bindDone = true;
                 currT.notifyAll();
             }
         }
@@ -402,8 +404,21 @@ public class ComftechManager implements Runnable{
                     if ((responseReceived) && (currServed != null)) {
                         Log.d(TAG, "Awake, response arrived");
                         manageResponse();
-                    }
-                    if ((currServed == null) && (!list.isEmpty())) {
+                    } else if (bindDone) {
+                        bindDone = false;
+                        if (!list.isEmpty()) {
+                            currServed = list.get(0);
+                            list.remove(0);
+                            responseCode = CODE_OK;
+                            responseReceived = false;
+                            if (!sendRequest()) {
+                                if (currServed.listener != null)
+                                    currServed.listener.result(CODE_SENDDATA_ERROR);
+                                currServed = null;
+                            } else
+                                scheduleTimer(10 * 1000);
+                        }
+                    } else if ((currServed == null) && (!list.isEmpty())) {
                         // Send the next web request
                         Log.d(TAG, "Sending the next request.");
                         sendData();
@@ -416,7 +431,7 @@ public class ComftechManager implements Runnable{
     }
 
     private void sendData() {
-        if (mService == null) {
+        //if (mService == null) {
             if (!bindToComftechService()) {
                 while (!list.isEmpty()) {
                     currServed = list.remove(0);
@@ -425,23 +440,11 @@ public class ComftechManager implements Runnable{
                 }
                 currServed = null;
             } else {
-                scheduleTimer(3*1000);
+                scheduleTimer(10*1000);
                 bindingInProgress = true;
             }
             return;
-        }
-        if (!list.isEmpty()) {
-            currServed = list.get(0);
-            list.remove(0);
-            responseCode = CODE_OK;
-            responseReceived = false;
-            if (!sendRequest()) {
-                if (currServed.listener != null)
-                    currServed.listener.result(CODE_SENDDATA_ERROR);
-                currServed = null;
-            } else
-                scheduleTimer(6*1000);
-        }
+        //}
     }
 
     private void manageResponse() {

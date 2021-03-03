@@ -17,7 +17,11 @@ import com.ti.app.telemed.core.dbmodule.DbManager;
 import com.ti.app.telemed.core.measuremodule.MeasureManager;
 import com.ti.app.telemed.core.util.Util;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.Locale;
 
 import static com.ti.app.telemed.core.btdevices.ComftechManager.KEY_BATTERY;
 import static com.ti.app.telemed.core.btdevices.ComftechManager.KEY_BATTERY_TE;
@@ -304,6 +308,13 @@ public class ComftechService extends Service {
                 if (val != -1)
                     measureMap.put(EGwCode_XY,String.valueOf(val));
                 String measureTimestamp = data.getString(KEY_TIME);
+                SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss", Locale.ITALIAN);
+                try {
+                    formatter.parse(measureTimestamp);
+                } catch (ParseException e) {
+                    Log.e(TAG, "" + KEY_TIME + " field format error: " + measureTimestamp);
+                    return;
+                }
 
                 Device d = DbManager.getDbManager().getDeviceWhereMeasureModel(KMsr_Comftech, KCOMFTECH);
                 Measure m = new Measure();

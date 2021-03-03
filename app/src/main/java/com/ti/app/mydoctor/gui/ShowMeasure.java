@@ -606,7 +606,7 @@ public class ShowMeasure extends ActionBarListActivity{
 			sdf = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault());
 			return sdf.format(data);
 		} catch (ParseException e) {
-			e.printStackTrace();
+			Log.e(TAG, "getDate: timestamp parse Error");
 			createAlertDialog(AppResourceManager.getResource().getString("warningTitle"), AppResourceManager.getResource().getString("errorDbRead"));
 			return null;
 		}
@@ -624,7 +624,7 @@ public class ShowMeasure extends ActionBarListActivity{
 			sdf = new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
 			return sdf.format(data);
 		} catch (ParseException e) {
-			e.printStackTrace();
+			Log.e(TAG, "getHour: timestamp parse Error");
 			createAlertDialog(AppResourceManager.getResource().getString("warningTitle"), AppResourceManager.getResource().getString("errorDbRead"));
 			return null;
 		}

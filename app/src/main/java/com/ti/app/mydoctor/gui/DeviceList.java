@@ -25,7 +25,6 @@ import android.nfc.NfcAdapter;
 import android.nfc.Tag;
 import android.nfc.tech.Ndef;
 import android.nfc.tech.NdefFormatable;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -191,11 +190,9 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
     private MeasureManager measureManager;
 	private DeviceOperations deviceOperations;
 
-    private DeviceManagerMessageHandler deviceManagerHandler = new DeviceManagerMessageHandler(this);
-    private UserManagerMessageHandler userManagerHandler = new UserManagerMessageHandler(this);
-    private SyncStatusHandler syncStatusHandler = new SyncStatusHandler(this);
-
-    //private UIHandler mUIHandler = new UIHandler(this);
+    private final DeviceManagerMessageHandler deviceManagerHandler = new DeviceManagerMessageHandler(this);
+    private final UserManagerMessageHandler userManagerHandler = new UserManagerMessageHandler(this);
+    private final SyncStatusHandler syncStatusHandler = new SyncStatusHandler(this);
 
 	private String selectedMeasureType;
 	private int selectedMeasurePosition;
@@ -278,7 +275,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 				return;
 			}
 			if (ndefMessage == null) {
-				showTag(tag, intent);
+				showTag(intent);
 			} else
 				programTag(tag);
 		}
@@ -366,7 +363,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 		myShowDialog(ALERT_DIALOG);
 	}
 
-	private void showTag(Tag tag, Intent intent) {
+	private void showTag(Intent intent) {
 		if (userManager.getCurrentUser() == null
 				|| userManager.getCurrentUser().isPatient()
 				|| !NfcAdapter.ACTION_NDEF_DISCOVERED.equals(intent.getAction()))
@@ -1010,6 +1007,11 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                 }
                 break;
 			case ITEM_NFC:
+				String txt = AppResourceManager.getResource().getString("NFCDialog.startMessage");
+				Patient patient = userManager.getCurrentPatient();
+				String msg = String.format(txt, patient.getName(), patient.getSurname());
+				dataBundle = new Bundle();
+				dataBundle.putString(AppConst.MESSAGE, msg);
 				myShowDialog(NFC_PROGRAM_DIALOG);
 				break;
             case ITEM_AGENDA:
@@ -1220,7 +1222,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 
 	private void selectPatient() {
 		User currentUser = userManager.getCurrentUser();
-		if(patientNameTV.getText().toString().trim().equals(getText(R.string.selectPatient))) {
+		if(patientNameTV.getText().toString().trim().contentEquals(getText(R.string.selectPatient))) {
 
 			patientList = currentUser.getPatients();
 			if (patientList != null && patientList.size() != 1) {
@@ -1396,18 +1398,14 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	public boolean onKeyUp(int keyCode, KeyEvent event) {
 		// Opening submenu in action bar on Hardware menu button click
 		if(event.getAction() == KeyEvent.ACTION_UP){
-		    switch(keyCode) {
-		    case KeyEvent.KEYCODE_MENU:
-		    	//mActionBarMenu.performIdentifierAction(R.id.mi_action_bar_menu_overflow, 0);
-		    	if ( this.mDrawerLayout.isDrawerOpen(this.mMenuDrawerList)) {
-	                this.mDrawerLayout.closeDrawer(this.mMenuDrawerList);
-	            }
-	            else {
-	                this.mDrawerLayout.openDrawer(this.mMenuDrawerList);
-	            }
-
-		        return true;
-		    }
+			if (keyCode == KeyEvent.KEYCODE_MENU) {//mActionBarMenu.performIdentifierAction(R.id.mi_action_bar_menu_overflow, 0);
+				if (this.mDrawerLayout.isDrawerOpen(this.mMenuDrawerList)) {
+					this.mDrawerLayout.closeDrawer(this.mMenuDrawerList);
+				} else {
+					this.mDrawerLayout.openDrawer(this.mMenuDrawerList);
+				}
+				return true;
+			}
 		}
 		return super.onKeyUp(keyCode, event);
 	}
@@ -1533,22 +1531,13 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 		int widthPixels = metrics.widthPixels;
 		int heightPixels = metrics.heightPixels;
 
-		if (Build.VERSION.SDK_INT >= 14 && Build.VERSION.SDK_INT < 17) {
-			try {
-			    widthPixels = (Integer) Display.class.getMethod("getRawWidth").invoke(display);
-			    heightPixels = ( (Integer) Display.class.getMethod("getRawHeight").invoke(display) );
-			} catch (Exception ignored) {
-			}
-		}
 		// includes window decorations (statusbar bar/menu bar)
-		if (Build.VERSION.SDK_INT >= 17) {
-			try {
-			    Point realSize = new Point();
-			    Display.class.getMethod("getRealSize", Point.class).invoke(display, realSize);
-			    widthPixels = realSize.x;
-			    heightPixels = realSize.y;
-			} catch (Exception ignored) {
-			}
+		try {
+			Point realSize = new Point();
+			Display.class.getMethod("getRealSize", Point.class).invoke(display, realSize);
+			widthPixels = realSize.x;
+			heightPixels = realSize.y;
+		} catch (Exception ignored) {
 		}
 
 		//LANDSCAPE PORTRAIT
@@ -1965,7 +1954,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
     	return progressDialog;
 	}
 
-	private OnClickListener patientNameLabelClickListener = new OnClickListener() {
+	private final OnClickListener patientNameLabelClickListener = new OnClickListener() {
 
 		@Override
 		public void onClick(View v) {
@@ -2006,12 +1995,12 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	}
 
 	private String getMeasureMessage(Measure data) {
-        String msg = "";
+        StringBuilder msg = new StringBuilder();
         Vector<MeasureDetail> mdv = MeasureDetail.getMeasureDetails(data, false);
         for (MeasureDetail md: mdv) {
-            msg += md.getName() + ": " + md.getValue() + " " + md.getUnit() + "\n";
+            msg.append(md.getName()).append(": ").append(md.getValue()).append(" ").append(md.getUnit()).append("\n");
         }
-		return msg;
+		return msg.toString();
 	}
 
 	private void checkPatient() {
@@ -2340,10 +2329,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 				pwdET = login_dialog_v.findViewById(R.id.password);
 				if (id == PRECOMPILED_LOGIN_DIALOG && userDataBundle != null) {
 					loginET.setText(userDataBundle.getString("LOGIN"));
-					if (!userDataBundle.getBoolean("CHANGEABLE"))
-						loginET.setEnabled(false);
-					else
-						loginET.setEnabled(true);
+					loginET.setEnabled(userDataBundle.getBoolean("CHANGEABLE"));
 				} else {
 					loginET.setText("");
 				}
@@ -2457,10 +2443,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                 return builder.create();
 			case NFC_PROGRAM_DIALOG:
 				builder.setTitle(R.string.nfcProgram);
-				String txt = AppResourceManager.getResource().getString("NFCDialog.startMessage");
-				Patient patient = userManager.getCurrentPatient();
-				String msg = String.format(txt, patient.getName(), patient.getSurname());
-				builder.setMessage(msg);
+				builder.setMessage(dataBundle.getString(AppConst.MESSAGE));
 				builder.setPositiveButton(AppResourceManager.getResource().getString("okButton"),
 						new DialogInterface.OnClickListener() {
 							@Override
@@ -2504,8 +2487,8 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
             case CONFIRM_PATIENT_DIALOG:
                 return createConfirmPatientDialog();
             case SIMPLE_DIALOG:
-                builder.setMessage(dataBundle.getString(AppConst.MESSAGE));
-                builder.setNeutralButton("Ok", simple_dialog_click_listener);
+				builder.setMessage(dataBundle.getString(AppConst.MESSAGE));
+				builder.setNeutralButton("Ok", simple_dialog_click_listener);
                 beep();
                 return builder.create();
             default:
@@ -2522,11 +2505,8 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
             case PROGRESS_DIALOG:
                 ((ProgressDialog)dialog).setMessage(dataBundle.getString(AppConst.MESSAGE));
                 Button b = ((ProgressDialog)dialog).getButton(ProgressDialog.BUTTON_NEGATIVE);
-                if(dataBundle.getBoolean(AppConst.MESSAGE_CANCELLABLE)){
-                    b.setEnabled(true);//Visibility(View.VISIBLE);
-                } else {
-                    b.setEnabled(false);//setVisibility(View.INVISIBLE);
-                }
+				//setVisibility(View.INVISIBLE);
+				b.setEnabled(dataBundle.getBoolean(AppConst.MESSAGE_CANCELLABLE));//Visibility(View.VISIBLE);
                 //Assegno un tag al button per poter gestire correttamente il click su Annulla
                 if(dataBundle.getBoolean(AppConst.IS_MEASURE)){
                     ((ProgressDialog)dialog).getButton(ProgressDialog.BUTTON_NEGATIVE).setTag(AppConst.IS_MEASURE);
@@ -2537,21 +2517,17 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 				}
                 break;
             case ALERT_DIALOG:
+			case NFC_PROGRAM_DIALOG:
+			case SIMPLE_DIALOG:
                 ((AlertDialog)dialog).setMessage(dataBundle.getString(AppConst.MESSAGE));
                 break;
-			case NFC_PROGRAM_DIALOG:
-				String txt = AppResourceManager.getResource().getString("NFCDialog.startMessage");
-				Patient patient = userManager.getCurrentPatient();
-				String msg = String.format(txt, patient.getName(), patient.getSurname());
-				((AlertDialog)dialog).setMessage(msg);
-				break;
         }
 	}
 
     /**
      * Listener per i click sulla dialog CHANGE_PASSWORD_DIALOG
      */
-    private View.OnClickListener password_dialog_ok_click_listener = new View.OnClickListener() {
+    private final View.OnClickListener password_dialog_ok_click_listener = new View.OnClickListener() {
         @Override
         public void onClick(View view) {
             if (!newPwdET.getText().toString().equals(newPwd2ET.getText().toString())) {
@@ -2574,21 +2550,20 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
     /**
      * Listener per i click sulla dialog LOGIN_DIALOG o PRECOMPILED_LOGIN_DIALOG
      */
-    private DialogInterface.OnClickListener login_dialog_click_listener = new DialogInterface.OnClickListener() {
+    private final DialogInterface.OnClickListener login_dialog_click_listener = new DialogInterface.OnClickListener() {
 		@Override
 		public void onClick(DialogInterface dialog, int which) {
 			myRemoveDialog(PRECOMPILED_LOGIN_DIALOG);
 			myRemoveDialog(LOGIN_DIALOG);
-			switch(which) {
-			case DialogInterface.BUTTON_POSITIVE:
+			if (which == DialogInterface.BUTTON_POSITIVE) {
 				dataBundle = new Bundle();
 				dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("KMsgConf"));
 				dataBundle.putBoolean(AppConst.MESSAGE_CANCELLABLE, false);
 				dataBundle.putBoolean(AppConst.IS_CONFIGURATION, true);
-                runningChangePassword = false;
-                retryLocalLogin = true;
-                login = loginET.getText().toString();
-                password = pwdET.getText().toString();
+				runningChangePassword = false;
+				retryLocalLogin = true;
+				login = loginET.getText().toString();
+				password = pwdET.getText().toString();
 
 				String patientId = ComftechManager.getInstance().getMonitoringUserId();
 				if (patientId.isEmpty() || patientId.equals(userManager.getUserId(login))) {
@@ -2597,7 +2572,6 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 				} else {
 					myShowDialog(ASK_STOP_MONITORING_DIALOG);
 				}
-                break;
 			}
 		}
 	};
@@ -2605,7 +2579,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	/**
 	 * Listener per i click sulla dialog LIST_OR_NEW_USER_DIALOG
 	 */
-	private DialogInterface.OnClickListener list_or_new_user_dialog_click_listener = new DialogInterface.OnClickListener() {
+	private final DialogInterface.OnClickListener list_or_new_user_dialog_click_listener = new DialogInterface.OnClickListener() {
 
 		@Override
 		public void onClick(DialogInterface dialog, int which) {
@@ -2626,14 +2600,12 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	/**
 	 * Listener per i click sulla dialog SIMPLE_DIALOG
 	 */
-	private DialogInterface.OnClickListener simple_dialog_click_listener = new DialogInterface.OnClickListener() {
+	private final DialogInterface.OnClickListener simple_dialog_click_listener = new DialogInterface.OnClickListener() {
 
 		@Override
 		public void onClick(DialogInterface dialog, int which) {
-			switch(which) {
-			case DialogInterface.BUTTON_NEUTRAL:
+			if (which == DialogInterface.BUTTON_NEUTRAL) {
 				myRemoveDialog(SIMPLE_DIALOG);
-				break;
 			}
 		}
 	};
@@ -2641,7 +2613,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	/**
 	 * Listener per i click sulla dialog CONFIRM_CLOSE_DIALOG
 	 */
-	private DialogInterface.OnClickListener confirm_close_dialog_click_listener = new DialogInterface.OnClickListener() {
+	private final DialogInterface.OnClickListener confirm_close_dialog_click_listener = new DialogInterface.OnClickListener() {
 
 		@Override
 		public void onClick(DialogInterface dialog, int which) {
@@ -2728,10 +2700,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 			checkBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
 				@Override
 				public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-					if (isChecked)
-						measureData.setUrgent(true);
-					else
-						measureData.setUrgent(false);
+					measureData.setUrgent(isChecked);
 				}
 			});
 			checkBox.setText(ResourceManager.getResource().getString("KUrgentMsg"));
@@ -2755,7 +2724,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 		t.start();
 	}
 
-	private Runnable beepRunnable = new Runnable() {
+	private final Runnable beepRunnable = new Runnable() {
 
 		@Override
 		public void run() {
@@ -2798,7 +2767,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	/**
 	 * Listener per i click sulla alert CONFIRM_PATIENT_DIALOG
 	 */
-	private DialogInterface.OnClickListener confirm_patient_dialog_click_listener = new DialogInterface.OnClickListener() {
+	private final DialogInterface.OnClickListener confirm_patient_dialog_click_listener = new DialogInterface.OnClickListener() {
 		@Override
 		public void onClick(DialogInterface dialog, int which) {
 			myRemoveDialog(CONFIRM_PATIENT_DIALOG);
@@ -2835,8 +2804,8 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
     private class MeasureDialogClickListener implements DialogInterface.OnClickListener {
         static final String SAVE_ACTION = "SAVE_ACTION";
 
-        private String action;
-        private String measureType;
+        private final String action;
+        private final String measureType;
 
         MeasureDialogClickListener(String action, String measureType) {
             this.action = action;

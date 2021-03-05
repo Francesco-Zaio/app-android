@@ -11,7 +11,10 @@ import com.ti.app.telemed.core.btmodule.DeviceListener;
 import com.ti.app.telemed.core.common.UserDevice;
 
 import static com.ti.app.telemed.core.btmodule.DeviceListener.COMMUNICATION_ERROR;
+import static com.ti.app.telemed.core.btmodule.DeviceListener.DEVICE_DATA_ERROR;
+import static com.ti.app.telemed.core.btmodule.DeviceListener.DEVICE_NOT_FOUND_ERROR;
 import static com.ti.app.telemed.core.btmodule.DeviceListener.MEASUREMENT_ERROR;
+import static com.ti.app.telemed.core.btmodule.DeviceListener.PACKAGE_NOT_FOUND_ERROR;
 import static com.ti.app.telemed.core.btmodule.DeviceListener.USER_CFG_ERROR;
 
 
@@ -100,18 +103,33 @@ public class ComftechDevice extends DeviceHandler implements ComftechManager.Res
     @Override
     public void result(int resultCode) {
         switch (resultCode) {
-            case 0:
+            case ComftechManager.CODE_OK:
                 if (isStart)
                     deviceListener.configReady(ResourceManager.getResource().getString("KMonitoringOn"));
                 else
                     deviceListener.configReady(ResourceManager.getResource().getString("KMonitoringOff"));
                 stop();
                 break;
-            case -1:
-            case -2:
-            // TODO
+            case ComftechManager.CODE_BIND_ERROR:
+                deviceListener.notifyError(PACKAGE_NOT_FOUND_ERROR, ResourceManager.getResource().getString("EComftechConnError"));
+                stop();
+                break;
+            case ComftechManager.CODE_DEVICE_ERROR:
+            case ComftechManager.CODE_DEVICE_ERROR_OFF:
+                deviceListener.notifyError(DEVICE_DATA_ERROR, ResourceManager.getResource().getString("ESensorUnplugged"));
+                stop();
+                break;
+            case ComftechManager.CODE_SENDDATA_ERROR:
+            case ComftechManager.CODE_TIMEOUT_ERROR:
+                deviceListener.notifyError(COMMUNICATION_ERROR, ResourceManager.getResource().getString("ECommunicationError"));
+                stop();
+                break;
+            case ComftechManager.CODE_RESPONSE_ERROR:
+                deviceListener.notifyError(COMMUNICATION_ERROR, ResourceManager.getResource().getString("EDataReadError"));
+                stop();
+                break;
             default:
-                deviceListener.notifyError(COMMUNICATION_ERROR, String.valueOf(resultCode));
+                deviceListener.notifyError(COMMUNICATION_ERROR, ResourceManager.getResource().getString("EWrongConfiguration"));
                 stop();
                 break;
         }

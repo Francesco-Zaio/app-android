@@ -6,6 +6,7 @@
     <string name="mi_documenti">Documenti</string>
     <string name="mi_user">Opzioni Utente</string>
     <string name="mi_devices_man">Gestione Dispositivi</string>
+    <string name="mi_nfc">Nfc</string>
     <string name="mi_agenda">Agenda</string>
     <string name="mi_logout">Logout</string>
     <string name="mi_exit">Esci</string>
@@ -91,6 +92,8 @@
 
     <string name="connectionSettings">Impostazioni di connessione</string>
     <string name="userSettings">Impostazioni utente</string>
+
+    <string name="nfcProgram">Programmazione NFC</string>
 
     <string name="noPatient">Nessun paziente associato</string>
 

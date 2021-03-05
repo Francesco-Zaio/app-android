@@ -106,10 +106,13 @@ public class ComftechManager implements Runnable{
     /* Result codes */
     private static final int MY_BASE_CODE = 10000;
     public static final int CODE_OK = 0;
-    public static final int CODE_RESPONSE_ERROR = MY_BASE_CODE + 1;
-    public static final int CODE_SENDDATA_ERROR = MY_BASE_CODE + 2;
-    public static final int CODE_TIMEOUT_ERROR = MY_BASE_CODE + 3;
-    public static final int CODE_BIND_ERROR = MY_BASE_CODE + 4;
+    public static final int CODE_RESPONSE_ERROR = MY_BASE_CODE + 1; // Risposta ricevuta senza KEY_RESULT
+    public static final int CODE_SENDDATA_ERROR = MY_BASE_CODE + 2; // Eccezione in mService.send
+    public static final int CODE_TIMEOUT_ERROR = MY_BASE_CODE + 3; // Timeout sulla send
+    public static final int CODE_BIND_ERROR = MY_BASE_CODE + 4; // bind fallita o timeout sulla bind
+
+    public static final int CODE_DEVICE_ERROR = 11; //Unità elettronica non collegata all’app Howdy
+    public static final int CODE_DEVICE_ERROR_OFF = 12; //Unità elettronica collegata all’app Howdy ma non accesa ??
 
 
     private final static ComftechManager mInstance = new ComftechManager();

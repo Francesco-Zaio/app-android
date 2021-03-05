@@ -4,6 +4,7 @@ import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.app.PendingIntent;
 import android.app.ProgressDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -17,6 +18,13 @@ import android.graphics.Point;
 import android.graphics.drawable.Drawable;
 import android.media.AudioManager;
 import android.media.ToneGenerator;
+import android.net.Uri;
+import android.nfc.NdefMessage;
+import android.nfc.NdefRecord;
+import android.nfc.NfcAdapter;
+import android.nfc.Tag;
+import android.nfc.tech.Ndef;
+import android.nfc.tech.NdefFormatable;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -32,6 +40,8 @@ import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
+
+import android.os.Parcelable;
 import android.text.InputType;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -94,6 +104,7 @@ import com.ti.app.mydoctor.util.DialogManager;
 import com.ti.app.telemed.core.util.Util;
 
 import java.lang.ref.WeakReference;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -137,6 +148,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	private static final int ITEM_EXIT = 11;
     private static final int ITEM_SEND_MEASURES = 12;
     private static final int ITEM_AGENDA = 13;
+	private static final int ITEM_NFC = 14;
 
 	// Intent request codes
     private static final int USER_LIST = 1;
@@ -166,7 +178,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	private static final int CONFIRM_CLOSE_DIALOG = 11;
     private static final int USER_OPTIONS_DIALOG = 12;
     private static final int ASK_STOP_MONITORING_DIALOG = 13;
-
+    private static final int NFC_PROGRAM_DIALOG = 14;
     
     private GWTextView titleTV;
     private ImageView statusIcon;
@@ -247,8 +259,155 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
     }
     private DeviceListOperationType operationType = DeviceListOperationType.none;
 
+	private NdefMessage ndefMessage = null;
+
+	@Override
+	protected void onNewIntent(Intent intent) {
+		Log.d(TAG, "onNewIntent() - Action: " + intent.getAction());
+		super.onNewIntent(intent);
+
+		if(NfcAdapter.ACTION_TAG_DISCOVERED.equals(intent.getAction())
+				|| NfcAdapter.ACTION_TECH_DISCOVERED.equals(intent.getAction())
+				|| NfcAdapter.ACTION_NDEF_DISCOVERED.equals(intent.getAction())){
+			Tag tag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
+			if (tag == null) {
+				ndefMessage = null;
+				dataBundle = new Bundle();
+				dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("nfcTagError"));
+				myShowDialog(ALERT_DIALOG);
+				return;
+			}
+			if (ndefMessage == null) {
+				showTag(tag, intent);
+			} else
+				programTag(tag);
+		}
+	}
+
+	private void programTag(Tag tag) {
+		String[] techList = tag.getTechList();
+		for (String s:techList)
+			if (s.equals(NdefFormatable.class.getName())) {
+				Log.d(TAG, "Tech: " + s);
+				final NdefFormatable ndefFormat = NdefFormatable.get(tag);
+				Thread thread = new Thread() {
+					@Override
+					public void run() {
+						try {
+							ndefFormat.connect();
+							ndefFormat.format(ndefMessage);
+							ndefFormat.close();
+							Log.d(TAG, "NFC Tag Write completed");
+							DeviceList.this.runOnUiThread(new Runnable() {
+								@Override
+								public void run() {
+									dataBundle = new Bundle();
+									dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("NFCDialog.doneMessage"));
+									myShowDialog(SIMPLE_DIALOG);
+								}
+							});
+						} catch (Exception e) {
+							Log.e(TAG, "Error writing to NFC Tag: " + e);
+							DeviceList.this.runOnUiThread(new Runnable() {
+								@Override
+								public void run() {
+									dataBundle = new Bundle();
+									dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("nfcProgramError"));
+									myShowDialog(ALERT_DIALOG);
+								}
+							});
+						} finally {
+							ndefMessage = null;
+						}
+					}
+				};
+				thread.start();
+				return;
+			} else if (s.equals(Ndef.class.getName())) {
+				final Ndef ndef = Ndef.get(tag);
+				Thread thread = new Thread() {
+					@Override
+					public void run() {
+						try {
+							ndef.connect();
+							ndef.writeNdefMessage(ndefMessage);
+							ndef.close();
+							Log.d(TAG, "NFC Tag Write completed");
+							DeviceList.this.runOnUiThread(new Runnable() {
+								@Override
+								public void run() {
+									dataBundle = new Bundle();
+									dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("NFCDialog.doneMessage"));
+									myShowDialog(SIMPLE_DIALOG);
+								}
+							});
+						} catch (Exception e) {
+							Log.e(TAG, "Error writing to NFC Tag: " + e);
+							DeviceList.this.runOnUiThread(new Runnable() {
+								@Override
+								public void run() {
+									dataBundle = new Bundle();
+									dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("nfcProgramError"));
+									myShowDialog(ALERT_DIALOG);
+								}
+							});
+						} finally {
+							ndefMessage = null;
+						}
+					}
+				};
+				thread.start();
+				return;
+			}
+
+		ndefMessage = null;
+		dataBundle = new Bundle();
+		dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("nfcTechError"));
+		myShowDialog(ALERT_DIALOG);
+	}
+
+	private void showTag(Tag tag, Intent intent) {
+		if (userManager.getCurrentUser() == null
+				|| userManager.getCurrentUser().isPatient()
+				|| !NfcAdapter.ACTION_NDEF_DISCOVERED.equals(intent.getAction()))
+			return;
+		Parcelable[] rawMsgs = intent.getParcelableArrayExtra(NfcAdapter.EXTRA_NDEF_MESSAGES);
+		if  (rawMsgs == null)
+			return;
+		NdefMessage ndefMessage = (NdefMessage) rawMsgs[0];
+		NdefRecord[] records = ndefMessage.getRecords();
+		if (records.length != 2) {
+			return;
+		}
+		String s = records[0].toMimeType();
+		Uri uri = records[1].toUri();
+		if (s == null || !s.equals("text/plain") || uri == null)
+			return;
+		String app = new String(records[1].getPayload(), StandardCharsets.UTF_8);
+		if (!getApplicationContext().getPackageName().equals(app))
+			return;
+		String patientId = new String(records[0].getPayload(), StandardCharsets.UTF_8);
+		dataBundle = new Bundle();
+		String msg = null;
+		List<Patient> lp = userManager.getCurrentUser().getPatients();
+		for (Patient p: lp) {
+			if (p.getId().equals(patientId))
+				msg = String.format(AppResourceManager.getResource().getString("NFCDialog.infoMessage"),
+						p.getName(), p.getSurname());
+		}
+		if (msg == null)
+			msg = String.format(AppResourceManager.getResource().getString("NFCDialog.infoMessage"),
+				"id: ", patientId);
+		dataBundle.putString(AppConst.MESSAGE, msg);
+		myShowDialog(SIMPLE_DIALOG);
+		Log.d(TAG, "Patient id = " + patientId);
+		Log.d(TAG, "Uri = " + uri.toString());
+		Log.d(TAG, "App = " + new String(records[1].getPayload(), StandardCharsets.UTF_8));
+	}
+
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
+		Log.i(TAG, "onCreate() - Action: " + getIntent().getAction());
 		super.onCreate(savedInstanceState);
 		Log.d(TAG,"onCreate()");
 
@@ -390,8 +549,26 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                 }
             }, 500);
         } else {
-			checkUser(userManager.getActiveUser());
-            //new InitTask().execute();
+        	if (NfcAdapter.ACTION_NDEF_DISCOVERED.equals(getIntent().getAction())) {
+				Parcelable[] rawMsgs = getIntent().getParcelableArrayExtra(NfcAdapter.EXTRA_NDEF_MESSAGES);
+				if (rawMsgs != null) {
+					NdefMessage msg = (NdefMessage)rawMsgs[0];
+					NdefRecord firstRecord = msg.getRecords()[0];
+					byte[] payloadData = firstRecord.getPayload();
+					String userId = new String(payloadData, StandardCharsets.UTF_8);
+					Log.d(TAG, "NDEF User id = " + userId);
+					User u = userManager.getUser(userId);
+					if (u != null)
+						checkUser(u);
+					else {
+						dataBundle = new Bundle();
+						dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("noUserError"));
+						dataBundle.putBoolean(AppConst.LOGIN_ERROR, true);
+						myShowDialog(ALERT_DIALOG);
+					}
+				}
+			} else
+				checkUser(userManager.getActiveUser());
         }
     }
 
@@ -405,6 +582,11 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 	@Override
 	protected void onPause() {
 		super.onPause();
+		NfcAdapter nfcAdapter = NfcAdapter.getDefaultAdapter(this);
+		if (nfcAdapter != null) {
+			nfcAdapter.disableForegroundDispatch(this);
+		}
+
 		SyncStatusManager.getSyncStatusManager().removeListener(syncStatusHandler);
 		Log.d(TAG,"onStop()");
 		if( linlaHeaderProgress != null )
@@ -413,8 +595,15 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 
 	@Override
 	protected void onResume() {
+		Log.i(TAG, "onResume() - Action: " + getIntent().getAction());
 		super.onResume();
-		Log.i(TAG, "onResume()");
+
+		NfcAdapter nfcAdapter = NfcAdapter.getDefaultAdapter(this);
+		if (nfcAdapter != null) {
+			PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, new Intent(this, getClass()).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), 0);
+			nfcAdapter.enableForegroundDispatch(this, pendingIntent, null, null);
+		}
+
 		try {
             SyncStatusManager ssm = SyncStatusManager.getSyncStatusManager();
             ssm.addListener(syncStatusHandler);
@@ -560,7 +749,11 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                 iconGroupArray.add("" + R.drawable.agenda);
                 labelGroupArray.add(getResources().getString(R.string.mi_agenda));
                 labelChildArray.add(new ArrayList<String>());
-            }
+            } else if (NfcAdapter.getDefaultAdapter(this) != null) {
+				iconGroupArray.add("" + R.drawable.ic_menu_nfc);
+				labelGroupArray.add(getResources().getString(R.string.mi_nfc));
+				labelChildArray.add(new ArrayList<String>());
+			}
 
             // Controllo se ci sono misure da inviare
             if(measureManager.getNumMeasuresToSend(loggedUser.getId()) > 0) {
@@ -714,7 +907,9 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
             selectedItemBundle.putInt(SELECTED_MENU_ITEM, ITEM_CHANGE_PASSWORD);
         } else if( tv.getText().toString().equalsIgnoreCase(getResources().getString(R.string.mi_agenda)) ){
             selectedItemBundle.putInt(SELECTED_MENU_ITEM, ITEM_AGENDA);
-        }
+        } else if( tv.getText().toString().equalsIgnoreCase(getResources().getString(R.string.mi_nfc)) ){
+			selectedItemBundle.putInt(SELECTED_MENU_ITEM, ITEM_NFC);
+		}
 	}
 
     private void selectedMenuItemAction() {
@@ -814,6 +1009,9 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                     startActivity(intent);
                 }
                 break;
+			case ITEM_NFC:
+				myShowDialog(NFC_PROGRAM_DIALOG);
+				break;
             case ITEM_AGENDA:
                 intent = new Intent(this, AgendaActivity.class);
                 startActivity(intent);
@@ -2257,6 +2455,33 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                 });
                 builder.setNegativeButton(R.string.cancelButton, null);
                 return builder.create();
+			case NFC_PROGRAM_DIALOG:
+				builder.setTitle(R.string.nfcProgram);
+				String txt = AppResourceManager.getResource().getString("NFCDialog.startMessage");
+				Patient patient = userManager.getCurrentPatient();
+				String msg = String.format(txt, patient.getName(), patient.getSurname());
+				builder.setMessage(msg);
+				builder.setPositiveButton(AppResourceManager.getResource().getString("okButton"),
+						new DialogInterface.OnClickListener() {
+							@Override
+							public void onClick(DialogInterface dialog, int which) {
+								Patient currentPatient = userManager.getCurrentPatient();
+								byte[] b = currentPatient.getId().getBytes(StandardCharsets.UTF_8);
+								Log.d(TAG, "Programazione braccialetto per il pazientId = " + currentPatient.getId());
+								ndefMessage = new NdefMessage(
+										NdefRecord.createMime("text/plain", b),
+										NdefRecord.createApplicationRecord(getApplicationContext().getPackageName())
+								);
+								dialog.dismiss();
+								dataBundle = new Bundle();
+								dataBundle.putString(AppConst.MESSAGE, AppResourceManager.getResource().getString("NFCDialog.programMessage"));
+								dataBundle.putBoolean(AppConst.MESSAGE_CANCELLABLE, true);
+								dataBundle.putBoolean(AppConst.IS_NFC, true);
+								myShowDialog(PROGRESS_DIALOG);
+							}
+						});
+				builder.setNegativeButton(AppResourceManager.getResource().getString("cancelButton"), null);
+				return builder.create();
             case CONFIRM_CLOSE_DIALOG:
                 builder.setTitle(R.string.app_name);
                 builder.setMessage(AppResourceManager.getResource().getString("MainGUI.menu.fileMenu.exitMsg"));
@@ -2307,11 +2532,19 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                     ((ProgressDialog)dialog).getButton(ProgressDialog.BUTTON_NEGATIVE).setTag(AppConst.IS_MEASURE);
                 } else if(dataBundle.getBoolean(AppConst.IS_CONFIGURATION)){
                     ((ProgressDialog)dialog).getButton(ProgressDialog.BUTTON_NEGATIVE).setTag(AppConst.IS_CONFIGURATION);
-                }
+                } else if(dataBundle.getBoolean(AppConst.IS_NFC)) {
+					((ProgressDialog) dialog).getButton(ProgressDialog.BUTTON_NEGATIVE).setTag(AppConst.IS_NFC);
+				}
                 break;
             case ALERT_DIALOG:
                 ((AlertDialog)dialog).setMessage(dataBundle.getString(AppConst.MESSAGE));
                 break;
+			case NFC_PROGRAM_DIALOG:
+				String txt = AppResourceManager.getResource().getString("NFCDialog.startMessage");
+				Patient patient = userManager.getCurrentPatient();
+				String msg = String.format(txt, patient.getName(), patient.getSurname());
+				((AlertDialog)dialog).setMessage(msg);
+				break;
         }
 	}
 
@@ -2551,11 +2784,13 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 			Button btn = ((ProgressDialog)dialog).getButton(which);
 			String tag = (String) btn.getTag();
 			myRemoveDialog(PROGRESS_DIALOG);
-			if(AppConst.IS_MEASURE.equals(tag)){
+			if (AppConst.IS_MEASURE.equals(tag)) {
                 // annullo l'acquisizione di una misura
                 deviceOperations.abortOperation();
                 myRemoveDialog(PROGRESS_DIALOG);
                 refreshList();
+			} else if (AppConst.IS_NFC.equals(tag)) {
+				ndefMessage = null;
 			}
 		}
 	}

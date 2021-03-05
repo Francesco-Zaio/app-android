@@ -6,6 +6,7 @@
     <string name="mi_documenti">Documents</string>
     <string name="mi_user">Options De L\'Utilisateur</string>
     <string name="mi_devices_man">Le Gestionnaire De Périphériques</string>
+    <string name="mi_nfc">Nfc</string>
     <string name="mi_agenda">Ordre du jour</string>
     <string name="mi_logout">Déconnexion</string>
     <string name="mi_exit">Sortie</string>
@@ -104,4 +105,5 @@
     <string name="today_agenda">Ordre du jour aujourd\'hui</string>
     <string name="start">Début</string>
     <string name="close">Proche</string>
+    <string name="nfcProgram">Programmation NFC</string>
 </resources>

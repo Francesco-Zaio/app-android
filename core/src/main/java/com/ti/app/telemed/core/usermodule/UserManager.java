@@ -202,6 +202,14 @@ public class UserManager {
     }
 
     /**
+     * Restituisce l'ultimo utente che ha effettuato un login.
+     * @return {@link User} o null se non è mai stato effettuato un login.
+     */
+    public User getUser(String id) {
+        return DbManager.getDbManager().getUser(id);
+    }
+
+    /**
      * Imposta il flag di auto-login per l'utente passato.
      * @param userId identificatvo utente.
      * @param autoLogin valore da impostare.

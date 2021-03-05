@@ -120,7 +120,7 @@ public class SelectPatient extends AppCompatActivity implements SearchView.OnQue
 				if (cfValue == null || cfValue.equalsIgnoreCase("null"))
 					cfValue = "";
 				map.put(KEY_CF, "[" + cfValue + "]");
-				map.put(KEY_ID, "[" + p.getId() + "]");
+				map.put(KEY_ID, p.getId());
 				map.put(KEY_PATIENT, p.getName() + " " + p.getSurname());
 				map.put(KEY_PATIENT_SURNAME, p.getSurname());
 				map.put(KEY_PATIENT_NAME, p.getName());
@@ -137,10 +137,16 @@ public class SelectPatient extends AppCompatActivity implements SearchView.OnQue
 		lv.setFastScrollEnabled(true);
 		lv.setOnItemClickListener(new OnItemClickListener() {
 			public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                Patient p = patientList.get(position);
-                Log.i(TAG, "Nome paziente: " + p.getName());
+				HashMap<String, String> map = fillMaps.get(position);
+				String patientId = map.get(KEY_ID);
+				Patient patient = null;
+				for (Patient p : patientList)
+					if (p.getId().equals(patientId)) {
+						patient = p;
+						break;
+					}
                 Intent result = new Intent();
-                result.putExtra(PATIENT, p);
+                result.putExtra(PATIENT, patient);
                 setResult(RESULT_OK, result);
                 finish();
 			}
@@ -235,7 +241,7 @@ public class SelectPatient extends AppCompatActivity implements SearchView.OnQue
 					cfValue = "";	
 				
 				map.put(KEY_CF, "[" + cfValue + "]");
-				map.put(KEY_ID, "[" + p.getId() + "]");
+				map.put(KEY_ID, p.getId());
 				map.put(KEY_PATIENT, p.getName() + " " + p.getSurname());
 				map.put(KEY_PATIENT_SURNAME, p.getSurname());
 				map.put(KEY_PATIENT_NAME, p.getName());
@@ -248,7 +254,7 @@ public class SelectPatient extends AppCompatActivity implements SearchView.OnQue
 					cfValue = "";	
 				
 				map.put(KEY_CF, "[" + cfValue + "]");
-				map.put(KEY_ID, "[" + p.getId() + "]");
+				map.put(KEY_ID, p.getId());
 				map.put(KEY_PATIENT, p.getName() + " " + p.getSurname());
 				map.put(KEY_PATIENT_SURNAME, p.getSurname());
 				map.put(KEY_PATIENT_NAME, p.getName());
@@ -261,7 +267,7 @@ public class SelectPatient extends AppCompatActivity implements SearchView.OnQue
 					cfValue = "";	
 				
 				map.put(KEY_CF, "[" + cfValue + "]");
-				map.put(KEY_ID, "[" + p.getId() + "]");
+				map.put(KEY_ID, p.getId());
 				map.put(KEY_PATIENT, p.getName() + " " + p.getSurname());
 				map.put(KEY_PATIENT_SURNAME, p.getSurname());
 				map.put(KEY_PATIENT_NAME, p.getName());

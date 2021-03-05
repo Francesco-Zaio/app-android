@@ -14,6 +14,7 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.RECEIVE_SMS" />
+    <uses-permission android:name="android.permission.NFC" />
 
     <application
         android:name=".MyDoctorApp"
@@ -37,21 +38,34 @@
 
         <activity
             android:name=".gui.AboutScreen"
-            android:configChanges="orientation|screenSize|keyboardHidden"></activity>
+            android:configChanges="orientation|screenSize|keyboardHidden">
+        </activity>
         <activity
             android:name=".gui.DeviceList"
+            android:launchMode="singleTask"
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:theme="@style/Theme.AppCompat.Light">
             <intent-filter>
+                <action android:name="android.nfc.action.NDEF_DISCOVERED" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.nfc.action.TECH_DISCOVERED" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <meta-data android:name="android.nfc.action.TECH_DISCOVERED"
+                android:resource="@xml/nfc_tech_filter" />
+            <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
         <activity
             android:name=".gui.ShowUtilitySettings"
             android:label="@string/show_settings"
-            android:windowSoftInputMode="stateHidden"></activity>
+            android:windowSoftInputMode="stateHidden">
+        </activity>
         <activity android:name=".gui.SelectPatient">
             <intent-filter>
                 <action android:name=".DeviceList" />

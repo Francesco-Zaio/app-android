@@ -749,7 +749,7 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                 iconGroupArray.add("" + R.drawable.agenda);
                 labelGroupArray.add(getResources().getString(R.string.mi_agenda));
                 labelChildArray.add(new ArrayList<String>());
-            } else if (NfcAdapter.getDefaultAdapter(this) != null) {
+            } else if ((NfcAdapter.getDefaultAdapter(this) != null) && (userManager.getCurrentPatient() != null)) {
 				iconGroupArray.add("" + R.drawable.ic_menu_nfc);
 				labelGroupArray.add(getResources().getString(R.string.mi_nfc));
 				labelChildArray.add(new ArrayList<String>());

@@ -6,7 +6,7 @@
     <string name="mi_documenti">Documents</string>
     <string name="mi_user">Options De L\'Utilisateur</string>
     <string name="mi_devices_man">Le Gestionnaire De Périphériques</string>
-    <string name="mi_nfc">Nfc</string>
+    <string name="mi_nfc">NFC Setup</string>
     <string name="mi_agenda">Ordre du jour</string>
     <string name="mi_logout">Déconnexion</string>
     <string name="mi_exit">Sortie</string>

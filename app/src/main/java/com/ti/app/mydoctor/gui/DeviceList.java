@@ -595,6 +595,8 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
 		Log.i(TAG, "onResume() - Action: " + getIntent().getAction());
 		super.onResume();
 
+		deviceOperations.setHandler(deviceManagerHandler);
+
 		NfcAdapter nfcAdapter = NfcAdapter.getDefaultAdapter(this);
 		if (nfcAdapter != null) {
 			PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, new Intent(this, getClass()).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), 0);
@@ -746,11 +748,15 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
                 iconGroupArray.add("" + R.drawable.agenda);
                 labelGroupArray.add(getResources().getString(R.string.mi_agenda));
                 labelChildArray.add(new ArrayList<String>());
-            } else if ((NfcAdapter.getDefaultAdapter(this) != null) && (userManager.getCurrentPatient() != null)) {
+            }
+            // TODO Scommentare per attivare menu programmazione braccialetto NFC
+			/*
+            else if ((NfcAdapter.getDefaultAdapter(this) != null) && (userManager.getCurrentPatient() != null)) {
 				iconGroupArray.add("" + R.drawable.ic_menu_nfc);
 				labelGroupArray.add(getResources().getString(R.string.mi_nfc));
 				labelChildArray.add(new ArrayList<String>());
 			}
+			*/
 
             // Controllo se ci sono misure da inviare
             if(measureManager.getNumMeasuresToSend(loggedUser.getId()) > 0) {
@@ -904,9 +910,13 @@ public class DeviceList extends AppCompatActivity implements OnChildClickListene
             selectedItemBundle.putInt(SELECTED_MENU_ITEM, ITEM_CHANGE_PASSWORD);
         } else if( tv.getText().toString().equalsIgnoreCase(getResources().getString(R.string.mi_agenda)) ){
             selectedItemBundle.putInt(SELECTED_MENU_ITEM, ITEM_AGENDA);
-        } else if( tv.getText().toString().equalsIgnoreCase(getResources().getString(R.string.mi_nfc)) ){
+        }
+		// TODO Scommentare per attivare menu programmazione braccialetto NFC
+		/*
+			else if( tv.getText().toString().equalsIgnoreCase(getResources().getString(R.string.mi_nfc)) ){
 			selectedItemBundle.putInt(SELECTED_MENU_ITEM, ITEM_NFC);
 		}
+		*/
 	}
 
     private void selectedMenuItemAction() {

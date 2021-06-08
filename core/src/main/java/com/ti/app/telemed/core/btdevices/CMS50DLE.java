@@ -6,6 +6,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
 
+import com.contec.spo2.code.bean.SdkConstants;
 import com.contec.spo2.code.callback.ConnectCallback;
 import com.contec.spo2.code.callback.RealtimeCallback;
 import com.contec.spo2.code.connect.ContecSdk;
@@ -40,8 +41,8 @@ public class CMS50DLE extends DeviceHandler implements BTSearcherEventListener {
     private static final int MSG_REALTIME_DATA = 3;
     private static final int MSG_FINGER_OUT = 4;
 
-	private BTSearcher iServiceSearcher;
-    private Vector<BluetoothDevice> deviceList = new Vector<>();
+	private final BTSearcher iServiceSearcher;
+    private final Vector<BluetoothDevice> deviceList = new Vector<>();
 
     private ContecSdk sdk;
 
@@ -155,7 +156,7 @@ public class CMS50DLE extends DeviceHandler implements BTSearcherEventListener {
 	// ------------------------------------
 	// CMS50D Callbacks objects
 
-    private RealtimeCallback realtimeCallback = new RealtimeCallback() {
+    private final RealtimeCallback realtimeCallback = new RealtimeCallback() {
         @Override
         public void onRealtimeWaveData(final int signal, final int prSound, final int waveData, int barData, int fingerOut) {
             if (fingerOut == 1) {
@@ -188,26 +189,28 @@ public class CMS50DLE extends DeviceHandler implements BTSearcherEventListener {
         }
     };
 
-    private ConnectCallback connectCallback = new ConnectCallback() {
+    private final ConnectCallback connectCallback = new ConnectCallback() {
         @Override
         public void onConnectStatus(int status) {
             switch (status) {
-                case ContecSdk.NOTIFY_SUCCESS:
+                case SdkConstants.CONNECT_CONNECTED:
                     Log.d(TAG, "onConnectStatus - Success: " + status );
-                    Message msg = devOpHandler.obtainMessage(MSG_DEVICE_CONNECTED);
-                    devOpHandler.sendMessage(msg);
+                    devOpHandler.sendEmptyMessage(MSG_DEVICE_CONNECTED);
                     break;
-                case ContecSdk.STATE_DISCONNECTED:
+                case SdkConstants.CONNECT_DISCONNECTED:
                     Log.d(TAG, "onConnectStatus - Disconnected: " + status);
                     devOpHandler.sendEmptyMessage(MSG_DISCONN);
                     break;
-                case ContecSdk.NO_BLUETOOTH:
-                case ContecSdk.BLUETOOTH_CLOSE:
-                case ContecSdk.NO_SERVICE_FOUND:
-                case ContecSdk.NOTIFY_FAILED:
-                case ContecSdk.STATE_ABNORMAL_DISCONNECTED:
+                case SdkConstants.CONNECT_UNSUPPORT_DEVICETYPE:
+                case SdkConstants.CONNECT_UNSUPPORT_BLUETOOTHTYPE:
+                case SdkConstants.CONNECT_DISCONNECT_SERVICE_UNFOUND:
+                case SdkConstants.CONNECT_DISCONNECT_NOTIFY_FAIL:
+                case SdkConstants.CONNECT_DISCONNECT_EXCEPTION:
                     Log.d(TAG, "onConnectStatus - error: " + status);
                     devOpHandler.sendEmptyMessage(MSG_DEVICE_ERROR);
+                    break;
+                case SdkConstants.CONNECT_CONNECTING:
+                    Log.d(TAG, "onConnectStatus - Connecting...: " + status);
                     break;
                 default:
                     Log.d(TAG, "onConnectStatus - Unknown status: " + status);
@@ -279,9 +282,9 @@ public class CMS50DLE extends DeviceHandler implements BTSearcherEventListener {
     private static final int MIN_SAMPLES = 6;
     private static final int BASE_OXY_STREAM_LENGTH = 189; //
 
-    private class OxyElem {
-        private int iSat;
-        private int iFreq;
+    private static class OxyElem {
+        private final int iSat;
+        private final int iFreq;
 
         OxyElem(int sat, int freq) {
             iSat = sat;
@@ -519,10 +522,10 @@ public class CMS50DLE extends DeviceHandler implements BTSearcherEventListener {
         return new Time(hh, mm, ss);
     }
 
-    private class Time {
-        private int hh;
-        private int mm;
-        private int ss;
+    private static class Time {
+        private final int hh;
+        private final int mm;
+        private final int ss;
 
         Time(int hh, int mm, int ss) {
             this.hh = hh;

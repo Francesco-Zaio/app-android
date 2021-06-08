@@ -5,7 +5,7 @@ import android.content.Intent;
 import android.util.Log;
 
 import com.ti.app.telemed.core.btdevices.AgamatrixMyStar;
-import com.ti.app.telemed.core.btdevices.CMS50D;
+import com.ti.app.telemed.core.btdevices.CMS50DLE;
 import com.ti.app.telemed.core.btdevices.CardGuardEasy2CheckClient;
 import com.ti.app.telemed.core.btdevices.CheckmePro;
 import com.ti.app.telemed.core.btdevices.ComftechDevice;
@@ -172,8 +172,8 @@ public abstract class DeviceHandler {
             case GWConst.KOXY10:
             case GWConst.KPOD1W:
                 return new POD1W_OXY10_LE(listener, ud);
-            case GWConst.KCMS50DBT:
-                return new CMS50D(listener, ud);
+            case GWConst.KOXY9:
+                return new CMS50DLE(listener, ud);
             case KCOMFTECH:
                 return new ComftechDevice(listener, ud);
             default:

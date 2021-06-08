@@ -39,23 +39,23 @@ public class BLEGlucose extends DeviceHandler implements BTSearcherEventListener
 	private static final String TAG = "OnCallSureSync";
 
 	// Standard Glucose Services
-    private static String GLUCOSE_SERVICE = "00001808-0000-1000-8000-00805f9b34fb";
+    private static final String GLUCOSE_SERVICE = "00001808-0000-1000-8000-00805f9b34fb";
     private final static UUID UUID_GLUCOSE_SERVICE =  UUID.fromString(GLUCOSE_SERVICE);
-    private static String GLUCOSE_MEASURE_CHARACTERISTIC = "00002a18-0000-1000-8000-00805f9b34fb";
+    private static final String GLUCOSE_MEASURE_CHARACTERISTIC = "00002a18-0000-1000-8000-00805f9b34fb";
     private final static UUID UUID_GLUCOSE_MEASURE_CHARACTERISTICS = UUID.fromString(GLUCOSE_MEASURE_CHARACTERISTIC);
-    private static String GLUCOSE_MEASURE_CONTEXT_CHARACTERISTIC = "00002a34-0000-1000-8000-00805f9b34fb";
+    private static final String GLUCOSE_MEASURE_CONTEXT_CHARACTERISTIC = "00002a34-0000-1000-8000-00805f9b34fb";
     private final static UUID UUID_GLUCOSE_MEASURE_CONTEXT_CHARACTERISTICS = UUID.fromString(GLUCOSE_MEASURE_CONTEXT_CHARACTERISTIC);
 
-    private static String GLUCOSE_FEATURE_CHARACTERISTIC = "00002a51-0000-1000-8000-00805f9b34fb";
+    private static final String GLUCOSE_FEATURE_CHARACTERISTIC = "00002a51-0000-1000-8000-00805f9b34fb";
     private final static UUID UUID_GLUCOSE_FEATURE_CHARACTERISTICS = UUID.fromString(GLUCOSE_FEATURE_CHARACTERISTIC);
 
-    private static String RECORD_ACCESS_CONTROL_POINT = "00002a52-0000-1000-8000-00805f9b34fb";
+    private static final String RECORD_ACCESS_CONTROL_POINT = "00002a52-0000-1000-8000-00805f9b34fb";
     private final static UUID UUID_RECORD_ACCESS_CONTROL_POINT = UUID.fromString(RECORD_ACCESS_CONTROL_POINT);
 
     // Standard Battery Services
-    private static String BATTERY_SERVICE = "0000180f-0000-1000-8000-00805f9b34fb";
+    private static final String BATTERY_SERVICE = "0000180f-0000-1000-8000-00805f9b34fb";
     private final static UUID UUID_BATTERY_SERVICE =  UUID.fromString(BATTERY_SERVICE);
-    private static String BATTERY_LEVEL_CHARACTERISTIC = "00002a19-0000-1000-8000-00805f9b34fb";
+    private static final String BATTERY_LEVEL_CHARACTERISTIC = "00002a19-0000-1000-8000-00805f9b34fb";
     private final static UUID UUID_BATTERY_LEVEL_CHARACTERISTICS = UUID.fromString(BATTERY_LEVEL_CHARACTERISTIC);
 
     // Standard Device Information Services
@@ -69,7 +69,7 @@ public class BLEGlucose extends DeviceHandler implements BTSearcherEventListener
     // private final static UUID UUID_MAIN_CHARACTERISTICS = UUID.fromString(MAIN_CHARACTERISTIC);
 
     // Client Characteristic Configuration
-    private static String CLIENT_CHARACTERISTIC_CONFIG = "00002902-0000-1000-8000-00805f9b34fb";
+    private static final String CLIENT_CHARACTERISTIC_CONFIG = "00002902-0000-1000-8000-00805f9b34fb";
 
 
     private static final int MAX_CONNCTION_RETRY = 5;
@@ -77,8 +77,8 @@ public class BLEGlucose extends DeviceHandler implements BTSearcherEventListener
     // iServiceSearcher searches for service this client can
     // connect to (in symbian version the type was CBTUtil) and
     // substitutes RSocketServ and RSocket of symbian version too
-    private BTSearcher iServiceSearcher;
-    private Vector<BluetoothDevice> deviceList = new Vector<>();
+    private final BTSearcher iServiceSearcher;
+    private final Vector<BluetoothDevice> deviceList = new Vector<>();
 
     private BluetoothAdapter mBluetoothAdapter = null;
     private BluetoothGatt mBluetoothGatt = null;

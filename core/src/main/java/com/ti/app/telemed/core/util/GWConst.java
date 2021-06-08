@@ -53,7 +53,7 @@ public interface GWConst {
 	String KOnCall = "ONCALL";
 	String KDHearth = "DHEARTH";
 	String KOXY10 = "OXY10";
-	String KCMS50DBT = "CMS50DBT";
+	String KOXY9 = "OXY9";
 	String KPOD1W = "POD1W";
 	String KCOMFTECH = "COMFTECH";
 

@@ -6,7 +6,7 @@
 	<string name="mi_measure">Medidas</string>
     <string name="mi_user">Usuario</string>
 	<string name="mi_devices_man">Gestión de dispositivos</string>
-	<string name="mi_nfc">Nfc</string>
+	<string name="mi_nfc">NFC Setup</string>
 	<string name="mi_agenda">Agenda</string>
     <string name="mi_logout">Logout</string>
     <string name="mi_exit">Salida</string>    

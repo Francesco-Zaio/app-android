@@ -28,7 +28,7 @@ GL, AGAMATRIXMYSTAR, MyStar - AgaMatrix, 1
 GL, CLEVERCHEK, Glucometro - Fora, 1
 PR, CLEVERCHEK, D40b - Fora, 1
 EC, TOUCHECG, TouchECG - Cardioline, 2
-// EC, CHECKMEPRO, Checkme Pro - Viatom, 1
+EC, CHECKMEPRO, Checkme Pro - Viatom, 1
 TC, CHECKMEPRO, Checkme Pro - Viatom, 1
 OS, CHECKMEPRO, Checkme Pro - Viatom, 1
 PR, CHECKMEPRO, Checkme Pro - Viatom, 1
@@ -36,5 +36,5 @@ GL, ONCALL, On Call Sync - Acon, 1
 EC, DHEARTH, D-Heart, 2
 OS, OXY10, OXY-10 - GIMA, 1
 OS, POD1W, POD-1W - Creative, 1
-//OS, CMS50DBT, CMS50D-BT - GIMA, 1
+OS, OXY9, OXY-9 - GIMA, 1
 FF, COMFTECH, Howdy - Comftech, 2

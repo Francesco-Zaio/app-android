@@ -132,8 +132,14 @@ public class DeviceSettingsActivity extends ActionBarListActivity {
 
 		setupDeviceList();
 	}
-	
+
 	@Override
+	protected void onResume() {
+		super.onResume();
+		deviceOperations.setHandler(deviceManagerHandler);
+	}
+
+		@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		switch(item.getItemId()) {
 		case android.R.id.home: //Ritorna alla Home quando si clicca sull'icona della App

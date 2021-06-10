@@ -49,19 +49,19 @@ public class OnCallSureSync extends DeviceHandler implements BTSearcherEventList
 	private static final String TAG = "OnCallSureSync";
 
     // Standard Battery Services
-    private static String BATTERY_SERVICE = "0000180f-0000-1000-8000-00805f9b34fb";
+    private static final String BATTERY_SERVICE = "0000180f-0000-1000-8000-00805f9b34fb";
     private final static UUID UUID_BATTERY_SERVICE =  UUID.fromString(BATTERY_SERVICE);
-    private static String BATTERY_LEVEL_CHARACTERISTIC = "00002a19-0000-1000-8000-00805f9b34fb";
+    private static final String BATTERY_LEVEL_CHARACTERISTIC = "00002a19-0000-1000-8000-00805f9b34fb";
     private final static UUID UUID_BATTERY_LEVEL_CHARACTERISTICS = UUID.fromString(BATTERY_LEVEL_CHARACTERISTIC);
 
     // Custom Bluetooth Service
-    private static String MAIN_SERVICE = "11223344-5566-7788-99aa-bbccddeeff00";
+    private static final String MAIN_SERVICE = "11223344-5566-7788-99aa-bbccddeeff00";
     private final static UUID UUID_MAIN_SERVICE =  UUID.fromString(MAIN_SERVICE);
-    private static String MAIN_CHARACTERISTIC = "00004a5b-0000-1000-8000-00805f9b34fb";
+    private static final String MAIN_CHARACTERISTIC = "00004a5b-0000-1000-8000-00805f9b34fb";
     private final static UUID UUID_MAIN_CHARACTERISTICS = UUID.fromString(MAIN_CHARACTERISTIC);
 
     // Client Characteristic Configuration
-    private static String CLIENT_CHARACTERISTIC_CONFIG = "00002902-0000-1000-8000-00805f9b34fb";
+    private static final String CLIENT_CHARACTERISTIC_CONFIG = "00002902-0000-1000-8000-00805f9b34fb";
 
 
     private static final int MAX_CONNCTION_RETRY = 5;

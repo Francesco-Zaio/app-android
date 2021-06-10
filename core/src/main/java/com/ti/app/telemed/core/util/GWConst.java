@@ -56,6 +56,7 @@ public interface GWConst {
 	String KOXY9 = "OXY9";
 	String KPOD1W = "POD1W";
 	String KCOMFTECH = "COMFTECH";
+	String KVITALCAREKIT = "VITALCAREKIT";
 
 
 	/**

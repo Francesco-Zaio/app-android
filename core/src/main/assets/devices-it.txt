@@ -38,3 +38,4 @@ OS, OXY10, OXY-10 - GIMA, 1
 OS, POD1W, POD-1W - Creative, 1
 OS, OXY9, OXY-9 - GIMA, 1
 FF, COMFTECH, Howdy - Comftech, 2
+TC, VITALCAREKIT, Vital Care - GIMA, 1

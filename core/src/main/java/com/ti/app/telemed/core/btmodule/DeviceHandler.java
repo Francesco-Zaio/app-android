@@ -21,6 +21,7 @@ import com.ti.app.telemed.core.btdevices.OnCallSureSync;
 import com.ti.app.telemed.core.btdevices.POD1W_OXY10_LE;
 import com.ti.app.telemed.core.btdevices.RocheProthrombineTimeClient;
 import com.ti.app.telemed.core.btdevices.TouchECG;
+import com.ti.app.telemed.core.btdevices.VitalCareKitThermometer;
 import com.ti.app.telemed.core.common.Device;
 import com.ti.app.telemed.core.common.Measure;
 import com.ti.app.telemed.core.common.Patient;
@@ -32,6 +33,7 @@ import com.ti.app.telemed.core.util.GWConst;
 import com.ti.app.telemed.core.util.Util;
 
 import static com.ti.app.telemed.core.util.GWConst.KCOMFTECH;
+import static com.ti.app.telemed.core.util.GWConst.KVITALCAREKIT;
 
 /**
  * <h1>Acquisire una misura da un dispsitivo</h1>
@@ -176,6 +178,8 @@ public abstract class DeviceHandler {
                 return new CMS50DLE(listener, ud);
             case KCOMFTECH:
                 return new ComftechDevice(listener, ud);
+            case KVITALCAREKIT:
+                return new VitalCareKitThermometer(listener, ud);
             default:
                 return null;
         }

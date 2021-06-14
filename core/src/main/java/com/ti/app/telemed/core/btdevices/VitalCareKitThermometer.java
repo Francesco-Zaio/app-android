@@ -180,7 +180,7 @@ public class VitalCareKitThermometer extends DeviceHandler implements BTSearcher
     }
 
     private String formatTemp(int temperature) {
-        temperature += 5; // La temepratura è in 1/100 di grado: arrotondo alla prima cifra decimale
+        temperature += 5; // La temperatura è in 1/100 di grado: arrotondo alla prima cifra decimale
         String temp = String.valueOf(temperature);
         return temp.substring(0,2)+","+temp.substring(2,3);
     }
@@ -264,18 +264,18 @@ public class VitalCareKitThermometer extends DeviceHandler implements BTSearcher
         public void onServicesDiscovered(BluetoothGatt gatt, int status) {
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 List<BluetoothGattService> services = gatt.getServices();
-                Log.i(TAG, "found: " + services.size() + " services");
+                Log.d(TAG, "found: " + services.size() + " services");
                 for (BluetoothGattService s:services) {
-                    Log.i(TAG, "Service: " + s.getUuid().toString());
+                    Log.d(TAG, "Service: " + s.getUuid().toString());
                     if (s.getUuid().equals(UUID_MAIN_SERVICE)) {
-                        Log.i(TAG, "UUID_MAIN_SERVICE FOUND");
+                        Log.d(TAG, "UUID_MAIN_SERVICE FOUND");
                         List<BluetoothGattCharacteristic> lc = s.getCharacteristics();
                         for (BluetoothGattCharacteristic c:lc) {
                             if (c.getUuid().equals(UUID_NOTIFY_CHARACTERISTICS)) {
-                                Log.i(TAG, "UUID_NOTIFY_CHARACTERISTICS FOUND");
+                                Log.d(TAG, "UUID_NOTIFY_CHARACTERISTICS FOUND");
                                 notifyCharacteristic = c;
                             } else if (c.getUuid().equals(UUID_WRITE_CHARACTERISTICS)) {
-                                Log.i(TAG, "UUID_WRITE_CHARACTERISTICS FOUND");
+                                Log.d(TAG, "UUID_WRITE_CHARACTERISTICS FOUND");
                                 writeCharacteristic = c;
                             }
                         }
@@ -358,12 +358,16 @@ public class VitalCareKitThermometer extends DeviceHandler implements BTSearcher
             stop();
         } else if (data[2] == (byte)0xc5) {
             Log.e(TAG, "parseMessage: Device status: " + " 0x" + Integer.toHexString(data[2]  & 0x000000ff) );
+            /* TODO
+                Al momento ignoro il valore della batteria. Da specifiche dovrebbe essere un valore da 1 a 10.
+                In realtà il valore letto è 0xA0 con pile nuove e 0x80 con pile parzialmente usate.
             int tmp = data[5] & 0xff;
             Log.d(TAG,"tmp = "+ tmp);
             if ((tmp > 0) && (tmp <= 10)) {
                 batteryLevel = tmp * 10;
                 Log.d(TAG,"batteryLevel = "+ batteryLevel);
             }
+            */
         } else if (data[2] == (byte)0xc1) {
             int temperature = ((data[4] & 0xff) << 8) + (data[5] & 0xff);
             Log.d(TAG, "parseMessage: Temperatura: " + temperature);

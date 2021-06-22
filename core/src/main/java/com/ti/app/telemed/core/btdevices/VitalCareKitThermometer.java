@@ -90,10 +90,7 @@ public class VitalCareKitThermometer extends DeviceHandler implements BTSearcher
         iServiceSearcher.clearBTSearcherEventListener();
         iServiceSearcher.addBTSearcherEventListener(this);
         iServiceSearcher.startSearchDevices();
-        if (ot == OperationType.Measure)
-            deviceListener.notifyToUi(ResourceManager.getResource().getString("DoMeasureGL"));
-        else
-            deviceListener.notifyToUi(ResourceManager.getResource().getString("KSearchingDev"));
+        deviceListener.notifyToUi(ResourceManager.getResource().getString("KSearchingDev"));
         return true;
     }
 
